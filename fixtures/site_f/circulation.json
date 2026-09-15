@@ -1,0 +1,96 @@
+{
+ "site": [
+  1536,
+  384,
+  192
+ ],
+ "material": "cobblestone",
+ "notes": {
+  "max_step": 3,
+  "stranded": [],
+  "court": [
+   1643,
+   438,
+   3
+  ],
+  "hub": "moot_hall",
+  "landing_rounds": 11,
+  "cut_max": 9,
+  "fill_max": 6,
+  "sites": 14,
+  "served": 14,
+  "material": "cobblestone",
+  "blocks": 91804
+ },
+ "lane": {
+  "cells": 849,
+  "steps": 196,
+  "fill": 456,
+  "cut": 285,
+  "rails": 183,
+  "lanterns": 40,
+  "trees": 85210,
+  "tree_columns": 13781,
+  "dressed": 2842,
+  "thresholds": 14,
+  "posts": 26
+ },
+ "walk_check": {
+  "cells": 849,
+  "reached": 849,
+  "unreachable": [],
+  "unreachable_n": 0
+ },
+ "flush": {
+  "placed": 91804,
+  "failed": 0,
+  "errors": {},
+  "seconds": 2.03,
+  "blocks_per_sec": 45174,
+  "unique_positions": 91804,
+  "connective_rejoined": 396,
+  "calls": {
+   "place_block": 93052,
+   "place_cuboid": 0,
+   "fill_region": 0,
+   "get_height": 16289,
+   "get_block": 245118
+  },
+  "palette_size": 6,
+  "light_sources": 40,
+  "footprint_columns": 14059,
+  "ground_relief_under_build": 37,
+  "floor_level_stdev": 6.78,
+  "columns_floating": 6949,
+  "columns_cut_into_ground": 1585
+ },
+ "lint": {
+  "ok": false,
+  "seconds": 0.69,
+  "counts": {
+   "E005": 1
+  },
+  "findings": [
+   {
+    "code": "E005",
+    "severity": "error",
+    "message": "2 wall joins that should exist do not (200 wall blocks) -- placed without block updates",
+    "pos": null,
+    "detail": {
+     "kind": "wall",
+     "blocks": 200,
+     "missed_joins": 2
+    }
+   }
+  ]
+ },
+ "pieces": [
+  849
+ ],
+ "seconds": {
+  "load": 2.2,
+  "plan": 0.3,
+  "emit": 0.9,
+  "lint": 8.9
+ }
+}

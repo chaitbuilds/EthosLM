@@ -1,0 +1,81 @@
+{
+ "site": [
+  -1152,
+  1152,
+  192
+ ],
+ "material": "red_sandstone",
+ "notes": {
+  "max_step": 3,
+  "stranded": [],
+  "court": [
+   -1057,
+   1301,
+   3
+  ],
+  "hub": "hearth_hall",
+  "landing_rounds": 26,
+  "cut_max": 18,
+  "fill_max": 9,
+  "sites": 16,
+  "served": 16,
+  "material": "red_sandstone",
+  "blocks": 5301
+ },
+ "lane": {
+  "cells": 865,
+  "steps": 290,
+  "fill": 113,
+  "cut": 2072,
+  "rails": 52,
+  "lanterns": 4,
+  "trees": 0,
+  "tree_columns": 0,
+  "dressed": 0,
+  "thresholds": 16
+ },
+ "walk_check": {
+  "cells": 865,
+  "reached": 865,
+  "unreachable": [],
+  "unreachable_n": 0
+ },
+ "flush": {
+  "placed": 5301,
+  "failed": 0,
+  "errors": {},
+  "seconds": 0.37,
+  "blocks_per_sec": 14364,
+  "unique_positions": 5301,
+  "connective_rejoined": 340,
+  "calls": {
+   "place_block": 5309,
+   "place_cuboid": 0,
+   "fill_region": 0,
+   "get_height": 1774,
+   "get_block": 7474
+  },
+  "palette_size": 5,
+  "light_sources": 4,
+  "footprint_columns": 926,
+  "ground_relief_under_build": 67,
+  "floor_level_stdev": 19.19,
+  "columns_floating": 45,
+  "columns_cut_into_ground": 311
+ },
+ "lint": {
+  "ok": true,
+  "seconds": 0.69,
+  "counts": {},
+  "findings": []
+ },
+ "pieces": [
+  865
+ ],
+ "seconds": {
+  "load": 1.1,
+  "plan": 0.3,
+  "emit": 0.0,
+  "lint": 3.7
+ }
+}

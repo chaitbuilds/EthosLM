@@ -1,0 +1,189 @@
+{
+ "intent": "A hill township on the shelf below the eastern ridge, built by people who quarry the fell they stand on. The land gives them three level places and one low one: a broad calm shoulder in the north-west (y 81-108) where the town proper sits, a high east shelf (y 102-115) that carries the drove road in over the ridge, a second terrace to the south (y 97-112) below a broken scarp where the farm ground is, and a tarn in the south-west corner at y 62 where the water is. Everything is arranged on those four levels and the settlement reads as one place because the levels are threaded by a single descending lane: in from the east shelf past the lookout and the drovers' barn, through the smith and the byres to the hall and its court, west along the row to the crofts, then south and down by the gate to the lower terrace, and finally down the west spur to the spring house and the tarn. Nothing is placed on ground with roughness above about 20 unless it is a gate or a lookout whose job is to straddle a break. Buildings step down their slopes in whole storeys with retaining walls of the same cobble as the walls above; nothing sits on a cut pad. The hillside is grass and stone, so the roofs must stay dark oak and the walls cobble and mossy cobble - dark buildings on a green hill, legible from the far side of the valley. Form is what varies: the hall is wide-span and tall, the row is long and low and repetitive, the barns are open-gabled and cart-high, the byre is half-buried into its bank, the gate and lookout are narrow and mostly wall, the tarn landing is little more than a roof on posts over stone steps. The outshot lean-to appears on most of them along one long side, never the same length or the same side twice.",
+ "centre": "moot_hall",
+ "voice": "drystone_and_thatch",
+ "palette": {
+  "wall": "cobblestone",
+  "footing": "mossy_cobblestone",
+  "frame": "spruce",
+  "roof": "dark_oak",
+  "trim": "stripped_spruce_log"
+ },
+ "circulation_material": "cobblestone",
+ "structures": [
+  {
+   "id": "moot_hall",
+   "kind": "meeting hall and court of the township",
+   "x0": 1586,
+   "z0": -1502,
+   "x1": 1606,
+   "z1": -1488,
+   "notes": "The centre. Sits on the flattest high ground on the upper shelf (mean y 102-103, roughness 8-12) so the whole town sees it above the roofs of the row. Widest span and greatest eaves height of anything here: one big room, deep small openings, single-timber lintels, plain gables north and south. Its outshot lean-to runs the full length of the east side and holds the porch where the lanes from the smithy and the byre arrive. Routes converge here and the court is built around it; leave the ground open on all four sides."
+  },
+  {
+   "id": "hearth_row",
+   "kind": "row of six small houses",
+   "x0": 1568,
+   "z0": -1532,
+   "x1": 1600,
+   "z1": -1522,
+   "notes": "The dwelling row, on the flattest cells in the site (roughness 4-6, y 96-97), 20 blocks north of the hall across the top of the court. Long, low and repetitive: one storey and a loft, six identical bays under one continuous roofline, party walls carried up through the ridge as fire gables. The outshot runs along the south (court-facing) side as a continuous porch, so every door opens onto the same shaded walk."
+  },
+  {
+   "id": "headman_longhouse",
+   "kind": "longhouse of the headman, dwelling one end and stock the other",
+   "x0": 1552,
+   "z0": -1504,
+   "x1": 1572,
+   "z1": -1490,
+   "notes": "West of the hall on ground that falls 9 blocks from east to west (y 97 down to 88). Take that fall in two whole storeys: living end high and to the east facing the court, byre end low and to the west with its own door at the lower level, one long roof over both. Retaining wall of the same cobble under the low end. Outshot on the north side only."
+  },
+  {
+   "id": "bakehouse",
+   "kind": "communal bakehouse and oven",
+   "x0": 1612,
+   "z0": -1532,
+   "x1": 1626,
+   "z1": -1524,
+   "notes": "Small, thick-walled, mostly chimney: the tallest stack in the settlement out of the smallest footprint. Set apart at the north-east corner of the flat ground (roughness 4-7) for fire, with a stone-floored open outshot on the west side where people wait and stack wood. Reads as the opposite of the hall - all mass, one small door."
+  },
+  {
+   "id": "byre_and_hayloft",
+   "kind": "cattle byre with hayloft over",
+   "x0": 1618,
+   "z0": -1518,
+   "x1": 1640,
+   "z1": -1506,
+   "notes": "On the gentle east fall of the upper shelf (y 96 down to 92). Cut the north side into the bank so the loft is loaded at ground level from the high side and the beasts are let out on the low side - the building is entered from two different storeys on opposite walls. Low eaves, very few openings, wide cart door in the east gable. Outshot along the south side as a shelter for the midden."
+  },
+  {
+   "id": "smithy",
+   "kind": "smithy and its charcoal store",
+   "x0": 1622,
+   "z0": -1498,
+   "x1": 1638,
+   "z1": -1486,
+   "notes": "East of the hall on calm ground (roughness 5-12) at the point where the lane from the east shelf enters the town, so the drove traffic reaches it before anything else. Open on the working side: the whole south wall is a deep arcaded outshot with the hearth under it and no door, the enclosed store behind is windowless. Squat, wide, low-eaved."
+  },
+  {
+   "id": "grange_store",
+   "kind": "grain store and grange of the township",
+   "x0": 1540,
+   "z0": -1528,
+   "x1": 1560,
+   "z1": -1516,
+   "notes": "North-west corner of the upper shelf where the ground falls away west (y 92 down to 81). Raised on a battered mossy-cobble plinth stepped in two lifts down the west fall to keep the floor dry and off the ground; blind walls, ventilation slots only, one door reached by external stone steps. Outshot on the east side is a cart shelter, open both ends."
+  },
+  {
+   "id": "west_croft",
+   "kind": "croft house and garth on the west slope",
+   "x0": 1540,
+   "z0": -1482,
+   "x1": 1556,
+   "z1": -1470,
+   "notes": "The westernmost dwelling, on the quiet lower shoulder (y 82-90, roughness 8-16) at the head of the spur that drops to the tarn. Smaller and plainer than the row: single storey, one gable stack, garth wall of the same cobble enclosing the ground on the downhill side. Its outshot faces west toward the fall and shelters the door from the weather coming up the valley."
+  },
+  {
+   "id": "potters_workshop",
+   "kind": "workshop and kiln for the potter",
+   "x0": 1566,
+   "z0": -1478,
+   "x1": 1584,
+   "z1": -1464,
+   "notes": "On the south-west slope below the hall, where the ground climbs 12 blocks across the footprint (y 88 to 100). Take it in two storeys against the hill: drying floor and shed on the upper east side, kiln dug into the bank at the lower west end with a stone flue rising through the roof. Set below the town so smoke drifts away from the row. Outshot along the south side, open, for stacking greenware."
+  },
+  {
+   "id": "south_gate",
+   "kind": "gatehouse at the head of the lane down to the lower terrace",
+   "x0": 1616,
+   "z0": -1466,
+   "x1": 1630,
+   "z1": -1456,
+   "notes": "Deliberately straddles the top of the broken scarp (roughness 17-28) that separates the upper shelf from the farm terrace - this is the one place a building should sit on a break. Narrow, tall, mostly wall: two solid piers with a single deep passage between them, a small chamber over, and cobble retaining wings running out both sides to hold the lane where it starts to fall. Its outshot is a single-pitch shelter on the uphill side where drovers wait."
+  },
+  {
+   "id": "drovers_barn",
+   "kind": "drovers barn and beast shelter on the east shelf",
+   "x0": 1646,
+   "z0": -1478,
+   "x1": 1664,
+   "z1": -1466,
+   "notes": "On the calm east shelf (y 102-110, roughness 12-13) beside the road in from the ridge, so stock coming over the top can be held outside the town overnight. Mostly open: long side facing the lane is an arcade of stone piers under the eaves with the enclosed store only at the north gable. Roof pitched hard against the wind that comes off the ridge; eaves low enough on the exposed east side to touch."
+  },
+  {
+   "id": "ridge_lookout",
+   "kind": "lookout and beacon on the high east shelf",
+   "x0": 1674,
+   "z0": -1458,
+   "x1": 1688,
+   "z1": -1444,
+   "notes": "Highest built thing in the settlement, on the calm shoulder at y 112-115 (roughness 7-14) with the rough ridge beyond it left empty. Tall and small: a battered square tower of cobble with a spruce-framed top storey and one low walled enclosure attached on the north side as its outshot. It is the marker you see first coming in from the east, and the reason the drove road comes this way."
+  },
+  {
+   "id": "sheep_fold",
+   "kind": "walled sheep fold with shepherds shelter",
+   "x0": 1600,
+   "z0": -1436,
+   "x1": 1624,
+   "z1": -1424,
+   "notes": "First thing below the gate on the lower terrace (y 111-112, roughness 8-10). Almost no roof: a large dry cobble enclosure with battered walls chest-high, and a single small roofed shelter built into the north-west corner of the wall itself, its lean-to roof pitched into the enclosure. The most open structure here - it should read as ground and wall rather than building."
+  },
+  {
+   "id": "threshing_barn",
+   "kind": "threshing barn and stackyard for the lower terrace",
+   "x0": 1602,
+   "z0": -1412,
+   "x1": 1626,
+   "z1": -1400,
+   "notes": "The farm building of the lower terrace, on the calmest ground in the site (roughness 4-11) where it falls 5 blocks north to south. Big single volume, cart-high opposed doors in both long walls so the through-draught winnows the floor between them; take the slight fall as one step in the floor level, not a cut pad. Outshot along the west side for implements. Tallest and emptiest interior after the hall, but low-walled and long where the hall is tall and square."
+  },
+  {
+   "id": "spring_house",
+   "kind": "spring house and washing steps over the beck head",
+   "x0": 1568,
+   "z0": -1422,
+   "x1": 1582,
+   "z1": -1410,
+   "notes": "On the mid-west shelf (y 87, roughness 13), the halfway landing on the descent from the crofts to the tarn and the point where the lower terrace lane turns west. Very small and half-sunk: a stone-lined tank roofed with a low dark-oak pitch, three sides walled, the open side giving onto broad cobble steps down to the water channel. Its outshot is the covered washing bench along the south side."
+  },
+  {
+   "id": "tarn_landing",
+   "kind": "boat shed and washhouse at the tarn",
+   "x0": 1548,
+   "z0": -1390,
+   "x1": 1562,
+   "z1": -1380,
+   "notes": "The lowest structure by 25 blocks, at the water's edge in the south-west basin (y 62-63, roughness 11-15). Least enclosed of all: a roof on stone piers over a cobble apron and slipway running into the tarn, with one small closed washhouse at the landward end. Reached by the stepped lane down the west spur from the spring house - the lane needs the whole length of the slope to take the fall, so leave that ground clear."
+  }
+ ],
+ "waves": [
+  [
+   "moot_hall",
+   "hearth_row",
+   "headman_longhouse"
+  ],
+  [
+   "bakehouse",
+   "smithy",
+   "byre_and_hayloft"
+  ],
+  [
+   "grange_store",
+   "west_croft",
+   "potters_workshop"
+  ],
+  [
+   "south_gate",
+   "drovers_barn",
+   "sheep_fold"
+  ],
+  [
+   "ridge_lookout",
+   "threshing_barn"
+  ],
+  [
+   "spring_house",
+   "tarn_landing"
+  ]
+ ]
+}

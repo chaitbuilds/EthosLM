@@ -1,0 +1,194 @@
+{
+ "name": "site_b",
+ "voice": "",
+ "base_volume": "world.npz",
+ "flags": {
+  "sight": false,
+  "split": true,
+  "select": 0,
+  "spaces": false,
+  "arm": "selection",
+  "allow_try": true
+ },
+ "waves": [
+  {
+   "name": "wave1",
+   "massing_brief": "arm_wave1_massing_prompt.md",
+   "elaboration_brief": "arm_wave1_elaborate_prompt.md"
+  }
+ ],
+ "candidates": {
+  "wave": "wave1",
+  "arm": "selection",
+  "k": 4,
+  "max_bounces": 1,
+  "plots": [
+   "moot_hall",
+   "court_wellhouse"
+  ],
+  "out": "selection",
+  "shots": {
+   "geometry": "STEP3",
+   "margin": 8,
+   "cy": 76,
+   "door": "moot_hall",
+   "spp": 40,
+   "size": [
+    900,
+    560
+   ],
+   "prefix": "sel",
+   "scene_prefix": "r7_",
+   "verify_samples": 40,
+   "verify_max_bad": 2,
+   "snapshot": "selection.before"
+  },
+  "measures": {
+   "variety_margin": 6
+  },
+  "human_look": {
+   "seed": 4
+  }
+ },
+ "cards": [
+  {
+   "name": "selection",
+   "frames": "out/site_b/selection/frames",
+   "out": "out/site_b/selection",
+   "layout": "quad",
+   "size": [
+    900,
+    560
+   ],
+   "strict": true,
+   "blank_keys": [],
+   "tags": [
+    "sel_c0",
+    "sel_c1",
+    "sel_c2",
+    "sel_c3"
+   ]
+  }
+ ],
+ "judgements": [
+  {
+   "name": "selection_rr",
+   "stage_name": "selection",
+   "score": "winners",
+   "question": "Which of these two buildings is better made? A or B, one sentence.",
+   "pairs": [
+    {
+     "label": "c0_vs_c1",
+     "a": "out/site_b/selection/sel_c0_card.png",
+     "b": "out/site_b/selection/sel_c1_card.png"
+    },
+    {
+     "label": "c0_vs_c2",
+     "a": "out/site_b/selection/sel_c0_card.png",
+     "b": "out/site_b/selection/sel_c2_card.png"
+    },
+    {
+     "label": "c0_vs_c3",
+     "a": "out/site_b/selection/sel_c0_card.png",
+     "b": "out/site_b/selection/sel_c3_card.png"
+    },
+    {
+     "label": "c1_vs_c2",
+     "a": "out/site_b/selection/sel_c1_card.png",
+     "b": "out/site_b/selection/sel_c2_card.png"
+    },
+    {
+     "label": "c1_vs_c3",
+     "a": "out/site_b/selection/sel_c1_card.png",
+     "b": "out/site_b/selection/sel_c3_card.png"
+    },
+    {
+     "label": "c2_vs_c3",
+     "a": "out/site_b/selection/sel_c2_card.png",
+     "b": "out/site_b/selection/sel_c3_card.png"
+    }
+   ]
+  }
+ ],
+ "preregistered": {
+  "question": "Does generating k candidates from one brief and picking one with the judge produce a better building than generating one? Stage 1 asks the prior question the spec leads with: can the judge tell same-brief siblings apart at all?",
+  "subject": {
+   "fixture": "moot_hall and court_wellhouse",
+   "site": "out/site_b, plots.json and network.json as they stand",
+   "base_volume": "the volume its wave-1 dry run recorded against)",
+   "brief": "out/site_b/arm_wave1_massing_prompt.md and out/site_b/arm_wave1_elaborate_prompt.md -- byte-identical to the briefs step 3's five arms were built from, unmodified",
+   "flags": "split only (sight=false, select=0, spaces=false). split is the arm step 3 measured as better at wave scale. select=0 is deliberate: adaptive-k inside a candidate would put a second, different selection mechanism inside the thing being measured.",
+   "k": 4,
+   "independence": "each candidate is its own stages.run over its own builds directory; no candidate sees another, and no builder is told it is one of several or that anything will be compared. The experiment is void if a builder is told."
+  },
+  "stage1": {
+   "what": "all six sibling pairs judged round-robin, blinded and position-swapped -- 12 model calls. Round-robin rather than single-elimination because the extra pairs are the data.",
+   "headline": "tie_rate = ties / 6 over the round-robin",
+   "tie_rate_bar": 0.5,
+   "bar": "tie_rate >= 0.50 (3 or more of 6 pairs tied) means the judge cannot separate work from one brief, SELECTION IS NOT AVAILABLE AS A LEVER, and the experiment stops at stage 1 and is written up as that negative. tie_rate < 0.50 means it discriminates and stage 2 runs.",
+   "calibration_not_a_bar": "the judge's measured tie rates elsewhere: E1a 15%, E1d 23%, step 4 21%, E3 arrangement 0%, E-craft craft 0%. Step 3's four ground-truth arm pairs on this exact fixture, this exact question and this exact card geometry were 4/4 decisive with zero ties.",
+   "cards": {
+    "geometry": "render.STEP3 over the wave-1 region (both plots plus 8 blocks of margin), four panels: eye-level at the moot hall's reserved threshold, close three-quarters from NE and SW, one NE aerial; composed by card.compose as a quad, strict.",
+    "why_this_framing": "it is the framing whose tie rate on this fixture is already measured at 0/4, so a high tie rate here cannot be blamed on the camera. It frames the wave's built mass rather than the terrain -- which is the defect that made step 3's grey massing selection tie -- and it renders at ground truth in Chunky rather than in the preview.",
+    "repair": "cameras are sight-checked per candidate against that candidate's own applied volume (render.Sightline, the site_c repair). A check that does not fire changes nothing; where it fires it is recorded per shot, and the fact that a camera may move for one candidate and not another is a registered confound."
+   }
+  },
+  "winner_rule": {
+   "registered_before": "any judgement was made",
+   "scoring": "Copeland over the six pairs: a decisive win scores 1, a tie 0.5, a loss 0.",
+   "winner": "highest total. Ties in the total are broken (a) by the head-to-head result between the tied candidates if it is decisive and, for three or more, transitive; otherwise (b) by lowest candidate index -- the same deterministic earlier-listed-wins rule judge.py's bracket uses, and it is recorded as a tie-break rather than a preference."
+  },
+  "stage2": {
+   "when": "only if stage 1 discriminates",
+   "computed_before_any_verdict_is_read": true,
+   "measures": {
+    "lint_errors": {
+     "direction": "lower is better",
+     "what": "whole-region lint error count over the candidate applied to the base volume, plus counts by code and whether it is zero"
+    },
+    "walk_pct": {
+     "direction": "higher is better",
+     "what": "room-floor stances on the wave's two plots reachable by Nav.flood(perimeter_seeds(inset=2, step=3), max_jumps=0) -- walking only, from outdoors, as scripts/walk_fraction.py measures a town and scripts/walkcheck_round8.py measures a wave in isolation"
+    },
+    "variety_ridge_cv": {
+     "direction": "higher is better",
+     "what": "variety.measure's ridge_height coefficient of variation across the wave's structures -- how differentiated the hall and the wellhouse are from each other"
+    },
+    "blocks": {
+     "direction": "none registered",
+     "what": "pending block count; descriptive only, because more blocks is not better"
+    }
+   },
+   "convergent_validity": {
+    "rank": "candidates are ranked on each directed measure, average ranks on ties",
+    "above_median": "average rank < 2.5 of 4; below median is > 2.5; exactly 2.5 is neither",
+    "reading": "the winner above median on >= 2 of the 3 directed measures is CONVERGENT -- selection is picking buildings that are also better by instruments that never saw an image. Below median on >= 2 of 3 is GOODHART -- the judge is picking photogenic buildings over sound ones, which is the single most valuable thing this experiment can find; it is to be reported and not explained away. Anything else is INCONCLUSIVE on convergent validity and is reported as that."
+   },
+   "human_look": {
+    "what": "the winner beside a seeded-random non-winner sibling, rendered identically, shown blind",
+    "seed": 4,
+    "rng": "np.random.default_rng(4) draws the sibling from the three non-winners and assigns the A/B sides; the key is withheld to a separate file",
+    "who": "a person. No model may answer it -- this is the ground truth and it is the only part of the experiment the judge does not touch. If no person has answered when the round is written up, it is reported as outstanding, not as a result."
+   }
+  },
+  "outcomes": {
+   "high_tie_rate": "the judge grades but cannot steer. Selection is dead as a lever and the generator has to improve some other way -- brief, library or references. A major negative result, and it must not be softened.",
+   "discriminates_and_convergent": "selection works and is trustworthy: a quality lever that scales with compute, and the district test becomes instanced types plus selection.",
+   "discriminates_and_goodhart": "the judge is picking photogenic buildings over sound ones -- a Goodhart failure at the centre of the architecture. Report it and stop."
+  },
+  "confounds_registered_in_advance": [
+   "n=1 per candidate: four samples of one brief on one fixture. The tie rate is over six pairs and its interval is wide; the Wilson 95% interval is reported alongside it and no bar is moved for it.",
+   "a difference against step 3's numbers may partly be the model.",
+   "no lint-findings revision loop. Absolute lint counts here are first-draft counts and are\nonly ever compared between candidates.",
+   "variety spread is computed over two structures, which is a weak statistic; it is reported with that stated and it is one of three measures, not the reading.",
+   "sight-checked cameras may move for one candidate and not another; every shot records whether the check fired.",
+   "the spec budgets 4 builder calls; split needs a massing call and an elaboration call per candidate, so this costs 8. That is a cost deviation, not a design change: the alternative -- holding one massing constant and varying only elaboration -- would make the siblings share a silhouette and bias the headline tie rate upward, toward the negative outcome."
+  ],
+  "rules_held": [
+   "the standing settlements are not touched: the live world is verified against the built cache, snapshotted, the wave-1 region reset to pre-build from the cache diff, each candidate written and then reverted cell by cell, and the town restored from the same diff",
+   "no lint check and no primitive is added; both suites are frozen",
+   "judge.py's blinding, swapping and cache semantics are unchanged",
+   "the round runs from this config through scripts/round.py; the stages it needed are in the driver, not in a new script"
+  ]
+ }
+}

@@ -1,0 +1,50 @@
+{
+ "name": "site_b",
+ "flags": {
+  "max_bounces": 0
+ },
+ "types": {
+  "out": "types_e",
+  "arm": "types_e",
+  "check_fixtures": [
+   {
+    "round": "site_e",
+    "plot": "fold_barn"
+   },
+   {
+    "round": "site_d",
+    "plot": "south_gate"
+   },
+   {
+    "round": "site_d",
+    "plot": "tarn_landing"
+   },
+   {
+    "round": "site_b",
+    "plot": "court_wellhouse"
+   },
+   {
+    "round": "site_b",
+    "plot": "east_row"
+   },
+   {
+    "round": "site_e",
+    "plot": "boat_landing"
+   }
+  ],
+  "check_seeds": [
+   1,
+   2
+  ],
+  "list": [
+   {
+    "name": "cottage",
+    "file": "types/cottage.py",
+    "voice": "drystone_and_thatch",
+    "part": "plot",
+    "kind": "a cottage",
+    "request": "Revise the supplied cottage. Preserve STYLE, PARAMS and NEEDS, and its cottage character. Repair the stair and on-foot findings on the added short-axis slope as well as checking the existing ground. Run check.py on the final program and write done. Do not edit library code or any other type."
+   }
+  ]
+ }
+}

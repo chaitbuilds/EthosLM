@@ -1,0 +1,179 @@
+{
+ "name": "site_b",
+ "voice": "",
+ "base_volume": "world.npz",
+ "flags": {
+  "sight": false,
+  "split": false,
+  "select": 0,
+  "spaces": false,
+  "max_bounces": 1
+ },
+ "types": {
+  "out": "types_b",
+  "arm": "types_b",
+  "check_fixtures": [
+   {
+    "round": "site_e",
+    "plot": "fold_barn",
+    "rule": "driest_flat",
+    "columns": 285,
+    "relief": 2,
+    "water_pct": 0.0
+   },
+   {
+    "round": "site_d",
+    "plot": "south_gate",
+    "rule": "most_relief",
+    "columns": 165,
+    "relief": 21,
+    "water_pct": 0.0
+   },
+   {
+    "round": "site_d",
+    "plot": "tarn_landing",
+    "rule": "wettest",
+    "columns": 180,
+    "relief": 2,
+    "water_pct": 99.4
+   },
+   {
+    "round": "site_b",
+    "plot": "court_wellhouse",
+    "rule": "smallest",
+    "columns": 64,
+    "relief": 2,
+    "water_pct": 0.0
+   }
+  ],
+  "check_seeds": [
+   1,
+   2
+  ],
+  "check_parts": [
+   {
+    "round": "site_b",
+    "kind": "edge",
+    "part": "wall_L",
+    "path": [
+     [
+      1585,
+      -610
+     ],
+     [
+      1604,
+      -610
+     ],
+     [
+      1604,
+      -590
+     ]
+    ],
+    "width": 1,
+    "rule": "edge_least_relief",
+    "relief": 1
+   },
+   {
+    "round": "site_b",
+    "kind": "point",
+    "part": "lane_end",
+    "at": [
+     1631,
+     -689
+    ],
+    "facing": "west",
+    "size": 5,
+    "rule": "point_lane_end"
+   },
+   {
+    "round": "site_b",
+    "kind": "area",
+    "part": "square",
+    "x0": 1585,
+    "z0": -617,
+    "x1": 1596,
+    "z1": -606,
+    "rule": "area_flattest",
+    "relief": 1
+   }
+  ],
+  "check_part_seeds": [
+   1,
+   2,
+   3,
+   4
+  ],
+  "list": [
+   {
+    "name": "wall",
+    "part": "edge",
+    "file": "types/wall.py",
+    "voice": "white_render_dark_frame",
+    "kind": "a town wall",
+    "request": "Write `types/wall.py`: `build(b, part, seed, **params)` builds a town wall along the edge you are given -- three high plus a walkway with a parapet on top of it, steps down to the ground every 24 cells, and joined at the corners so a person can walk the whole length without stopping. Declare `KIND = \"edge\"`, and `PARAMS` for two things of your own choosing that a plan might reasonably want to vary. Different seeds have to give a different wall. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "gate_tower",
+    "part": "point",
+    "file": "types/gate_tower.py",
+    "voice": "white_render_dark_frame",
+    "kind": "a gatehouse",
+    "request": "Write `types/gate_tower.py`: `build(b, part, seed, **params)` builds a gatehouse at the cell you are given -- a walkable arch three wide through it along the way it faces, a room over the arch, and a stair from the ground up to the height a wall walk would be at. Declare `KIND = \"point\"` and `PASSAGE = True`, because a lane may cross a wall here and nowhere else, and `PARAMS` for two things of your own choosing. Different seeds have to give a different gatehouse. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "square",
+    "part": "area",
+    "file": "types/square.py",
+    "voice": "white_render_dark_frame",
+    "kind": "a market square",
+    "request": "Write `types/square.py`: `build(b, part, seed, **params)` builds a paved market square on the rectangle you are given -- a well, four stalls, and open to the lanes on all sides, so a person can walk in and out of it from every edge. Declare `KIND = \"area\"`, and `PARAMS` for two things of your own choosing. Different seeds have to give a different square. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "townhouse",
+    "part": "plot",
+    "file": "types/townhouse.py",
+    "voice": "white_render_dark_frame",
+    "kind": "a town house",
+    "request": "Write `types/townhouse.py`: `build(b, part, seed, **params)` builds a two- or three-storey town house with a jettied upper storey, in the voice, different every time the seed changes, with `PARAMS` for `storeys` and `jetty_side`. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "workshop",
+    "part": "plot",
+    "file": "types/workshop.py",
+    "voice": "white_render_dark_frame",
+    "kind": "a workshop",
+    "request": "Write `types/workshop.py`: `build(b, part, seed, **params)` builds a single-storey workshop with a yard wall and a wide door, in the voice, different every time the seed changes, with `PARAMS` for `yard_side` and one more of your own choosing. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "hall",
+    "part": "plot",
+    "file": "types/hall.py",
+    "voice": "white_render_dark_frame",
+    "kind": "a hall",
+    "request": "Write `types/hall.py`: `build(b, part, seed, **params)` builds a two-storey hall with a porch and a dormer, in the voice, different every time the seed changes, with `PARAMS` for `dormers` and one more of your own choosing. Run `check.py` until every instance is clean."
+   }
+  ]
+ },
+ "preregistered": {
+  "walk_model": 5,
+  "registered_here_before_a_builder_was_called": true,
+  "bars": {
+   "instances_lint_zero": {
+    "bar": ">= 7 of 8",
+    "note": "four fixtures x two seeds for a plot type, one fixture x four seeds for an edge, a point\nor an area, which is four -- clean on >= 7 of 8, per type. For a four-instance type the\nsame sentence is >= 3 of 4: at most one instance may fail. Read off each type's own\ncheck run and recorded in out/site_b/types_b/check.json."
+   }
+  },
+  "reported_no_bar": {
+   "held_back_fixtures": "each plot type re-run on `east_row` (the largest plot in the three rounds, 432 columns) and `boat_landing` (a shoreline), which its checker never ran on. Reported, never fitted to: a type is checked on four pieces of ground and read on six.",
+   "check_runs": "check runs per type, from the check_run rows on out/measurements.jsonl",
+   "lines": "program lines per type",
+   "declared": "each type's KIND, PARAMS and PASSAGE as committed"
+  },
+  "independence": "each type is one builder call, staged through _blind_build into a hash-named scratch directory holding brief.md, check.py and nothing else. No builder is told that other types exist, that anything is compared, what is measured, or that a district is being built out of what it writes.",
+  "rules_held": [
+   "nothing beyond the six types; no village here; no judge call; no new lint check in the frozen suite",
+   "the standing settlements are not touched: the backend is offline and nothing is written",
+   "no bar is moved; a miss is reported as a miss"
+  ]
+ }
+}

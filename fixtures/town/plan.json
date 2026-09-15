@@ -1,0 +1,1257 @@
+{
+ "intent": "A walled town of about sixty houses on the dry western shelf of this basin, laid out around a levelled market square with the keep set just east of it. The ground chosen for it is the broad flat run of grass between x -254 and -140 where the relief stays under about fifteen blocks; the wall keeps to that good ground and steps out eastward only where the shelf continues flat, at z 122 to 214, and steps out again in a small bastion at the southwest, so the circuit never has to climb a face it cannot hold. The town is entered by one gate, on the north wall, and everything hangs off the single straight approach from that gate south to the market square: the two northern yards flank it, the market opens at the end of it, the keep stands beside the market where it can watch both. The place should read as one dark mass on a pale hillside -- coursed blackstone walls, deepslate roofs pitched tight with no overhang, pale ash-bleached birch only at the openings and the eaves, so every window is a bright cut in a dark wall. Buildings sit into the slope on their uphill side rather than perching on cut pads. What varies between them is form driven by use, never material: the wards nearest the gate and the square are dense and tall-fronted, the outer wards are lower and looser, the east ward beyond the market is workshops with yards. Nothing here is timber-framed pale; the hillside is grass and sand and the town must not be.",
+ "centre": "market_square",
+ "voice": "blackstone_and_ash",
+ "palette": {
+  "wall": "blackstone",
+  "trim": "polished_blackstone_brick",
+  "roof": "deepslate_tile",
+  "frame": "stripped_birch_log",
+  "footing": "basalt"
+ },
+ "circulation_material": "polished_blackstone",
+ "sentence": "Build a walled town of about sixty houses with a market square and a keep.",
+ "levels": {
+  "place": 4,
+  "districts": {
+   "north_west_yards": 10,
+   "north_east_yards": 10,
+   "market_north_row": 3,
+   "east_ward_upper": 2,
+   "residential_district": 15,
+   "south_ward": 8,
+   "south_east_ward": 6,
+   "east_bastion_ward": 5
+  }
+ },
+ "renamed": {
+  "north_west_yards_gate_smithy": {
+   "was": "gate_smithy",
+   "district": "north_west_yards"
+  },
+  "north_east_yards_gate_smithy": {
+   "was": "gate_smithy",
+   "district": "north_east_yards"
+  },
+  "north_east_yards_west_cottage_upper": {
+   "was": "west_cottage_upper",
+   "district": "north_east_yards"
+  },
+  "north_east_yards_east_cottage_upper": {
+   "was": "east_cottage_upper",
+   "district": "north_east_yards"
+  },
+  "south_ward_moot_hall": {
+   "was": "moot_hall",
+   "district": "south_ward"
+  },
+  "south_ward_west_cottage_upper": {
+   "was": "west_cottage_upper",
+   "district": "south_ward"
+  },
+  "south_ward_east_cottage_upper": {
+   "was": "east_cottage_upper",
+   "district": "south_ward"
+  },
+  "east_bastion_ward_moot_hall": {
+   "was": "moot_hall",
+   "district": "east_bastion_ward"
+  }
+ },
+ "parts": [
+  {
+   "kind": "district",
+   "name": "town_5",
+   "notes": "A walled town of about sixty houses on the dry western shelf of this basin, laid out around a levelled market square with the keep set just east of it. The ground chosen for it is the broad flat run o",
+   "children": [
+    {
+     "kind": "quarter",
+     "name": "defining",
+     "notes": "the parts the sentence named: what makes this place that place",
+     "children": [
+      {
+       "kind": "edge",
+       "name": "town_wall",
+       "type": "wall",
+       "seed": 1,
+       "params": {
+        "height": 5,
+        "parapet": "crenellated"
+       },
+       "path": [
+        [
+         -250,
+         8
+        ],
+        [
+         -140,
+         8
+        ],
+        [
+         -140,
+         100
+        ],
+        [
+         -106,
+         100
+        ],
+        [
+         -106,
+         122
+        ],
+        [
+         -72,
+         122
+        ],
+        [
+         -72,
+         214
+        ],
+        [
+         -106,
+         214
+        ],
+        [
+         -106,
+         244
+        ],
+        [
+         -216,
+         244
+        ],
+        [
+         -216,
+         252
+        ],
+        [
+         -250,
+         252
+        ],
+        [
+         -250,
+         160
+        ],
+        [
+         -254,
+         160
+        ],
+        [
+         -254,
+         60
+        ],
+        [
+         -250,
+         60
+        ],
+        [
+         -250,
+         8
+        ]
+       ],
+       "width": 1,
+       "notes": "One closed circuit, every run along x or z and none longer than 110 blocks. It follows the flat shelf rather than a tidy rectangle: the north half stays west of x -140 because the ground east of that between z 0 and 92 breaks into faces of 26 to 39 blocks of relief and no wall would sit on it; from z 100 the circuit steps east to x -106 where the ground under columns x -132 to -102 runs at 7 to 12 of relief for the whole height of the town; between z 122 and 214 it steps east again to x -72 to take in the flattest ground on the whole site (4 to 17 of relief) as the east ward. On the west the wall runs at x -250 top and bottom and bulges four blocks to x -254 between z 60 and 160 to skirt the steeper lip at the southwest of column 0. The small step out to z 252 between x -250 and -216 is the southwest bastion, ground kept clear inside the wall."
+      },
+      {
+       "kind": "point",
+       "name": "town_gate",
+       "type": "gate_tower",
+       "seed": 2,
+       "params": {
+        "crown": "hip",
+        "storeys": 3
+       },
+       "at": [
+        -196,
+        8
+       ],
+       "facing": "north",
+       "notes": "Stands on the north wall run (z 8, x -250 to -140), the only opening in the circuit. You come in from the north onto the flattest ground in the whole enclosure and go straight south down the spine between the two north yards to the market square. Its passage is the one place the wall is cut, so it carries the height the wall does not."
+      },
+      {
+       "kind": "area",
+       "name": "market_square",
+       "type": "square",
+       "seed": 3,
+       "params": {
+        "canopy": "hip",
+        "paving": "banded"
+       },
+       "x0": -190,
+       "z0": 140,
+       "x1": -169,
+       "z1": 161,
+       "notes": "22 by 22 on the levelled plateau, set at the middle of the enclosure and at the foot of the straight run down from the gate. Banded paving laid across the approach so the axis reads from the gate. Every ward touches a lane that ends here."
+      },
+      {
+       "kind": "plot",
+       "name": "keep",
+       "type": "keep",
+       "seed": 4,
+       "params": {
+        "plan": "hall_and_tower",
+        "storeys": 3
+       },
+       "x0": -159,
+       "z0": 145,
+       "x1": -150,
+       "z1": 154,
+       "notes": "10 by 10, nine blocks of open ground east of the square, beside the centre rather than in it, so the square stays a room and the keep stands against its east side. It sits on the rise between columns x -163 and -133, sunk a storey on its uphill side, and it looks down both the gate approach and the east ward."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "north_west_yards_gate_yards",
+     "notes": "The four plots that meet the gate. Densest and most regular of the three, because they frame the first thing anyone sees coming in from the north; the eastmost of them fronts the approach itself and takes the workshop, so the noisy trade sits at the ward edge and not among the houses.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "gate_croft_west",
+       "type": "cottage",
+       "seed": 3,
+       "params": {
+        "outshot": "byre",
+        "storeys": 2
+       },
+       "x0": -245,
+       "z0": 13,
+       "x1": -234,
+       "z1": 24,
+       "notes": "House and byre in the northwest corner of the ward, five blocks clear of the west wall run. Ground here is flat within a couple of blocks, so it sits shallow with only the west gable dug in."
+      },
+      {
+       "kind": "plot",
+       "name": "gate_croft_mid",
+       "type": "minka",
+       "seed": 2,
+       "params": {
+        "plan": "outshot",
+        "storeys": 2
+       },
+       "x0": -228,
+       "z0": 13,
+       "x1": -218,
+       "z1": 23,
+       "notes": "A long low house with its outshot on the lane side, holding the middle of the top row. Slightly smaller than its neighbours so the lane between the two north crofts widens a little as it runs east."
+      },
+      {
+       "kind": "plot",
+       "name": "north_west_yards_gate_smithy",
+       "type": "workshop",
+       "seed": 11,
+       "params": {
+        "storeys": 1,
+        "trade": "smithy",
+        "yard_side": "north"
+       },
+       "x0": -211,
+       "z0": 13,
+       "x1": -200,
+       "z1": 24,
+       "notes": "Smithy fronting the west side of the gate approach, its working yard thrown north toward the wall so hammering carries out of the town rather than down the spine to the market."
+      },
+      {
+       "kind": "plot",
+       "name": "gate_croft_south",
+       "type": "cottage",
+       "seed": 5,
+       "params": {
+        "outshot": "store",
+        "storeys": 2
+       },
+       "x0": -245,
+       "z0": 31,
+       "x1": -234,
+       "z1": 42,
+       "notes": "Second croft down the west lane, store attached on its uphill north side. The tall slit window falls on its east wall so it reads from the cross lane."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "north_west_yards_middle_yards",
+     "notes": "The body of the ward, four plots strung along the two north-south lanes at the widest part of the district. Houses set back with room for gardens between them; one joinery among them where the ward is deepest and furthest from both the wall and the approach.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "west_lane_croft",
+       "type": "cottage",
+       "seed": 7,
+       "params": {
+        "outshot": "scullery",
+        "storeys": 1
+       },
+       "x0": -245,
+       "z0": 49,
+       "x1": -234,
+       "z1": 60,
+       "notes": "Single-storey croft on the west lane, the lowest building in the ward. It sits into the slight lift of ground toward the west wall, sunk on that side so its eaves stay level with its neighbours to the north."
+      },
+      {
+       "kind": "plot",
+       "name": "middle_joinery",
+       "type": "workshop",
+       "seed": 12,
+       "params": {
+        "storeys": 1,
+        "trade": "joinery",
+        "yard_side": "west"
+       },
+       "x0": -228,
+       "z0": 49,
+       "x1": -217,
+       "z1": 60,
+       "notes": "Joinery at the centre of the ward with its timber yard opening west onto the cross lane, so stock can be dragged in without crossing the approach."
+      },
+      {
+       "kind": "plot",
+       "name": "east_lane_croft",
+       "type": "cottage",
+       "seed": 4,
+       "params": {
+        "outshot": "byre",
+        "storeys": 2
+       },
+       "x0": -211,
+       "z0": 49,
+       "x1": -200,
+       "z1": 60,
+       "notes": "Croft on the east lane, gable end to the approach so the run of dark wall faces the spine and the byre is hidden behind it."
+      },
+      {
+       "kind": "plot",
+       "name": "middle_croft_south",
+       "type": "cottage",
+       "seed": 6,
+       "params": {
+        "outshot": "store",
+        "storeys": 2
+       },
+       "x0": -228,
+       "z0": 67,
+       "x1": -217,
+       "z1": 78,
+       "notes": "The one plot in its row, set on the middle lane with open yard either side. Ground falls a little to the south here, so it is dug in on its north face and steps down to the door."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "north_west_yards_south_crofts",
+     "notes": "The loosest end of the ward, two houses only, well apart on either side, with the ten-block strip between them and the market row left as open croft ground. This is where the district thins out before the lane crosses into the north row of the market.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "south_croft_west",
+       "type": "minka",
+       "seed": 21,
+       "params": {
+        "plan": "wing",
+        "storeys": 1
+       },
+       "x0": -245,
+       "z0": 85,
+       "x1": -235,
+       "z1": 95,
+       "notes": "Low winged house at the southwest corner of the ward, its wing turned to make a sheltered yard on the lane side. Single storey, sunk half a storey on its north."
+      },
+      {
+       "kind": "plot",
+       "name": "south_croft_east",
+       "type": "minka",
+       "seed": 22,
+       "params": {
+        "plan": "hall",
+        "storeys": 2
+       },
+       "x0": -211,
+       "z0": 85,
+       "x1": -201,
+       "z1": 95,
+       "notes": "Two-storey hall house closing the ward on the approach side, the last dark front before the lane runs out to the market north row. Its slit window runs the full height of the south wall."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "north_east_yards_gate_front",
+     "notes": "The three buildings that address the gate and the first stretch of the spine -- tall narrow fronts on the approach, and a smithy on the back lane where the passing feet turn in.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "spine_house_north",
+       "type": "townhouse",
+       "seed": 11,
+       "params": {
+        "jetty_side": "street",
+        "storeys": 3
+       },
+       "x0": -191,
+       "z0": 13,
+       "x1": -177,
+       "z1": 27,
+       "notes": "The first front you see coming through the gate: three storeys, gable end and slit window to the approach, jettied over the lane on the west. Sits into the shallow northward fall on its z-13 side."
+      },
+      {
+       "kind": "plot",
+       "name": "spine_house_middle",
+       "type": "townhouse",
+       "seed": 12,
+       "params": {
+        "jetty_side": "left",
+        "storeys": 2
+       },
+       "x0": -191,
+       "z0": 33,
+       "x1": -177,
+       "z1": 47,
+       "notes": "Second of the approach fronts, a storey lower so the run steps down as the ground does. Jetty only on its north flank, keeping the lane edge to the approach flat and unbroken."
+      },
+      {
+       "kind": "plot",
+       "name": "north_east_yards_gate_smithy",
+       "type": "workshop",
+       "seed": 31,
+       "params": {
+        "storeys": 1,
+        "trade": "smithy",
+        "yard_side": "east"
+       },
+       "x0": -165,
+       "z0": 13,
+       "x1": -153,
+       "z1": 25,
+       "notes": "Single-storey smithy on the back lane, its yard opening east onto the clear strip inside the wall so smoke and stacked iron stay off the gate approach."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "north_east_yards_ward_heart",
+     "notes": "The middle of the ward: the moot hall on the back lane with a house opposite and a pottery below it, the one place where the ward has a room of its own rather than a frontage.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "ward_moot_hall",
+       "type": "hall",
+       "seed": 41,
+       "params": {
+        "dormers": 2,
+        "use": "moot"
+       },
+       "x0": -165,
+       "z0": 31,
+       "x1": -149,
+       "z1": 47,
+       "notes": "17 by 17 moot hall, the widest span in the ward and the only building with dormers. Set back off the spine on the back lane so its long blank east wall carries the tall slit window against the open ground before the wall."
+      },
+      {
+       "kind": "plot",
+       "name": "spine_house_south",
+       "type": "townhouse",
+       "seed": 13,
+       "params": {
+        "jetty_side": "both",
+        "storeys": 3
+       },
+       "x0": -191,
+       "z0": 53,
+       "x1": -177,
+       "z1": 67,
+       "notes": "Last of the tall fronts, jettied both flanks so the lane narrows at the shoulder and the approach reads as a street rather than a field edge. Sunk a storey on its uphill west side."
+      },
+      {
+       "kind": "plot",
+       "name": "back_lane_pottery",
+       "type": "workshop",
+       "seed": 32,
+       "params": {
+        "storeys": 1,
+        "trade": "pottery",
+        "yard_side": "north"
+       },
+       "x0": -165,
+       "z0": 53,
+       "x1": -154,
+       "z1": 64,
+       "notes": "Pottery facing its drying yard north into the hall's shadow, low and long, holding the east side of the back lane where the ground is flattest."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "north_east_yards_back_yards",
+     "notes": "The looser southern tail of the ward, four cottages with working yards between them, dropping in height as the ground runs down toward the market rows.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "north_east_yards_west_cottage_upper",
+       "type": "cottage",
+       "seed": 21,
+       "params": {
+        "outshot": "byre",
+        "storeys": 2
+       },
+       "x0": -191,
+       "z0": 73,
+       "x1": -179,
+       "z1": 85,
+       "notes": "Two-storey cottage with a byre outshot, set gable-on to the approach so the tall street wall of the north half breaks up into gaps here."
+      },
+      {
+       "kind": "plot",
+       "name": "west_cottage_lower",
+       "type": "cottage",
+       "seed": 22,
+       "params": {
+        "outshot": "scullery",
+        "storeys": 1
+       },
+       "x0": -191,
+       "z0": 91,
+       "x1": -183,
+       "z1": 99,
+       "notes": "The smallest plot in the ward and the lowest, a single-storey cottage closing the south-west corner where the ward hands over to the market rows."
+      },
+      {
+       "kind": "plot",
+       "name": "north_east_yards_east_cottage_upper",
+       "type": "cottage",
+       "seed": 23,
+       "params": {
+        "outshot": "store",
+        "storeys": 2
+       },
+       "x0": -165,
+       "z0": 70,
+       "x1": -154,
+       "z1": 81,
+       "notes": "Back-lane cottage with a store outshot, dug into the low rise on its east side so the lane passes at first-floor sill height."
+      },
+      {
+       "kind": "plot",
+       "name": "east_cottage_lower",
+       "type": "cottage",
+       "seed": 24,
+       "params": {
+        "outshot": "byre",
+        "storeys": 1
+       },
+       "x0": -165,
+       "z0": 87,
+       "x1": -153,
+       "z1": 99,
+       "notes": "The south-east corner house, long and low with a byre against the wall side, its slit window cut in the south wall toward the market rows."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "market_north_row_square_frontage",
+     "notes": "The two public houses that make the north wall of the market square. Both put their long front to the south, five blocks of open ground and then the market's north lane.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "north_row_west_house",
+       "type": "townhouse",
+       "seed": 3,
+       "params": {
+        "jetty_side": "street",
+        "storeys": 3
+       },
+       "x0": -195,
+       "z0": 120,
+       "x1": -181,
+       "z1": 134,
+       "notes": "The western of the two frontage houses, three storeys and the tallest thing on this side of the square, standing at the corner where the lane down from the north-west yards meets the market's north lane. Ground here runs flat and low, so it is sunk a storey on its north (uphill) side and the trade floor opens level onto the frontage; the slit window is cut in the west return where it is read from the residential lane."
+      },
+      {
+       "kind": "plot",
+       "name": "north_row_east_house",
+       "type": "townhouse",
+       "seed": 8,
+       "params": {
+        "jetty_side": "both",
+        "storeys": 2
+       },
+       "x0": -175,
+       "z0": 120,
+       "x1": -161,
+       "z1": 134,
+       "notes": "The eastern frontage house, two storeys and jettied both sides so the row steps down from its west neighbour rather than repeating it. It stands square on the gate axis where the straight run from the north gate arrives at the square, and its slit window runs the height of the south front so the axis ends on a bright cut in a dark wall."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "market_north_row_row_end",
+     "notes": "The working end of the row, where the public frontage gives out and the ward turns toward the east ward workshops. Lower and narrower than the two houses, so the row reads as a fall rather than a repeat.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "north_row_joiner",
+       "type": "workshop",
+       "seed": 5,
+       "params": {
+        "storeys": 1,
+        "trade": "joinery",
+        "yard_side": "north"
+       },
+       "x0": -155,
+       "z0": 121,
+       "x1": -148,
+       "z1": 134,
+       "notes": "A single-storey joinery closing the east end of the row, narrow-fronted to the square and long back into the block, with its yard opening north onto the back lane and away from the public frontage. It sits on the rise toward the keep, so it is cut a storey into its uphill north end and its floor stays level with the square; the tall slit is in the deep east wall lighting the bench."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "east_ward_upper_granary_side",
+     "notes": "The west half of the ward: the town's grain under one roof, longest axis north-south so the gable ends take the cross-slope and the flank faces the loading lane. Its ground falls away in the southwest where the relief runs to about 23, so the building is sunk on that uphill flank rather than pad-cut.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "town_granary",
+       "type": "hall",
+       "seed": 17,
+       "params": {
+        "dormers": 2,
+        "use": "refectory"
+       },
+       "x0": -142,
+       "z0": 106,
+       "x1": -130,
+       "z1": 131,
+       "notes": "13 by 26, a single tall unbroken span with the ridge running north-south. It sits into the rise on its southwest corner, sunk a storey there so the floor comes out level with the lane at the north end where the carts arrive. Blackstone coursed to the eaves, deepslate hipped tight with no overhang, and the signature slit window runs almost the full height of the north gable wall so the interior gets one bright cut of light and nothing else -- grain wants dark. Dormers on the lane flank only, for the hoist."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "east_ward_upper_store_yard",
+     "notes": "The east half: the covered store and its working yard, opening west onto the shared lane so the two buildings work as one loading street. Set five blocks off the wall at x -106 and shifted three blocks south of the granary so the pair reads as a stagger rather than a matched row.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "ward_store",
+       "type": "workshop",
+       "seed": 23,
+       "params": {
+        "storeys": 1,
+        "trade": "joinery",
+        "yard_side": "west"
+       },
+       "x0": -124,
+       "z0": 109,
+       "x1": -112,
+       "z1": 134,
+       "notes": "13 by 26, low and single-storey against the granary's height, so the ward reads as one tall mass and one long low one. Yard on the west side, giving onto the shared lane between the two buildings. The ground here is the flattest in the ward (relief around 9 to 12), so it needs only a shallow cut on its north end; the east wall stands blank and blind toward the circuit with the tall slit set instead in the short south wall, where it looks back down toward the keep."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "residential_district_hall_end",
+     "notes": "The north third, level with the market north row: the densest and tallest-fronted part of the ward, with the ward hall standing on the second street where the lane opens out.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "joiners_yard",
+       "type": "workshop",
+       "seed": 3,
+       "params": {
+        "storeys": 1,
+        "trade": "joinery",
+        "yard_side": "north"
+       },
+       "x0": -246,
+       "z0": 106,
+       "x1": -235,
+       "z1": 118,
+       "notes": "Joiner's shop at the head of the west row, its yard opening north to the lane off the gate approach; single storey, long low front, sunk on its uphill west side."
+      },
+      {
+       "kind": "plot",
+       "name": "west_row_a",
+       "type": "cottage",
+       "seed": 11,
+       "params": {
+        "storeys": 2,
+        "outshot": "byre"
+       },
+       "x0": -246,
+       "z0": 124,
+       "x1": -236,
+       "z1": 134,
+       "notes": "First dwelling of the west row, two storeys with a byre outshot on the downhill side, gable end to the cross lane."
+      },
+      {
+       "kind": "plot",
+       "name": "west_row_b",
+       "type": "cottage",
+       "seed": 12,
+       "params": {
+        "storeys": 2,
+        "outshot": "scullery"
+       },
+       "x0": -246,
+       "z0": 140,
+       "x1": -233,
+       "z1": 153,
+       "notes": "The widest of the west row, taking the flat run opposite the market; scullery outshot east, slit window in the long west wall reading against the wall walk."
+      },
+      {
+       "kind": "plot",
+       "name": "street_row_a",
+       "type": "cottage",
+       "seed": 15,
+       "params": {
+        "storeys": 2,
+        "outshot": "scullery"
+       },
+       "x0": -225,
+       "z0": 110,
+       "x1": -214,
+       "z1": 120,
+       "notes": "Head of the east row, fronting the wide second street; two storeys, tall front to the street, cut a storey into the rise behind."
+      },
+      {
+       "kind": "plot",
+       "name": "ward_hall",
+       "type": "hall",
+       "seed": 5,
+       "params": {
+        "dormers": 2,
+        "use": "moot"
+       },
+       "x0": -227,
+       "z0": 126,
+       "x1": -214,
+       "z1": 139,
+       "notes": "The ward's moot hall, set square on the second street where the lane widens, one long hip roof with two dormers and a single tall slit at its north gable."
+      },
+      {
+       "kind": "plot",
+       "name": "street_row_b",
+       "type": "minka",
+       "seed": 23,
+       "params": {
+        "plan": "outshot",
+        "storeys": 2
+       },
+       "x0": -224,
+       "z0": 145,
+       "x1": -214,
+       "z1": 155,
+       "notes": "House with an outshot wing, directly west of the market square across the second street; sunk on its east side where the ground lifts toward the square."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "residential_district_middle_lanes",
+     "notes": "The middle of the ward, looser and lower: smaller houses on the wall side and the smithy on the street side, with wide cross lanes between them for the climb.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "west_row_c",
+       "type": "minka",
+       "seed": 21,
+       "params": {
+        "plan": "hall",
+        "storeys": 1
+       },
+       "x0": -246,
+       "z0": 159,
+       "x1": -238,
+       "z1": 167,
+       "notes": "Small single-storey hall house, the lowest building on the wall side, dug in on the west so its eaves sit close to the ground."
+      },
+      {
+       "kind": "plot",
+       "name": "west_row_d",
+       "type": "cottage",
+       "seed": 13,
+       "params": {
+        "storeys": 3,
+        "outshot": "store"
+       },
+       "x0": -246,
+       "z0": 173,
+       "x1": -236,
+       "z1": 184,
+       "notes": "The tall one of the west row, three storeys with a store outshot; its narrow front and full-height slit window mark the middle of the ward from outside the wall."
+      },
+      {
+       "kind": "plot",
+       "name": "smithy_yard",
+       "type": "workshop",
+       "seed": 6,
+       "params": {
+        "storeys": 1,
+        "trade": "smithy",
+        "yard_side": "east"
+       },
+       "x0": -227,
+       "z0": 161,
+       "x1": -214,
+       "z1": 174,
+       "notes": "Smithy at the widest point of the second street, yard opening east away from the houses; single tall storey, wide doors, no upper floor."
+      },
+      {
+       "kind": "plot",
+       "name": "street_row_c",
+       "type": "cottage",
+       "seed": 16,
+       "params": {
+        "storeys": 1,
+        "outshot": "byre"
+       },
+       "x0": -223,
+       "z0": 180,
+       "x1": -214,
+       "z1": 189,
+       "notes": "Low single-storey cottage south of the smithy, set back off the street with its byre outshot to the lane."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "residential_district_south_tail",
+     "notes": "The south end of the ward, running down level with the south ward: the loosest grain, larger plots with working ground, ending three blocks clear of the south wall.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "west_row_e",
+       "type": "minka",
+       "seed": 22,
+       "params": {
+        "plan": "wing",
+        "storeys": 2
+       },
+       "x0": -246,
+       "z0": 190,
+       "x1": -237,
+       "z1": 199,
+       "notes": "Two-storey house with a short wing, sitting into the slope on its west side where the ground lifts to the wall bulge."
+      },
+      {
+       "kind": "plot",
+       "name": "west_row_f",
+       "type": "cottage",
+       "seed": 14,
+       "params": {
+        "storeys": 2,
+        "outshot": "byre"
+       },
+       "x0": -246,
+       "z0": 205,
+       "x1": -235,
+       "z1": 217,
+       "notes": "Long two-storey cottage on the wall side, byre outshot at the south end, roof pitched tight with no overhang."
+      },
+      {
+       "kind": "plot",
+       "name": "potters_yard",
+       "type": "workshop",
+       "seed": 4,
+       "params": {
+        "storeys": 1,
+        "trade": "pottery",
+        "yard_side": "south"
+       },
+       "x0": -246,
+       "z0": 223,
+       "x1": -236,
+       "z1": 233,
+       "notes": "Pottery at the foot of the ward, kiln yard opening south onto the clear ground inside the south wall."
+      },
+      {
+       "kind": "plot",
+       "name": "street_row_d",
+       "type": "cottage",
+       "seed": 17,
+       "params": {
+        "storeys": 2,
+        "outshot": "store"
+       },
+       "x0": -227,
+       "z0": 195,
+       "x1": -214,
+       "z1": 208,
+       "notes": "The largest dwelling of the east row, two storeys over a store outshot, fronting the second street where it runs down to the south ward."
+      },
+      {
+       "kind": "plot",
+       "name": "street_row_e",
+       "type": "minka",
+       "seed": 24,
+       "params": {
+        "plan": "hall",
+        "storeys": 3
+       },
+       "x0": -224,
+       "z0": 214,
+       "x1": -214,
+       "z1": 224,
+       "notes": "Tall three-storey hall house closing the east row, standing where the second street meets the lane across to the south ward."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "south_ward_market_foot",
+     "notes": "The market end of the ward, where it fronts the square's south lane. The tallest and widest fronts in the district stand here so the square reads as a room closed on its south side.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "south_ward_moot_hall",
+       "type": "hall",
+       "seed": 11,
+       "params": {
+        "dormers": 2,
+        "use": "moot"
+       },
+       "x0": -190,
+       "z0": 167,
+       "x1": -172,
+       "z1": 184,
+       "notes": "The ward's one large communal building, 19 by 18, set square on the market's own x range so its north gable closes the view down the gate axis across the square. Five blocks clear of the square's south edge for the lane. It sits into the fall of the ground on its north side, so the hall floor is a storey down from the square paving and the long slit window on its east wall runs nearly the full height of the exposed side."
+      },
+      {
+       "kind": "plot",
+       "name": "square_end_house",
+       "type": "townhouse",
+       "seed": 12,
+       "params": {
+        "jetty_side": "street",
+        "storeys": 3
+       },
+       "x0": -166,
+       "z0": 167,
+       "x1": -150,
+       "z1": 183,
+       "notes": "17 by 17, the tall-fronted house on the corner where the ward's east lane meets the square's south lane, under the keep's west flank. Three storeys, jettied to the street only, so the dark mass steps out over the lane and the slit window is cut in the return wall facing the hall."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "south_ward_middle_rows",
+     "notes": "The body of the ward: three dwellings on the cross lane, one to each of the two north-south lanes and one between, with the ground stepping down west to east.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "south_ward_west_cottage_upper",
+       "type": "cottage",
+       "seed": 21,
+       "params": {
+        "outshot": "byre",
+        "storeys": 2
+       },
+       "x0": -196,
+       "z0": 194,
+       "x1": -184,
+       "z1": 206,
+       "notes": "13 by 13 against the ward's west edge, on the lane shared with the residential district beyond. Two storeys with a byre outshot on the downhill side; the uphill west wall is buried a storey, and that blind wall carries the single tall slit."
+      },
+      {
+       "kind": "plot",
+       "name": "mid_minka",
+       "type": "minka",
+       "seed": 22,
+       "params": {
+        "plan": "wing",
+        "storeys": 2
+       },
+       "x0": -178,
+       "z0": 194,
+       "x1": -168,
+       "z1": 204,
+       "notes": "11 by 11, the smallest footprint in the middle band, set between the two lanes with its wing turned east to make a small yard off the cross lane. Lower than its neighbours so the ward's roofline dips at the centre."
+      },
+      {
+       "kind": "plot",
+       "name": "south_ward_east_cottage_upper",
+       "type": "cottage",
+       "seed": 23,
+       "params": {
+        "outshot": "scullery",
+        "storeys": 2
+       },
+       "x0": -162,
+       "z0": 194,
+       "x1": -150,
+       "z1": 206,
+       "notes": "13 by 13 on the ward's east lane, scullery outshot to the north away from the fall. Its slit window faces east down the lane toward the south-east ward."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "south_ward_lower_rows",
+     "notes": "The bottom of the ward, deepest into the slope and loosest on the ground. Nothing is pushed to the south wall: fourteen blocks of open ground are left inside the circuit so the wall walk is clear and the lane can turn.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "west_minka_lower",
+       "type": "minka",
+       "seed": 31,
+       "params": {
+        "plan": "outshot",
+        "storeys": 1
+       },
+       "x0": -196,
+       "z0": 214,
+       "x1": -186,
+       "z1": 224,
+       "notes": "11 by 11, single storey, the lowest and loosest building in the ward at its south-west corner. Sunk hard into the west lip so only the east face and the roof read from inside the walls."
+      },
+      {
+       "kind": "plot",
+       "name": "mid_cottage_lower",
+       "type": "cottage",
+       "seed": 32,
+       "params": {
+        "outshot": "store",
+        "storeys": 2
+       },
+       "x0": -180,
+       "z0": 214,
+       "x1": -168,
+       "z1": 226,
+       "notes": "13 by 13 on the centre lane where it runs out to the wall ground. Store outshot on the south, two storeys stepped down from the middle band so the pair reads as one stepping run rather than a repeat."
+      },
+      {
+       "kind": "plot",
+       "name": "wall_end_house",
+       "type": "townhouse",
+       "seed": 33,
+       "params": {
+        "jetty_side": "both",
+        "storeys": 2
+       },
+       "x0": -162,
+       "z0": 214,
+       "x1": -148,
+       "z1": 228,
+       "notes": "15 by 15, the second tall front, closing the ward's east lane at its south end. Jettied both sides so the lane narrows under it; sunk a storey on its uphill east side, and the slit window is cut in the south wall looking to the wall ground."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "south_east_ward_forge_row",
+     "notes": "The heavy trades, west side of the ward, backing onto the lane that comes down from the south ward. Broad single-storey sheds with their yards on the working lane, the tall slit window set in the gable that faces the lane.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "smithy_shed",
+       "type": "workshop",
+       "seed": 1,
+       "params": {
+        "storeys": 1,
+        "trade": "smithy",
+        "yard_side": "east"
+       },
+       "x0": -140,
+       "z0": 165,
+       "x1": -128,
+       "z1": 177,
+       "notes": "The northernmost forge, the first thing met coming south out of the upper east ward. 13 by 13 on the flatter shoulder of the fall; sunk a storey on its north uphill side so the blackstone rises straight out of the bank, yard opening east onto the working lane where the fall gives it drainage."
+      },
+      {
+       "kind": "plot",
+       "name": "joiners_shed",
+       "type": "workshop",
+       "seed": 2,
+       "params": {
+        "storeys": 1,
+        "trade": "joinery",
+        "yard_side": "west"
+       },
+       "x0": -140,
+       "z0": 183,
+       "x1": -128,
+       "z1": 197,
+       "notes": "Longer than the smithy at 13 by 15 because timber is stacked lengthways; its yard turns west, away from the lane, so the two west-row buildings do not face each other across the same ground. Slit window runs the height of the long east wall."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "south_east_ward_kiln_yards",
+     "notes": "The wet and fired trades, east side of the ward, their yards facing east onto the open ground of the east bastion ward where the wind takes the smoke off the town. Narrower plots than the forge row, so the lane between the two rows reads as a street rather than a gap.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "pottery_kiln",
+       "type": "workshop",
+       "seed": 3,
+       "params": {
+        "storeys": 1,
+        "trade": "pottery",
+        "yard_side": "east"
+       },
+       "x0": -122,
+       "z0": 165,
+       "x1": -112,
+       "z1": 175,
+       "notes": "11 by 11, the smallest of the four sheds and the tallest-roofed of them, the kiln stack carried inside the mass. Flattest ground in the ward (roughness 7), so it sits barely sunk, one course of basalt footing showing all round."
+      },
+      {
+       "kind": "plot",
+       "name": "dyeworks",
+       "type": "workshop",
+       "seed": 4,
+       "params": {
+        "storeys": 1,
+        "trade": "dyeworks",
+        "yard_side": "north"
+       },
+       "x0": -122,
+       "z0": 181,
+       "x1": -112,
+       "z1": 193,
+       "notes": "11 by 13 with the vat yard thrown north, uphill, so the runoff crosses its own ground rather than the lane. Sunk hardest of the six on its north side; the slit window is cut on the east wall facing the bastion ground."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "south_east_ward_trades_close",
+     "notes": "The two dwellings, set across the south end of the ward where the lanes from both rows come together, closing the ward before the open ground runs down to the south wall. Domestic in form, not in material: same blackstone and deepslate as the sheds, only lower and tighter.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "master_cottage",
+       "type": "cottage",
+       "seed": 5,
+       "params": {
+        "outshot": "store",
+        "storeys": 2
+       },
+       "x0": -140,
+       "z0": 203,
+       "x1": -128,
+       "z1": 214,
+       "notes": "13 by 12 at the foot of the forge row, two storeys with a store outshot on the lane side so the household and the trade share one door. Set into the north bank on the fall from 65 to 63, the outshot roof running down to meet the ground on the low side."
+      },
+      {
+       "kind": "plot",
+       "name": "yard_house",
+       "type": "minka",
+       "seed": 6,
+       "params": {
+        "plan": "wing",
+        "storeys": 2
+       },
+       "x0": -122,
+       "z0": 199,
+       "x1": -113,
+       "z1": 208,
+       "notes": "10 by 10 below the kiln yards, a wing plan so the short arm shelters a small private yard from the working lane. Lowest and loosest building in the ward, its single tall slit window on the south wall looking down the open ground toward the wall."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "east_bastion_ward_bastion_crown",
+     "notes": "The north end of the ward, facing the keep across the open ground west of it. The two public buildings of the ward, set on the axis the lanes from the keep arrive on, with a wide swept forecourt on their west and north.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "ward_temple",
+       "type": "temple",
+       "seed": 3,
+       "params": {
+        "plan": "cloister",
+        "storeys": 2
+       },
+       "x0": -100,
+       "z0": 130,
+       "x1": -89,
+       "z1": 141,
+       "notes": "12 by 12 at the head of the ward, its stone platform cut into the low northward rise so the cloister sits level and the north wall reads a storey taller from the wall walk. Its tall slit window is on the west face, on the sightline to the keep."
+      },
+      {
+       "kind": "plot",
+       "name": "east_bastion_ward_moot_hall",
+       "type": "hall",
+       "seed": 5,
+       "params": {
+        "dormers": 2,
+        "use": "moot"
+       },
+       "x0": -103,
+       "z0": 147,
+       "x1": -87,
+       "z1": 163,
+       "notes": "17 by 17, the widest span in the ward, set square to the temple with a five-block lane between them. Its long west flank takes the lane arriving from the market square; the hall is sunk on its east side into the slope running up to the wall."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "east_bastion_ward_east_terrace",
+     "notes": "The middle of the ward, where the dwellings begin: one deep town house on the lane side and a smaller house behind it against the east wall, so the grain breaks from public to domestic without a row.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "terrace_townhouse",
+       "type": "townhouse",
+       "seed": 7,
+       "params": {
+        "jetty_side": "street",
+        "storeys": 3
+       },
+       "x0": -104,
+       "z0": 169,
+       "x1": -90,
+       "z1": 183,
+       "notes": "15 by 15 on the west edge of the ward, tall-fronted to the lane that comes down from the market, so the ward keeps a dense face on the side the town sees. Sunk a storey on its east, uphill side."
+      },
+      {
+       "kind": "plot",
+       "name": "terrace_house",
+       "type": "minka",
+       "seed": 11,
+       "params": {
+        "plan": "wing",
+        "storeys": 2
+       },
+       "x0": -84,
+       "z0": 169,
+       "x1": -78,
+       "z1": 175,
+       "notes": "7 by 7, small and square, tucked behind the town house against the east wall with five blocks of ward ground between it and the wall walk. Its wing turns south to hold a small yard out of the wind."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "east_bastion_ward_bastion_foot",
+     "notes": "The loose south end of the ward, one low house standing alone in open ground so the ward thins out before the south wall rather than ending in a block.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "foot_cottage",
+       "type": "cottage",
+       "seed": 13,
+       "params": {
+        "outshot": "scullery",
+        "storeys": 2
+       },
+       "x0": -100,
+       "z0": 189,
+       "x1": -89,
+       "z1": 200,
+       "notes": "12 by 12, the lowest and loosest building of the ward, set well clear of the south wall with open ground all round it. Its scullery outshot takes the downhill south side; the slit window is cut in the long east wall."
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

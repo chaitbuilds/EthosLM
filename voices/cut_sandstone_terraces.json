@@ -1,0 +1,21 @@
+{
+ "name": "cut_sandstone_terraces",
+ "notes": {
+  "blurb": "Dry-country cut stone. Flat roofs used as floors, parapets, deep reveals, everything stepping up the hill in terraces.",
+  "construction": "solid masonry, openings small and deeply recessed, parapets above every roof, timber only for shade structures; the shade is spruce",
+  "ground": "terraced hard, retaining walls doubling as the walls of the storey below; the ground between the buildings is cut and dressed, not planted",
+  "roofs": "flat with a parapet; one loggia or awning per building in timber",
+  "signature": "an external stair climbing the outside of the building to its roof"
+ },
+ "roles": {
+  "floor": "sandstone",
+  "footing": "cut_sandstone",
+  "frame": "sandstone",
+  "ground": "smooth_sandstone",
+  "roof": "sandstone",
+  "trim": "smooth_sandstone",
+  "wall": "sandstone",
+  "wall_alt": "red_sandstone"
+ },
+ "roof": {}
+}

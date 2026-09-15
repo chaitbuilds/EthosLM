@@ -1,0 +1,33 @@
+{
+ "name": "japanese_temple",
+ "notes": {
+  "blurb": "A tiled hall on a stone platform. White panels between dark posts, and a roof of two tiers with the eaves turned up at the corners.",
+  "construction": "white panels between dark posts at close intervals, the posts carried through to the eave, openings tall and framed",
+  "ground": "a stone platform two courses high with steps up to it on the entrance side",
+  "roofs": "irimoya, two tiers, eaves deep and upturned, shallow (1,2) below and steep (2,1) at the ridge",
+  "signature": "the bracket course carrying the eave out past the posts"
+ },
+ "roles": {
+  "floor": "quartz",
+  "footing": "stone_brick",
+  "frame": "dark_oak",
+  "roof": "deepslate_tile",
+  "trim": "dark_oak",
+  "wall": "quartz"
+ },
+ "roof": {
+  "eave": "upturned",
+  "ends": "irimoya",
+  "profile": [
+   [
+    1,
+    2
+   ],
+   [
+    2,
+    1
+   ]
+  ],
+  "tiers": 2
+ }
+}

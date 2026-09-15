@@ -1,0 +1,141 @@
+{
+ "intent": "This is a pass-town. A north-south valley cuts through high broken country: cliffs and scarps stand 30-50 blocks above the floor on both the west (x<1584) and the east (x>1680), and between them runs a flat-bottomed trough at y64-y75 that is the only walkable way through the site. Everything is built in that trough and on its two lowest benches, so the settlement occupies the bottom third of the relief and the great walls above it stay empty - that emptiness is the point, and no structure should climb onto them. Water gathers along the line x~1616-1631 and drains south, so the town reads as a single street running with the water from the north gate down to the south water gate, with the moot hall set at the midpoint where the valley is narrowest. Dwellings sit on the two dry terraces either side of that line - crofts backed into the west scarp at y74, a stepped row on the east bench at y65-70 - and the dirty and wet trades (smithy, mill, byre, potter, quarry) sit downstream and outward from the hall, in that order. The whole place is one dark coursed mass of blackstone with pale birch only at openings and eaves; against grass and stone hillsides it must read as a black seam in a green valley from a long way off. Nothing here is a grass or stone variant above the footing. Form is what varies: the hall is the one wide span, the gates and the mill are narrow and tall, the byre and the crofts are long and low, the watch spur is a single dark finger on the east shoulder. Almost every building is cut a storey into its uphill bank and enters from the downhill side, so the street is always at the low door.",
+ "centre": "moot_hall",
+ "voice": "blackstone_and_ash",
+ "palette": {
+  "wall": "blackstone",
+  "trim": "polished_blackstone_brick",
+  "roof": "deepslate_tile",
+  "frame": "stripped_birch_log",
+  "footing": "basalt"
+ },
+ "circulation_material": "deepslate_brick",
+ "structures": [
+  {
+   "id": "north_gate",
+   "kind": "gatehouse over the north road",
+   "x0": 1618,
+   "z0": -766,
+   "x1": 1632,
+   "z1": -756,
+   "notes": "Where the through-route enters the site from the north, on flat ground at y67-69. Narrow and tall - a pair of stub towers with a covered arch between them that the lane runs straight under, no wide rooms. Ground falls gently east across it, so cut the west tower a storey into its higher side and let the east tower stand full height on a basalt footing. Its signature slit runs the full height of the outward (north) face of the west tower, so the first thing seen from outside the valley is one bright cut in a black mass. Do not roof the arch itself flat: two small hips, one per tower."
+  },
+  {
+   "id": "drovers_rest",
+   "kind": "drovers' rest and stable for through-traffic",
+   "x0": 1596,
+   "z0": -766,
+   "x1": 1608,
+   "z1": -754,
+   "notes": "Traffic through the pass stops outside the gate, not inside it. Squat, thick-walled, more open at the ground than the dwellings - a wide arched cart bay on the east front facing the gate, sleeping loft above with only two small windows. Sits at y71-74 with the ground rising west; sink the stable half a storey into the west bank and enter from the east. Slit window on the short north gable, shorter than the gate's so the gate stays the taller marker."
+  },
+  {
+   "id": "east_row",
+   "kind": "stepped row of six houses",
+   "x0": 1648,
+   "z0": -748,
+   "x1": 1662,
+   "z1": -722,
+   "notes": "The north basin's dwellings, on the east bench at y65-67 with the ground rising to y70-72 immediately east. A single continuous run of party-walled houses, not detached units: one long coursed blackstone mass, roof stepping down northward in stages to follow the fall of the ground, each house sunk into the east bank at the back and opening west onto the lane and the water. Openings only on the west front, framed in stripped birch, so the back wall toward the slope is almost blind. The signature slit appears once per every second house on the west front, alternating so no two are alike."
+  },
+  {
+   "id": "west_croft_row",
+   "kind": "row of crofts with attached byres",
+   "x0": 1586,
+   "z0": -736,
+   "x1": 1599,
+   "z1": -706,
+   "notes": "The other dwelling group, on the flattest ground on site (y74-75, near-level for 31 blocks) on the west terrace, with the west scarp rising to y82-85 right behind. Long, low, ground-hugging - the opposite of the east row's stepping. Each croft is a dwelling end and a lower byre end under one continuous ridge, dug a full storey into the west bank so the back rooms are half underground and the chimneys come out at the foot of the scarp. All doors and all glazing face east across the valley. One croft in the row - not the end one - carries the tall slit on its east gable running from footing to eaves."
+  },
+  {
+   "id": "granary",
+   "kind": "granary and common store",
+   "x0": 1618,
+   "z0": -718,
+   "x1": 1631,
+   "z1": -706,
+   "notes": "Stands on the flat between the two dwelling rows, north of the hall, so both rows reach it in the same walk. This is the one building that must NOT be sunk - the ground here is level y69 and damp, so raise it a full storey on a solid basalt plinth with a stair up to a single door, blind walls below. Very few openings: high ventilation slots under the eaves only. Its signature slit is narrow and starts above the plinth, not at the ground, reading as a taller thinner cut than anywhere else in town."
+  },
+  {
+   "id": "moot_hall",
+   "kind": "moot hall - assembly, court and winter feast",
+   "x0": 1634,
+   "z0": -688,
+   "x1": 1655,
+   "z1": -674,
+   "notes": "THE CENTRE. Placed at the mid-point of the valley where it narrows, on the east bench at y69-70 with the ground rising to y74 immediately east. The one wide clear span in the settlement and the tallest roof - everything else defers to it. Cut a full storey into the east bank so it has a low undercroft opening east at the upper level and the great hall floor entering west, downhill, onto the court that the routes build around it. Roof is one large hip, ridge running east-west along the span. Its signature slit is the boldest version: a single opening running nearly the whole height of the west gable wall above the main door, the one place in town where the light is let in generously, and it should be visible from the north gate and from the watch spur."
+  },
+  {
+   "id": "court_wellhouse",
+   "kind": "wellhouse over the court spring",
+   "x0": 1638,
+   "z0": -666,
+   "x1": 1645,
+   "z1": -659,
+   "notes": "Small square structure standing free in the open ground just south of the hall, inside the court the routes build. Open on all four sides at the ground - four heavy blackstone piers, birch lintels, deepslate hip roof low over them - so it is the one building here you can see through. No solid walls, so the signature slit is inverted: the gaps between the piers are the tall openings. Keep it under half the hall's height; it must not compete."
+  },
+  {
+   "id": "smithy",
+   "kind": "smithy and charcoal store",
+   "x0": 1620,
+   "z0": -640,
+   "x1": 1633,
+   "z1": -628,
+   "notes": "Downstream of the hall and the houses, on the low ground at y66-68 beside the water line, so quenching is a few steps and sparks blow away from the roofs. Tall single volume with a high smoke vent through the roof and a broad shuttered working opening on the north front that stands open in the day. Ground rises east, so cut the charcoal store into that side; forge floor stays low at the water. The slit here is on the west wall facing the stream, kept low and narrow because the smith wants dark."
+  },
+  {
+   "id": "byre",
+   "kind": "cattle byre and winter fodder loft",
+   "x0": 1640,
+   "z0": -618,
+   "x1": 1654,
+   "z1": -598,
+   "notes": "In the southern reach where the floor is widest and grazes. Long and low, ridge running north-south, the longest building in the settlement and one of the plainest. The ground crosses it from y66 on the west to y72 on the east, so bank the whole east flank into the slope - beasts enter from the low west side at the lane, fodder is pitched straight into the loft from the high east side at the back. Almost blind: a run of narrow slots under the eaves instead of windows, and one tall slit on the south gable end."
+  },
+  {
+   "id": "mill",
+   "kind": "water mill on the drain",
+   "x0": 1616,
+   "z0": -610,
+   "x1": 1626,
+   "z1": -598,
+   "notes": "On the lowest ground in the site (y64-66) where the valley water gathers and drops south. Narrow footprint, three storeys, the tallest small building here - a dark shaft with the wheel on its west flank and the sack door and hoist beam under the roof on the north gable. Its base sits in the wet, so carry the basalt footing high, two or three courses above where the water sits. The signature slit runs the full three storeys on the north face beside the hoist door, and is the one people see when coming down the street from the smithy."
+  },
+  {
+   "id": "south_water_gate",
+   "kind": "south gate and bridge house over the outflow",
+   "x0": 1616,
+   "z0": -590,
+   "x1": 1630,
+   "z1": -578,
+   "notes": "Where the water and the road leave the site together at y65. A single squat tower on the east bank with a covered walk carried over the water on blackstone piers, so the lane crosses dry and the town closes properly at its south end. Lower and heavier than the north gate - this is the working end, not the ceremonial one - and it should read as a mirror of it, same parts, different proportion. Slit on the south face, wide at the bottom where it looks down at the water."
+  },
+  {
+   "id": "potters_yard",
+   "kind": "potter's workshop and bank kilns",
+   "x0": 1668,
+   "z0": -714,
+   "x1": 1679,
+   "z1": -702,
+   "notes": "In the flat pocket at the foot of the east slope, north-east of the hall, apart from the dwellings because of the smoke but on their side of town. Small covered workshop at the west, low and open-fronted onto its yard; the kilns are cut straight into the bank that rises steeply east behind it, brick-lined mouths in a blackstone retaining face, roofed only by a narrow lean-to. The yard between workshop and kiln face is part of the building and should be walled to waist height. The slit is on the workshop's north wall, ordinary in size - this is a working building, not a showpiece."
+  },
+  {
+   "id": "watch_spur",
+   "kind": "watch tower and beacon on the east shoulder",
+   "x0": 1668,
+   "z0": -644,
+   "x1": 1678,
+   "z1": -630,
+   "notes": "The only structure that leaves the valley floor, on the east shoulder at y82-83, fifteen blocks above the town with the ground still climbing east behind it. Reached by a switchback lane up from the byre lane - keep the ground west of it clear for that climb. Small footprint, greatest height-to-width ratio in the settlement: a plain dark shaft with a fire platform on top and one chamber part way up. Sunk into the east bank at its base so it grows out of the shoulder rather than standing on it. Its signature slit runs almost the entire shaft on the west face, aimed straight down the valley at the hall, and is the last thing lit at night."
+  },
+  {
+   "id": "quarry_shed",
+   "kind": "quarry shed at the stone face",
+   "x0": 1570,
+   "z0": -622,
+   "x1": 1582,
+   "z1": -610,
+   "notes": "In the notch in the west scarp at y72 - the only place the west wall can be walked into, and the source of the black stone the whole settlement is built from, which is why it is on the plan at all. Half building, half retaining work: a heavy blackstone wall holding the cut face on the west and north, a birch-framed open shed and dressing floor under it facing east to the valley. Roofed only over the dressing floor. It should look older and rougher than everything else - mossy and cracked variants freely here - and its slit is a straight vertical gap left in the retaining wall where the face is exposed behind it."
+  }
+ ]
+}

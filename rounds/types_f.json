@@ -1,0 +1,340 @@
+{
+ "name": "site_b",
+ "voice": "",
+ "base_volume": "world.npz",
+ "flags": {
+  "sight": false,
+  "split": false,
+  "select": 0,
+  "spaces": false,
+  "max_bounces": 1
+ },
+ "types": {
+  "out": "types_f",
+  "arm": "types_f",
+  "check_fixtures": [
+   {
+    "round": "site_e",
+    "plot": "fold_barn",
+    "columns": 285,
+    "relief": 2,
+    "water_pct": 0.0,
+    "rule": "driest_flat",
+    "why": "dry, and the flattest and biggest of the dry"
+   },
+   {
+    "round": "site_d",
+    "plot": "south_gate",
+    "columns": 165,
+    "relief": 21,
+    "water_pct": 0.0,
+    "rule": "most_relief",
+    "why": "the greatest relief anywhere in the three rounds"
+   },
+   {
+    "round": "site_d",
+    "plot": "tarn_landing",
+    "columns": 180,
+    "relief": 2,
+    "water_pct": 99.4,
+    "rule": "wettest",
+    "why": "the most water"
+   },
+   {
+    "round": "site_b",
+    "plot": "court_wellhouse",
+    "columns": 64,
+    "relief": 2,
+    "water_pct": 0.0,
+    "rule": "smallest",
+    "why": "the fewest columns"
+   },
+   {
+    "round": "site_b",
+    "plot": "east_row",
+    "columns": 432,
+    "relief": 6,
+    "water_pct": 0.0,
+    "rule": "largest",
+    "why": "the most columns"
+   },
+   {
+    "round": "site_e",
+    "plot": "boat_landing",
+    "columns": 195,
+    "relief": 8,
+    "water_pct": 2.1,
+    "rule": "waterside",
+    "why": "some water, but not a lake: the edge of one"
+   }
+  ],
+  "check_seeds": [
+   1,
+   2
+  ],
+  "check_parts": [
+   {
+    "round": "site_b",
+    "kind": "edge",
+    "part": "wall_L",
+    "path": [
+     [
+      1585,
+      -610
+     ],
+     [
+      1604,
+      -610
+     ],
+     [
+      1604,
+      -590
+     ]
+    ],
+    "width": 1,
+    "relief": 1,
+    "rule": "edge_least_relief",
+    "why": "40 columns in two runs meeting at one right angle, on free ground, least relief first and then nearest the lane"
+   },
+   {
+    "round": "site_b",
+    "kind": "edge",
+    "part": "wall_ring",
+    "path": [
+     [
+      1584,
+      -702
+     ],
+     [
+      1624,
+      -702
+     ],
+     [
+      1624,
+      -662
+     ],
+     [
+      1584,
+      -662
+     ],
+     [
+      1584,
+      -702
+     ]
+    ],
+    "width": 1,
+    "relief": 12,
+    "columns": 160,
+    "gate": {
+     "at": [
+      1624,
+      -682
+     ],
+     "facing": "east"
+    },
+    "rule": "edge_closed_loop",
+    "why": "a closed square loop of 160 columns on free ground, chosen for relief along the line nearest 12 and then nearest the lane; the gate is the middle of the side the lane is closest to"
+   },
+   {
+    "round": "site_b",
+    "kind": "edge",
+    "part": "wall_cliff",
+    "path": [
+     [
+      1693,
+      -715
+     ],
+     [
+      1693,
+      -676
+     ]
+    ],
+    "width": 1,
+    "relief": 27,
+    "drop": 35,
+    "rule": "edge_ends_at_a_cliff",
+    "why": "a straight run of 40 columns on free ground whose last column has a 35-block drop within three columns past the end of it; greatest drop first, then least relief along the line, then nearest the lane"
+   },
+   {
+    "round": "site_b",
+    "kind": "point",
+    "part": "lane_end",
+    "at": [
+     1631,
+     -689
+    ],
+    "facing": "west",
+    "size": 5,
+    "rule": "point_lane_end",
+    "why": "a cell of the lane network with one lane neighbour, facing away from it -- where the town stops"
+   },
+   {
+    "round": "site_b",
+    "kind": "area",
+    "part": "square",
+    "x0": 1585,
+    "z0": -617,
+    "x1": 1596,
+    "z1": -606,
+    "relief": 1,
+    "rule": "area_flattest",
+    "why": "the flattest free 12x12 of ground the settlement has not spoken for, nearest the lane"
+   },
+   {
+    "round": "town",
+    "cache": "world.npz",
+    "kind": "edge",
+    "part": "wall_city",
+    "side": 131,
+    "path": [
+     [
+      31,
+      121
+     ],
+     [
+      161,
+      121
+     ],
+     [
+      161,
+      251
+     ],
+     [
+      31,
+      251
+     ],
+     [
+      31,
+      121
+     ]
+    ],
+    "width": 1,
+    "relief": 24,
+    "columns": 520,
+    "rule": "edge_city_loop",
+    "why": "a closed square loop of 520 columns, 131 a side, on the unbuilt ground of town's pre-build cache, every column of it dry, chosen for relief along the line nearest 12 and then by position",
+    "asked_for": 600,
+    "short_by": 80,
+    "sources_tried": [
+     "city_b/world.npz",
+     "town/world.npz"
+    ]
+   },
+   {
+    "round": "town",
+    "cache": "world.npz",
+    "kind": "area",
+    "part": "compound",
+    "x0": -231,
+    "z0": 341,
+    "x1": -184,
+    "z1": 388,
+    "side": 48,
+    "relief": 5,
+    "rule": "area_compound",
+    "why": "the flattest 48x48 of dry, unspoken-for ground on town's pre-build cache -- a compound's worth, against the 12x12 a market square is",
+    "asked_for": 48,
+    "short_by": 0
+   }
+  ],
+  "check_part_seeds": [
+   1,
+   2
+  ],
+  "list": [
+   {
+    "name": "wall",
+    "part": "edge",
+    "file": "types/wall.py",
+    "voice": "white_render_dark_frame",
+    "kind": "the great wall of a city",
+    "request": "Write `types/wall.py`: `build(b, part, seed, **params)` builds the great wall of a city along the line you are given. It is the thing the place is known for, so it is **massive**: `PARAMS` must include `height` as an int from 3 to 20 and `width` as an int from 1 to 5, and every value of both has to give a wall that stands and that a person can use. Masonry from the footing up to `height`, a walkway along the top wide enough to walk two abreast where `width` allows it, a parapet on the outer side, and **steps down to the ground at least every 32 cells** so a person on the walk can get off it. It has to be continuous round its corners: a person walks the whole length without stopping. Declare `KIND = \"edge\"` and `FORM = \"fortification\"`. Different seeds have to give a different wall. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "ring_gate",
+    "part": "point",
+    "file": "types/ring_gate.py",
+    "voice": "white_render_dark_frame",
+    "kind": "the gatehouse of a ring wall",
+    "request": "Write `types/ring_gate.py`: `build(b, part, seed, **params)` builds the gatehouse of a great ring wall at the cell you are given. A **walkable arch** at least three wide passes through it along the way it faces, so a road goes through and a person walks through; over and beside the arch there are guardrooms somebody could stand a watch in; a tiered roof crowns it; and a **stair joins the ground to the height a wall walk would be at**, so the walk over the wall carries through the gate. Declare `KIND = \"point\"`, `PASSAGE = True` -- because a lane may cross a wall here and nowhere else -- and `FORM = \"fortification\"`. `PARAMS` for `storeys` and one more of your own choosing. Different seeds have to give a different gatehouse. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "palace",
+    "part": "area",
+    "file": "types/palace.py",
+    "voice": "japanese_temple",
+    "kind": "a palace compound",
+    "request": "Write `types/palace.py`: `build(b, part, seed, **params)` builds a palace compound on the rectangle you are given -- the seat at the centre of a great city, and the one building a person sees over every roof. On a raised platform: a **main hall** with a tiered roof, **two side halls** flanking it, and a **courtyard wall round the whole compound with a gate in it on the side the way in arrives from**. Everything you build has to be reachable on foot -- walking, not jumping -- from the way in: a hall nobody can enter is a shape. The rectangle is prepared ground at one level and it is all yours. Declare `KIND = \"area\"` and `FORM = \"civic\"`. `PARAMS` for `storeys` and one more of your own choosing. Different seeds have to give a different palace. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "court_large",
+    "part": "plot",
+    "file": "types/court_large.py",
+    "voice": "japanese_minka",
+    "kind": "a great courtyard house",
+    "request": "Write `types/court_large.py`: `build(b, part, seed, **params)` builds a large courtyard house -- the house of somebody who has room. **Four ranges round an open yard**, the north range of two storeys and the rest of one, the yard planted as a garden rather than paved through, and the way in an entrance passage from the lane through one range into the yard. Every range opens on the yard and every room is reachable on foot from the door. `b.building(courtyard=(w, d))` lays a ring of four ranges round an open yard for you; use it or build it yourself, whichever gives the better house. Declare `KIND = \"plot\"` and `FORM = \"east_asian\"`. `PARAMS` for `storeys` and one more of your own choosing. Different seeds have to give a different house. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "court_small",
+    "part": "plot",
+    "file": "types/court_small.py",
+    "voice": "japanese_minka",
+    "kind": "a small courtyard house",
+    "request": "Write `types/court_small.py`: `build(b, part, seed, **params)` builds a small courtyard house -- the ordinary house of a crowded city. **Three ranges and a wall** round a small yard, one storey, the wall on the lane side with the way in through it. It is the same kind of thing as a great courtyard house and a good deal less of it: tight, plain, and complete. Every room is reachable on foot from the door. Declare `KIND = \"plot\"` and `FORM = \"east_asian\"`. `PARAMS` for `storeys` and one more of your own choosing. Different seeds have to give a different house. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "shop_house",
+    "part": "plot",
+    "file": "types/shop_house.py",
+    "voice": "japanese_minka",
+    "kind": "a shop-house on a city street",
+    "request": "Write `types/shop_house.py`: `build(b, part, seed, **params)` builds a shop-house on a city street: **two storeys, the ground floor open to the lane** as a shop front -- a wide opening under the upper floor, with the counter and the goods in it -- and **rooms above** that a person can walk up to by a stair inside. The front faces the lane the way in arrives from. Everything has to be reachable on foot from the door, the upper rooms included. Declare `KIND = \"plot\"` and `FORM = \"east_asian\"`. `PARAMS` for `storeys` and one more of your own choosing. Different seeds have to give a different shop-house. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "farmstead",
+    "part": "plot",
+    "file": "types/farmstead.py",
+    "voice": "japanese_minka",
+    "kind": "a farmstead in the fields outside a city",
+    "request": "Write `types/farmstead.py`: `build(b, part, seed, **params)` builds a farmstead standing in open farmland: a **farmhouse with a walled yard** round it -- the yard holding what a farm holds, a store, a byre or a stack, and a gate in the wall on the side the way in arrives from. Low and long rather than tall. Every part of it is reachable on foot from the door. Declare `KIND = \"plot\"` and `FORM = \"east_asian\"`. `PARAMS` for `storeys` and one more of your own choosing. Different seeds have to give a different farmstead. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "field",
+    "part": "area",
+    "file": "types/field.py",
+    "voice": "japanese_minka",
+    "kind": "a tilled field",
+    "request": "Write `types/field.py`: `build(b, part, seed, **params)` builds a **tilled field** on the rectangle you are given: worked ground in beds with a crop growing on it, watered so it stays tilled, a **low wall or bank round it** and a **path along or through it** that a person can walk. It has **no rooms and no roof** -- it is a piece of farmland, and it should read as one from a distance. Declare `KIND = \"area\"` and `FORM = \"civic\"`. `PARAMS` for one thing about the crop and one about the layout, of your own choosing; do not declare `storeys`. Different seeds have to give a different field. Run `check.py` until every instance is clean."
+   }
+  ]
+ },
+ "preregistered": {
+  "walk_model": 6,
+  "registered_here_before_a_builder_was_called": true,
+  "written_before": "any of the eight calls. The fixtures are pipeline.check_fixtures(), pipeline.check_parts() and A3's two new ones -- the city ring and the compound -- computed by rule off caches already on disk and written into this file before the briefs were composed.",
+  "bars": {
+   "instances_clean": {
+    "bar": ">= 7 of 8",
+    "note": ">= 7 of 8 instances lint-clean for a type, read proportionally against however many\ninstances its own fixtures and seeds give. A plot type is checked on six plot fixtures\nat two seeds plus its own slope descriptor; an edge type on four edge fixtures at two\nseeds; a point type on one; an area type on two."
+   },
+   "instances_walkable": {
+    "bar": ">= 7 of 8",
+    "note": "and the same proportion at >= 90% of interior floor walkable from the lane, under walk model 6. `field` declares no rooms and is reported rather than held to this, which is stated here before it was authored rather than after it missed."
+   }
+  },
+  "reported_no_bar": {
+   "tokens": "true tokens per call, as the isolated subagents reported them",
+   "needs": "what each type declares as NEEDS, against what scripts/type_needs.py measures for it",
+   "lines": "lines of each committed file",
+   "checks": "how many times each author ran check.py",
+   "two_voice": "test_types.py's r19_a1: every committed type stood twice on one pad at one seed in two voices, byte-identical in shape and different in blocks"
+  },
+  "rules_held": [
+   "one call per type and no more; eight calls at most",
+   "no type authored here that Part B does not name",
+   "no new lint check in the frozen suite",
+   "no bar is moved",
+   "no block is written: the backend is offline"
+  ]
+ }
+}

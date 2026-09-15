@@ -1,0 +1,290 @@
+{
+ "intent": "This is a small lake town on the one piece of ground on the site that will hold a town. The site is nearly all refusal: the east and north-east half is open water at y=62, a chasm 70 blocks deep cuts the middle-south (cells around x -1120..-1089, z -288..-241, floor near y=48), and the ground south of that chasm is a broken plateau at y=69..74 that no lane can reach without a bridge. What is left is a gentle east-facing shelf in the north-west, y=71 at the back wall down to y=62 at the water, most of it with less than 10 blocks of relief. The whole settlement stands on that shelf and nowhere else, and the emptiness elsewhere is the plan, not an omission. The town is strung north-south along the contour, so it reads as one street on a hillside rather than a cluster: an upper row backed into the hill on the west (x -1150..-1127), a lower row and the civic crown on the east where the shelf flattens (x -1118..-1095), and the water's edge below that (x -1086..-1073). The moot hall sits on the flattest and most level ground on the site (roughness 1 to 5, y=66..67) with the market opening north-east from it down to the strand, so the square is the hinge between the hall and the water. Two gates hold the two ways in: the hithe gate on the knoll above the northern landing, and the gorge gate at the neck of the shelf where the road south squeezes between the chasm head and the hill. Because the shelf falls about one block in six eastward, buildings are expected to sit deeper on their footing course on their east side than their west: the stone footing is what makes the row read as one continuous frontage over uneven ground, so use two courses where the fall demands it rather than cutting the hill. Every structure is the same voice - quartz render between dark oak frame, deepslate tile roofs, cobblestone footing - and what varies is form and purpose: the hall spans wide and low, the townhouses are tall and narrow and jetty out over the street, the workshops are single-storey with an open yard on the side named. The signature oriel over the entrance should face the street on the rows and face the water on the strand.",
+ "centre": "moot_hall",
+ "voice": "white_render_dark_frame",
+ "palette": {
+  "wall": "quartz",
+  "frame": "dark_oak",
+  "roof": "deepslate_tile",
+  "footing": "cobblestone",
+  "trim": "stripped_dark_oak_log"
+ },
+ "circulation_material": "cobblestone",
+ "parts": [
+  {
+   "kind": "district",
+   "name": "lake_terrace",
+   "notes": "The whole town, on the north-west shelf between the water and the gorge. Nothing is placed east of x -1073 (lake), south-east of z -288 at x -1120..-1089 (the chasm), or south of z -241 (broken plateau, unreachable without a bridge).",
+   "children": [
+    {
+     "kind": "quarter",
+     "name": "moot_crown",
+     "notes": "The centre: the moot hall on the best ground on the site, the market opening from it toward the water, and the brink defences that close the town's south end. Routes converge here and the court is built around the hall.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "moot_hall",
+       "type": "hall",
+       "seed": 29,
+       "params": {
+        "dormers": 2,
+        "use": "moot"
+       },
+       "x0": -1118,
+       "z0": -316,
+       "x1": -1095,
+       "z1": -297,
+       "notes": "The centre of the town. 24 by 20 on the flattest ground on the site: mean surface y=66..67, relief 1 to 5 blocks across the whole footprint. It spans wide and low against the tall narrow rows, gable end to the street on the west, two dormers because the upper floor is in the roof. Its south face looks out over the brink wall to the gorge, so that face is the one people see from a distance."
+      },
+      {
+       "kind": "area",
+       "name": "market_strand",
+       "type": "square",
+       "seed": 28,
+       "params": {
+        "canopy": "mixed",
+        "paving": "banded"
+       },
+       "x0": -1104,
+       "z0": -338,
+       "x1": -1087,
+       "z1": -322,
+       "notes": "18 by 17 of ground that stays open, north-east of the hall and downhill of it. The ground falls from y=66 at the south-west corner to about y=62 at the north-east corner where it meets the strand, so this wants to be paved in terraced bands stepping down toward the water rather than levelled flat. It is the market and the head of the landing at once."
+      },
+      {
+       "kind": "quarter",
+       "name": "gorge_brow",
+       "notes": "The south brink. The shelf ends here in a 70-block drop into the chasm; the wall runs the lip and the gate holds the neck where the road south passes between the chasm head and the hill.",
+       "children": [
+        {
+         "kind": "edge",
+         "name": "brow_wall",
+         "type": "wall",
+         "seed": 31,
+         "params": {
+          "height": 5,
+          "parapet": "hoarded"
+         },
+         "path": [
+          [
+           -1121,
+           -290
+          ],
+          [
+           -1096,
+           -290
+          ]
+         ],
+         "width": 1,
+         "notes": "A 26-block run along the very lip of the gorge on flat ground (y=66..67, relief 2 to 3), one block north of where the ground falls away. Hoarded parapet because it overlooks the drop and nothing can come at it from below. It gives the hall a south face to stand behind."
+        },
+        {
+         "kind": "point",
+         "name": "gorge_gate",
+         "type": "gate_tower",
+         "seed": 32,
+         "params": {
+          "crown": "gambrel",
+          "storeys": 3
+         },
+         "at": [
+          -1124,
+          -282
+         ],
+         "facing": "south",
+         "notes": "The south gate, on the neck of the shelf at y=67 with only 5 blocks of relief around it. The road out of town has to pass here: chasm to the east, rising hill to the west. Three storeys and a gambrel crown so it is the tallest thing on the south skyline and answers the hall behind it."
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "high_street",
+     "notes": "The upper row on the west, backed into the hill at y=66..71 and fronting east onto the main street. These are the oldest plots: dry, sheltered from the water, above every flood line. All four back onto the hill and jetty out over the street.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "house_north_head",
+       "type": "townhouse",
+       "seed": 21,
+       "params": {
+        "jetty_side": "both",
+        "storeys": 3
+       },
+       "x0": -1150,
+       "z0": -382,
+       "x1": -1127,
+       "z1": -367,
+       "notes": "24 by 16 on the highest ground in the town, y=70..71, relief about 10. The head of the street and the first thing seen from the north. Three storeys jettied on both sides so it reads as the tall bookend of the row."
+      },
+      {
+       "kind": "plot",
+       "name": "strangers_hall",
+       "type": "hall",
+       "seed": 22,
+       "params": {
+        "dormers": 1,
+        "use": "refectory"
+       },
+       "x0": -1150,
+       "z0": -358,
+       "x1": -1127,
+       "z1": -343,
+       "notes": "The guest hall and almshouse: where people coming off the water at the northern landing are fed and put up. 24 by 16 at y=66..69. Deliberately a hall and not a house so the upper row is not four of the same building - long span, one big room, one dormer, low eaves against the taller houses either side of it."
+      },
+      {
+       "kind": "plot",
+       "name": "house_scarp_row",
+       "type": "townhouse",
+       "seed": 23,
+       "params": {
+        "jetty_side": "left",
+        "storeys": 3
+       },
+       "x0": -1150,
+       "z0": -336,
+       "x1": -1127,
+       "z1": -321,
+       "notes": "24 by 16 at y=67, relief 4 across the whole footprint - the calmest ground in the west row. It faces the cross-lane that steps down past the scarp (the broken cell at x -1120..-1105, z -336..-321, 27 blocks of relief, deliberately left unbuilt) toward the market. Jetty on the left only, over that cross-lane."
+      },
+      {
+       "kind": "plot",
+       "name": "smithy_yard",
+       "type": "workshop",
+       "seed": 24,
+       "params": {
+        "storeys": 1,
+        "trade": "smithy",
+        "yard_side": "north"
+       },
+       "x0": -1150,
+       "z0": -314,
+       "x1": -1127,
+       "z1": -291,
+       "notes": "24 by 24 at the south end of the upper row, y=66..68. Part of this footprint runs over rougher ground (up to 18 blocks of relief in its north-east quarter), which is why it is single-storey with a yard rather than a house: the yard takes the fall. Its open yard faces north onto the cross-lane, and its back is to the gorge brow. Fire and noise sit at the downwind edge of town, away from the guest hall."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "east_strand",
+     "notes": "The water side. Everything here is about the lake: the row that fronts it, the wall that holds the bank, the gate above the landing, and the one trade that needs to stand in the water.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "house_strand_row",
+       "type": "townhouse",
+       "seed": 27,
+       "params": {
+        "jetty_side": "street",
+        "storeys": 3
+       },
+       "x0": -1118,
+       "z0": -366,
+       "x1": -1095,
+       "z1": -347,
+       "notes": "24 by 20 on the lower shelf, y=65..66, relief 3 to 11. The lower row: tall, narrow, packed, three storeys jettied over the street on its west face so the street between the two rows is a canyon. Its east flank looks down onto the landing, which is the view the oriel should take."
+      },
+      {
+       "kind": "point",
+       "name": "hithe_gate",
+       "type": "gate_tower",
+       "seed": 33,
+       "params": {
+        "crown": "hip",
+        "storeys": 2
+       },
+       "at": [
+        -1113,
+        -374
+       ],
+       "facing": "north",
+       "notes": "The water gate, on the knoll at the north head of the town, y=66 with about 19 blocks of relief around it - broken, rocky ground that suits a tower and suits nothing else. It watches the northern inlet where the water reaches the site edge. Two storeys and a hipped crown, lower and blunter than the gorge gate so the two gates are not twins."
+      },
+      {
+       "kind": "edge",
+       "name": "quay_wall",
+       "type": "wall",
+       "seed": 34,
+       "params": {
+        "height": 3,
+        "parapet": "solid"
+       },
+       "path": [
+        [
+         -1086,
+         -366
+        ],
+        [
+         -1086,
+         -344
+        ],
+        [
+         -1076,
+         -344
+        ]
+       ],
+       "width": 1,
+       "notes": "The quay: a run of 22 south along the waterline at x=-1086 and then a return of 11 east at z=-344, holding the bank where the ground meets water at y=62..63. Solid parapet and only 3 high - this is a retaining edge and a mooring face, not a defence. The corner is where boats come alongside."
+      },
+      {
+       "kind": "plot",
+       "name": "dyeworks_hithe",
+       "type": "workshop",
+       "seed": 30,
+       "params": {
+        "storeys": 1,
+        "trade": "dyeworks",
+        "yard_side": "east"
+       },
+       "x0": -1086,
+       "z0": -316,
+       "x1": -1075,
+       "z1": -297,
+       "notes": "12 by 20 on the last dry ground before the lake, y=64..65, relief 4 to 11, with open water beginning within a few blocks east. The dyeworks is here because it needs the water and because its smell belongs downhill of everything else. Narrow and long, single-storey, yard open east to the lake."
+      }
+     ]
+    },
+    {
+     "kind": "quarter",
+     "name": "gate_shelf",
+     "notes": "Outside the gate, on the ridge of good ground that runs south past the head of the gorge (y=65..67, relief 4 to 7). This is where the town has started to spill beyond its own gate: the newest plot and the outfarm.",
+     "children": [
+      {
+       "kind": "plot",
+       "name": "house_gate_row",
+       "type": "townhouse",
+       "seed": 25,
+       "params": {
+        "jetty_side": "right",
+        "storeys": 2
+       },
+       "x0": -1150,
+       "z0": -278,
+       "x1": -1133,
+       "z1": -259,
+       "notes": "18 by 20 just outside the gorge gate at y=65..67, relief 4 to 7 - the flattest ground south of the crown. Two storeys and jettied on one side only: it is younger, poorer and lower than the houses inside the gate, and it should look it while being the same building family."
+      },
+      {
+       "kind": "plot",
+       "name": "sawpit_croft",
+       "type": "workshop",
+       "seed": 26,
+       "params": {
+        "storeys": 1,
+        "trade": "joinery",
+        "yard_side": "south"
+       },
+       "x0": -1150,
+       "z0": -252,
+       "x1": -1139,
+       "z1": -241,
+       "notes": "12 by 12, the last building of the settlement, at y=67 on the ridge where the ground starts to break up (relief about 19 here, and worse beyond it). The sawpit and timber croft: it wants to be at the edge because that is where the trees are, and it is small and single-storey because that is all this ground will take. Yard open south, toward the country it works."
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

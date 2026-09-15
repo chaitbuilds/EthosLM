@@ -1,0 +1,29 @@
+{
+ "name": "packed_earth_and_dark_tile",
+ "notes": {
+  "blurb": "The poor ring of an earth-built city: mud brick and rough stone under dark tile, crowded and low.",
+  "construction": "Mud-brick walls on a cobblestone footing with dark spruce posts and lintels; small openings, party walls, no gardens.",
+  "ground": "Packed mud lanes between the houses, no paving.",
+  "roofs": "Single-tier hipped roofs of dark tile with a slight upturn at the eave, pitched one-in-one, running unbroken over rows of houses.",
+  "signature": "A sea of dark roofs on earth-coloured walls, reading from the air as one brown-grey belt against the green tile of the rings within."
+ },
+ "roles": {
+  "floor": "packed_mud",
+  "footing": "cobblestone",
+  "frame": "spruce",
+  "roof": "deepslate_tile",
+  "trim": "spruce",
+  "wall": "mud_brick"
+ },
+ "roof": {
+  "eave": "upturned",
+  "ends": "hip",
+  "profile": [
+   [
+    1,
+    1
+   ]
+  ],
+  "tiers": 1
+ }
+}

@@ -1,0 +1,325 @@
+{
+ "name": "site_b",
+ "voice": "",
+ "base_volume": "world.npz",
+ "flags": {
+  "sight": false,
+  "split": false,
+  "select": 0,
+  "spaces": false,
+  "max_bounces": 1
+ },
+ "types": {
+  "out": "types_g",
+  "arm": "types_g",
+  "check_fixtures": [
+   {
+    "round": "site_e",
+    "plot": "fold_barn",
+    "columns": 285,
+    "relief": 2,
+    "water_pct": 0.0,
+    "rule": "driest_flat",
+    "why": "dry, and the flattest and biggest of the dry"
+   },
+   {
+    "round": "site_d",
+    "plot": "south_gate",
+    "columns": 165,
+    "relief": 21,
+    "water_pct": 0.0,
+    "rule": "most_relief",
+    "why": "the greatest relief anywhere in the three rounds"
+   },
+   {
+    "round": "site_d",
+    "plot": "tarn_landing",
+    "columns": 180,
+    "relief": 2,
+    "water_pct": 99.4,
+    "rule": "wettest",
+    "why": "the most water"
+   },
+   {
+    "round": "site_b",
+    "plot": "court_wellhouse",
+    "columns": 64,
+    "relief": 2,
+    "water_pct": 0.0,
+    "rule": "smallest",
+    "why": "the fewest columns"
+   },
+   {
+    "round": "site_b",
+    "plot": "east_row",
+    "columns": 432,
+    "relief": 6,
+    "water_pct": 0.0,
+    "rule": "largest",
+    "why": "the most columns"
+   },
+   {
+    "round": "site_e",
+    "plot": "boat_landing",
+    "columns": 195,
+    "relief": 8,
+    "water_pct": 2.1,
+    "rule": "waterside",
+    "why": "some water, but not a lake: the edge of one"
+   }
+  ],
+  "check_seeds": [
+   1,
+   2
+  ],
+  "check_parts": [
+   {
+    "round": "site_b",
+    "kind": "edge",
+    "part": "wall_L",
+    "path": [
+     [
+      1585,
+      -610
+     ],
+     [
+      1604,
+      -610
+     ],
+     [
+      1604,
+      -590
+     ]
+    ],
+    "width": 1,
+    "relief": 1,
+    "rule": "edge_least_relief",
+    "why": "40 columns in two runs meeting at one right angle, on free ground, least relief first and then nearest the lane"
+   },
+   {
+    "round": "site_b",
+    "kind": "edge",
+    "part": "wall_ring",
+    "path": [
+     [
+      1584,
+      -702
+     ],
+     [
+      1624,
+      -702
+     ],
+     [
+      1624,
+      -662
+     ],
+     [
+      1584,
+      -662
+     ],
+     [
+      1584,
+      -702
+     ]
+    ],
+    "width": 1,
+    "relief": 12,
+    "columns": 160,
+    "gate": {
+     "at": [
+      1624,
+      -682
+     ],
+     "facing": "east"
+    },
+    "rule": "edge_closed_loop",
+    "why": "a closed square loop of 160 columns on free ground, chosen for relief along the line nearest 12 and then nearest the lane; the gate is the middle of the side the lane is closest to"
+   },
+   {
+    "round": "site_b",
+    "kind": "edge",
+    "part": "wall_cliff",
+    "path": [
+     [
+      1693,
+      -715
+     ],
+     [
+      1693,
+      -676
+     ]
+    ],
+    "width": 1,
+    "relief": 27,
+    "drop": 35,
+    "rule": "edge_ends_at_a_cliff",
+    "why": "a straight run of 40 columns on free ground whose last column has a 35-block drop within three columns past the end of it; greatest drop first, then least relief along the line, then nearest the lane"
+   },
+   {
+    "round": "site_b",
+    "kind": "point",
+    "part": "lane_end",
+    "at": [
+     1631,
+     -689
+    ],
+    "facing": "west",
+    "size": 5,
+    "rule": "point_lane_end",
+    "why": "a cell of the lane network with one lane neighbour, facing away from it -- where the town stops"
+   },
+   {
+    "round": "site_b",
+    "kind": "area",
+    "part": "square",
+    "x0": 1585,
+    "z0": -617,
+    "x1": 1596,
+    "z1": -606,
+    "relief": 1,
+    "rule": "area_flattest",
+    "why": "the flattest free 12x12 of ground the settlement has not spoken for, nearest the lane"
+   },
+   {
+    "round": "town",
+    "cache": "world.npz",
+    "kind": "edge",
+    "part": "wall_city",
+    "side": 131,
+    "path": [
+     [
+      31,
+      121
+     ],
+     [
+      161,
+      121
+     ],
+     [
+      161,
+      251
+     ],
+     [
+      31,
+      251
+     ],
+     [
+      31,
+      121
+     ]
+    ],
+    "width": 1,
+    "relief": 24,
+    "columns": 520,
+    "gate": {
+     "at": [
+      31,
+      186
+     ],
+     "facing": "west"
+    },
+    "lane_distance": 181,
+    "rule": "edge_city_loop",
+    "why": "a closed square loop of 520 columns, 131 a side, on the unbuilt ground of town's pre-build cache, every column of it dry, chosen for relief along the line nearest 12 and then by position",
+    "asked_for": 600,
+    "short_by": 80,
+    "sources_tried": [
+     "city_b/world.npz",
+     "town/world.npz"
+    ]
+   },
+   {
+    "round": "city_b",
+    "cache": "world.npz",
+    "kind": "area",
+    "part": "compound",
+    "x0": -876,
+    "z0": 1006,
+    "x1": -829,
+    "z1": 1053,
+    "side": 48,
+    "relief": 4,
+    "lane_distance": 78,
+    "rule": "area_compound",
+    "why": "the flattest 48x48 of dry, unspoken-for ground on city_b's pre-build cache, nearest the lane -- a compound's worth, against the 12x12 a market square is",
+    "asked_for": 48,
+    "short_by": 0
+   },
+   {
+    "round": "site_b",
+    "kind": "point",
+    "part": "lane_gate_in_a_great_wall",
+    "at": [
+     1652,
+     -696
+    ],
+    "facing": "east",
+    "size": 15,
+    "edge": {
+     "name": "a_great_wall",
+     "type": "great_wall",
+     "height": 48,
+     "width": 3
+    },
+    "rule": "point_in_a_wall_of_48",
+    "why": "the pad's bed rises one block over the lane -- because a fixture point has no threshold\nto take the road's level from and a pad on a hillside stands its gate twelve blocks over\nthe road. Sized as siting sizes a point in a wall of forty-eight (Builder.point_pad:\nfifteen) and with the wall named in part['edge'], so a gate type is checked as the gate\ntower it builds in a great wall and not only as the gatehouse it builds at a lane's end.\nOn its own cell rather than lane_end's, because a round's point fixtures are composed\ninto one program and two on one cell collide. Demo-polish, 2b; no wall stands in the\nfixture and the tower is held to its own plot"
+   }
+  ],
+  "check_part_seeds": [
+   1,
+   2
+  ],
+  "list": [
+   {
+    "name": "row_house",
+    "part": "plot",
+    "file": "types/row_house.py",
+    "voice": "japanese_minka",
+    "kind": "a town house on a city street",
+    "request": "Write `types/row_house.py`: `build(b, part, seed, **params)` builds an ordinary **town house on a city street** -- the dwelling of a family with no yard and no shop, the building a dense street is mostly made of. It is **narrow to the street and deep into the plot**: a front room on the lane, a passage or a stair beside it, and rooms running back behind. Its two long flanks are **party walls** -- flat, unbroken, with no eave and no opening on them -- because in a street of these the next house stands against them; the roof runs front to back so its gable ends face the flanks. Where the plot allows a storey above, a stair inside reaches it and **every room above is walkable from the front door on foot** -- a room you can only get to by jumping is a room nobody uses. There is no courtyard: this is the house for the ground a courtyard house does not fit on. Declare `KIND = \"plot\"`, `FORM = \"east_asian\"` and `ROLE = \"urban\"`. `PARAMS` for `storeys` and one more of your own choosing. Different seeds have to give a different house -- a different depth, a different front, a different arrangement inside. Run `check.py` until every instance is clean."
+   },
+   {
+    "name": "wall",
+    "part": "edge",
+    "file": "types/wall.py",
+    "voice": "white_render_dark_frame",
+    "kind": "the great wall of a city",
+    "request": "(A3 re-read only: types/wall.py is committed and is not re-authored here.)"
+   },
+   {
+    "name": "palace",
+    "part": "area",
+    "file": "types/palace.py",
+    "voice": "japanese_temple",
+    "kind": "a palace compound",
+    "request": "(A3 re-read only: types/palace.py is committed and is not re-authored here.)"
+   }
+  ]
+ },
+ "preregistered": {
+  "walk_model": 6,
+  "registered_here_before_a_builder_was_called": true,
+  "bars": {
+   "instances_clean": {
+    "bar": ">= 7 of 8",
+    "note": ">= 7 of 8 instances lint-clean for a type, read proportionally against however many\ninstances its own fixtures and seeds give. A plot type is checked on six plot fixtures\nat two seeds plus its own slope descriptor; an edge type on four edge fixtures at two\nseeds; an area type on two at two."
+   },
+   "instances_walkable": {
+    "bar": ">= 7 of 8",
+    "note": "and the same proportion at >= 90% of interior floor walkable from the lane, under walk model 6 and A1's attribution."
+   }
+  },
+  "reported_no_bar": {
+   "tokens": "true tokens for the one call, as the isolated subagent reported it",
+   "needs": "what row_house declares as NEEDS, against what the plan asks of it",
+   "a3": "wall and palace are re-read, not re-authored."
+  },
+  "rules_held": [
+   "no type authored here that A2's named exception does not allow",
+   "no type re-authored: wall and palace are read, not rewritten",
+   "no new lint check in the frozen suite",
+   "no bar is moved",
+   "no block is written: the backend is offline"
+  ]
+ }
+}

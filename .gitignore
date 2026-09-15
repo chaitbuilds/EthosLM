@@ -1,0 +1,7 @@
+# runs write here; nothing under them is source
+/out/
+/run/
+/.venv/
+/.env
+__pycache__/
+*.pyc

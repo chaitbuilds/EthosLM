@@ -1,0 +1,422 @@
+{
+ "waves": [
+  {
+   "wave": "walls",
+   "parts": [
+    {
+     "part": "brow_wall",
+     "status": "built",
+     "type": "wall",
+     "stood": true,
+     "type_said": null,
+     "kind": "edge",
+     "seed": 31,
+     "params": {
+      "height": 5,
+      "parapet": "hoarded"
+     },
+     "program": "out/district/parts/brow_wall.py",
+     "blocks": 758,
+     "writes": 863,
+     "placed": 758,
+     "failed": 0,
+     "ground": "footing",
+     "floor_y": 66,
+     "sited": "a footing under 26 columns in 1 segment(s) over ground y=65..66; one level at y=66",
+     "refusals": null,
+     "seconds": 2.3
+    },
+    {
+     "part": "gorge_gate",
+     "status": "built",
+     "type": "gate_tower",
+     "stood": true,
+     "type_said": null,
+     "kind": "point",
+     "seed": 32,
+     "params": {
+      "storeys": 3,
+      "crown": "gambrel"
+     },
+     "program": "out/district/parts/gorge_gate.py",
+     "blocks": 712,
+     "writes": 976,
+     "placed": 712,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 67,
+     "sited": "plinth at y=67 over ground y=67..67, 0 of 25 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 1.2
+    },
+    {
+     "part": "hithe_gate",
+     "status": "built",
+     "type": "gate_tower",
+     "stood": true,
+     "type_said": null,
+     "kind": "point",
+     "seed": 33,
+     "params": {
+      "storeys": 2,
+      "crown": "hip"
+     },
+     "program": "out/district/parts/hithe_gate.py",
+     "blocks": 1500,
+     "writes": 1781,
+     "placed": 1500,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 65,
+     "sited": "plinth at y=65 over ground y=65..66, 0 of 25 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 1.3
+    },
+    {
+     "part": "quay_wall",
+     "status": "built",
+     "type": "wall",
+     "stood": true,
+     "type_said": null,
+     "kind": "edge",
+     "seed": 34,
+     "params": {
+      "height": 3,
+      "parapet": "solid"
+     },
+     "program": "out/district/parts/quay_wall.py",
+     "blocks": 981,
+     "writes": 1072,
+     "placed": 981,
+     "failed": 0,
+     "ground": "footing",
+     "floor_y": 63,
+     "sited": "a footing under 33 columns in 2 segment(s) over ground y=53..64; a level per segment at y=64,63",
+     "refusals": null,
+     "seconds": 1.2
+    }
+   ],
+   "scope": [
+    -1134,
+    -384,
+    -1068,
+    -272
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "squares",
+   "parts": [
+    {
+     "part": "market_strand",
+     "status": "built",
+     "type": "square",
+     "stood": true,
+     "type_said": null,
+     "kind": "area",
+     "seed": 28,
+     "params": {
+      "paving": "banded",
+      "canopy": "mixed"
+     },
+     "program": "out/district/parts/market_strand.py",
+     "blocks": 4522,
+     "writes": 6066,
+     "placed": 4522,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 66,
+     "sited": "platform at y=66 over ground y=62..69, 0 of 306 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.2
+    }
+   ],
+   "scope": [
+    -1112,
+    -346,
+    -1079,
+    -314
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "east_strand",
+   "parts": [
+    {
+     "part": "house_strand_row",
+     "status": "built",
+     "type": "townhouse",
+     "stood": true,
+     "type_said": "3 storey(s) at y=[66, 70, 74], eaves 78, ridge 92, door at (-1115,67,-362) facing east; the door is already walk-reachable from outside",
+     "kind": "plot",
+     "seed": 27,
+     "params": {
+      "storeys": 3,
+      "jetty_side": "street"
+     },
+     "program": "out/district/parts/house_strand_row.py",
+     "blocks": 7142,
+     "writes": 8656,
+     "placed": 7142,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 66,
+     "sited": "plinth at y=66 over ground y=66..69, 0 of 320 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.7
+    },
+    {
+     "part": "dyeworks_hithe",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 30,
+     "params": {
+      "storeys": 1,
+      "yard_side": "east",
+      "trade": "dyeworks"
+     },
+     "program": "out/district/parts/dyeworks_hithe.py",
+     "blocks": 1464,
+     "writes": 1907,
+     "placed": 1464,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 65,
+     "sited": "plinth at y=65 over ground y=63..66, 0 of 128 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 1.3
+    }
+   ],
+   "scope": [
+    -1126,
+    -374,
+    -1067,
+    -289
+   ],
+   "errors": [],
+   "counts": {
+    "W007": 1
+   }
+  },
+  {
+   "wave": "gate_shelf",
+   "parts": [
+    {
+     "part": "house_gate_row",
+     "status": "built",
+     "type": "townhouse",
+     "stood": true,
+     "type_said": "2 storey(s) at y=[66, 70], eaves 74, ridge 84, door at (-1137,67,-275) facing west; the door is already walk-reachable from outside",
+     "kind": "plot",
+     "seed": 25,
+     "params": {
+      "storeys": 2,
+      "jetty_side": "right"
+     },
+     "program": "out/district/parts/house_gate_row.py",
+     "blocks": 3771,
+     "writes": 4901,
+     "placed": 3771,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 66,
+     "sited": "plinth at y=66 over ground y=65..67, 0 of 224 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.5
+    },
+    {
+     "part": "sawpit_croft",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 26,
+     "params": {
+      "storeys": 1,
+      "yard_side": "south",
+      "trade": "joinery"
+     },
+     "program": "out/district/parts/sawpit_croft.py",
+     "blocks": 887,
+     "writes": 1172,
+     "placed": 887,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 67,
+     "sited": "platform at y=67 over ground y=61..68, 0 of 64 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 1.3
+    }
+   ],
+   "scope": [
+    -1158,
+    -286,
+    -1125,
+    -233
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "high_street",
+   "parts": [
+    {
+     "part": "house_north_head",
+     "status": "built",
+     "type": "townhouse",
+     "stood": true,
+     "type_said": "3 storey(s) at y=[71, 75, 79], eaves 83, ridge 95, door at (-1147,72,-370) facing north; the door is already walk-reachable from outside",
+     "kind": "plot",
+     "seed": 21,
+     "params": {
+      "storeys": 3,
+      "jetty_side": "both"
+     },
+     "program": "out/district/parts/house_north_head.py",
+     "blocks": 5321,
+     "writes": 6795,
+     "placed": 5321,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 71,
+     "sited": "plinth at y=71 over ground y=70..71, 0 of 240 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.7
+    },
+    {
+     "part": "strangers_hall",
+     "status": "built",
+     "type": "hall",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 22,
+     "params": {
+      "dormers": 1,
+      "use": "refectory"
+     },
+     "program": "out/district/parts/strangers_hall.py",
+     "blocks": 4440,
+     "writes": 5538,
+     "placed": 4440,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 69,
+     "sited": "platform at y=69 over ground y=65..70, 0 of 240 columns wet; 3 columns of path laid; the door at (-1148,70,-355) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 1.5
+    },
+    {
+     "part": "house_scarp_row",
+     "status": "built",
+     "type": "townhouse",
+     "stood": true,
+     "type_said": "3 storey(s) at y=[66, 70, 74], eaves 78, ridge 96, door at (-1147,67,-331) facing south; the door is already walk-reachable from outside",
+     "kind": "plot",
+     "seed": 23,
+     "params": {
+      "storeys": 3,
+      "jetty_side": "left"
+     },
+     "program": "out/district/parts/house_scarp_row.py",
+     "blocks": 5082,
+     "writes": 6210,
+     "placed": 5082,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 66,
+     "sited": "platform at y=66 over ground y=66..70, 0 of 240 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 1.6
+    },
+    {
+     "part": "smithy_yard",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 24,
+     "params": {
+      "storeys": 1,
+      "yard_side": "north",
+      "trade": "smithy"
+     },
+     "program": "out/district/parts/smithy_yard.py",
+     "blocks": 6808,
+     "writes": 8150,
+     "placed": 6808,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 68,
+     "sited": "platform at y=68 over ground y=65..73, 0 of 400 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 1.6
+    }
+   ],
+   "scope": [
+    -1158,
+    -390,
+    -1119,
+    -283
+   ],
+   "errors": [
+    "E003",
+    "E003",
+    "E011",
+    "E011",
+    "E011"
+   ],
+   "counts": {
+    "E003": 2,
+    "E011": 3,
+    "W004": 2,
+    "W009": 1
+   }
+  },
+  {
+   "wave": "moot_crown",
+   "parts": [
+    {
+     "part": "moot_hall",
+     "status": "built",
+     "type": "hall",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 29,
+     "params": {
+      "dormers": 2,
+      "use": "moot"
+     },
+     "program": "out/district/parts/moot_hall.py",
+     "blocks": 4668,
+     "writes": 5986,
+     "placed": 4668,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 65,
+     "sited": "platform at y=65 over ground y=66..70, 0 of 320 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    }
+   ],
+   "scope": [
+    -1126,
+    -324,
+    -1087,
+    -289
+   ],
+   "errors": [],
+   "counts": {}
+  }
+ ],
+ "built": 14,
+ "failed": 0
+}

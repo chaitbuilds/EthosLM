@@ -1,0 +1,81 @@
+{
+ "site": [
+  1536,
+  -768,
+  192
+ ],
+ "material": "deepslate_brick",
+ "notes": {
+  "max_step": 3,
+  "stranded": [],
+  "court": [
+   1634,
+   -689,
+   3
+  ],
+  "hub": "moot_hall",
+  "landing_rounds": 21,
+  "cut_max": 3,
+  "fill_max": 1,
+  "sites": 14,
+  "served": 14,
+  "material": "deepslate_brick",
+  "blocks": 11840
+ },
+ "lane": {
+  "cells": 938,
+  "steps": 93,
+  "fill": 8,
+  "cut": 547,
+  "rails": 0,
+  "lanterns": 0,
+  "trees": 6744,
+  "tree_columns": 2313,
+  "dressed": 1765,
+  "thresholds": 14
+ },
+ "walk_check": {
+  "cells": 938,
+  "reached": 938,
+  "unreachable": [],
+  "unreachable_n": 0
+ },
+ "flush": {
+  "placed": 11840,
+  "failed": 0,
+  "errors": {},
+  "seconds": 0.54,
+  "blocks_per_sec": 21987,
+  "unique_positions": 11840,
+  "connective_rejoined": 93,
+  "calls": {
+   "place_block": 12376,
+   "place_cuboid": 0,
+   "fill_region": 0,
+   "get_height": 4831,
+   "get_block": 33287
+  },
+  "palette_size": 3,
+  "light_sources": 0,
+  "footprint_columns": 2980,
+  "ground_relief_under_build": 20,
+  "floor_level_stdev": 3.51,
+  "columns_floating": 308,
+  "columns_cut_into_ground": 316
+ },
+ "lint": {
+  "ok": true,
+  "seconds": 0.69,
+  "counts": {},
+  "findings": []
+ },
+ "pieces": [
+  938
+ ],
+ "seconds": {
+  "load": 2.5,
+  "plan": 0.3,
+  "emit": 0.2,
+  "lint": 8.3
+ }
+}

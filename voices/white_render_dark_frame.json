@@ -1,0 +1,19 @@
+{
+ "name": "white_render_dark_frame",
+ "notes": {
+  "blurb": "Pale render between a dark frame, upper floors jettied out over the street. Tall and narrow, packed tight, roofs steep and busy.",
+  "construction": "exposed frame with panels between it, each storey overhanging the one below by a block, no wall run longer than five without a post",
+  "ground": "a stone footing course of one or two blocks carries the frame clear of the wet",
+  "roofs": "steep gable (2,1) with deep overhang; dormers where a floor is in the roof",
+  "signature": "a first-floor oriel carried on brackets over the entrance"
+ },
+ "roles": {
+  "floor": "quartz",
+  "footing": "cobblestone",
+  "frame": "dark_oak",
+  "roof": "deepslate_tile",
+  "trim": "stripped_dark_oak_log",
+  "wall": "quartz"
+ },
+ "roof": {}
+}

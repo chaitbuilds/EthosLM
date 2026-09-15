@@ -1,0 +1,248 @@
+{
+ "intent": "This is a cliff town on a badlands escarpment: a terracotta plateau at y~126 in the west, a plain at y~70 in the east running out to water in the southeast, and between them one continuous scarp that drops fifty blocks in forty. Nothing here is on a pad. The terrain gives three usable shelves and the whole settlement is organised on them: the RIM at y 124-129 (x -1128..-1094), an UPPER LEDGE at y 105-113 (x -1088..-1078), a MID LEDGE at y 79-88 (x -1072..-1058), and the PLAIN at y 65-78 (x -1054..-1000). Every row runs long in z and narrow in x, parallel to the contour, because that is the only way a building sits on this ground; the 3-5 block gaps between the tiers in plan are not lanes, they are the cliff face itself, and the retaining wall of each terrace is the wall of the storey below it. The street is a stair and it climbs by traversing, never head-on: it enters at the gatehouse on the plain, crosses the lower yard west to the foot_market, climbs the ten-block toe onto the mid ledge at the GREAT LANDING (the main square, with the hearth_hall on it), then runs NORTH along the mid ledge climbing 82 to 108, crosses to the upper ledge in the high_stair corridor at z 1234-1246 where the two shelves converge to within five blocks of each other, runs SOUTH the length of the upper ledge past the cliff nests, and finally climbs the eroded rim lip in the south_stair corridor (x -1093..-1089, z 1300-1340, where the rim has already slumped from 126 to 120) onto the rim, where it turns north again along the rim court past granary and rim_row. That single switchback is why the buildings are where they are. What is on the plain is what needs level ground and water: the gate, the market, the beasts, the forge, the kilns, the quay. What is on the face is where people live. What is on the rim is what wants to be seen or wants to see: the shrine on the highest ground on the site (y 129), the granary above any flood, the watchtower out on the north spur where the ground falls away east and south. The voice is unchanged from the brief and is a contract: sandstone walls and flat sandstone roofs over cut_sandstone footings, smooth_sandstone trim, spruce for shade only. Pale yellow sandstone against orange terracotta and red sand is the whole point -- the buildings must not be terracotta, red sand or any variant of them, or the town vanishes into its own hillside from a distance. Openings small and deeply recessed, parapets above every roof (the roofs are floors and people stand on them), one timber loggia or awning per building, and on most buildings an external stair climbing the outside to the roof -- differently on each: wrapped round a corner, split into two flights off a landing, run as a shared flight serving three doors, ramped for animals.",
+ "centre": "hearth_hall",
+ "voice": "cut_sandstone_terraces",
+ "palette": {
+  "wall": "sandstone",
+  "trim": "smooth_sandstone",
+  "roof": "sandstone",
+  "footing": "cut_sandstone",
+  "shade": "spruce"
+ },
+ "circulation_material": "red_sandstone",
+ "spaces": [
+  {
+   "id": "great_landing",
+   "kind": "court",
+   "x0": -1073,
+   "z0": 1269,
+   "x1": -1058,
+   "z1": 1286,
+   "enclosed_by": [
+    "hearth_hall",
+    "weaver_row",
+    "cliff_nest_upper"
+   ]
+  },
+  {
+   "id": "lower_yard",
+   "kind": "yard",
+   "x0": -1041,
+   "z0": 1266,
+   "x1": -1017,
+   "z1": 1280,
+   "enclosed_by": [
+    "foot_market",
+    "gatehouse",
+    "byre"
+   ]
+  },
+  {
+   "id": "rim_court",
+   "kind": "court",
+   "x0": -1115,
+   "z0": 1266,
+   "x1": -1105,
+   "z1": 1296,
+   "enclosed_by": [
+    "granary",
+    "rim_row"
+   ]
+  },
+  {
+   "id": "high_stair",
+   "kind": "street",
+   "x0": -1088,
+   "z0": 1234,
+   "x1": -1058,
+   "z1": 1246,
+   "enclosed_by": [
+    "weaver_row",
+    "cliff_nest_upper"
+   ]
+  },
+  {
+   "id": "south_stair",
+   "kind": "street",
+   "x0": -1093,
+   "z0": 1300,
+   "x1": -1089,
+   "z1": 1340,
+   "enclosed_by": [
+    "rim_row",
+    "terrace_crofts",
+    "shrine"
+   ]
+  },
+  {
+   "id": "shrine_terrace",
+   "kind": "court",
+   "x0": -1105,
+   "z0": 1316,
+   "x1": -1095,
+   "z1": 1330,
+   "enclosed_by": [
+    "shrine",
+    "rim_row"
+   ]
+  },
+  {
+   "id": "water_landing",
+   "kind": "yard",
+   "x0": -1014,
+   "z0": 1306,
+   "x1": -1000,
+   "z1": 1320,
+   "enclosed_by": [
+    "quay",
+    "byre"
+   ]
+  }
+ ],
+ "structures": [
+  {
+   "id": "hearth_hall",
+   "kind": "moot hall and covered cistern, the town's common room",
+   "x0": -1072,
+   "z0": 1288,
+   "x1": -1058,
+   "z1": 1308,
+   "notes": "THE CENTRE. Sits on the mid ledge at y 80-84 on ground with 27 blocks of relief inside its own footprint, so it is terraced hard: the eastern third stands on a solid cut_sandstone retaining plinth rising off the lower shelf, and that plinth is the wall of a vaulted undercroft holding the town cistern -- the only stored water above the plain. The hall proper is one tall span, the widest in the settlement, deliberately more open than anything else here: a five-bay spruce loggia along its whole north face shades the great_landing, which it encloses on the south. Small deeply recessed windows on the exposed east face over the drop, none facing the cliff behind. Flat roof with a heavy parapet, used as the upper landing of the square. Its external stair is the grandest version of the signature: a double flight rising off the north-east corner from the landing paving, meeting at a half-landing and turning back onto the roof. Every route in the settlement passes through the great_landing in front of it."
+  },
+  {
+   "id": "weaver_row",
+   "kind": "row of three weaver-dwellings with a shared work terrace",
+   "x0": -1070,
+   "z0": 1248,
+   "x1": -1060,
+   "z1": 1268,
+   "notes": "Mid ledge, y 79-84, north end. Long and narrow along the contour, three dwellings sharing party walls, each two storeys where the ground falls and one where it does not -- the row steps down northward in three distinct roof levels rather than pretending the ledge is flat. Backs cut into the face, fronts braced out over the drop on a cut_sandstone retaining wall which is the wall of the lower storey. Fronts onto the great_landing to the south and onto the mid-ledge lane that climbs north to the high_stair. Its roofs are one continuous work terrace where cloth is laid out; the signature stair here is a single shared external flight on the west (uphill) side serving all three doors, so the roof reads as public ground rather than three private ones. Spruce awning frames along the front parapet."
+  },
+  {
+   "id": "ledge_crofts",
+   "kind": "four small household crofts, the southern dwellings",
+   "x0": -1070,
+   "z0": 1320,
+   "x1": -1060,
+   "z1": 1340,
+   "notes": "Mid ledge, y 80-88, south end, the quietest address in the town. Smallest and tightest of the dwelling groups: four one-room-deep houses stacked against the face, each with a private roof terrace reached by its own short external stair -- four stairs, all different, some straight against the wall, one wrapped round the south corner, one rising off a neighbour's roof so that a doorway opens onto someone else's terrace exactly as the brief asks. Openings are the smallest in the settlement, deep reveals, because this face takes the weather. Sits directly above the kiln_yard and the potters' working strip on the plain, twelve blocks below and eleven blocks east; the retaining wall under these crofts is the back wall of that yard. Reached from the great_landing by the mid-ledge lane running south past hearth_hall."
+  },
+  {
+   "id": "cliff_nest_upper",
+   "kind": "upper cliff dwellings, six households cut into the ledge",
+   "x0": -1088,
+   "z0": 1264,
+   "x1": -1078,
+   "z1": 1282,
+   "notes": "Upper ledge, y 105-109, on ground with 32-37 blocks of relief inside the footprint -- this is a cliff, not a bench, and the building is the terracing. Cut back into the rock at the west, corbelled and braced out on cut_sandstone piers at the east. STACKING: this and cliff_nest_lower are designed as one terraced mass with rim_row above them -- rim_row's floor at y~125 sits almost directly over these roofs at y~117, and rim_row's footing wall IS the back retaining wall of the nests. The 2D plot registry cannot hold that, so the three are given separate rectangles five blocks apart in plan; the builder should read the vertical relationship as the real one and let the nests' parapet line come up to meet rim_row's front terrace. Fronts north onto the high_stair where the upper ledge and the mid ledge converge. External stair climbs the north gable end in two short flights to the shared roof."
+  },
+  {
+   "id": "cliff_nest_lower",
+   "kind": "middle cliff dwellings, five households on the same ledge",
+   "x0": -1088,
+   "z0": 1290,
+   "x1": -1078,
+   "z1": 1310,
+   "notes": "Upper ledge, y 109-111, the deepest cut of any structure here (36-37 blocks of relief in the footprint). Taller than cliff_nest_upper -- three storeys where the face allows it, the lowest storey windowless and used for storage, because this is where the ledge is narrowest and the only way to get room is to go up. STACKING: rim_row sits above this building; its roof at y~118 is intended as rim_row's front terrace and the ground people stand on to look down the scarp. Also directly above hearth_hall, twenty-five blocks below and eight blocks east on the mid ledge -- from these doorways you look straight down onto the great_landing. Fronts onto the upper-ledge lane running between it and cliff_nest_upper. Signature stair: an open flight running diagonally up the outside of the east face, over the drop, landing on the roof at the south end."
+  },
+  {
+   "id": "terrace_crofts",
+   "kind": "row of five crofts at the head of the south stair",
+   "x0": -1088,
+   "z0": 1318,
+   "x1": -1078,
+   "z1": 1338,
+   "notes": "Upper ledge, y 107-113, southern end. The last dwellings before the climb to the rim, so they front onto the south_stair corridor immediately east of them and their roofs are its landings -- the stair passes over and between them and a doorway opens straight onto a roof. Terraced in three steps following the fall of the ledge northward, each step a separate roof at a different height, all with parapets. Timber awning only on the two southern units, which catch the afternoon sun over the plain. External stairs here are minimal and repeated small: one short flight per pair of houses on the west side, cut into the retaining bank rather than built out from the wall, because there is no room to build out."
+  },
+  {
+   "id": "rim_row",
+   "kind": "row of four houses on the lip of the escarpment",
+   "x0": -1104,
+   "z0": 1266,
+   "x1": -1094,
+   "z1": 1296,
+   "notes": "On the rim at y 124-126, right on the lip, forming the east side of the rim_court. The longest single row in the settlement and the most closed: solid unbroken wall to the west onto the court with only doors and slot windows, and a deep colonnaded spruce loggia along the whole east front looking out over the entire town and the plain beyond. STACKING: this row stands above cliff_nest_lower and cliff_nest_upper -- its footing wall is their back retaining wall, and their roofs are meant to come up as its front terrace some seven blocks below the loggia floor. Separated from them by five blocks in plan only because the registry is two-dimensional. External stair on the west face at the north end, rising off the rim_court paving as a single straight flight against the wall."
+  },
+  {
+   "id": "granary",
+   "kind": "granary and grain store, raised above any flood",
+   "x0": -1128,
+   "z0": 1268,
+   "x1": -1116,
+   "z1": 1284,
+   "notes": "Set back on the flattest ground on the plateau, y 125-127, forming the west side of the rim_court opposite rim_row. Thickest walls and the fewest openings in the settlement: a nearly blind cut_sandstone box on a raised ventilated plinth, small high slot vents only, a single deep recessed door onto the court. Squat -- one tall storey, wide span, low silhouette -- deliberately the opposite shape from the tall thin cliff dwellings. Flat roof with a high parapet used as a drying floor. Its external stair wraps the north-west corner in an L, hugging the wall, so that the grain can go up to the drying floor without entering the store."
+  },
+  {
+   "id": "shrine",
+   "kind": "shrine and burial terrace on the high point",
+   "x0": -1117,
+   "z0": 1316,
+   "x1": -1107,
+   "z1": 1330,
+   "notes": "On the highest ground on the whole site, y 127-129, at the south end of the rim where the plateau is dead flat. Small, tall and solid -- a single square cell with one deeply recessed opening facing east down the scarp, and the tallest parapet in the settlement so it reads as a marker from the plain forty blocks below. Fronts east onto the shrine_terrace, which is the open ground where the south_stair arrives on the rim, so anyone climbing the whole stair from the gate ends here. No timber except a small spruce awning over the east door. Its external stair is the plainest of all: a narrow flight up the north wall to a bare roof platform with no parapet break, deliberately austere against hearth_hall's double flight."
+  },
+  {
+   "id": "watchtower",
+   "kind": "watchtower on the north spur",
+   "x0": -1054,
+   "z0": 1208,
+   "x1": -1044,
+   "z1": 1224,
+   "notes": "Out on the spur at y 117-121 where the plateau runs east and the ground falls away hard to the east (down to 94 then 73) and to the south (down to 100 then 76). Isolated on purpose -- it is the northern head of the settlement and the first thing seen by anyone coming along the rim or up from the plain. The only structure here that is taller than it is wide: a narrow stepped shaft on a battered cut_sandstone base, tiny slot openings, a parapeted lookout deck on top. Reached by a lane running north from the high_stair corridor along the rim and then east onto the spur. Its external stair is the signature at its most extreme: it spirals up the outside of the shaft in four straight flights turning at each corner, with no internal stair at all."
+  },
+  {
+   "id": "foot_market",
+   "kind": "market hall and pack-yard at the foot of the stair",
+   "x0": -1052,
+   "z0": 1266,
+   "x1": -1042,
+   "z1": 1284,
+   "notes": "On the plain at y 70 against the toe of the scarp, at the exact point where the wheeled road from the gate ends and everything must be carried up on backs. The most open building in the settlement after hearth_hall: a long open-sided hall, spruce posts under a flat sandstone roof, walls only on the west (which doubles as the retaining wall of the ten-block toe behind it) and at the two ends. Forms the west side of the lower_yard. The ramp up to the great_landing starts against its north end, so goods land on its floor and go up from its roof: the external stair is not a stair at all here but a broad ramped flight along the west wall, wide enough for two people with loads, arriving on the roof deck which is the first landing of the climb."
+  },
+  {
+   "id": "gatehouse",
+   "kind": "gatehouse, the way in from the plain",
+   "x0": -1036,
+   "z0": 1250,
+   "x1": -1026,
+   "z1": 1264,
+   "notes": "On flat ground at y 69-70 on the north-east approach, where anyone arriving across the plain first reaches the town. Closes the north side of the lower_yard. Two solid masonry piers with a deep recessed passage between them and a chamber over, so the road passes through the building; short, heavy, wide-shouldered. Small openings, parapet, no loggia -- the only building without one, because it is not a place to sit. External stair rises inside the thickness of the north pier and emerges on the roof, the one place the signature move is buried rather than displayed; state that as a deliberate variation."
+  },
+  {
+   "id": "byre",
+   "kind": "byre and beast-yard for goats and pack animals",
+   "x0": -1028,
+   "z0": 1282,
+   "x1": -1016,
+   "z1": 1296,
+   "notes": "On the plain at y 65-70 between the lower_yard and the water, where the ground is level and the animals can be watered without climbing. Low and long, one storey, the widest openings in the settlement (they are gates, not windows) along the north face onto the lower_yard, which it closes on the south. Roof is a hay and fodder store behind a parapet. The signature move here is a shallow earth-and-stone ramp rather than a stair, wrapping the east end at a gradient an animal can take, because the roof is loaded from the yard."
+  },
+  {
+   "id": "smithy",
+   "kind": "smithy and charcoal store",
+   "x0": -1040,
+   "z0": 1304,
+   "x1": -1030,
+   "z1": 1316,
+   "notes": "On the plain at y 70-72, downwind and well clear of the dwellings, close to the water landing and to the road but not on the yard. Tall for its footprint -- a single high chimneyed volume so the forge draws -- with a heavy cut_sandstone base and one large open working bay under a spruce awning on the north side, the only large opening. Blind on its south and east walls. Small parapeted roof used for drying and storing charcoal. External stair on the east wall, a single steep flight, the shortest in the settlement."
+  },
+  {
+   "id": "kiln_yard",
+   "kind": "potters' workshop and kiln shed",
+   "x0": -1048,
+   "z0": 1322,
+   "x1": -1038,
+   "z1": 1334,
+   "notes": "On the plain at y 72-78 at the very foot of the southern cliff, directly below ledge_crofts twelve blocks up on the mid ledge -- the retaining wall under those crofts is the back wall of this yard, and the potters live above their work. This is terracotta country and the clay is underfoot, which is the reason this building is at this height and nowhere else. Two low kiln vaults in solid masonry against the cliff, with an open drying shed of spruce posts in front, mostly roof and very little wall. Flat roof over the vaults used as a drying terrace; external stair between the two kiln mouths, rising straight up the cliff-side wall and continuing as a cut flight into the terrace above, so this building's stair is also the town's southern link between plain and mid ledge."
+  },
+  {
+   "id": "quay",
+   "kind": "boathouse, fish store and water steps",
+   "x0": -1010,
+   "z0": 1288,
+   "x1": -1000,
+   "z1": 1302,
+   "notes": "On the shoreline in the south-east at y 62-66, half on land and half over the water -- the only structure that touches water and the reason the settlement reaches this far east. Founded on cut_sandstone piers standing in the shallows, with the floor a flat deck over them; the east end is open to the water under a spruce awning, the west end is a walled store. Lowest building in the settlement by sixty-five blocks from the shrine, and that vertical span is the point: the whole town is visible above it. Fronts north-west onto the water_landing, which it shares with the byre. External stair rises from the water steps themselves up the south wall to a small roof platform used as a lookout over the water."
+  }
+ ]
+}

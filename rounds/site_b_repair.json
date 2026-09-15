@@ -1,0 +1,84 @@
+{
+ "name": "site_b",
+ "voice": "",
+ "base_volume": "world.npz",
+ "flags": {
+  "sight": false,
+  "split": false,
+  "select": 0,
+  "spaces": false,
+  "arm": "repair",
+  "allow_try": true
+ },
+ "waves": [],
+ "revise": {
+  "arm": "repair",
+  "out": "product-claim/repair",
+  "max_revisions": 2,
+  "max_bounces": 1,
+  "require_done": true,
+  "subjects": [
+   {
+    "prompt": "chapel",
+    "config": "out/site_b/product-claim/pc-chapel.json"
+   },
+   {
+    "prompt": "forge",
+    "config": "out/site_b/product-claim/pc-forge.json"
+   },
+   {
+    "prompt": "granary",
+    "config": "out/site_b/product-claim/pc-granary.json"
+   },
+   {
+    "prompt": "windmill",
+    "config": "out/site_b/product-claim/pc-windmill.json"
+   }
+  ]
+ },
+ "shots": {},
+ "cards": [],
+ "judgements": [],
+ "preregistered": {
+  "the_registration_is_elsewhere_and_unchanged": "The bars below are that text as data so the readout can be computed rather than\neyeballed. They are not new bars and they are not restated with different numbers; if\nthe two ever disagree, STATE.md is the registration and this file is the copy.",
+  "written_before": "any builder was called and any draft after build_0 existed",
+  "question": "when the findings brief carries the enterability defect, does the standard revision loop close the gap, and what is the spread afterwards?",
+  "subjects": "the sixteen product-claim first drafts, out/site_b/arms/product-claim/<prompt>/c<i>/<prompt>.py, on their plots, on the pre-build world.npz, offline. NO NEW FIRST DRAFTS.",
+  "step_0": "scripts/entry_diagnosis.py, run by the verification session with zero model calls; results in STATE.md facts 5 and 7 and in out/site_b/product-claim/entry_diagnosis.json. The dominant cause is the entry: in eight of nine low builds the door can be reached from outside only by jumping.",
+  "treatment": "lint.findings_brief over every code including E011/W011, plus, in the linter's own shape and severity wording: per door reachable from outside only by jumping, E002's sentence with walking only; per plot with rooms and no door leaf, W002's sentence listed with the errors; per room with floor that cannot be walked to from outdoors, 'N of the M floor cells of the room at (x,y,z) cannot be walked to from outdoors', whether or not the room is enclosed. Nothing about a fraction across the build, a score, an experiment, repeats or comparison. The builder returns the whole program. Repeat until own lint errors are 0 and no enterability line remains, or two revisions, whichever first.",
+  "measures": "all offline, all pre-existing: walk_pct from outdoors, own-door walk, rooms, floor_cells, own lint errors (floor-corrected), articulation, blocks, program lines -- for draft 0, 1 and 2. measure_program is unchanged, so all three drafts are measured by identical code.",
+  "lint_floor": {
+   "errors": 6,
+   "measured_by": "scripts/entry_diagnosis.py, floor row: the bare pre-build world.npz lints at 6 errors, all E010, plus W002 x12 and W009 x17. measure_program.lint_errors counts the whole lint region, so a candidate's own error count is that number minus this floor."
+  },
+  "bars": {
+   "walk_pct_threshold": 50.0,
+   "primary": "builds below 50% walk_pct after the loop, with the repair-by-deletion guard applied.\nFirst drafts: 9 of 16. <=3 of 16 -> the loop closes the gap when it can see it. >=7 of\n16 -> a builder cannot repair entry and stairs blind even when told exactly where; the\nblindness framing gains and sight arm C is the next spend, with this run as its\nbaseline. 4-6 -> partial; report it; do not move the bar.",
+   "closes_at_or_below": 3,
+   "fails_at_or_above": 7,
+   "secondary": "pooled within-prompt SD of walk_pct after the loop below 14.4 (half of the first drafts' 28.7); chapel below 15, windmill below 20. Descriptive at n=4 per prompt.",
+   "secondary_pooled_sd": 14.4,
+   "secondary_per_prompt": {
+    "chapel": 15,
+    "windmill": 20
+   },
+   "deletion_guard": "a candidate whose floor_cells falls by more than 25% or whose room count falls by more than one from draft 0 is reported as 'repaired by removing interior' and counted as NOT repaired in the primary. Registered because a builder told a room is unreachable can delete the room.",
+   "own_lint_errors_zero": "own lint errors at 0 on >=14 of 16 after at most two revisions -- the loop's standing claim, now with a floor-corrected count."
+  },
+  "blinding": "every builder call is staged through _blind_build into a hash-named scratch directory holding brief.md, findings.md and the program.py it writes back, and nothing else. Nothing that reaches a builder says there are sixteen of these, that drafts are compared, what is measured, or that this is an experiment. One bounce per call, tracebacks scrubbed. The experiment is void if a builder is told.",
+  "deviations_registered_here": {
+   "findings_brief_word_check": "the spec asks for a test that the composed brief contains none of the words walk_pct, fraction, score, candidate, arm, experiment, compar, repeat. The standard brief's own advice text for E011 and W011 -- frozen linter wording the treatment requires unchanged -- uses the word 'fraction' about a single room. The test therefore holds the whole composed brief to the seven experiment-leak words and holds the part this stage composes (its header, its section and its lines) to all eight. Recorded as a deviation rather than resolved by editing lint.FIXES, which would change the standard brief the round is defined by."
+  },
+  "confounds": [
+   "the builder is told the defect -- this measures the loop, not unprompted avoidance (the walkcheck asked that and got 'suggestive')",
+   "the builder is this session's model, which is not verifiably the model that wrote the first drafts",
+   "the walk metric's known biases (caves read as rooms; not invariant to room count) apply equally to draft 0 and draft 2, and step 0 is where an artefact would have shown",
+   "n=4 per prompt"
+  ],
+  "rules_held": [
+   "no check and no primitive added: the positive branch's two changes are made after the number, not before it",
+   "judge.py untouched; zero judge calls; no server; the standing settlements are not touched",
+   "measure_program unchanged, so drafts 0, 1 and 2 are measured by identical code and the stage at max_revisions=0 reproduces the sixteen recorded measures.json rows"
+  ]
+ }
+}

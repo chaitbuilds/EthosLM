@@ -1,0 +1,205 @@
+{
+ "name": "site_b",
+ "voice": "",
+ "base_volume": "world.npz",
+ "flags": {
+  "sight": false,
+  "split": false,
+  "select": 0,
+  "spaces": false,
+  "max_bounces": 1
+ },
+ "types": {
+  "out": "types_a",
+  "arm": "types_a",
+  "plots": [
+   "byre",
+   "granary",
+   "quarry_shed",
+   "watch_spur"
+  ],
+  "check_seeds": [
+   1,
+   2
+  ],
+  "shots": {
+   "geometry": "STEP3",
+   "margin": 8,
+   "spp": 40,
+   "size": [
+    900,
+    560
+   ],
+   "prefix": "types_a",
+   "scene_prefix": "r7r13_",
+   "verify_samples": 40,
+   "verify_max_bad": 2,
+   "snapshot": "types_a.before"
+  },
+  "list": [
+   {
+    "name": "cottage",
+    "file": "types/cottage.py",
+    "voice": "drystone_and_thatch",
+    "kind": "a cottage",
+    "request": "Write `types/cottage.py`: `build(b, plot, seed, **params)` builds a cottage in the voice, different every time the seed changes, with `PARAMS` for `storeys` and one choice you pick. Run `check.py` until every instance is clean.",
+    "instances": [
+     {
+      "plot": "byre",
+      "seed": 11
+     },
+     {
+      "plot": "granary",
+      "seed": 12
+     },
+     {
+      "plot": "quarry_shed",
+      "seed": 13
+     },
+     {
+      "plot": "watch_spur",
+      "seed": 14
+     }
+    ]
+   },
+   {
+    "name": "minka",
+    "file": "types/minka.py",
+    "voice": "japanese_minka",
+    "kind": "a farmhouse with a thatched roof and a veranda",
+    "request": "Write `types/minka.py`: `build(b, plot, seed, **params)` builds a farmhouse with a thatched roof and a veranda in the voice, different every time the seed changes, with `PARAMS` for `storeys` and one choice you pick. Run `check.py` until every instance is clean.",
+    "instances": [
+     {
+      "plot": "byre",
+      "seed": 11
+     },
+     {
+      "plot": "granary",
+      "seed": 12
+     },
+     {
+      "plot": "quarry_shed",
+      "seed": 13
+     },
+     {
+      "plot": "watch_spur",
+      "seed": 14
+     }
+    ]
+   },
+   {
+    "name": "temple",
+    "file": "types/temple.py",
+    "voice": "japanese_temple",
+    "kind": "a small temple hall on a raised platform with a two-tiered roof",
+    "request": "Write `types/temple.py`: `build(b, plot, seed, **params)` builds a small temple hall on a raised platform with a two-tiered roof in the voice, different every time the seed changes, with `PARAMS` for `storeys` and one choice you pick. Run `check.py` until every instance is clean.",
+    "instances": [
+     {
+      "plot": "byre",
+      "seed": 11
+     },
+     {
+      "plot": "granary",
+      "seed": 12
+     },
+     {
+      "plot": "quarry_shed",
+      "seed": 13
+     },
+     {
+      "plot": "watch_spur",
+      "seed": 14
+     }
+    ]
+   }
+  ]
+ },
+ "cards": [
+  {
+   "name": "types_a",
+   "frames": "out/site_b/types_a/frames",
+   "out": "out/site_b/types_a",
+   "layout": "quad",
+   "size": [
+    900,
+    560
+   ],
+   "strict": true,
+   "blank_keys": [],
+   "tags": [
+    "r13_cottage_byre",
+    "r13_cottage_granary",
+    "r13_cottage_quarry_shed",
+    "r13_cottage_watch_spur",
+    "r13_minka_byre",
+    "r13_minka_granary",
+    "r13_minka_quarry_shed",
+    "r13_minka_watch_spur",
+    "r13_temple_byre",
+    "r13_temple_granary",
+    "r13_temple_quarry_shed",
+    "r13_temple_watch_spur"
+   ]
+  }
+ ],
+ "judgements": [],
+ "preregistered": {
+  "registered_here_before_a_builder_was_called": true,
+  "question": "is the type a first-class thing -- cheap, various and reliable across the ground it stands on?",
+  "bars": {
+   "instances_lint_zero": {
+    "bar": ">= 11",
+    "of": 12,
+    "measure": "own lint errors at 0 on 11 of 12 instances. Own errors are the build family scoped to that instance's own plot, the way settlement_run scopes a pass and the way rounds 9 to 12 counted a builder's own errors."
+   },
+   "instances_walkable": {
+    "bar": ">= 10",
+    "of": 12,
+    "pct": 90,
+    "measure": "interior floor walkable from outdoors >= 90% on 10 of 12 instances, on the corrected walk model (observe.STAIR_CLEAR = 6).",
+    "today": "its four single structures read 86.3, 92.8, 59.2 and 98.9"
+   },
+   "tokens_per_building": {
+    "bar": "<= 25000",
+    "measure": "true tokens per building: the three builder calls' own reported totals, summed and divided by the twelve instances. Reported by each isolated subagent when asked; out/site_b/types_a/tokens.json. The harness counter under-reads and must not be quoted as the cost."
+   },
+   "within_type_variation": {
+    "bar": ">= 3",
+    "of": 3,
+    "ridge": 2,
+    "footprint": 2,
+    "measure": "per type, across its four instances: ridge height differs by >= 2 and footprint differs by >= 2 cells. Counted as the number of types meeting both."
+   },
+   "building_calls_per_type": {
+    "bar": ">= 3",
+    "of": 3,
+    "measure": "how many of the three types call building(). A type that composes from primitives instead is reported and read, not failed: it is the library saying its shell does not reach that building, and that is the next primitive."
+   }
+  },
+  "reported_no_bar": [
+   "roof-height to wall-height ratio per instance.",
+   "the PARAMS each type chose for itself",
+   "every refusal, with its reason: building(), fitting(), flight(), dais() and the material families",
+   "check runs per type call, from the check_run rows on out/measurements.jsonl",
+   "program lines per type, and blocks per instance",
+   "one human question, optional and unblinded because the principal knows the set: three cards, one per type, all three on the byre plot so the ground is constant, and 'which is the farmhouse, which the temple, which the cottage', with any comment they volunteer"
+  ],
+  "human_read": {
+   "cards": [
+    "out/site_b/types_a/r13_cottage_byre_card.png",
+    "out/site_b/types_a/r13_minka_byre_card.png",
+    "out/site_b/types_a/r13_temple_byre_card.png"
+   ],
+   "shown": "all three on the byre plot, so the ground and the camera are constant and the only difference is the type",
+   "question": "Which is the farmhouse, which the temple, which the cottage?",
+   "recorded_not_scored": "no bar."
+  },
+  "independence": "each type is one builder call, staged through _blind_build into a hash-named scratch directory holding brief.md, check.py and nothing else. No builder is told that other types exist, that anything is compared, or what is measured. The brief carries the API, the voice, the type contract, the four plots and the one request sentence.",
+  "one_pass": "sight=false, split=false, select=0, spaces=false. max_bounces=1 retires a program that preflights and then raises.",
+  "rules_held": [
+   "nothing beyond part A's A1-A8 and part B; no village; no judge calls; no new lint check",
+   "the standing settlements are not touched: the live world is verified against the built cache, snapshotted, each plot's region reset to pre-build from the cache diff, each instance written and reverted cell by cell, and the town restored from the same diff",
+   "no bar is moved; a miss is reported as a miss"
+  ]
+ }
+}

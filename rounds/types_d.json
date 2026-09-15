@@ -1,0 +1,108 @@
+{
+ "name": "site_b",
+ "voice": "",
+ "base_volume": "world.npz",
+ "flags": {
+  "sight": false,
+  "split": false,
+  "select": 0,
+  "spaces": false,
+  "max_bounces": 1
+ },
+ "preregistered": {
+  "walk_model": 6,
+  "registered_here_before_a_builder_was_called": true,
+  "written_before": "the call.",
+  "bars": {
+   "instances_lint_zero": {
+    "bar": ">= 7 of 8",
+    "note": ">= 7 of 8 clean for a plot type. Six fixtures at two seeds is twelve instances and the\nbar is read as >= 7 of 8 of them proportionally -- the driver reads the count, so the\nnumber reported beside it is what the checker ran."
+   }
+  },
+  "reported_no_bar": {
+   "tokens": "true tokens for the one call, as the isolated subagent reports them",
+   "needs": "what the type declares as NEEDS, against what scripts/type_needs.py measures for it",
+   "lines": "lines of the committed file"
+  },
+  "rules_held": [
+   "one call, and only for the keep.",
+   "no new lint check in the frozen suite",
+   "no bar is moved",
+   "no block is written: the backend is offline"
+  ]
+ },
+ "types": {
+  "out": "types_d",
+  "arm": "types_d",
+  "check_fixtures": [
+   {
+    "round": "site_e",
+    "plot": "fold_barn",
+    "columns": 285,
+    "relief": 2,
+    "water_pct": 0.0,
+    "rule": "driest_flat",
+    "why": "dry, and the flattest and biggest of the dry"
+   },
+   {
+    "round": "site_d",
+    "plot": "south_gate",
+    "columns": 165,
+    "relief": 21,
+    "water_pct": 0.0,
+    "rule": "most_relief",
+    "why": "the greatest relief anywhere in the three rounds"
+   },
+   {
+    "round": "site_d",
+    "plot": "tarn_landing",
+    "columns": 180,
+    "relief": 2,
+    "water_pct": 99.4,
+    "rule": "wettest",
+    "why": "the most water"
+   },
+   {
+    "round": "site_b",
+    "plot": "court_wellhouse",
+    "columns": 64,
+    "relief": 2,
+    "water_pct": 0.0,
+    "rule": "smallest",
+    "why": "the fewest columns"
+   },
+   {
+    "round": "site_b",
+    "plot": "east_row",
+    "columns": 432,
+    "relief": 6,
+    "water_pct": 0.0,
+    "rule": "largest",
+    "why": "the most columns"
+   },
+   {
+    "round": "site_e",
+    "plot": "boat_landing",
+    "columns": 195,
+    "relief": 8,
+    "water_pct": 2.1,
+    "rule": "waterside",
+    "why": "some water, but not a lake: the edge of one"
+   }
+  ],
+  "check_seeds": [
+   1,
+   2
+  ],
+  "list": [
+   {
+    "name": "keep",
+    "part": "plot",
+    "file": "types/keep.py",
+    "voice": "white_render_dark_frame",
+    "kind": "the keep of a walled town",
+    "request": "Write `types/keep.py`: `build(b, part, seed, **params)` builds the keep of a walled town -- the one strong building the place is defended from and the thing a person walking in sees over the roofs. A tower or a hall-and-tower with real thickness to its walls, at least two storeys with a stair between them that a person can walk up, a way onto the top, and furnished inside like somewhere people actually hold out: a hearth, stores, sleeping, light. **Everything you build has to be reachable on foot** -- walking, not jumping -- from the door the part gives you: a top nobody can climb to is a roof with a room under it. Declare `KIND = \"plot\"`, `NEEDS`, and `PARAMS` for two things of your own choosing that a plan might reasonably want to vary. Different seeds have to give a different keep. Run `check.py` until every instance is clean."
+   }
+  ]
+ }
+}

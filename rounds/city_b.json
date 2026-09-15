@@ -1,0 +1,98 @@
+{
+ "name": "city_b",
+ "sentence": "Build Ringed City.",
+ "shots": {
+  "place": true,
+  "prefix": "bss",
+  "frames": [
+   "step4_shots",
+   "frames"
+  ],
+  "spp": 40,
+  "size": [
+   900,
+   560
+  ],
+  "budget": {
+   "place": true,
+   "defining": true,
+   "sample": 24,
+   "sample_seed": 1,
+   "flythrough": true
+  }
+ },
+ "preregistered": {
+  "walk_model": 6,
+  "written_before": "the place spec was asked for, the site was searched for, any type was authored, the\nplanner was called or a block was placed. The structures band is `within the scaled band\nthe spec produced`, and the driver reads the lower end because it takes one comparator;\nthe place read holds the round to both ends. The walk model is 6 and is unmoved from\nrounds 16, 17 and 19.",
+  "order": "place_spec -> site_search -> site -> cache -> plateau -> plan -> circulation -> parts -> finish -> lint -> place_check -> readout, offline and iterated until every bar holds; then the same list live with render, cards and judge, once. `cache` runs before `plateau` in the dry run because a plateau offline is a cut applied to the volume the run is scored against, and there is no volume until the ground has been read.",
+  "input": "one sentence, and nothing else. No coordinates, no size, no voice: the kind, the band, the footprint, the site and the palette are all chosen inside the run and the record shows why. `site`, `voice` and `flags.types` are absent from this file on purpose and their absence is the claim.",
+  "bars": {
+   "place_read": {
+    "bar": {
+     "comparator": "==",
+     "value": 1
+    },
+    "note": "ring walls nested closed loops, a gate on each ring and on an arterial, an arterial\ncrossing a ring only at a gate, the palace inside the innermost ring, every structure\ninside the outermost one. Holds or does not."
+   },
+   "walk_from_outdoors_pct": {
+    "bar": ">= 90",
+    "note": "interior floor walkable from outdoors over the whole place, walk-only, under walk model\n6. This asks it of a city."
+   },
+   "e002_from_the_lane": {
+    "bar": "0 findings",
+    "note": "doors reachable on foot from the lane. 0 in rounds 10 and 11."
+   },
+   "own_lint_errors": {
+    "bar": "0",
+    "note": "the build family over every part's own ground."
+   },
+   "instantiation": {
+    "bar": ">= 95",
+    "note": "per cent of the plan's leaves that stand. 100%. 98.4%. 'Stand' is the type's own answer,\nnot the program's."
+   },
+   "structures": {
+    "bar": "within the scaled band the spec produced",
+    "note": "plot leaves that stand, against the band the spec produced from the sentence after A2's ceiling scaled it. The driver reads the lower end as one comparator and the place read holds the round to both."
+   },
+   "hand_programs": {
+    "bar": "0",
+    "note": "programs in this build that are not an instance of a committed type. Every part is composed by place.instantiate_part from a file under types/. The eight types Part B names and the re-authorings Part C names are authored before the build, never during it."
+   },
+   "site_chosen": {
+    "bar": {
+     "comparator": "==",
+     "value": 1
+    },
+    "note": "the ground was chosen by the system and the record of why is on disk -- the top three candidates with their scores and every square the scan read or refused to read -- and this config names no site. 0 if a human wrote a coordinate."
+   },
+   "tokens_whole_effort": {
+    "bar": "<= 6",
+    "tokens": "tokens.json",
+    "note": "millions of true tokens over every model call this effort made, Part B included -- the\nplace spec call, the eight type authors, the re-authorings, the place-level planner, one\nplanner call per district and the judge -- as the isolated subagents reported them."
+   }
+  },
+  "reported_no_bar": {
+   "place_spec": "what the one schema call made of the sentence: kind, band, defining parts with their own needs, forms and density, the authored voice, and every number the library derived from them (out/city_b/place.json)",
+   "site_search": "every radius scanned, how many squares came from the cache, how many the server read, how many were ground the region files do not cover, and the top three with their measures (out/city_b/site_search.json)",
+   "core_and_outer_relief": "A1: the relief of the core and of the outer ring of the chosen site, beside the band the relief preference was read against",
+   "plateau": "what the cut under the palace compound took out, and that it is the only ground this run moved",
+   "voice": "the voice the spec authored or chose, and by what rule",
+   "plan_levels": "the place level and one level per district: what each was asked, what it answered, and whether it had to be handed back",
+   "types": "true tokens, lines and check runs for each of the eight type authors, and the NEEDS band the sweep measured for each",
+   "iterations": "every iteration of the offline run and every number it read, in order",
+   "whole_place_lint_seconds": "the one whole-place lint at the end.",
+   "render_budget": "A4: how many frames were shot and of what, against the 400 structures that were not photographed",
+   "walk": "a person, three questions -- can you get everywhere on foot? is this Ringed City? does it read as one city?"
+  },
+  "rules_held": [
+   "no coordinates, sizes or voices in this config; the system chooses and the record shows why",
+   "no builder call in the build; every part is an instance of a committed type",
+   "no builder call at all except the eight types Part B names and the re-authorings Part C names",
+   "no live write until the offline run holds every bar",
+   "no new lint check in the frozen suite",
+   "rounds 4, 6, 7, 8, 9, 10, 11, 14, 16 and 17 are not touched",
+   "no bar is moved; a miss is reported as a miss; every iteration's numbers stay on the record",
+   "a library defect any test finds is fixed in the library and its case is kept"
+  ]
+ }
+}

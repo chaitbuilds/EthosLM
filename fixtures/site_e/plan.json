@@ -1,0 +1,141 @@
+{
+ "intent": "A quarry-and-water village strung along the one continuous bench of workable ground on a badlands hillside. The site has three hard facts: a chasm in the north-west that drops from about y=90 to y=-12 (the 106/92 roughness cells), a broad still-water flat at y=62 filling the whole east quarter, and between them a south-facing shelf at y=78-86 that is the only large ground with roughness under 10. People settled the shelf because it is the single place you can stand dry, level and above the water while still being able to reach both the stone and the shore. The town therefore reads as one spine, not a scatter: it runs north to south down the shelf from the mine head on the chasm lip, through the kiln yard and the smithy, to the moot hall and its court, and then out into house rows, croft and fold on the gentler ground to the south and west. Three pieces sit deliberately at the edges and each is the far end of a single lane, not an object of its own: the mine head at the chasm rim, the watch on the high plateau nose at y=89 west of the chasm, and the slipway down at the water in the east. Everything is built the same way out of the same quarry - dry-laid cobblestone battered at the base, mossy cobble footings and retaining walls, small deep openings under single spruce lintels, hard-pitched dark oak roofs with eaves you can touch - and almost every building carries an outshot lean-to along one long side, roofed shallower, but never the same outshot twice: it is a cart bay on the smithy, a byre aisle on the stock shed, a drying arcade on the kiln, a stair penthouse on the hall. Nothing is rendered and nothing is cut into a flat pad; where a building crosses a fall it steps down in a whole storey and the retaining wall below it is the same stone as the wall above. The walls and roofs must stay grey-and-dark against sand, red sand and terracotta ground - that contrast is the whole reason the place is visible from a distance. Variety between buildings comes from purpose: the hall spans wide and low, the granary and the towers are tall and nearly blind, the byre and the fold barn are long and open-sided, the cottages are small and thick-walled.",
+ "centre": "moot_hall",
+ "voice": "drystone_and_thatch",
+ "palette": {
+  "wall": "cobblestone",
+  "footing": "mossy_cobblestone",
+  "frame": "spruce",
+  "roof": "dark_oak",
+  "trim": "stripped_spruce_log"
+ },
+ "circulation_material": "cobblestone",
+ "structures": [
+  {
+   "id": "moot_hall",
+   "kind": "moot hall - the settlement's meeting house and court",
+   "x0": -1480,
+   "z0": 1654,
+   "x1": -1461,
+   "z1": 1667,
+   "notes": "The centre. Sits on the flattest, widest part of the shelf at about y=78-82, long axis east-west so the gable ends face up and down the spine and the length faces the sun. Widest span and lowest eaves of anything here: one great room, aisle posts of spruce, few and small openings high in the long wall. Its outshot is a covered stair-and-porch penthouse on the south long side, giving onto the court that the routes build on its east flank, where the ground steps down about two blocks towards the cistern. Every lane in the settlement should be able to arrive here."
+  },
+  {
+   "id": "byre",
+   "kind": "byre - long cattle and pack-animal shed",
+   "x0": -1504,
+   "z0": 1652,
+   "x1": -1488,
+   "z1": 1664,
+   "notes": "Directly west of the hall across a seven-block lane, on ground of the same height (about y=78) but slightly broken. Long, low and the most open building in the town: a dwarf cobble wall about four high with the gable ends closed and the long south side an open arcade of spruce posts under the eaves, so it reads as shelter rather than house. Its outshot is a full-length open aisle on the downhill side used as a muck and cart run."
+  },
+  {
+   "id": "smithy",
+   "kind": "smithy - forge and iron store for the mine",
+   "x0": -1488,
+   "z0": 1637,
+   "x1": -1475,
+   "z1": 1646,
+   "notes": "On the level pad north of the hall (y=80, roughness 3 - genuinely flat, so this one may sit square). Small and tall for its footprint, thick-walled, with a stone hood and stack rising through the roof ridge and one wide open working front facing the lane so the light comes in low. Its outshot is a half-open charcoal and cart bay on the north long side, roofed shallower and left with no wall on the lane end. Placed between the mine head and the hall because the ore and the tools both pass this way."
+  },
+  {
+   "id": "kiln_yard",
+   "kind": "potter's kiln yard - clay workshop with a stone kiln",
+   "x0": -1490,
+   "z0": 1619,
+   "x1": -1474,
+   "z1": 1629,
+   "notes": "Between the mine head and the smithy on the y=78-80 bench. The country is terracotta and clay, and this is where it is fired. A stubby, heavy stone kiln mass at the north end and a lower working shed hung off it to the south, so the silhouette is deliberately two-part and unlike anything else on the spine. Its outshot is a long open drying arcade of spruce posts on the west long side with a shallow roof and no wall at all - pots stack under it. Keep the yard side clear towards the lane."
+  },
+  {
+   "id": "mine_head",
+   "kind": "mine head - windlass house over the shaft at the chasm rim",
+   "x0": -1492,
+   "z0": 1600,
+   "x1": -1478,
+   "z1": 1611,
+   "notes": "The north end of the spine, sitting on the south lip of the great chasm (the ground falls from about y=80 here to below y=0 within the cells just north). This is the reason for the settlement's stone. Build it half on the rim and half over the drop: a tall narrow windlass and gear house whose downhill side is carried on a deep battered retaining wall of the same cobble, stepping down one whole storey rather than being levelled. Small, deep, few openings; one big timber-framed opening facing the void where the rope runs out. Its outshot is a low stone-walled lean-to on the uphill side holding the spoil and tool store. Nothing should be built north of it - the chasm is the edge of the world here."
+  },
+  {
+   "id": "granary",
+   "kind": "granary - raised grain and dry store",
+   "x0": -1452,
+   "z0": 1640,
+   "x1": -1442,
+   "z1": 1650,
+   "notes": "North-east of the court, on the y=80-81 shoulder. Nearly square, the tallest small building in the town: an almost blind mass of thick battered cobble on a raised mossy-cobble plinth with a ventilation slot course under the eaves and a single door reached up an external stone stair. Steep roof, plain gables. Its outshot is a small covered stair-head porch on the west side facing the court, so the stair is sheltered without breaking the blank walls."
+  },
+  {
+   "id": "cistern_house",
+   "kind": "cistern house - vaulted well house over the town's water store",
+   "x0": -1456,
+   "z0": 1674,
+   "x1": -1448,
+   "z1": 1682,
+   "notes": "The smallest structure here, on the south edge of the hall's court where the shelf begins to tip south. Nothing but a low vaulted stone box on mossy footings, dug in on the uphill side so it is nearly buried to the north and stands a full storey clear to the south on a retaining wall, with a drinking trough at that lower level. Roof steep and tiny, eaves at head height. No outshot: this is the one building that is only stone and ground, and the exception is what makes the others read as a family."
+  },
+  {
+   "id": "east_gate",
+   "kind": "east gate - gatehouse and lookout at the head of the water descent",
+   "x0": -1438,
+   "z0": 1658,
+   "x1": -1428,
+   "z1": 1668,
+   "notes": "Where the shelf breaks and the land drops about fourteen blocks into the channel that runs east to the water. Broken ground (roughness 16) on purpose: build it as two storeys stepping down the fall, upper room on the shelf level, lower room and the arched cart passage carried on a battered retaining wall, both the same stone. Tall and narrow, arrow-slot openings east over the flats. Its outshot is a small guard lean-to clamped to the uphill long side at the upper level. This is the town's threshold to the water - the lane through it is the only route down to the slipway."
+  },
+  {
+   "id": "boat_landing",
+   "kind": "boat landing - slipway and net shed at the water's edge",
+   "x0": -1402,
+   "z0": 1634,
+   "x1": -1388,
+   "z1": 1646,
+   "notes": "Down at the eastern flat where the bank at about y=67 meets the still water at y=62. The far end of the east gate's lane and the only building the town has at the water. It must step: a cobble quay and slipway running out from the bank in whole courses to the waterline, with a small open-ended net and boat shed set on the top step, gable to the water. Low, dark, half open. Its outshot is a shallow-roofed drying lean-to on the landward long side. Retaining and quay stone identical to the village walls so it is obviously the same hands."
+  },
+  {
+   "id": "house_row_upper",
+   "kind": "row of three houses on the upper terrace",
+   "x0": -1498,
+   "z0": 1689,
+   "x1": -1471,
+   "z1": 1699,
+   "notes": "South of the hall on the smooth rising ground, running east-west across a fall of five or six blocks from the east end down to the west. Three dwellings sharing party walls, but the row does not follow the slope with a sloping ridge - each house is a whole storey lower than its neighbour, so the ridge and the eaves step down in three flat jumps and the joints between them are exposed stone. Small deep windows, single-timber lintels, doors on the north side facing the hall. The outshot runs along the south long side but only under the two upper houses, dying out where the row steps down - never continuous."
+  },
+  {
+   "id": "house_row_lower",
+   "kind": "row of two houses on the west terrace",
+   "x0": -1532,
+   "z0": 1670,
+   "x1": -1511,
+   "z1": 1681,
+   "notes": "On the lower western bench, about y=72-78, falling west. Two larger dwellings, deliberately not a repeat of the upper row: one storey drops between them, gables to the lane rather than eaves, and their outshot is on the north long side and is enclosed with a stone wall and a door of its own (a scullery, not an open lean-to). The west end house is the last building before the ground falls away, so its downhill gable stands on a tall battered retaining wall."
+  },
+  {
+   "id": "croft",
+   "kind": "croft - single cottage with a walled garth",
+   "x0": -1530,
+   "z0": 1699,
+   "x1": -1516,
+   "z1": 1711,
+   "notes": "The south-west edge of the settlement, alone on gentle ground rising eastwards from about y=73 to y=78. The smallest dwelling: one thick-walled room and a loft, one door, two openings, roof pitched hard. About half the footprint is not building at all but a dry-laid cobble garth wall enclosing a yard on the downhill side, low enough to step over, tying the cottage to the ground. Its outshot is a byre-end lean-to on the uphill long side, shared wall with the cottage, one animal deep."
+  },
+  {
+   "id": "fold_barn",
+   "kind": "sheepfold and open hay barn on the high pasture",
+   "x0": -1464,
+   "z0": 1694,
+   "x1": -1446,
+   "z1": 1708,
+   "notes": "On the flattest high ground in the settlement (y=85-86, roughness 1-2), above and south-east of the hall where the grazing is. Mostly not a building: a large dry-laid cobble fold wall about three high enclosing the yard, with an open hay barn built into its north-west corner - four spruce bays, no walls except the two it borrows from the fold, and a steep dark oak roof. Because the fold walls are the outshot's equal here, the lean-to instead takes the form of a shallow-roofed shepherd's bothy tucked against the outside of the east fold wall."
+  },
+  {
+   "id": "west_watch",
+   "kind": "watch tower on the plateau nose above the chasm",
+   "x0": -1518,
+   "z0": 1586,
+   "x1": -1508,
+   "z1": 1596,
+   "notes": "The high point of the whole site, y=89 and flat, standing on the western plateau across the chasm from the mine head and looking down into it and out over the entire settlement. Reached by a lane running west along the y=80 bench from the mine head and then climbing the nose. Tall, square, nearly blind - a battered cobble shaft with a spruce-framed watch stage and a squat pyramidal dark oak cap at the top, openings only in the top storey. Its outshot is a single-storey stone lean-to at the base on the lee (east) side, a shelter for whoever is on watch. This is the settlement's edge marker; nothing else goes on the plateau."
+  }
+ ]
+}

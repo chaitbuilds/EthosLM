@@ -1,0 +1,562 @@
+{
+ "name": "site_b",
+ "voice": "",
+ "base_volume": "world.npz",
+ "flags": {
+  "sight": false,
+  "split": false,
+  "select": 0,
+  "spaces": false,
+  "allow_try": true
+ },
+ "waves": [
+  {
+   "name": "wave1"
+  },
+  {
+   "name": "wave2"
+  },
+  {
+   "name": "wave3"
+  },
+  {
+   "name": "wave4"
+  },
+  {
+   "name": "wave5"
+  },
+  {
+   "name": "wave6"
+  }
+ ],
+ "shots": {
+  "frames": [
+   "e1d",
+   "frames"
+  ],
+  "geometry": "E1D",
+  "spp": 40,
+  "size": [
+   900,
+   560
+  ],
+  "prefix": "orig"
+ },
+ "cards": [
+  {
+   "name": "e1c",
+   "frames": "out/site_b/e1c/frames",
+   "layout": "pair",
+   "size": [
+    900,
+    560
+   ],
+   "strict": false,
+   "blank_keys": [],
+   "tags": [
+    "mut_m_roof_gone_west_croft_row",
+    "mut_m_roof_lift_moot_hall",
+    "mut_m_scramble_moot_hall",
+    "mut_m_scramble_west_croft_row",
+    "mut_m_sink_moot_hall",
+    "mut_m_sink_west_croft_row",
+    "mut_m_squash_moot_hall",
+    "mut_m_stair_reverse_moot_hall",
+    "mut_m_stair_reverse_west_croft_row",
+    "mut_m_wall_gone_moot_hall",
+    "mut_m_wall_gone_west_croft_row",
+    "mut_m_wall_hole_moot_hall",
+    "mut_m_wall_hole_west_croft_row",
+    "orig_moot_hall",
+    "orig_west_croft_row"
+   ],
+   "out": "out/site_b/e1c"
+  },
+  {
+   "name": "e1d",
+   "frames": "out/site_b/e1d/frames",
+   "layout": "quad",
+   "size": [
+    900,
+    560
+   ],
+   "strict": false,
+   "tags": [
+    "mut_m_float_field_moot_hall",
+    "mut_m_float_field_west_croft_row",
+    "mut_m_glaze_solid_moot_hall",
+    "mut_m_glaze_solid_west_croft_row",
+    "mut_m_palette_riot_moot_hall",
+    "mut_m_palette_riot_west_croft_row",
+    "mut_m_roof_gone_moot_hall",
+    "mut_m_roof_gone_west_croft_row",
+    "mut_m_roof_lift_moot_hall",
+    "mut_m_roof_lift_west_croft_row",
+    "mut_m_scramble_moot_hall",
+    "mut_m_scramble_west_croft_row",
+    "mut_m_sink_moot_hall",
+    "mut_m_sink_west_croft_row",
+    "mut_m_squash_moot_hall",
+    "mut_m_squash_west_croft_row",
+    "mut_m_stair_reverse_moot_hall",
+    "mut_m_stair_reverse_west_croft_row",
+    "mut_m_wall_gone_moot_hall",
+    "mut_m_wall_gone_west_croft_row",
+    "mut_m_wall_hole_moot_hall",
+    "mut_m_wall_hole_west_croft_row",
+    "orig_moot_hall",
+    "orig_west_croft_row"
+   ],
+   "out": "out/site_b/e1d"
+  },
+  {
+   "name": "e3",
+   "frames": "out/site_b/e3/frames",
+   "layout": "e3",
+   "size": [
+    900,
+    560
+   ],
+   "strict": false,
+   "blank_keys": [],
+   "tags": [
+    "original",
+    "tight",
+    "degraded"
+   ],
+   "out": "out/site_b/e3"
+  },
+  {
+   "name": "step3",
+   "frames": "out/site_b/step3/frames",
+   "layout": "quad",
+   "size": [
+    900,
+    560
+   ],
+   "strict": false,
+   "blank_keys": [],
+   "tags": [
+    "control",
+    "p_sight",
+    "p_split",
+    "p_select",
+    "p_spaces"
+   ],
+   "out": "out/site_b/step3"
+  }
+ ],
+ "judgements": [
+  {
+   "name": "e1a",
+   "stage_name": "e1a",
+   "question": "Which of these two buildings is in better condition? A or B, one sentence.",
+   "floor": {
+    "min_correct_rate": 0.8,
+    "max_tie_rate": 0.3
+   },
+   "pairs": [
+    {
+     "label": "m_wall_hole_west_croft_row",
+     "a": "out/site_b/e1a/pair00_m_wall_hole_west_croft_row_orig.png",
+     "b": "out/site_b/e1a/pair00_m_wall_hole_west_croft_row_mut.png"
+    },
+    {
+     "label": "m_wall_hole_moot_hall",
+     "a": "out/site_b/e1a/pair01_m_wall_hole_moot_hall_orig.png",
+     "b": "out/site_b/e1a/pair01_m_wall_hole_moot_hall_mut.png"
+    },
+    {
+     "label": "m_roof_gone_west_croft_row",
+     "a": "out/site_b/e1a/pair02_m_roof_gone_west_croft_row_orig.png",
+     "b": "out/site_b/e1a/pair02_m_roof_gone_west_croft_row_mut.png"
+    },
+    {
+     "label": "m_roof_gone_moot_hall",
+     "a": "out/site_b/e1a/pair03_m_roof_gone_moot_hall_orig.png",
+     "b": "out/site_b/e1a/pair03_m_roof_gone_moot_hall_mut.png"
+    },
+    {
+     "label": "m_roof_lift_west_croft_row",
+     "a": "out/site_b/e1a/pair04_m_roof_lift_west_croft_row_orig.png",
+     "b": "out/site_b/e1a/pair04_m_roof_lift_west_croft_row_mut.png"
+    },
+    {
+     "label": "m_roof_lift_moot_hall",
+     "a": "out/site_b/e1a/pair05_m_roof_lift_moot_hall_orig.png",
+     "b": "out/site_b/e1a/pair05_m_roof_lift_moot_hall_mut.png"
+    },
+    {
+     "label": "m_wall_gone_west_croft_row",
+     "a": "out/site_b/e1a/pair06_m_wall_gone_west_croft_row_orig.png",
+     "b": "out/site_b/e1a/pair06_m_wall_gone_west_croft_row_mut.png"
+    },
+    {
+     "label": "m_wall_gone_moot_hall",
+     "a": "out/site_b/e1a/pair07_m_wall_gone_moot_hall_orig.png",
+     "b": "out/site_b/e1a/pair07_m_wall_gone_moot_hall_mut.png"
+    },
+    {
+     "label": "m_float_field_west_croft_row",
+     "a": "out/site_b/e1a/pair08_m_float_field_west_croft_row_orig.png",
+     "b": "out/site_b/e1a/pair08_m_float_field_west_croft_row_mut.png"
+    },
+    {
+     "label": "m_float_field_moot_hall",
+     "a": "out/site_b/e1a/pair09_m_float_field_moot_hall_orig.png",
+     "b": "out/site_b/e1a/pair09_m_float_field_moot_hall_mut.png"
+    },
+    {
+     "label": "m_palette_riot_west_croft_row",
+     "a": "out/site_b/e1a/pair10_m_palette_riot_west_croft_row_orig.png",
+     "b": "out/site_b/e1a/pair10_m_palette_riot_west_croft_row_mut.png"
+    },
+    {
+     "label": "m_palette_riot_moot_hall",
+     "a": "out/site_b/e1a/pair11_m_palette_riot_moot_hall_orig.png",
+     "b": "out/site_b/e1a/pair11_m_palette_riot_moot_hall_mut.png"
+    },
+    {
+     "label": "m_scramble_west_croft_row",
+     "a": "out/site_b/e1a/pair12_m_scramble_west_croft_row_orig.png",
+     "b": "out/site_b/e1a/pair12_m_scramble_west_croft_row_mut.png"
+    },
+    {
+     "label": "m_scramble_moot_hall",
+     "a": "out/site_b/e1a/pair13_m_scramble_moot_hall_orig.png",
+     "b": "out/site_b/e1a/pair13_m_scramble_moot_hall_mut.png"
+    },
+    {
+     "label": "m_glaze_solid_west_croft_row",
+     "a": "out/site_b/e1a/pair14_m_glaze_solid_west_croft_row_orig.png",
+     "b": "out/site_b/e1a/pair14_m_glaze_solid_west_croft_row_mut.png"
+    },
+    {
+     "label": "m_glaze_solid_moot_hall",
+     "a": "out/site_b/e1a/pair15_m_glaze_solid_moot_hall_orig.png",
+     "b": "out/site_b/e1a/pair15_m_glaze_solid_moot_hall_mut.png"
+    },
+    {
+     "label": "m_stair_reverse_west_croft_row",
+     "a": "out/site_b/e1a/pair16_m_stair_reverse_west_croft_row_orig.png",
+     "b": "out/site_b/e1a/pair16_m_stair_reverse_west_croft_row_mut.png"
+    },
+    {
+     "label": "m_stair_reverse_moot_hall",
+     "a": "out/site_b/e1a/pair17_m_stair_reverse_moot_hall_orig.png",
+     "b": "out/site_b/e1a/pair17_m_stair_reverse_moot_hall_mut.png"
+    },
+    {
+     "label": "m_sink_west_croft_row",
+     "a": "out/site_b/e1a/pair18_m_sink_west_croft_row_orig.png",
+     "b": "out/site_b/e1a/pair18_m_sink_west_croft_row_mut.png"
+    },
+    {
+     "label": "m_sink_moot_hall",
+     "a": "out/site_b/e1a/pair19_m_sink_moot_hall_orig.png",
+     "b": "out/site_b/e1a/pair19_m_sink_moot_hall_mut.png"
+    },
+    {
+     "label": "m_squash_west_croft_row",
+     "a": "out/site_b/e1a/pair20_m_squash_west_croft_row_orig.png",
+     "b": "out/site_b/e1a/pair20_m_squash_west_croft_row_mut.png"
+    },
+    {
+     "label": "m_squash_moot_hall",
+     "a": "out/site_b/e1a/pair21_m_squash_moot_hall_orig.png",
+     "b": "out/site_b/e1a/pair21_m_squash_moot_hall_mut.png"
+    }
+   ],
+   "skip_identical": true
+  },
+  {
+   "name": "e1c",
+   "stage_name": "e1c",
+   "question": "Which of these two buildings is in better condition? A or B, one sentence.",
+   "floor": {
+    "min_correct_rate": 0.8,
+    "max_tie_rate": 0.3
+   },
+   "pairs": [
+    {
+     "label": "m_wall_hole_west_croft_row",
+     "a": "out/site_b/e1c/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1c/mut_m_wall_hole_west_croft_row_card.png"
+    },
+    {
+     "label": "m_wall_hole_moot_hall",
+     "a": "out/site_b/e1c/orig_moot_hall_card.png",
+     "b": "out/site_b/e1c/mut_m_wall_hole_moot_hall_card.png"
+    },
+    {
+     "label": "m_roof_gone_west_croft_row",
+     "a": "out/site_b/e1c/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1c/mut_m_roof_gone_west_croft_row_card.png"
+    },
+    {
+     "label": "m_roof_lift_moot_hall",
+     "a": "out/site_b/e1c/orig_moot_hall_card.png",
+     "b": "out/site_b/e1c/mut_m_roof_lift_moot_hall_card.png"
+    },
+    {
+     "label": "m_wall_gone_west_croft_row",
+     "a": "out/site_b/e1c/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1c/mut_m_wall_gone_west_croft_row_card.png"
+    },
+    {
+     "label": "m_wall_gone_moot_hall",
+     "a": "out/site_b/e1c/orig_moot_hall_card.png",
+     "b": "out/site_b/e1c/mut_m_wall_gone_moot_hall_card.png"
+    },
+    {
+     "label": "m_scramble_west_croft_row",
+     "a": "out/site_b/e1c/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1c/mut_m_scramble_west_croft_row_card.png"
+    },
+    {
+     "label": "m_scramble_moot_hall",
+     "a": "out/site_b/e1c/orig_moot_hall_card.png",
+     "b": "out/site_b/e1c/mut_m_scramble_moot_hall_card.png"
+    },
+    {
+     "label": "m_stair_reverse_west_croft_row",
+     "a": "out/site_b/e1c/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1c/mut_m_stair_reverse_west_croft_row_card.png"
+    },
+    {
+     "label": "m_stair_reverse_moot_hall",
+     "a": "out/site_b/e1c/orig_moot_hall_card.png",
+     "b": "out/site_b/e1c/mut_m_stair_reverse_moot_hall_card.png"
+    },
+    {
+     "label": "m_sink_west_croft_row",
+     "a": "out/site_b/e1c/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1c/mut_m_sink_west_croft_row_card.png"
+    },
+    {
+     "label": "m_sink_moot_hall",
+     "a": "out/site_b/e1c/orig_moot_hall_card.png",
+     "b": "out/site_b/e1c/mut_m_sink_moot_hall_card.png"
+    },
+    {
+     "label": "m_squash_moot_hall",
+     "a": "out/site_b/e1c/orig_moot_hall_card.png",
+     "b": "out/site_b/e1c/mut_m_squash_moot_hall_card.png"
+    }
+   ],
+   "skip_identical": true
+  },
+  {
+   "name": "e1d",
+   "stage_name": "e1d",
+   "question": "Which of these two buildings is in better condition? A or B, one sentence.",
+   "floor": {
+    "min_correct_rate": 0.8,
+    "max_tie_rate": 0.3
+   },
+   "pairs": [
+    {
+     "label": "m_wall_hole_west_croft_row",
+     "a": "out/site_b/e1d/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1d/mut_m_wall_hole_west_croft_row_card.png"
+    },
+    {
+     "label": "m_wall_hole_moot_hall",
+     "a": "out/site_b/e1d/orig_moot_hall_card.png",
+     "b": "out/site_b/e1d/mut_m_wall_hole_moot_hall_card.png"
+    },
+    {
+     "label": "m_roof_gone_west_croft_row",
+     "a": "out/site_b/e1d/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1d/mut_m_roof_gone_west_croft_row_card.png"
+    },
+    {
+     "label": "m_roof_gone_moot_hall",
+     "a": "out/site_b/e1d/orig_moot_hall_card.png",
+     "b": "out/site_b/e1d/mut_m_roof_gone_moot_hall_card.png"
+    },
+    {
+     "label": "m_roof_lift_west_croft_row",
+     "a": "out/site_b/e1d/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1d/mut_m_roof_lift_west_croft_row_card.png"
+    },
+    {
+     "label": "m_roof_lift_moot_hall",
+     "a": "out/site_b/e1d/orig_moot_hall_card.png",
+     "b": "out/site_b/e1d/mut_m_roof_lift_moot_hall_card.png"
+    },
+    {
+     "label": "m_wall_gone_west_croft_row",
+     "a": "out/site_b/e1d/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1d/mut_m_wall_gone_west_croft_row_card.png"
+    },
+    {
+     "label": "m_wall_gone_moot_hall",
+     "a": "out/site_b/e1d/orig_moot_hall_card.png",
+     "b": "out/site_b/e1d/mut_m_wall_gone_moot_hall_card.png"
+    },
+    {
+     "label": "m_float_field_west_croft_row",
+     "a": "out/site_b/e1d/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1d/mut_m_float_field_west_croft_row_card.png"
+    },
+    {
+     "label": "m_float_field_moot_hall",
+     "a": "out/site_b/e1d/orig_moot_hall_card.png",
+     "b": "out/site_b/e1d/mut_m_float_field_moot_hall_card.png"
+    },
+    {
+     "label": "m_palette_riot_west_croft_row",
+     "a": "out/site_b/e1d/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1d/mut_m_palette_riot_west_croft_row_card.png"
+    },
+    {
+     "label": "m_palette_riot_moot_hall",
+     "a": "out/site_b/e1d/orig_moot_hall_card.png",
+     "b": "out/site_b/e1d/mut_m_palette_riot_moot_hall_card.png"
+    },
+    {
+     "label": "m_scramble_west_croft_row",
+     "a": "out/site_b/e1d/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1d/mut_m_scramble_west_croft_row_card.png"
+    },
+    {
+     "label": "m_scramble_moot_hall",
+     "a": "out/site_b/e1d/orig_moot_hall_card.png",
+     "b": "out/site_b/e1d/mut_m_scramble_moot_hall_card.png"
+    },
+    {
+     "label": "m_glaze_solid_west_croft_row",
+     "a": "out/site_b/e1d/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1d/mut_m_glaze_solid_west_croft_row_card.png"
+    },
+    {
+     "label": "m_glaze_solid_moot_hall",
+     "a": "out/site_b/e1d/orig_moot_hall_card.png",
+     "b": "out/site_b/e1d/mut_m_glaze_solid_moot_hall_card.png"
+    },
+    {
+     "label": "m_stair_reverse_west_croft_row",
+     "a": "out/site_b/e1d/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1d/mut_m_stair_reverse_west_croft_row_card.png"
+    },
+    {
+     "label": "m_stair_reverse_moot_hall",
+     "a": "out/site_b/e1d/orig_moot_hall_card.png",
+     "b": "out/site_b/e1d/mut_m_stair_reverse_moot_hall_card.png"
+    },
+    {
+     "label": "m_sink_west_croft_row",
+     "a": "out/site_b/e1d/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1d/mut_m_sink_west_croft_row_card.png"
+    },
+    {
+     "label": "m_sink_moot_hall",
+     "a": "out/site_b/e1d/orig_moot_hall_card.png",
+     "b": "out/site_b/e1d/mut_m_sink_moot_hall_card.png"
+    },
+    {
+     "label": "m_squash_west_croft_row",
+     "a": "out/site_b/e1d/orig_west_croft_row_card.png",
+     "b": "out/site_b/e1d/mut_m_squash_west_croft_row_card.png"
+    },
+    {
+     "label": "m_squash_moot_hall",
+     "a": "out/site_b/e1d/orig_moot_hall_card.png",
+     "b": "out/site_b/e1d/mut_m_squash_moot_hall_card.png"
+    }
+   ],
+   "skip_identical": true
+  },
+  {
+   "name": "e3",
+   "stage_name": "e3",
+   "question": "Which of these two reads more like a place a person built? Answer A or B and give one sentence.",
+   "pairs": [
+    {
+     "label": "preference",
+     "a": "out/site_b/e3/original_card.png",
+     "b": "out/site_b/e3/tight_card.png"
+    },
+    {
+     "label": "control",
+     "a": "out/site_b/e3/tight_card.png",
+     "b": "out/site_b/e3/degraded_card.png"
+    }
+   ],
+   "score": "winners"
+  },
+  {
+   "name": "step3",
+   "stage_name": "step3",
+   "question": "Which of these two buildings is better made? A or B, one sentence.",
+   "pairs": [
+    {
+     "label": "control vs +sight",
+     "a": "out/site_b/step3/control_card.png",
+     "b": "out/site_b/step3/p_sight_card.png"
+    },
+    {
+     "label": "+sight vs +split",
+     "a": "out/site_b/step3/p_sight_card.png",
+     "b": "out/site_b/step3/p_split_card.png"
+    },
+    {
+     "label": "+split vs +select",
+     "a": "out/site_b/step3/p_split_card.png",
+     "b": "out/site_b/step3/p_select_card.png"
+    },
+    {
+     "label": "+select vs +spaces",
+     "a": "out/site_b/step3/p_select_card.png",
+     "b": "out/site_b/step3/p_spaces_card.png"
+    }
+   ],
+   "score": "winners"
+  }
+ ],
+ "preregistered": {
+  "e1a": {
+   "min_correct_rate": 0.8,
+   "max_tie_rate": 0.3,
+   "over": "pairs whose two renders differ; byte-identical renders are previewer blindness, reported separately and excluded from both rates",
+   "correct": "both orientations prefer the intact building; a tie counts against"
+  },
+  "e1c": {
+   "min_correct_rate": 0.8,
+   "max_tie_rate": 0.3,
+   "selection": "the site_b pairs the preview judge got wrong, tied, or saw as byte-identical (from e1a.json), re-rendered with Chunky",
+   "reading": "pass convicts the previewer alone; fail convicts the judge or the build's own legibility, and the retrieval decision sits on this"
+  },
+  "e1d": {
+   "min_correct_rate": 0.8,
+   "max_tie_rate": 0.3,
+   "over": "all applicable site_b mutant pairs (the full population, not a conditioned subset); byte-identical renders excluded and reported as instrument gaps",
+   "correct": "both orientations prefer the intact building; a tie counts against",
+   "report": "Wilson 95% interval on the correct rate, registered in advance so a near-miss is interpretable without moving the bar",
+   "shots": "neutral per building, fixed before rendering: eye-level from the lane at the reserved door, close three-quarter from NE and SW, one NE aerial; never framed on a defect",
+   "parser": "last line consisting solely of A or B; fallback first standalone letter"
+  },
+  "e3": {
+   "preference_pair": "original vs tight; spec rule: re-sited wins both orientations -> spaces ships first; loses or ties -> the buildings are the problem and stage 1 waits. Terrain confound noted: original in valley, candidates on a pad.",
+   "control_pair": "tight vs degraded on the identical pad; expected: tight. Decisive control + tied preference = no taste signal yet, instrument works. Both tied = instrument problem. Control failed = judge cannot see arrangement.",
+   "question": "Which of these two reads more like a place a person built? Answer A or B and give one sentence.",
+   "parser": "last line consisting solely of A or B; fallback first standalone"
+  },
+  "step3": {
+   "arms": [
+    "control",
+    "+sight",
+    "+split",
+    "+select",
+    "+spaces"
+   ],
+   "cumulative": "each arm adds one flag to its predecessor.",
+   "rule": "each arm must beat its predecessor in a blinded position-swapped pairwise comparison on Chunky 4-shot cards (eye at door, close NE, close SW, aerial), question: 'Which of these two buildings is better made?'. An arm that does not beat its predecessor is reported as not helping -- a finding, not a failure.",
+   "conformance": "W010 must be silent on the split arms",
+   "banked_prediction": "arms whose visible delta is fine-craft-only will tie; that is an instrument statement, not an arms statement. Arms changing massing or visible form should separate.",
+   "note": "massing selection inside +select/+spaces judges on grey massing previews -- an instrument untested for judging; its adequacy is part of what those arms measure. Adaptive-k, cap 8."
+  },
+  "cards": "e1d is judged on cards composed WITHOUT the black-panel refusal, because that is how the gate was run and reported (15/22, 68%). rounds/site_b_strict_cards.json is the same round with the refusal on."
+ }
+}

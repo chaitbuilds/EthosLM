@@ -1,0 +1,92 @@
+{
+ "name": "demo",
+ "sentence": "Build Ringed City.",
+ "shots": {
+  "place": true,
+  "prefix": "demo",
+  "frames": [
+   "step4_shots",
+   "frames"
+  ],
+  "spp": 40,
+  "size": [
+   900,
+   560
+  ],
+  "budget": {
+   "place": true,
+   "compound": true,
+   "defining": true,
+   "sample": 24,
+   "sample_seed": 1,
+   "flythrough": true
+  }
+ },
+ "preregistered": {
+  "walk_model": 6,
+  "written_before": "the site search was re-run, the plateau was cut, any planner was called or a part was\ninstantiated. The nine bars are rounds/city_b.json's own, copied byte for byte and\nunmoved, with the two floor bars held to the section 2 readings the spec registers:\nwalkable >= 90 and own errors no worse than 7. The place read's compound clauses and\ntheir thresholds.",
+  "order": "parts -> finish -> lint -> place_check -> readout, offline into a volume, from the render-demo round's plan, circulation and pre-build cache, after each phase; then, once, write -> render against the server, the write taken from world.before-plateau.npz with a snapshot kept as the undo.",
+  "input": "one sentence, and nothing else; the site is chosen from that sentence.",
+  "bars": {
+   "place_read": {
+    "bar": {
+     "comparator": "==",
+     "value": 1
+    },
+    "note": "ring walls nested closed loops, a gate on each ring and on an arterial, an arterial\ncrossing a ring only at a gate, the palace inside the innermost ring, every structure\ninside the outermost one. Holds or does not."
+   },
+   "walk_from_outdoors_pct": {
+    "bar": ">= 90",
+    "note": "interior floor walkable from outdoors over the whole place, walk-only, under walk model\n6."
+   },
+   "e002_from_the_lane": {
+    "bar": "0 findings",
+    "note": "doors reachable on foot from the lane. 0 in rounds 10 and 11."
+   },
+   "own_lint_errors": {
+    "bar": "0",
+    "note": "the build family over every part's own ground. The bar is 0 and the spec's section 2\nasks for no worse than 7."
+   },
+   "instantiation": {
+    "bar": ">= 95",
+    "note": "per cent of the plan's leaves that stand. 100%. 98.4%. 'Stand' is the type's own answer,\nnot the program's."
+   },
+   "structures": {
+    "bar": "within the scaled band the spec produced",
+    "note": "plot leaves that stand, against the band the spec produced from the sentence after A2's ceiling scaled it. The driver reads the lower end as one comparator and the place read holds the round to both."
+   },
+   "hand_programs": {
+    "bar": "0",
+    "note": "programs in this build that are not an instance of a committed type. Every part is composed by place.instantiate_part from a file under types/. The eight types Part B names and the re-authorings Part C names are authored before the build, never during it."
+   },
+   "site_chosen": {
+    "bar": {
+     "comparator": "==",
+     "value": 1
+    },
+    "note": "the ground was chosen by the system and the record of why is on disk -- the top three candidates with their scores and every square the scan read or refused to read -- and this config names no site. 0 if a human wrote a coordinate."
+   },
+   "tokens_whole_effort": {
+    "bar": "<= 6",
+    "tokens": "tokens.json",
+    "note": "millions of true tokens over every model call this effort made, Part B included -- the\nplace spec call, the eight type authors, the re-authorings, the place-level planner, one\nplanner call per district and the judge -- as the isolated subagents reported them."
+   }
+  },
+  "reported_no_bar": {
+   "compound": "the palace as planned: the ground the library sized for it and why, its rectangle on that ground, its parts, their types and sizes, and the three compound clauses of the place read",
+   "great_wall": "the outermost ring's type and planned height against GREAT_WALL_HEIGHT",
+   "plan_levels": "the place level, the compound level and one level per district: what each was asked, what it answered, and whether it was handed back",
+   "camera": "how far outside the gate the arrival frame stands, and the height it was measured against",
+   "site": "what a fresh search says now, and why, is site_search.fresh-refused.json"
+  },
+  "rules_held": [
+   "no coordinates, sizes or voices in this config; the system chooses and the record shows why",
+   "no builder call in the build; every part is an instance of a committed type",
+   "no live write of the city; one server session writes and photographs the palace and the skyline only",
+   "no bar is moved; a miss is reported as a miss",
+   "a library defect any test finds is fixed in the library and its case is kept",
+   "findings are fixed at their root, never patched at the leaf; standing cards and frames stay byte-identical; no new lint check; thresholds registered before the number that tests them"
+  ],
+  "expectation": "registered before any phase ran: place read 18 of 18, instantiation 100.0, 242 structures, walkable >= 92.6 (render-demo's own reading, not the bar of 90), own errors 0, doors 0; a miss is a miss. The only leaves whose blocks may differ from render-demo's world_built.npz are the twelve temples (phase 1), civic types, gates and walls (phase 2), and minka, farmstead, hall and shop_house (phase 3). The written world's readout must equal the dry run's."
+ }
+}

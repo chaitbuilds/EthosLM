@@ -1,0 +1,87 @@
+{
+ "name": "town",
+ "sentence": "Build a walled town of about sixty houses with a market square and a keep.",
+ "shots": {
+  "place": true,
+  "prefix": "town",
+  "frames": [
+   "step4_shots",
+   "frames"
+  ],
+  "spp": 40,
+  "size": [
+   900,
+   560
+  ]
+ },
+ "preregistered": {
+  "walk_model": 6,
+  "written_before": "the place spec was asked for, the site was searched for, a plateau was cut, the planner\nwas called or a block was placed. The structures band is `within the band the spec\nproduced (about sixty: 48-72)`, and 48 is the bar the driver reads because it takes one\ncomparator; 72 is the upper end and the place read (A6) holds the round to both.",
+  "order": "place_spec -> site_search -> plateau -> site -> plan -> circulation -> cache -> parts ->\nfinish -> lint -> cards -> place_check -> judge -> readout. The sentence becomes a spec,\nthe spec chooses its ground, the ground is levelled where the search says it has to be,\nand only then is there a site to brief a planner on.",
+  "input": "one sentence, and nothing else. No coordinates, no size, no voice: the kind, the band, the footprint, the site and the palette are all chosen inside the run and the record shows why. `site`, `voice` and `flags.types` are absent from this file on purpose and their absence is the claim.",
+  "bars": {
+   "place_read": {
+    "bar": {
+     "comparator": "==",
+     "value": 1
+    },
+    "note": "A6: the built place against the sentence's own spec, with no model call in it. Every\ndefining part present and standing; a wall the spec calls a wall is one closed loop of\nthe wall type with the gates on it, and a natural barrier does not count unless the\nsentence said 'on a cliff'; the structure count inside the band; the voice's palette\nagainst the ground's value. Holds or does not. scripts/test_place.py)."
+   },
+   "walk_from_outdoors_pct": {
+    "bar": ">= 90",
+    "note": "interior floor walkable from outdoors over the whole place, walk-only, under walk model\n6. this asks it of a town four times the size."
+   },
+   "e002_from_the_lane": {
+    "bar": "0 findings",
+    "note": "doors reachable on foot from the lane. 0 in rounds 10 and 11."
+   },
+   "own_lint_errors": {
+    "bar": "0",
+    "note": "the build family over every part's own ground. A7 fixes that attribution and it is\nregistered here, before the number it moves is read."
+   },
+   "instantiation": {
+    "bar": ">= 95",
+    "note": "per cent of the plan's leaves that stand. 100 of 14 leaves. 'Stand' is the type's own\nanswer, not the program's: a build() that refuses runs to the end and prepares the\nground, and an empty pad is an empty pad."
+   },
+   "hand_programs": {
+    "bar": "0",
+    "note": "programs in this build that are not an instance of a committed type. Every part is\ncomposed by place.instantiate_part from a file under types/."
+   },
+   "structures": {
+    "bar": ">= 48",
+    "note": "plot leaves in the plan, against the band the spec produced from the sentence: about\nsixty is 48-72. The driver reads one comparator so the lower end is the bar; the upper\nend is the place read's, which fails the round if the count is outside the band on\neither side."
+   },
+   "tokens_whole_round": {
+    "bar": "<= 1.5",
+    "tokens": "tokens.json",
+    "note": "the place spec call, the place-level planner, one planner call per district, the keep\ntype author and the judge -- as the isolated subagents reported them."
+   },
+   "site_chosen": {
+    "bar": {
+     "comparator": "==",
+     "value": 1
+    },
+    "note": "A3: the ground was chosen by the system and the record of why is on disk. 0 if a human\nwrote a coordinate. This is the round's own claim as a number, because a claim nobody\nmeasures is a comment."
+   }
+  },
+  "reported_no_bar": {
+   "place_spec": "what the one schema call made of the sentence: kind, band, defining parts, and every number the library derived from them (out/town/place.json)",
+   "site_search": "every radius scanned, how many candidates met the needs at each, and the top three with their measures (out/town/site_search.json)",
+   "plateau": "whether the search marked the innermost defining part for terraforming, and what the cut took out (out/town/plateau.json)",
+   "voice": "which voice was chosen against the ground, and by what rule",
+   "plan_levels": "the place level and one level per district: what each was asked, what it answered, and whether it had to be handed back (out/town/plan_validation.json)",
+   "whole_place_lint_seconds": "the one whole-place lint at the end.",
+   "structures_upper": "the band's upper end of 72, reported beside the bar of 48",
+   "type_tokens": "true tokens for the keep type author, against the round total",
+   "ground": "which of deck, platform, plinth and footing each part was sited as",
+   "walk": "a person, three questions -- can you get everywhere on foot? is this a walled town with a market and a keep? does it read as made?"
+  },
+  "rules_held": [
+   "no coordinates, sizes or voices in this config; the system chooses and the record shows why",
+   "no builder call in the build; every part is an instance of a committed type",
+   "no new lint check in the frozen suite",
+   "rounds 4, 6, 7, 8, 9, 10, 11, 14 and 16 are not touched",
+   "no bar is moved; a miss is reported as a miss"
+  ]
+ }
+}

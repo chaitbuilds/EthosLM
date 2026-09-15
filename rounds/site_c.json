@@ -1,0 +1,362 @@
+{
+ "name": "site_c",
+ "voice": "cut_sandstone_terraces",
+ "base_volume": "world_prebuild.npz",
+ "flags": {
+  "sight": false,
+  "split": true,
+  "select": 0,
+  "spaces": true,
+  "arm": "split",
+  "allow_try": true,
+  "allow_collide": true
+ },
+ "waves": [
+  {
+   "name": "wave1"
+  },
+  {
+   "name": "wave2"
+  },
+  {
+   "name": "wave3"
+  },
+  {
+   "name": "wave4"
+  },
+  {
+   "name": "wave5"
+  },
+  {
+   "name": "wave6"
+  }
+ ],
+ "shots": {
+  "frames": [
+   "step4_shots",
+   "frames"
+  ],
+  "geometry": "E1D",
+  "spp": 40,
+  "size": [
+   900,
+   560
+  ],
+  "prefix": "site_c"
+ },
+ "cards": [
+  {
+   "name": "chunky",
+   "frames": "out/site_c/step4_shots/frames",
+   "out": "out/site_c/step4_shots",
+   "layout": "quad",
+   "size": [
+    900,
+    560
+   ],
+   "strict": true,
+   "tags": [
+    "r7_byre",
+    "r7_court_wellhouse",
+    "r7_drovers_rest",
+    "r7_east_row",
+    "r7_granary",
+    "r7_mill",
+    "r7_moot_hall",
+    "r7_north_gate",
+    "r7_potters_yard",
+    "r7_quarry_shed",
+    "r7_smithy",
+    "r7_south_water_gate",
+    "r7_watch_spur",
+    "r7_west_croft_row",
+    "r8_byre",
+    "r8_cliff_nest_lower",
+    "r8_cliff_nest_upper",
+    "r8_foot_market",
+    "r8_gatehouse",
+    "r8_granary",
+    "r8_hearth_hall",
+    "r8_kiln_yard",
+    "r8_ledge_crofts",
+    "r8_quay",
+    "r8_rim_row",
+    "r8_terrace_crofts",
+    "r8_watchtower",
+    "r8_weaver_row"
+   ]
+  }
+ ],
+ "judgements": [
+  {
+   "name": "check2_judgement",
+   "stage_name": "step4_chunky",
+   "question": "Which of these two buildings is better made? A or B, one sentence.",
+   "pairs": [
+    {
+     "label": "rank0 rim_row vs west_croft_row",
+     "a": "out/site_c/step4_shots/r8_rim_row_card.png",
+     "b": "out/site_c/step4_shots/r7_west_croft_row_card.png"
+    },
+    {
+     "label": "rank1 hearth_hall vs east_row",
+     "a": "out/site_c/step4_shots/r8_hearth_hall_card.png",
+     "b": "out/site_c/step4_shots/r7_east_row_card.png"
+    },
+    {
+     "label": "rank2 cliff_nest_lower vs moot_hall",
+     "a": "out/site_c/step4_shots/r8_cliff_nest_lower_card.png",
+     "b": "out/site_c/step4_shots/r7_moot_hall_card.png"
+    },
+    {
+     "label": "rank3 cliff_nest_upper vs byre",
+     "a": "out/site_c/step4_shots/r8_cliff_nest_upper_card.png",
+     "b": "out/site_c/step4_shots/r7_byre_card.png"
+    },
+    {
+     "label": "rank4 terrace_crofts vs drovers_rest",
+     "a": "out/site_c/step4_shots/r8_terrace_crofts_card.png",
+     "b": "out/site_c/step4_shots/r7_drovers_rest_card.png"
+    },
+    {
+     "label": "rank5 byre vs north_gate",
+     "a": "out/site_c/step4_shots/r8_byre_card.png",
+     "b": "out/site_c/step4_shots/r7_north_gate_card.png"
+    },
+    {
+     "label": "rank6 weaver_row vs south_water_gate",
+     "a": "out/site_c/step4_shots/r8_weaver_row_card.png",
+     "b": "out/site_c/step4_shots/r7_south_water_gate_card.png"
+    },
+    {
+     "label": "rank7 ledge_crofts vs granary",
+     "a": "out/site_c/step4_shots/r8_ledge_crofts_card.png",
+     "b": "out/site_c/step4_shots/r7_granary_card.png"
+    },
+    {
+     "label": "rank8 granary vs smithy",
+     "a": "out/site_c/step4_shots/r8_granary_card.png",
+     "b": "out/site_c/step4_shots/r7_smithy_card.png"
+    },
+    {
+     "label": "rank9 kiln_yard vs watch_spur",
+     "a": "out/site_c/step4_shots/r8_kiln_yard_card.png",
+     "b": "out/site_c/step4_shots/r7_watch_spur_card.png"
+    },
+    {
+     "label": "rank10 foot_market vs quarry_shed",
+     "a": "out/site_c/step4_shots/r8_foot_market_card.png",
+     "b": "out/site_c/step4_shots/r7_quarry_shed_card.png"
+    },
+    {
+     "label": "rank11 quay vs potters_yard",
+     "a": "out/site_c/step4_shots/r8_quay_card.png",
+     "b": "out/site_c/step4_shots/r7_potters_yard_card.png"
+    },
+    {
+     "label": "rank12 gatehouse vs mill",
+     "a": "out/site_c/step4_shots/r8_gatehouse_card.png",
+     "b": "out/site_c/step4_shots/r7_mill_card.png"
+    },
+    {
+     "label": "rank13 watchtower vs court_wellhouse",
+     "a": "out/site_c/step4_shots/r8_watchtower_card.png",
+     "b": "out/site_c/step4_shots/r7_court_wellhouse_card.png"
+    }
+   ]
+  },
+  {
+   "name": "check3_goodhart",
+   "stage_name": "step4_preview",
+   "question": "Which of these two buildings is better made? A or B, one sentence.",
+   "pairs": [
+    {
+     "label": "rank0 rim_row vs west_croft_row",
+     "a": "out/site_c/step4_previews/r8_rim_row.png",
+     "b": "out/site_c/step4_previews/r7_west_croft_row.png"
+    },
+    {
+     "label": "rank1 hearth_hall vs east_row",
+     "a": "out/site_c/step4_previews/r8_hearth_hall.png",
+     "b": "out/site_c/step4_previews/r7_east_row.png"
+    },
+    {
+     "label": "rank2 cliff_nest_lower vs moot_hall",
+     "a": "out/site_c/step4_previews/r8_cliff_nest_lower.png",
+     "b": "out/site_c/step4_previews/r7_moot_hall.png"
+    },
+    {
+     "label": "rank3 cliff_nest_upper vs byre",
+     "a": "out/site_c/step4_previews/r8_cliff_nest_upper.png",
+     "b": "out/site_c/step4_previews/r7_byre.png"
+    },
+    {
+     "label": "rank4 terrace_crofts vs drovers_rest",
+     "a": "out/site_c/step4_previews/r8_terrace_crofts.png",
+     "b": "out/site_c/step4_previews/r7_drovers_rest.png"
+    },
+    {
+     "label": "rank5 byre vs north_gate",
+     "a": "out/site_c/step4_previews/r8_byre.png",
+     "b": "out/site_c/step4_previews/r7_north_gate.png"
+    },
+    {
+     "label": "rank6 weaver_row vs south_water_gate",
+     "a": "out/site_c/step4_previews/r8_weaver_row.png",
+     "b": "out/site_c/step4_previews/r7_south_water_gate.png"
+    },
+    {
+     "label": "rank7 ledge_crofts vs granary",
+     "a": "out/site_c/step4_previews/r8_ledge_crofts.png",
+     "b": "out/site_c/step4_previews/r7_granary.png"
+    },
+    {
+     "label": "rank8 granary vs smithy",
+     "a": "out/site_c/step4_previews/r8_granary.png",
+     "b": "out/site_c/step4_previews/r7_smithy.png"
+    },
+    {
+     "label": "rank9 kiln_yard vs watch_spur",
+     "a": "out/site_c/step4_previews/r8_kiln_yard.png",
+     "b": "out/site_c/step4_previews/r7_watch_spur.png"
+    },
+    {
+     "label": "rank10 foot_market vs quarry_shed",
+     "a": "out/site_c/step4_previews/r8_foot_market.png",
+     "b": "out/site_c/step4_previews/r7_quarry_shed.png"
+    },
+    {
+     "label": "rank11 quay vs potters_yard",
+     "a": "out/site_c/step4_previews/r8_quay.png",
+     "b": "out/site_c/step4_previews/r7_potters_yard.png"
+    },
+    {
+     "label": "rank12 gatehouse vs mill",
+     "a": "out/site_c/step4_previews/r8_gatehouse.png",
+     "b": "out/site_c/step4_previews/r7_mill.png"
+    },
+    {
+     "label": "rank13 watchtower vs court_wellhouse",
+     "a": "out/site_c/step4_previews/r8_watchtower.png",
+     "b": "out/site_c/step4_previews/r7_court_wellhouse.png"
+    }
+   ],
+   "agreement_with": "check2_judgement",
+   "score": "winners"
+  }
+ ],
+ "preregistered": {
+  "settlement": "site_c",
+  "written_before": "the planner. scripts/step4_prereg.py refuses to run once plan.json exists; site.json and the world snapshot site_c.before are the only artefacts that predate this file.",
+  "site": {
+   "origin": [
+    -1152,
+    1152
+   ],
+   "size": 192,
+   "relief": 80,
+   "std": 25.5,
+   "min_y": 50,
+   "max_y": 130,
+   "surface": "terracotta badlands -- terracotta 138, red_sand 53, banded orange/red/yellow/white terracotta 43, water 22 (of 260 sampled columns)",
+   "chosen_over": [
+    "(1536,-1536) relief 97 std 19.4",
+    "(-1152,-384) relief 102 std 5.2",
+    "(1536,384) slope 1.41",
+    "(-1536,1536) relief 108 std 9.1"
+   ],
+   "why": "The spec asks for a usable base or rim plus a tall continuous face, and none of relief, std or mean slope measures that. scripts/step4_site_probe.py measures it directly: the height gained over a 12-block run in each cardinal direction, connected into faces; and level ground as connected columns whose 5x5 neighbourhood spans <=3 blocks. On those numbers this site is the only escarpment in the field. It has 9,431 face columns in one connected face 192 wide, a rim shelf of 14,187 level columns at y=123 and a base shelf of 4,782 at y=62, and the scarp between them is continuous from z=1164 to z=1338 -- every 6-block section of it drops 40-46 blocks over 13 to 53 horizontal, i.e. a grade of 0.75 to 3.23. (1536,-1536) has more relief spread over the whole site with no single face: it is a fifth rolling hillside, which the spec says tells us almost nothing. (-1152,-384) has std 5.2 -- one deep hole in flat ground. (1536,384) is 58% ocean with no level rim. (-1536,1536) is dunes: its best face gains 20.",
+   "the_face": "the rim plateau lies west and southwest at y 118-129; the base plain lies east and southeast at y 68-78, falling to water in the southeast corner; between them one sinuous scarp running roughly north-south through the middle of the site. The steepest usable stretch is z 1256-1302 at x -1090..-1050: 40-44 blocks of drop in 19-25 horizontal.",
+   "spec_escape_clause_not_taken": "The spec allows taking the highest-relief site and building what the terrain allows if nothing has a real face. It does. This is a badlands escarpment and the settlement is sited on it.",
+   "evidence": "out/step4_sites.json, out/step4_probe/, out/site_c/site.json; commands: bash scripts/mcrun.sh scripts/step4_site_probe.py, bash scripts/mcrun.sh scripts/step4_site_dump.py, ETHOSLM_SETTLEMENT=site_c bash scripts/mcrun.sh scripts/prepare_settlement.py -1152 1152 192"
+  },
+  "voice": {
+   "name": "cut_sandstone_terraces",
+   "fixed": true,
+   "why": "Chosen rather than left to the planner, to spend the run's one degree of freedom on the settlement and not on the palette. styles.VOICES describes it as dry-country cut stone, 'everything stepping up the hill in terraces', ground 'terraced hard, retaining walls doubling as the walls of the storey below', signature 'an external stair climbing the outside of the building to its roof'. That is a description of the settlement in the spec's section 3, written before the spec was, and sandstone on banded terracotta is the Bandiagara/Mesa Verde pairing the spec names. The planner may adjust the palette within the voice."
+  },
+  "pipeline": {
+   "arm": "split, with the spaces section in the brief",
+   "flags": {
+    "sight": false,
+    "split": true,
+    "select": 0,
+    "spaces": true
+   },
+   "why": "step 3: split won both blinded ground-truth match-ups, halved dry-run lint errors 21 -> 9 and kept W010 silent; sight lost to control and added E004s; select on grey massing previews tied both comparisons. Turning either on here would confound the settlement with the arms.",
+   "select_stays_off": "see fixes). Whether the fixed card can carry a selection is check 3's question, and\nanswering it with the instrument already switched on would be circular."
+  },
+  "fixes_made_before_the_run": [
+   "src/ethoslm/stages.py: _render cropped the massing card with the axes crossed -- _bounds returns (xmin, zmin, xmax, zmax) and it was unpacked as (xmin, xmax, zmin, zmax), so on a site whose x and z have opposite signs the crop clamped to the whole volume. Every step-3 massing card is a picture of a hillside. Fixed, plus an integer upscale to a 480px card, plus a stage test that fails on the old behaviour (test_stages 12/12).",
+   "src/ethoslm/buildlib.py API_DOC: the 1.21.11 chain -> iron_chain rename is now in the block-id note. All five step-3 arms were bounced by preflight on it."
+  ],
+  "check1_floor": {
+   "done": "whole-town lint at ZERO errors",
+   "w010": "silent on every split wave; where it is not, the coverage number and the reason are recorded",
+   "warnings": "A warning that is neither is a fail.",
+   "command": "ETHOSLM_SETTLEMENT=site_c bash scripts/mcrun.sh scripts/lint_town.py"
+  },
+  "check2_judgement": {
+   "primary_question": "does the staged pipeline produce a settlement that reads as human-made?",
+   "operationalised_as": "stages.QUESTION_ELEVATION). No new judge question is invented for this run.",
+   "question": "Which of these two buildings is better made? A or B, one sentence.",
+   "pairing_rule": "Frozen here, before any structure exists. Take both towns' plots.json; merge plots sharing a label into the union of their rectangles; drop any plot with no built blocks inside it; sort each town's list by footprint area descending; pair rank against rank; truncate to min(N_round8, N_round7). Deterministic, computed from disk, uses no judgement.",
+   "cards": "the E1d shot list, matched between the two towns: eye-level from the lane at the\nreserved door, close three-quarter from NE and SW, one NE aerial, composed into one 2x2\ncard per building at 900x560 spp 40.",
+   "floor": {
+    "rule": "wins > losses over the N pairs",
+    "why_this_rule": "a rate threshold with ties counting against is not robust to a tie rate the project has measured at 15-31%: a genuinely better town can score 45/40/15 and 'fail' a 50% bar on noise. wins > losses is the parity statement that survives the measured noise floor, and it is registered before any number exists."
+   },
+   "also_reported_registered_in_advance": [
+    "the three-way tally wins/losses/ties",
+    "win rate with ties counting against",
+    "tie rate -- the noise floor, informative every time it has been reported",
+    "Wilson 95% interval on wins/(wins+losses)"
+   ],
+   "confound": "RECORDED IN ADVANCE AND LOAD-BEARING. E3 established that terrain differences dominate\nsettlement-scale comparisons, so a whole-town-versus-whole-town verdict is close to\nmeaningless and MUST NOT be the headline; no such comparison is run. Even per building,\na win here is not attributable to the split pipeline alone -- step 3's same-site arm\ncomparison is the only clean evidence for that, and it is already on the record. What\nthis check can establish is whether the staged pipeline's output holds up against the\nproject's previous best under a judge validated for craft at constant terrain (E-craft,\n4/4 with a blind human)."
+  },
+  "check3_goodhart": {
+   "question": "do the previewer's verdicts agree with Chunky's on the same pairs? If they disagree, builders have been optimising for the previewer rather than for the world.",
+   "pairs": "the SAME N pairs as check 2, by the same frozen pairing rule. No pair is added, dropped or reordered between the two checks.",
+   "preview_cards": "for each building, the isometric and the front elevation from scripts/preview.py,\ncropped to the built mass by stages._bounds (the fixed crop) and stacked into one card.\nno server, no Chunky.",
+   "agreement": "verdicts are three-way (a / b / tie) and agreement is exact equality. Both instruments are position-swapped, both blinded, both cached.",
+   "threshold": {
+    "value": 0.7,
+    "decision_rule": "agreement >= 0.70 -- the previewer may carry massing selection, and select becomes a candidate arm for a later round. agreement < 0.70 -- the previewer stays an inner-loop design instrument, select stays off, and the calibration loop (Chunky as reference, previewer improved until it agrees) is the named prerequisite.",
+    "why_0.70": "chance agreement on three-way verdicts is about 1/3; the previewer scored 45-53% on the damage task the judge passes at ground truth. 0.70 is the level at which the cheap instrument would be carrying more signal than noise on a decision that costs a build. Registered before any pair is rendered."
+   },
+   "also_reported_registered_in_advance": [
+    "agreement over the pairs where BOTH instruments were decisive",
+    "each instrument's own tie rate on these pairs",
+    "the pairs where they disagree, named, with both reasons quoted"
+   ],
+   "confound": "the two cards are not the same picture. The Chunky card is four path-traced shots including an eye-level approach; the preview card is an isometric and an elevation. This measures the cheap instrument against ground truth AS EACH IS ACTUALLY USED, which is the decision-relevant comparison, and not 'one framing, two renderers'. A disagreement therefore does not by itself convict the renderer rather than the shot list."
+  },
+  "abstraction_questions": {
+   "plots_are_2d_rectangles": {
+    "question": "did any planned structure have to move because plots cannot overlap in 2-D?",
+    "answered_with": [
+     "every reserve() that returned False, recorded to out/site_c/plot_conflicts.json by the registry as it happens",
+     "per structure, the offset between the planner's footprint in plan.json and the rectangle actually claimed in plots.json, and any planned structure with no plot at all",
+     "the count of built columns that lie vertically above or below another structure's claimed plot -- the direct test of whether two dwellings on one cliff face can both claim their ground"
+    ],
+    "expected": "failure is an expected outcome to be recorded, not a risk to be avoided. Hierarchy and scale sit on this abstraction and the next round needs its shape."
+   },
+   "circulation_routes_the_climb": {
+    "question": "did circulation route the climb, and at what grade?",
+    "answered_with": [
+     "is the network one connected component (E007), and is the lowest reserved threshold reachable from the highest by observe.Nav flood",
+     "the rise between the lowest and the highest reserved threshold",
+     "the maximum single-step rise along the lane, and the count of stair cells laid",
+     "the fraction of planned structures whose reserved threshold is on the network (W005)"
+    ],
+    "expected": "circulation is a walkable surface network and a 40-block climb is at the edge of what it can route. Record exactly how it fails if it fails."
+   }
+  },
+  "not_doing": [
+   "no lint check added; no primitive added; both suites frozen",
+   "no threshold moved after a number is seen -- the miss and the interval get reported instead",
+   "the three standing settlements are not touched.",
+   "no whole-town-versus-whole-town judgement is run at all"
+  ]
+ }
+}

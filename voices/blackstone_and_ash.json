@@ -1,0 +1,19 @@
+{
+ "name": "blackstone_and_ash",
+ "notes": {
+  "blurb": "Dark volcanic stone and pale ash-bleached wood. Hard geometry, small windows, the light let in deliberately rather than generously.",
+  "construction": "walls of coursed dark stone, pale timber only at openings and eaves, so every window reads as a bright cut in a dark mass",
+  "ground": "buildings sunk a storey into the slope on the uphill side, on a footing of dark\ndeepslate brick.",
+  "roofs": "hip (1,2), tight to the wall, no overhang to speak of",
+  "signature": "a single tall slit window running most of the height of one wall"
+ },
+ "roles": {
+  "floor": "blackstone",
+  "footing": "deepslate_brick",
+  "frame": "stripped_birch_log",
+  "roof": "deepslate_tile",
+  "trim": "polished_blackstone_brick",
+  "wall": "blackstone"
+ },
+ "roof": {}
+}

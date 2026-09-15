@@ -1,0 +1,218 @@
+{
+ "site": [
+  -1152,
+  -384,
+  192
+ ],
+ "material": "cobblestone",
+ "notes": {
+  "max_step": 3,
+  "passable": 6,
+  "stranded": [],
+  "court": [
+   -1094,
+   -316,
+   3
+  ],
+  "hub": "moot_hall",
+  "landing_rounds": 3,
+  "cut_max": 3,
+  "fill_max": 1,
+  "sites": 12,
+  "served": 12,
+  "material": "cobblestone",
+  "blocks": 3568
+ },
+ "lane": {
+  "cells": 597,
+  "steps": 55,
+  "fill": 16,
+  "cut": 80,
+  "rails": 0,
+  "lanterns": 23,
+  "trees": 1139,
+  "tree_columns": 487,
+  "dressed": 26,
+  "thresholds": 12,
+  "posts": 23
+ },
+ "walk_check": {
+  "cells": 597,
+  "reached": 597,
+  "unreachable": [],
+  "unreachable_n": 0
+ },
+ "flush": {
+  "placed": 3568,
+  "failed": 0,
+  "errors": {},
+  "seconds": 0.17,
+  "blocks_per_sec": 20752,
+  "unique_positions": 3568,
+  "connective_rejoined": 104,
+  "calls": {
+   "place_block": 3720,
+   "place_cuboid": 0,
+   "fill_region": 0,
+   "get_height": 2003,
+   "get_block": 9943
+  },
+  "palette_size": 5,
+  "light_sources": 23,
+  "footprint_columns": 1034,
+  "ground_relief_under_build": 44,
+  "floor_level_stdev": 1.36,
+  "columns_floating": 128,
+  "columns_cut_into_ground": 58
+ },
+ "lint": {
+  "ok": false,
+  "seconds": 0.73,
+  "counts": {
+   "E010": 7,
+   "W002": 2,
+   "W009": 1
+  },
+  "findings": [
+   {
+    "code": "E010",
+    "severity": "error",
+    "message": "smithy_yard: 2 blocks at (-1143,74,-301) are held up by nothing (e.g. oak_log)",
+    "pos": [
+     -1143,
+     74,
+     -301
+    ],
+    "detail": {
+     "plot": "smithy_yard",
+     "cells": 2
+    }
+   },
+   {
+    "code": "E010",
+    "severity": "error",
+    "message": "smithy_yard: 1 blocks at (-1141,72,-306) are held up by nothing (e.g. oak_log)",
+    "pos": [
+     -1141,
+     72,
+     -306
+    ],
+    "detail": {
+     "plot": "smithy_yard",
+     "cells": 1
+    }
+   },
+   {
+    "code": "E010",
+    "severity": "error",
+    "message": "smithy_yard: 1 blocks at (-1142,72,-305) are held up by nothing (e.g. oak_log)",
+    "pos": [
+     -1142,
+     72,
+     -305
+    ],
+    "detail": {
+     "plot": "smithy_yard",
+     "cells": 1
+    }
+   },
+   {
+    "code": "E010",
+    "severity": "error",
+    "message": "market_strand: 1 blocks at (-1096,69,-336) are held up by nothing (e.g. oak_log)",
+    "pos": [
+     -1096,
+     69,
+     -336
+    ],
+    "detail": {
+     "plot": "market_strand",
+     "cells": 1
+    }
+   },
+   {
+    "code": "E010",
+    "severity": "error",
+    "message": "strangers_hall: 1 blocks at (-1138,71,-352) are held up by nothing (e.g. oak_log)",
+    "pos": [
+     -1138,
+     71,
+     -352
+    ],
+    "detail": {
+     "plot": "strangers_hall",
+     "cells": 1
+    }
+   },
+   {
+    "code": "E010",
+    "severity": "error",
+    "message": "smithy_yard: 1 blocks at (-1144,71,-305) are held up by nothing (e.g. oak_log)",
+    "pos": [
+     -1144,
+     71,
+     -305
+    ],
+    "detail": {
+     "plot": "smithy_yard",
+     "cells": 1
+    }
+   },
+   {
+    "code": "E010",
+    "severity": "error",
+    "message": "smithy_yard: 1 blocks at (-1145,72,-306) are held up by nothing (e.g. oak_log)",
+    "pos": [
+     -1145,
+     72,
+     -306
+    ],
+    "detail": {
+     "plot": "smithy_yard",
+     "cells": 1
+    }
+   },
+   {
+    "code": "W002",
+    "severity": "warning",
+    "message": "market_strand has an interior but no door or gate anywhere on it",
+    "pos": null,
+    "detail": {
+     "plot": "market_strand"
+    }
+   },
+   {
+    "code": "W002",
+    "severity": "warning",
+    "message": "smithy_yard has an interior but no door or gate anywhere on it",
+    "pos": null,
+    "detail": {
+     "plot": "smithy_yard"
+    }
+   },
+   {
+    "code": "W009",
+    "severity": "warning",
+    "message": "market_strand: the room at (-1096,65,-336) is 19 cells of empty floor -- nothing in it says what happens here",
+    "pos": [
+     -1096,
+     65,
+     -336
+    ],
+    "detail": {
+     "plot": "market_strand",
+     "cells": 19
+    }
+   }
+  ]
+ },
+ "pieces": [
+  597
+ ],
+ "seconds": {
+  "load": 0.8,
+  "plan": 0.2,
+  "emit": 0.0,
+  "lint": 3.0
+ }
+}

@@ -1,0 +1,48 @@
+{
+ "name": "ochre_stone_green_tile",
+ "notes": {
+  "blurb": "Ochre cut stone under green tile, with dark timber between; an earth-built city that shows its stone and crowns it in a single strong colour.",
+  "construction": "Load-bearing sandstone laid in courses on a granite footing, dark oak posts and lintels framing the openings, red sandstone bands at sill and cornice.",
+  "ground": "Dry ochre stone and smooth paving; the ground is quarried and dressed rather than planted, and terraces are cut flat rather than followed.",
+  "roofs": "Green tile broken over two pitches, steep at the ridge and easing out to an upturned eave, hipped and gabled together at the ends; the civic halls carry the same tile in two tiers, shallow below and steep at the ridge.",
+  "signature": "The green roof against the ochre wall, repeated from the smallest house to the palace so the whole city reads as one built thing."
+ },
+ "roles": {
+  "floor": "smooth_stone",
+  "footing": "granite",
+  "frame": "dark_oak",
+  "roof": "oxidized_copper",
+  "trim": "red_sandstone",
+  "wall": "sandstone"
+ },
+ "roof": {
+  "eave": "upturned",
+  "ends": "irimoya",
+  "profile": [
+   [
+    1,
+    1
+   ],
+   [
+    1,
+    2
+   ]
+  ],
+  "tiers": 1
+ },
+ "roof_civic": {
+  "eave": "upturned",
+  "ends": "irimoya",
+  "profile": [
+   [
+    1,
+    2
+   ],
+   [
+    2,
+    1
+   ]
+  ],
+  "tiers": 2
+ }
+}

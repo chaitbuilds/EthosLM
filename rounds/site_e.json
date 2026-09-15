@@ -1,0 +1,315 @@
+{
+ "name": "site_e",
+ "voice": "drystone_and_thatch",
+ "base_volume": "world.npz",
+ "site": {
+  "origin": [
+   -1536,
+   1536
+  ],
+  "size": 192
+ },
+ "flags": {
+  "sight": false,
+  "split": true,
+  "select": 0,
+  "spaces": false,
+  "arm": "site_e",
+  "check": true,
+  "max_bounces": 1,
+  "allow_collide": true
+ },
+ "waves": [
+  {
+   "name": "wave1",
+   "plots": [
+    "moot_hall",
+    "byre",
+    "smithy"
+   ]
+  },
+  {
+   "name": "wave2",
+   "plots": [
+    "granary",
+    "cistern_house",
+    "east_gate"
+   ]
+  },
+  {
+   "name": "wave3",
+   "plots": [
+    "kiln_yard",
+    "mine_head",
+    "west_watch"
+   ]
+  },
+  {
+   "name": "wave4",
+   "plots": [
+    "house_row_upper",
+    "house_row_lower",
+    "croft"
+   ]
+  },
+  {
+   "name": "wave5",
+   "plots": [
+    "boat_landing",
+    "fold_barn"
+   ]
+  }
+ ],
+ "shots": {
+  "frames": [
+   "step4_shots",
+   "frames"
+  ],
+  "geometry": "E1D",
+  "spp": 40,
+  "size": [
+   900,
+   560
+  ],
+  "prefix": "site_e"
+ },
+ "cards": [
+  {
+   "name": "chunky",
+   "frames": "out/site_e/step4_shots/frames",
+   "out": "out/site_e/step4_shots",
+   "layout": "quad",
+   "size": [
+    900,
+    560
+   ],
+   "strict": true,
+   "tags": [
+    "r10_boat_landing",
+    "r10_byre",
+    "r10_cistern_house",
+    "r10_croft",
+    "r10_east_gate",
+    "r10_fold_barn",
+    "r10_granary",
+    "r10_house_row_lower",
+    "r10_house_row_upper",
+    "r10_kiln_yard",
+    "r10_mine_head",
+    "r10_moot_hall",
+    "r10_smithy",
+    "r10_west_watch"
+   ]
+  }
+ ],
+ "judgements": [
+  {
+   "name": "r10_vs_r9",
+   "stage_name": "step4_chunky",
+   "score": "winners",
+   "question": "Which of these two buildings is better made? A or B, one sentence.",
+   "pairs": [
+    {
+     "label": "boat_landing vs bakehouse",
+     "a": "out/site_e/step4_shots/r10_boat_landing_card.png",
+     "b": "out/site_d/step4_shots/r9_bakehouse_card.png"
+    },
+    {
+     "label": "byre vs byre_and_hayloft",
+     "a": "out/site_e/step4_shots/r10_byre_card.png",
+     "b": "out/site_d/step4_shots/r9_byre_and_hayloft_card.png"
+    },
+    {
+     "label": "cistern_house vs drovers_barn",
+     "a": "out/site_e/step4_shots/r10_cistern_house_card.png",
+     "b": "out/site_d/step4_shots/r9_drovers_barn_card.png"
+    },
+    {
+     "label": "croft vs grange_store",
+     "a": "out/site_e/step4_shots/r10_croft_card.png",
+     "b": "out/site_d/step4_shots/r9_grange_store_card.png"
+    },
+    {
+     "label": "east_gate vs headman_longhouse",
+     "a": "out/site_e/step4_shots/r10_east_gate_card.png",
+     "b": "out/site_d/step4_shots/r9_headman_longhouse_card.png"
+    },
+    {
+     "label": "fold_barn vs hearth_row",
+     "a": "out/site_e/step4_shots/r10_fold_barn_card.png",
+     "b": "out/site_d/step4_shots/r9_hearth_row_card.png"
+    },
+    {
+     "label": "granary vs moot_hall",
+     "a": "out/site_e/step4_shots/r10_granary_card.png",
+     "b": "out/site_d/step4_shots/r9_moot_hall_card.png"
+    },
+    {
+     "label": "house_row_lower vs potters_workshop",
+     "a": "out/site_e/step4_shots/r10_house_row_lower_card.png",
+     "b": "out/site_d/step4_shots/r9_potters_workshop_card.png"
+    },
+    {
+     "label": "house_row_upper vs ridge_lookout",
+     "a": "out/site_e/step4_shots/r10_house_row_upper_card.png",
+     "b": "out/site_d/step4_shots/r9_ridge_lookout_card.png"
+    },
+    {
+     "label": "kiln_yard vs sheep_fold",
+     "a": "out/site_e/step4_shots/r10_kiln_yard_card.png",
+     "b": "out/site_d/step4_shots/r9_sheep_fold_card.png"
+    },
+    {
+     "label": "mine_head vs smithy",
+     "a": "out/site_e/step4_shots/r10_mine_head_card.png",
+     "b": "out/site_d/step4_shots/r9_smithy_card.png"
+    },
+    {
+     "label": "moot_hall vs south_gate",
+     "a": "out/site_e/step4_shots/r10_moot_hall_card.png",
+     "b": "out/site_d/step4_shots/r9_south_gate_card.png"
+    },
+    {
+     "label": "smithy vs spring_house",
+     "a": "out/site_e/step4_shots/r10_smithy_card.png",
+     "b": "out/site_d/step4_shots/r9_spring_house_card.png"
+    },
+    {
+     "label": "west_watch vs tarn_landing",
+     "a": "out/site_e/step4_shots/r10_west_watch_card.png",
+     "b": "out/site_d/step4_shots/r9_tarn_landing_card.png"
+    }
+   ]
+  },
+  {
+   "name": "r10_vs_r7",
+   "stage_name": "step4_chunky",
+   "score": "winners",
+   "question": "Which of these two buildings is better made? A or B, one sentence.",
+   "pairs": [
+    {
+     "label": "boat_landing vs byre",
+     "a": "out/site_e/step4_shots/r10_boat_landing_card.png",
+     "b": "out/site_c/step4_shots/r7_byre_card.png"
+    },
+    {
+     "label": "byre vs court_wellhouse",
+     "a": "out/site_e/step4_shots/r10_byre_card.png",
+     "b": "out/site_c/step4_shots/r7_court_wellhouse_card.png"
+    },
+    {
+     "label": "cistern_house vs drovers_rest",
+     "a": "out/site_e/step4_shots/r10_cistern_house_card.png",
+     "b": "out/site_c/step4_shots/r7_drovers_rest_card.png"
+    },
+    {
+     "label": "croft vs east_row",
+     "a": "out/site_e/step4_shots/r10_croft_card.png",
+     "b": "out/site_c/step4_shots/r7_east_row_card.png"
+    },
+    {
+     "label": "east_gate vs granary",
+     "a": "out/site_e/step4_shots/r10_east_gate_card.png",
+     "b": "out/site_c/step4_shots/r7_granary_card.png"
+    },
+    {
+     "label": "fold_barn vs mill",
+     "a": "out/site_e/step4_shots/r10_fold_barn_card.png",
+     "b": "out/site_c/step4_shots/r7_mill_card.png"
+    },
+    {
+     "label": "granary vs moot_hall",
+     "a": "out/site_e/step4_shots/r10_granary_card.png",
+     "b": "out/site_c/step4_shots/r7_moot_hall_card.png"
+    },
+    {
+     "label": "house_row_lower vs north_gate",
+     "a": "out/site_e/step4_shots/r10_house_row_lower_card.png",
+     "b": "out/site_c/step4_shots/r7_north_gate_card.png"
+    },
+    {
+     "label": "house_row_upper vs potters_yard",
+     "a": "out/site_e/step4_shots/r10_house_row_upper_card.png",
+     "b": "out/site_c/step4_shots/r7_potters_yard_card.png"
+    },
+    {
+     "label": "kiln_yard vs quarry_shed",
+     "a": "out/site_e/step4_shots/r10_kiln_yard_card.png",
+     "b": "out/site_c/step4_shots/r7_quarry_shed_card.png"
+    },
+    {
+     "label": "mine_head vs smithy",
+     "a": "out/site_e/step4_shots/r10_mine_head_card.png",
+     "b": "out/site_c/step4_shots/r7_smithy_card.png"
+    },
+    {
+     "label": "moot_hall vs south_water_gate",
+     "a": "out/site_e/step4_shots/r10_moot_hall_card.png",
+     "b": "out/site_c/step4_shots/r7_south_water_gate_card.png"
+    },
+    {
+     "label": "smithy vs watch_spur",
+     "a": "out/site_e/step4_shots/r10_smithy_card.png",
+     "b": "out/site_c/step4_shots/r7_watch_spur_card.png"
+    },
+    {
+     "label": "west_watch vs west_croft_row",
+     "a": "out/site_e/step4_shots/r10_west_watch_card.png",
+     "b": "out/site_c/step4_shots/r7_west_croft_row_card.png"
+    }
+   ]
+  }
+ ],
+ "preregistered": {
+  "written_before": "any block was placed. The site briefing (out/site_e/site.json) and plan.json are the only site_e artefacts that predate this file; no lane had been laid, no wave brief composed and no builder called. The snapshot site_e.before is taken after this file and before the circulation pass.",
+  "site": {
+   "origin": [
+    -1536,
+    1536
+   ],
+   "size": 192,
+   "relief": 108,
+   "std": 9.1,
+   "min_y": -12,
+   "max_y": 96,
+   "source": "out/step4_sites.json, entry '-1536,1536'",
+   "untouched": "no settlement has ever been built here; rounds 4, 6, 7, 8 and 9 are at (-1536,768), (1536,1152), (1536,-768), (-1152,1152) and (1536,-1536)",
+   "terrain": "badlands: sand, red_sand and terracotta at the surface, a 101-block chasm in the north-west (roughness 106 at cell [2][2]), still water at y=62 across the east quarter, and a south-facing shelf at y=78-86 that is the only large ground under roughness 10"
+  },
+  "bars": {
+   "walk_from_outdoors_pct": {
+    "bar": ">= 90",
+    "measure": "scripts/walk_fraction.py site_e, from_outdoors_walking_pct over every room on a plot in\nthe finished town."
+   },
+   "e002_walk_only_from_the_lane": {
+    "bar": "0 findings",
+    "measure": "E002 over the finished town in the round's own lint stage.",
+    "today": "1 of 24 doors, at (1581,105,-1468), made by the finish pass"
+   },
+   "own_lint_errors": {
+    "bar": "0",
+    "measure": "the build family on each wave's own plots, the way settlement_run scopes it; out/site_e/passes.json"
+   },
+   "builder_calls": {
+    "bar": "<= 2 x waves = 10",
+    "measure": "build_request_<i>.json files on disk under out/site_e/arms/site_e/. `split` is on, so a wave costs a massing call and an elaboration call; a bounce is a third and puts the round over."
+   }
+  },
+  "reported_no_bar": {
+   "rooms_at_zero_walkable": "split ground storey against above, from the same room table walk_fraction.py builds",
+   "flight_calls_and_refusals": "every flight() call in every adopted program, with its reason. Refusals are the library saying what it cannot yet do and are the next spec.",
+   "check_runs_per_builder": "check_run rows on out/measurements.jsonl, keyed by the builder's own scratch directory",
+   "placed_versus_attempted": "writes and standing blocks per program",
+   "program_lines": "per adopted program",
+   "true_tokens_per_builder_call": "as each isolated subagent reports its own usage. The model_call log under-reads by about six times and must not be quoted as the cost.",
+   "judge": "r10_vs_r9 and r10_vs_r7 above: 14 pairs each, both orders, blinded and position-swapped,\non cards shot with the identical E1D geometry. Pairing rule, fixed here before any frame\nwas rendered. Also counted.",
+   "a_person_walks_it": "First 'is there anything you cannot get into, or move about in, on foot?', then 'does it\nread as made?'"
+  },
+  "rules_held": [
+   "nothing beyond part A's four changes and the E004 text edit; no new lint check; E012 stays preflight-only",
+   "the builder is told the API and the plot, never what is measured or that anything is compared",
+   "rounds 4, 6, 7, 8 and 9 are not touched",
+   "a miss on any row is reported as a miss and the bar does not move"
+  ]
+ }
+}

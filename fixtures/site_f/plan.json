@@ -1,0 +1,169 @@
+{
+ "intent": "Marrowquay is a swamp-edge town on the north horn of a drowned inlet. Read the ground this way: a stone ridge fills the west of the site and is a cliff, not a place (avoid everything west of x=1594); a lake fills the south and east; between them a dry gravel spur runs north-east from the water at about z=480 up to high firm ground around x=1670-1710, z=388-430. The town is strung along that spur. Water is at y=62, so anything at y=62-63 is wet flat and anything at 64-68 is dry. The reason people are here is the inlet head at x=1616-1647, z~480: the last place a boat can come ashore before the swamp closes, with a rock knoll (y~70) standing over it and stone in the ridge behind. Everything else follows from that. The low end of town is wet and works for a living - landing, fish, boats, smithy, cottages on doubled footings; the high end is dry and keeps things - granary, crofts, kirk. The court is the open ground between the moot hall and the waterline (roughly x 1616-1648, z 456-480), bounded west by the bare rock of the crag, east by the fish house; leave it unbuilt and pave it, it is the market and the landing in one. One place, not fourteen objects: every building is pale quartz panel between an exposed dark_oak frame, every upper storey jetties out a block over the one below, no wall run longer than five without a post, and every building stands on a cobblestone footing course - one course on dry ground, two where it is wet (the whole waterfront and the wet row), so the footing height itself tells you how low you are. Roofs are one family: 'steep gable' means the 2:1 pitch with deep overhang; 'steep gable with dormers' is the same roof with dormers because a floor lives in it; 'crossed steep gables' is the same roof carried over a compound plan where two ranges meet. The signature move - a first-floor oriel on brackets over the entrance - should appear on most buildings and never twice the same: wide and shallow on the hall, a single narrow box on a croft, canted over the smithy door, a hoist-oriel with a beam through it on the granary. Build order goes in threes by cluster: waterfront (moot_hall, fish_house, boat_shed, crag_beacon), the lanes north of the court (waterside_inn, reeve_house, bamboo_works), the wet west end (wet_row, smithy, north_gate), the dry high end (granary, upper_crofts, kirk, byre).",
+ "centre": "moot_hall",
+ "voice": "white_render_dark_frame",
+ "palette": {
+  "wall": "quartz",
+  "frame": "dark_oak",
+  "roof": "deepslate_tile",
+  "footing": "cobblestone",
+  "trim": "stripped_dark_oak_log"
+ },
+ "circulation_material": "cobblestone",
+ "structures": [
+  {
+   "id": "moot_hall",
+   "kind": "moot hall and town meeting house, with the weigh-room for the fish tolls under it",
+   "x0": 1620,
+   "z0": 438,
+   "x1": 1642,
+   "z1": 454,
+   "form": "hall-and-wing",
+   "roof": "crossed steep gables",
+   "notes": "The centre. Sits on the last gentle ground (y 62-64) at the head of the inlet, broadside south to the court and the water so its gable-and-wing junction is the thing you see from a boat. The long range runs east-west; the wing steps down south toward the court and carries the entrance. Tallest thing in the low town, three storeys with each jettied a block, and the widest oriel in the settlement over the south door. Two courses of cobblestone footing all round because the ground here drains badly. Routes converge on it from the north lane, from the quay, and from the rock steps on the west."
+  },
+  {
+   "id": "crag_beacon",
+   "kind": "watch and beacon tower on the rock over the landing",
+   "x0": 1600,
+   "z0": 464,
+   "x1": 1608,
+   "z1": 472,
+   "form": "tower",
+   "roof": "steep gable",
+   "notes": "Stands on the knoll at y~70, about seven blocks above the court, the only building on rock rather than mud. Approach it only from the east - north and west of this cell is cliff face - so the lane must climb from the west side of the court as a cut stair. Small footprint, four storeys, each jettied, a narrow oriel high on the east face looking down onto the quay. Footing is a single course because it is already on stone. It is the marker for the whole town and should be the silhouette read from across the water."
+  },
+  {
+   "id": "fish_house",
+   "kind": "fish house - smoking, salting and drying sheds for the inlet catch",
+   "x0": 1650,
+   "z0": 452,
+   "x1": 1662,
+   "z1": 470,
+   "form": "outshot",
+   "roof": "steep gable",
+   "notes": "Forms the east wall of the court, standing narrow-end to the water. A low open-sided outshot runs down its west flank as the drying gallery facing the court; the main range behind it is closed and blind for smoking. Ground falls south from y 65 to y 63 across the plot, so step the footing in two lifts rather than levelling the whole thing. No dormers - nobody sleeps in a smoke roof. Its oriel is small and set beside the north door onto the lane, not over the drying gallery."
+  },
+  {
+   "id": "boat_shed",
+   "kind": "boat shed and net loft on the east horn of the inlet",
+   "x0": 1648,
+   "z0": 480,
+   "x1": 1662,
+   "z1": 494,
+   "form": "longhouse",
+   "roof": "steep gable with dormers",
+   "notes": "The only building actually at the waterline (y=62, flat), east of the inlet water, reached by the shore lane that runs around the head of the inlet at about z=476-478. Long and low, ridge running down to the water, open gable end at the south so a hull can be drawn in. The loft above holds nets and is lit by dormers on the east slope. Two courses of cobblestone footing and expect the lane to it to be built up, not cut. Deliberately the humblest big roof in town: it answers the moot hall across the court without repeating it."
+  },
+  {
+   "id": "waterside_inn",
+   "kind": "inn and lodging for boat crews and drovers, with stabling behind",
+   "x0": 1650,
+   "z0": 426,
+   "x1": 1664,
+   "z1": 442,
+   "form": "block",
+   "roof": "steep gable with dormers",
+   "notes": "On the east side of the main lane where the spur begins to dry out (y 63-65), one plot up from the court so travellers land, walk up, and stop here. Tall, narrow and deep - four storeys with two jetties, the tightest and busiest elevation in the settlement, dormers on both slopes because the top floor is beds in the roof. Its oriel is a double one over the entrance, the sign hung from the brackets. Faces the hall diagonally across the lane junction."
+  },
+  {
+   "id": "reeve_house",
+   "kind": "reeve's house and toll office, where the lane from the north gate meets the town",
+   "x0": 1622,
+   "z0": 412,
+   "x1": 1638,
+   "z1": 428,
+   "form": "l-plan",
+   "roof": "steep gable",
+   "notes": "West side of the lane on the shoulder between the reed pool and the spur, y 62-65. The L turns its short arm to the lane and its long arm back, making a small walled yard behind for carts. Three storeys, jettied; the oriel sits in the inside corner of the L so it watches both the lane north to the gate and the lane south to the hall - it is a lookout as much as a room. Single footing course on the dry side, two on the west arm where the ground goes to 62."
+  },
+  {
+   "id": "smithy",
+   "kind": "smithy and quarry-stone yard, worked from the ridge stone",
+   "x0": 1600,
+   "z0": 420,
+   "x1": 1612,
+   "z1": 434,
+   "form": "outshot",
+   "roof": "steep gable with dormers",
+   "notes": "Set out on the wet flat at y~62 on the west edge of town, downwind and clear of the timber, between the reed pool to the north and the crag foot to the south. Main range closed with a stone hood and stack; the outshot along the north flank is open-fronted, the charcoal and stone store. Two courses of footing minimum, three if the builder finds standing water. Dormers light the small loft over the store. Its oriel is a single canted box over the workshop door, the smallest signature in town. Keep the lane to it built up across the wet."
+  },
+  {
+   "id": "wet_row",
+   "kind": "the wet row - four cottages under one roof for the fishers and reed-cutters",
+   "x0": 1594,
+   "z0": 400,
+   "x1": 1614,
+   "z1": 412,
+   "form": "longhouse",
+   "roof": "steep gable with dormers",
+   "notes": "A single continuous terrace of four narrow houses along the north edge of the reed pool at y 63-65, presented as one long building with four doors and four oriels - and the oriels must not be identical: vary width, bracket count and glazing along the run so the row reads as four owners, not one wall. Continuous jettied first floor over the doors, dormers all along the south slope. Two courses of footing throughout. This is the poorest end of town and should look it: least trim, plainest frame, but the same voice."
+  },
+  {
+   "id": "north_gate",
+   "kind": "north gate and gatehouse where the land road comes over the knoll",
+   "x0": 1622,
+   "z0": 386,
+   "x1": 1631,
+   "z1": 395,
+   "form": "tower",
+   "roof": "steep gable with dormers",
+   "notes": "On the knoll at y~71, the high saddle where the road from the north drops into town - about seven blocks above the wet row, so the lane south from it has to be a long stepped ramp, not a straight cut. Square gatehouse with a through-passage at ground level and a chamber above lit by dormers; the oriel sits over the passage arch facing north, the first thing an arriving traveller sees. Pairs with crag_beacon at the other end of the town as the two vertical markers - same form, different roof, different job."
+  },
+  {
+   "id": "granary",
+   "kind": "granary and drying loft for grain, bamboo and cut reed",
+   "x0": 1672,
+   "z0": 416,
+   "x1": 1686,
+   "z1": 430,
+   "form": "block",
+   "roof": "steep gable",
+   "notes": "On the driest, highest firm ground of the spur (y 64-65) at the top of the lane, deliberately the furthest thing from the water. Compact and tall, blind-walled, small high openings only, floor raised well clear on a doubled footing with the frame carried on stone staddles. Its signature is a working one: a hoist-oriel on heavy brackets over the cart door with the lifting beam run out through it. No dormers - the loft is the storage, not a room."
+  },
+  {
+   "id": "upper_crofts",
+   "kind": "two upland crofts with their garths, for the herders on the high ground",
+   "x0": 1668,
+   "z0": 388,
+   "x1": 1686,
+   "z1": 400,
+   "form": "l-plan",
+   "roof": "steep gable with dormers",
+   "notes": "Top of the settlement at y 66-68, two small L-plan houses treated as one plot: each turns its short arm to the shared lane and its long arm back, and the two L's face each other so their arms enclose a common garth between them. Ground falls a little south, so foot them on one course and let the south gables sit a block lower. Dormers on the lane slope. Oriels over each door, one square and one canted."
+  },
+  {
+   "id": "kirk",
+   "kind": "kirk and burial ground, the town's meeting for the dead and for weather",
+   "x0": 1694,
+   "z0": 388,
+   "x1": 1706,
+   "z1": 404,
+   "form": "hall-and-wing",
+   "roof": "steep gable",
+   "notes": "The far edge, on the north-east shoulder at y 64-65 above where the ground goes down to open water east of x~1700. Single tall nave range running north-south with a low wing on the west side as the porch and vestry; a bell gable rather than a tower, because crag_beacon and north_gate already carry the verticals and this should be quieter than both. Long unbroken roof slope, no dormers, and the frame set out with the posts closer than five so the wall reads as a rhythm. Its oriel is over the porch door, plain, one bracket pair. Burial ground is the open ground east of it, unbuilt."
+  },
+  {
+   "id": "byre",
+   "kind": "byre and hay barn for the shore grazing",
+   "x0": 1694,
+   "z0": 432,
+   "x1": 1710,
+   "z1": 446,
+   "form": "longhouse",
+   "roof": "steep gable",
+   "notes": "Out on the east shelf at y 63-65 where the spur runs down to the lakeside meadow - the ground drops toward the water east and south of it, so set the long axis east-west along the contour and step the footing rather than cutting a platform. Long, low, mostly open frame with panels only on the weather side, big double doors at the west gable onto the lane from the granary. No dormers, no upper floor; the jetty is a single overhang on the north side sheltering the feed walk. Its oriel is a small watch box beside the doors where the herder sits."
+  },
+  {
+   "id": "bamboo_works",
+   "kind": "bamboo and basket works - cutting, splitting and weaving shop for the reed and cane trade",
+   "x0": 1672,
+   "z0": 446,
+   "x1": 1686,
+   "z1": 460,
+   "form": "l-plan",
+   "roof": "steep gable",
+   "notes": "Between the inn, the fish house and the byre on level ground at y 64-65, the working middle of town. The L wraps a south-facing yard where cut cane is stacked and seasoned; the short arm is the weaving shop with a long band of openings for light, the long arm is the store. Single footing course - this is the driest of the working buildings. Two full storeys, one jetty, and the oriel is over the yard gate rather than the house door, carried on four brackets so a lantern can hang under it. It shares its roof form with its neighbours but not its plan: the L is what makes it read as a workshop from the lane."
+  }
+ ]
+}

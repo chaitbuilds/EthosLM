@@ -1,0 +1,243 @@
+{
+ "name": "site_d",
+ "voice": "drystone_and_thatch",
+ "base_volume": "world.npz",
+ "site": {
+  "origin": [
+   1536,
+   -1536
+  ],
+  "size": 192
+ },
+ "flags": {
+  "sight": false,
+  "split": true,
+  "select": 0,
+  "spaces": false,
+  "arm": "site_d",
+  "check": true,
+  "max_bounces": 1,
+  "allow_collide": true
+ },
+ "waves": [
+  {
+   "name": "wave1",
+   "plots": [
+    "moot_hall",
+    "hearth_row",
+    "headman_longhouse"
+   ]
+  },
+  {
+   "name": "wave2",
+   "plots": [
+    "bakehouse",
+    "smithy",
+    "byre_and_hayloft"
+   ]
+  },
+  {
+   "name": "wave3",
+   "plots": [
+    "grange_store",
+    "west_croft",
+    "potters_workshop"
+   ]
+  },
+  {
+   "name": "wave4",
+   "plots": [
+    "south_gate",
+    "drovers_barn",
+    "sheep_fold"
+   ]
+  },
+  {
+   "name": "wave5",
+   "plots": [
+    "ridge_lookout",
+    "threshing_barn"
+   ]
+  },
+  {
+   "name": "wave6",
+   "plots": [
+    "spring_house",
+    "tarn_landing"
+   ]
+  }
+ ],
+ "shots": {
+  "frames": [
+   "step4_shots",
+   "frames"
+  ],
+  "geometry": "E1D",
+  "spp": 40,
+  "size": [
+   900,
+   560
+  ],
+  "prefix": "site_d"
+ },
+ "cards": [
+  {
+   "name": "chunky",
+   "frames": "out/site_d/step4_shots/frames",
+   "out": "out/site_d/step4_shots",
+   "layout": "quad",
+   "size": [
+    900,
+    560
+   ],
+   "strict": true,
+   "tags": [
+    "r9_bakehouse",
+    "r9_byre_and_hayloft",
+    "r9_drovers_barn",
+    "r9_grange_store",
+    "r9_headman_longhouse",
+    "r9_hearth_row",
+    "r9_moot_hall",
+    "r9_potters_workshop",
+    "r9_ridge_lookout",
+    "r9_sheep_fold",
+    "r9_smithy",
+    "r9_south_gate",
+    "r9_spring_house",
+    "r9_tarn_landing",
+    "r9_threshing_barn",
+    "r9_west_croft"
+   ]
+  }
+ ],
+ "judgements": [
+  {
+   "name": "r9_vs_r7",
+   "stage_name": "step4_chunky",
+   "score": "winners",
+   "question": "Which of these two buildings is better made? A or B, one sentence.",
+   "pairs": [
+    {
+     "label": "bakehouse vs byre",
+     "a": "out/site_d/step4_shots/r9_bakehouse_card.png",
+     "b": "out/site_c/step4_shots/r7_byre_card.png"
+    },
+    {
+     "label": "byre_and_hayloft vs court_wellhouse",
+     "a": "out/site_d/step4_shots/r9_byre_and_hayloft_card.png",
+     "b": "out/site_c/step4_shots/r7_court_wellhouse_card.png"
+    },
+    {
+     "label": "drovers_barn vs drovers_rest",
+     "a": "out/site_d/step4_shots/r9_drovers_barn_card.png",
+     "b": "out/site_c/step4_shots/r7_drovers_rest_card.png"
+    },
+    {
+     "label": "grange_store vs east_row",
+     "a": "out/site_d/step4_shots/r9_grange_store_card.png",
+     "b": "out/site_c/step4_shots/r7_east_row_card.png"
+    },
+    {
+     "label": "headman_longhouse vs granary",
+     "a": "out/site_d/step4_shots/r9_headman_longhouse_card.png",
+     "b": "out/site_c/step4_shots/r7_granary_card.png"
+    },
+    {
+     "label": "hearth_row vs mill",
+     "a": "out/site_d/step4_shots/r9_hearth_row_card.png",
+     "b": "out/site_c/step4_shots/r7_mill_card.png"
+    },
+    {
+     "label": "moot_hall vs moot_hall",
+     "a": "out/site_d/step4_shots/r9_moot_hall_card.png",
+     "b": "out/site_c/step4_shots/r7_moot_hall_card.png"
+    },
+    {
+     "label": "potters_workshop vs north_gate",
+     "a": "out/site_d/step4_shots/r9_potters_workshop_card.png",
+     "b": "out/site_c/step4_shots/r7_north_gate_card.png"
+    },
+    {
+     "label": "ridge_lookout vs potters_yard",
+     "a": "out/site_d/step4_shots/r9_ridge_lookout_card.png",
+     "b": "out/site_c/step4_shots/r7_potters_yard_card.png"
+    },
+    {
+     "label": "sheep_fold vs quarry_shed",
+     "a": "out/site_d/step4_shots/r9_sheep_fold_card.png",
+     "b": "out/site_c/step4_shots/r7_quarry_shed_card.png"
+    },
+    {
+     "label": "smithy vs smithy",
+     "a": "out/site_d/step4_shots/r9_smithy_card.png",
+     "b": "out/site_c/step4_shots/r7_smithy_card.png"
+    },
+    {
+     "label": "south_gate vs south_water_gate",
+     "a": "out/site_d/step4_shots/r9_south_gate_card.png",
+     "b": "out/site_c/step4_shots/r7_south_water_gate_card.png"
+    },
+    {
+     "label": "spring_house vs watch_spur",
+     "a": "out/site_d/step4_shots/r9_spring_house_card.png",
+     "b": "out/site_c/step4_shots/r7_watch_spur_card.png"
+    },
+    {
+     "label": "tarn_landing vs west_croft_row",
+     "a": "out/site_d/step4_shots/r9_tarn_landing_card.png",
+     "b": "out/site_c/step4_shots/r7_west_croft_row_card.png"
+    }
+   ]
+  }
+ ],
+ "preregistered": {
+  "written_before": "any block was placed. The site briefing, the world snapshot site_d.before and plan.json are the only site_d artefacts that predate this file; no wave brief had been composed, no lane laid and no builder called.",
+  "site": {
+   "origin": [
+    1536,
+    -1536
+   ],
+   "size": 192,
+   "relief": 97,
+   "std": 19.4,
+   "min_y": 62,
+   "max_y": 159,
+   "source": "out/step4_sites.json, entry '1536,-1536'",
+   "untouched": "no settlement has ever been built here; rounds 6, 7 and 8 are at (1536,1152), (1536,-768) and (-1152,1152)"
+  },
+  "bars": {
+   "walk_from_outdoors_pct": {
+    "bar": ">= 90",
+    "measure": "scripts/walk_fraction.py site_d, from_outdoors_walking_pct over every room on a plot in the finished town"
+   },
+   "e002_walk_only": {
+    "bar": "0 findings",
+    "measure": "E002 over the finished town, walk-only, in the round's own lint stage",
+    "today": "not measured."
+   },
+   "own_lint_errors": {
+    "bar": "0",
+    "measure": "the build family on each wave's own plots, the way settlement_run scopes it; out/site_d/passes.json"
+   },
+   "builder_calls": {
+    "bar": "<= 2 x waves = 12",
+    "measure": "model_call rows with stage 'site_d', and the build_request_<i>.json files on disk. `split` is on, so a wave costs a massing call and an elaboration call; a bounce is a third and puts the round over.",
+    "today": "the repair round: 34 for 16"
+   }
+  },
+  "reported_no_bar": {
+   "check_runs_per_builder": "check_run rows on out/measurements.jsonl, keyed by the builder's own scratch directory. Read this first if walkability misses: a builder that ran it once and shipped is a prompt problem, one that ran it ten times and still missed is the medium problem.",
+   "placed_versus_attempted": "writes and standing blocks per program, from the same rows",
+   "program_lines": "per adopted program",
+   "judge": "r9_vs_r7 above: 14 pairs, both orders, blinded and position-swapped, on cards shot with\nthe identical E1D geometry. the two left over are threshing_barn, west_croft, which are\nreported unpaired.",
+   "a_person_walks_it": "asked one thing -- is there anything you cannot get into or move about in on foot? -- before they see any number"
+  },
+  "rules_held": [
+   "no new lint check beyond E002 becoming walk-only; no new primitive beyond approach()",
+   "the builder is not told what is measured: the brief is the API and the plot",
+   "rounds 4, 6, 7 and 8 are not touched",
+   "a miss on any row is reported as a miss and the bar does not move"
+  ]
+ }
+}

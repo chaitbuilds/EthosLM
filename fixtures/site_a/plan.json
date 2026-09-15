@@ -1,0 +1,145 @@
+{
+ "intent": "This is Ashfoot, a hill-farming town in the low basin at the south-west of the site and on the flat shelf above it to the east. The whole northern two-thirds of this region is broken ridge country - roughness 25 to 43, cliffs and steep faces - and nobody would live there, so the settlement deliberately turns its back on it and occupies the two pieces of genuinely kind ground: the sheltered basin floor at y63-75 (x1536-1620, z1266-1343, roughness 8-15) and the upper terrace at y85-90 (x1664-1727, z1280-1330, roughness 7-16). Between them the southern edge of the site is a long, even ramp - along z1328-1343 the ground climbs steadily from y63 in the west to y95 in the east with almost no roughness. That ramp is the reason the town is here: it is the only easy way up out of the basin onto the high ground, and Ashfoot grew where the road leaves the flat. Read the plan as one street. It runs west-to-east: farmstead and byres at the quiet north-west end, the green with its well at the heart of the basin, the granary and cistern where the flat ends, then the road bends south-east and climbs past the stepped field terraces on the worked slope, through the brink shrine on the lip, and up onto the terrace where the high hall and the upper crofts sit, with the watch tower on the knoll at y103 above them all. Nothing here should read as a separate hamlet; the terraces and the shrine exist specifically to stitch the lower and upper halves into one settlement, and every footprint east of the green is placed so the climbing road stays continuous and visible from below. Materially it must be one place: fieldstone taken off the same hillside for every plinth, retaining wall and terrace, oak framing above, dark weathered timber roofs. Buildings sit INTO their ground, not on top of it - cut the uphill side back and retain it in cobblestone, carry the downhill side out on a stone plinth. No building should stand on a levelled pad that is visibly raised above the grass on all four sides. The upper structures face west and south so they look down over the basin; the lower structures face the green.",
+ "centre": "town_green",
+ "palette": {
+  "plinth": "cobblestone",
+  "retaining_and_terrace": "cobblestone, mossy_cobblestone",
+  "walls": "oak_planks over a cobblestone lower course",
+  "frame_and_posts": "oak_log, stripped_oak_log",
+  "roof": "dark_oak_planks, dark_oak_stairs, dark_oak_slab",
+  "trim_and_thresholds": "stone_brick",
+  "accent": "jungle_log (sparingly, on the shrine, the hall and the tower only - the site has jungle timber and these are the buildings that get the good wood)",
+  "openings": "glass_pane, oak_door, oak_trapdoor",
+  "enclosure": "cobblestone_wall, oak_fence",
+  "floors": "stone, cobblestone, oak_planks"
+ },
+ "circulation_material": "cobblestone",
+ "structures": [
+  {
+   "id": "town_green",
+   "kind": "village green with a stone well head and market cross",
+   "x0": 1578,
+   "z0": 1306,
+   "x1": 1599,
+   "z1": 1325,
+   "notes": "THE CENTRE. Open ground, not a building: a walled green with a cobblestone well head roughly at its middle, a market cross, benches and a pair of big trees left standing. It lies on the flattest, lowest part of the basin (y63-69, roughness 9-11), falling about five blocks from north to south - hold that fall as two shallow paved terraces with a two- or three-step cobblestone lip between them rather than flattening it. Every lane in the lower town converges here: the street from the west houses, the stair down from the moot hall on its north bench, the road out east past the cistern, and the way south to the granary. Keep it porous on all four sides so the circulation pass can enter from any of them."
+  },
+  {
+   "id": "moot_hall",
+   "kind": "assembly hall, the town's one civic building in the basin",
+   "x0": 1576,
+   "z0": 1282,
+   "x1": 1599,
+   "z1": 1300,
+   "notes": "Sits on the low bench above the green (y69-75), aligned to the same axis so it looks straight down onto it. Cut its floor level back into the north lip and retain that cut with a cobblestone wall; carry the south front out on a plinth so the building addresses the green from slightly above and its door is reached by a short flight of steps. Long axis east-west, gable ends, biggest roof in the lower town. This is the building people in the basin orient themselves by."
+  },
+  {
+   "id": "granary",
+   "kind": "raised granary and threshing floor",
+   "x0": 1576,
+   "z0": 1331,
+   "x1": 1599,
+   "z1": 1343,
+   "notes": "Directly south of the green across the street, on the driest flat ground in the site (y63, roughness 9-17). Long, low, timber over a solid cobblestone plinth raised about a block clear of the ground on staddle piers, with an open paved threshing floor on its east end facing the road out of town. Deliberately plain - it is a working building, and its bulk closes the south side of the green."
+  },
+  {
+   "id": "house_row_west",
+   "kind": "row of four or five attached dwellings",
+   "x0": 1546,
+   "z0": 1306,
+   "x1": 1569,
+   "z1": 1322,
+   "notes": "The main residential row, west of the green along the same street, on flat ground at y65-70. Build it as a continuous terrace of narrow houses sharing gable walls rather than detached cottages, fronts facing south onto the street with small walled yards behind to the north. Rooflines should step down eastward with the ground so the row reads as one long built edge to the street."
+  },
+  {
+   "id": "house_row_south",
+   "kind": "second row of dwellings with garden plots",
+   "x0": 1546,
+   "z0": 1331,
+   "x1": 1569,
+   "z1": 1343,
+   "notes": "Faces house_row_west across the street from the south side, at y63 on the flattest ground in the basin. Same construction, slightly smaller and simpler - these are the newer houses. Backs onto fenced garden plots at the site's south edge. Together with house_row_west it forms the walled corridor that the street runs down into the green."
+  },
+  {
+   "id": "byre_and_yard",
+   "kind": "cattle byre with a walled stockyard",
+   "x0": 1538,
+   "z0": 1284,
+   "x1": 1561,
+   "z1": 1300,
+   "notes": "North-west of the houses on the quiet edge of the basin (y66-71), upwind of the green. A long low byre along the north side and an open cobblestone-walled yard south of it, with a gate onto the lane that runs down to house_row_west. Half building, half enclosure - the wall matters as much as the roof, because it is what makes the north-west end of town feel edged rather than trailing off."
+  },
+  {
+   "id": "croft_north",
+   "kind": "outlying farmstead - cottage, small barn, fenced croft",
+   "x0": 1538,
+   "z0": 1266,
+   "x1": 1553,
+   "z1": 1278,
+   "notes": "The furthest building north, on the last flat shelf (y68, roughness 11) before the ground breaks up into the ridge country. A single cottage and a lean-to barn inside an oak fence. It should feel like the edge of the settled world in that direction: modest, older, oriented south back toward the town rather than out into the hills. Beyond it there is nothing and should be nothing."
+  },
+  {
+   "id": "smithy_bench",
+   "kind": "smithy and charcoal yard",
+   "x0": 1606,
+   "z0": 1280,
+   "x1": 1621,
+   "z1": 1294,
+   "notes": "Put up on the bench north-east of the green (y82-89) where the basin starts to climb, clear of the thatch and on the way to the terraces. Cut hard into the slope on its north side and retain it in cobblestone; the yard in front is a levelled cobblestone apron with a low wall along the downhill edge. Stone and slate here, minimal timber, a tall chimney - the one building in the lower town that reads as fireproof, and a landmark on the climb out."
+  },
+  {
+   "id": "cistern",
+   "kind": "covered cistern and washing troughs",
+   "x0": 1606,
+   "z0": 1306,
+   "x1": 1619,
+   "z1": 1320,
+   "notes": "Sits at the foot of the slope east of the green, where the ground falls from y73 to y63 - this is where water coming off the hill terraces collects, and it is why the town's east end is where it is. A sunken stone tank with a low pitched roof on stone piers, stepped stone troughs running downhill from it, and a paved apron. Small, but it should look older and better built than the houses around it. It marks the point where the street stops being a town street and becomes the hill road."
+  },
+  {
+   "id": "hill_terraces",
+   "kind": "stepped agricultural terraces with dry-stone retaining walls",
+   "x0": 1626,
+   "z0": 1304,
+   "x1": 1661,
+   "z1": 1322,
+   "notes": "This is the piece that ties the lower town to the upper terrace, and it belongs on steep ground - the slope here runs from about y70 up to y87 with roughness 19-30. Do NOT flatten it and do not put a roof on it. Build a flight of five or six broad level cropping terraces climbing west to east, each held by a cobblestone and mossy_cobblestone retaining wall one to three blocks high, with stone step-stiles connecting them and a low wall along the outer edge. Tilled soil and crops on the flats. The hill road runs along their southern foot, so from the road they read as the worked face of the hillside. Their scale and their material continuity with the town's plinths are what makes the upper and lower halves one settlement."
+  },
+  {
+   "id": "brink_shrine",
+   "kind": "small stone shrine and beacon on the terrace lip",
+   "x0": 1668,
+   "z0": 1306,
+   "x1": 1681,
+   "z1": 1322,
+   "notes": "Stands on the western brink of the upper terrace at y85-88, exactly where you come over the edge and the whole basin opens up below you. Small - a square stone cell open to the west, a paved forecourt with a low parapet at the drop, a firebasket on a stone post. Jungle_log for the lintel and posts. Nothing else on the lip: this building's job is to be the thing you see silhouetted from the green far below, and the thing that tells you the climb is over. The road passes its forecourt and then turns north-east onto the terrace through the gap between it and the upper crofts."
+  },
+  {
+   "id": "high_hall",
+   "kind": "the great hall of the upper terrace",
+   "x0": 1692,
+   "z0": 1292,
+   "x1": 1717,
+   "z1": 1310,
+   "notes": "The largest building in the settlement, on the best ground in the whole site - the terrace at y87-90 with roughness 7-11, level enough that it needs almost no cutting. Long axis east-west, high roof, deep porch on the west gable facing back over the brink toward the basin. Stone plinth and lower walls, oak frame, jungle_log for the door frame and the ridge posts. It should be visible on the skyline from the town green 110 blocks away and from the whole climbing road; make the roof tall enough for that. Its forecourt is open ground on the west side where the road arrives."
+  },
+  {
+   "id": "upper_crofts",
+   "kind": "row of terrace dwellings with walled plots",
+   "x0": 1692,
+   "z0": 1316,
+   "x1": 1717,
+   "z1": 1330,
+   "notes": "The households of the upper terrace, south of the hall and sharing its alignment, on flat ground at y88-90. Three or four houses in a short row with cobblestone-walled plots between them, fronts facing north onto the hall's forecourt lane. Their south wall is the settlement's edge above the drop - carry it as a continuous low retaining wall so the terrace reads as deliberately built up to its rim rather than simply stopping."
+  },
+  {
+   "id": "watch_tower",
+   "kind": "stone watch tower and beacon on the summit knoll",
+   "x0": 1696,
+   "z0": 1248,
+   "x1": 1711,
+   "z1": 1262,
+   "notes": "The highest reachable flat ground in the site, a knoll at about y103 with roughness 17, forty blocks above the basin floor. Reached by a lane climbing north from the hall across the terrace (y87 to y93 to y103 over about 45 blocks - gradual, no stairs needed for most of it). A single square stone tower, cobblestone and stone_brick with a jungle_log floor frame, a walled bailey barely bigger than itself, and a beacon fire on top. It is the outermost thing the settlement built and the first thing seen from anywhere in the region; everything else in the plan is downhill and west of it."
+  }
+ ]
+}

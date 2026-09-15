@@ -1,0 +1,19 @@
+{
+ "name": "drystone_and_thatch",
+ "notes": {
+  "blurb": "Field-stone walls laid dry, dark timber, low roofs pitched hard against weather. Everything looks quarried within sight of where it stands.",
+  "construction": "walls thick and battered at the base, openings small and deep, lintels of a single timber, no render",
+  "ground": "buildings step down a slope in whole storeys rather than sitting on a cut pad; retaining walls are the same stone as the walls above",
+  "roofs": "steep, (2,1) or (1,1), eaves low enough to touch, gables plain",
+  "signature": "an outshot lean-to along one long side, roofed shallower"
+ },
+ "roles": {
+  "floor": "cobblestone",
+  "footing": "mossy_cobblestone",
+  "frame": "spruce",
+  "roof": "dark_oak",
+  "trim": "stripped_spruce_log",
+  "wall": "cobblestone"
+ },
+ "roof": {}
+}

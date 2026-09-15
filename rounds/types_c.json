@@ -1,0 +1,116 @@
+{
+ "name": "site_b",
+ "voice": "",
+ "base_volume": "world.npz",
+ "flags": {
+  "sight": false,
+  "split": false,
+  "select": 0,
+  "spaces": false,
+  "max_bounces": 1
+ },
+ "preregistered": {
+  "walk_model": 6,
+  "registered_here_before_a_builder_was_called": true,
+  "written_before": "the call. the L is A3's, least relief first; the loop is A5's, the closed square of 160\ncolumns on free ground whose relief along the line is nearest 12 -- and\nscripts/test_siting.py asserts both reproduce. The reading of the standing wall against\nthem, before any call, is 4 of 4 clean on the L and 0 of 4 on the loop.",
+  "bars": {
+   "instances_lint_zero": {
+    "bar": ">= 3 of 4",
+    "note": "at most one instance may fail'. The checker's instances here are two edge fixtures x two\nseeds, which is four. Read off the type's own check run and recorded in\nout/site_b/types_c/check.json, as Part B's was."
+   }
+  },
+  "reported_no_bar": {
+   "all_eight": "the same two fixtures at seeds 1-4, which is eight instances, reported beside the four the bar is read on",
+   "the_standing_wall": "4 of 4 on the L and 0 of 4 on the loop, four own lint errors an instance",
+   "tokens": "true tokens for the one call, as the isolated subagent reports them",
+   "needs": "what the re-authored type declares as NEEDS, against what scripts/type_needs.py measures for it"
+  },
+  "rules_held": [
+   "one call, and only for the wall.",
+   "no new lint check in the frozen suite",
+   "no bar is moved."
+  ]
+ },
+ "types": {
+  "out": "types_c",
+  "arm": "types_c",
+  "check_parts": [
+   {
+    "round": "site_b",
+    "kind": "edge",
+    "part": "wall_L",
+    "path": [
+     [
+      1585,
+      -610
+     ],
+     [
+      1604,
+      -610
+     ],
+     [
+      1604,
+      -590
+     ]
+    ],
+    "width": 1,
+    "relief": 1,
+    "rule": "edge_least_relief",
+    "why": "40 columns in two runs meeting at one right angle, on free ground, least relief first and then nearest the lane"
+   },
+   {
+    "round": "site_b",
+    "kind": "edge",
+    "part": "wall_ring",
+    "path": [
+     [
+      1584,
+      -702
+     ],
+     [
+      1624,
+      -702
+     ],
+     [
+      1624,
+      -662
+     ],
+     [
+      1584,
+      -662
+     ],
+     [
+      1584,
+      -702
+     ]
+    ],
+    "width": 1,
+    "relief": 12,
+    "columns": 160,
+    "gate": {
+     "at": [
+      1624,
+      -682
+     ],
+     "facing": "east"
+    },
+    "rule": "edge_closed_loop",
+    "why": "a closed square loop of 160 columns on free ground, chosen for relief along the line nearest 12 and then nearest the lane; the gate is the middle of the side the lane is closest to"
+   }
+  ],
+  "check_part_seeds": [
+   1,
+   2
+  ],
+  "list": [
+   {
+    "name": "wall",
+    "part": "edge",
+    "file": "types/wall.py",
+    "voice": "white_render_dark_frame",
+    "kind": "a town wall",
+    "request": "Write `types/wall.py`: `build(b, part, seed, **params)` builds a town wall along the edge you are given -- three high plus a walkway with a parapet on top of it, steps down to the ground every 24 cells, and joined at the corners so a person can walk the whole length without stopping. **Everything you build has to be reachable on foot from the ground outside it**: a door that opens onto the walkway is a door somebody has to be able to get to, and a turret nobody can walk into is a room in the middle of a wall. Declare `KIND = \"edge\"`, `NEEDS`, and `PARAMS` for two things of your own choosing that a plan might reasonably want to vary. Different seeds have to give a different wall. Run `check.py` until every instance is clean."
+   }
+  ]
+ }
+}

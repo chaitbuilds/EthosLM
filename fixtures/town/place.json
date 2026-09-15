@@ -1,0 +1,52 @@
+{
+ "kind": "town",
+ "defining_parts": [
+  {
+   "name": "town_wall",
+   "kind": "edge",
+   "family": "wall",
+   "relation": "perimeter",
+   "count": 1,
+   "structures": 0,
+   "notes": "A single circuit of wall round the whole place, because the sentence says walled and that is the first thing it says about it."
+  },
+  {
+   "name": "town_gate",
+   "kind": "point",
+   "family": "gate",
+   "relation": "gateway",
+   "count": 1,
+   "structures": 0,
+   "notes": "One way through the circuit; a wall a town cannot be entered by is not the wall the sentence asked for, so the gate is implied by walled rather than added to it."
+  },
+  {
+   "name": "market_square",
+   "kind": "area",
+   "family": "square",
+   "relation": "centre",
+   "count": 1,
+   "structures": 0,
+   "notes": "The open ground named by with a market square, and the only part the sentence gives that a town would naturally build itself around, so it takes the centre."
+  },
+  {
+   "name": "keep",
+   "kind": "plot",
+   "family": "keep",
+   "relation": "beside_the_centre",
+   "count": 1,
+   "structures": 0,
+   "notes": "The keep named by and a keep, standing on its own as a single building; it flanks the square rather than taking the centre, since the square already has it."
+  },
+  {
+   "name": "residential_district",
+   "kind": "group",
+   "family": "district",
+   "relation": "throughout",
+   "count": 1,
+   "structures": 0,
+   "notes": "The about sixty houses are not defining parts one by one; the division of the town that holds them is, and it spreads through the walls around the square and the keep."
+  }
+ ],
+ "voice": null,
+ "notes": "Read as a town: sixty-odd houses is past a village and well short of a city, and a wall and a keep are things a town has and a hamlet does not. Four parts are named outright (wall, square, keep, and the houses gathered into their district) and one, the gate, is carried by walled. The houses themselves are left to the district; no count, no band and no extent is asserted here, since the sentence's own about sixty and the kind are what fix that later. No style is named or implied, so the voice is left null for the ground to decide."
+}

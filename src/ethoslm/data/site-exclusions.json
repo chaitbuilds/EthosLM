@@ -1,0 +1,165 @@
+{
+ "method": "Recorded site.json bounds, plus a conservative origin-build reservation; a 64-block\nmargin keeps a new place away from their edges. The origin reservation is a policy\nbound, not a measured building footprint. A round that writes a place into the world\nadds its written region here before the next search runs.",
+ "margin": 64,
+ "sites": [
+  {
+   "name": "origin_builds",
+   "rect": [
+    -256,
+    -256,
+    256,
+    256
+   ],
+   "source": "types_n-spec.md B1: August origin builds"
+  },
+  {
+   "name": "settlement",
+   "rect": [
+    -1536,
+    768,
+    -1345,
+    959
+   ],
+   "source": "out/settlement_site.json"
+  },
+  {
+   "name": "site_a",
+   "rect": [
+    1536,
+    1152,
+    1727,
+    1343
+   ],
+   "source": "out/site_a/site.json"
+  },
+  {
+   "name": "site_b",
+   "rect": [
+    1536,
+    -768,
+    1727,
+    -577
+   ],
+   "source": "out/site_b/site.json"
+  },
+  {
+   "name": "site_c",
+   "rect": [
+    -1152,
+    1152,
+    -961,
+    1343
+   ],
+   "source": "out/site_c/site.json"
+  },
+  {
+   "name": "site_d",
+   "rect": [
+    1536,
+    -1536,
+    1727,
+    -1345
+   ],
+   "source": "out/site_d/site.json"
+  },
+  {
+   "name": "site_e",
+   "rect": [
+    -1536,
+    1536,
+    -1345,
+    1727
+   ],
+   "source": "out/site_e/site.json"
+  },
+  {
+   "name": "site_f",
+   "rect": [
+    1536,
+    384,
+    1727,
+    575
+   ],
+   "source": "out/site_f/site.json"
+  },
+  {
+   "name": "round14_and_16",
+   "rect": [
+    -1152,
+    -384,
+    -961,
+    -193
+   ],
+   "source": "out/types_m/site.json; out/district/site.json"
+  },
+  {
+   "name": "town",
+   "rect": [
+    -256,
+    0,
+    115,
+    371
+   ],
+   "source": "out/town/site.json"
+  },
+  {
+   "name": "abandoned_plateau",
+   "rect": [
+    -475,
+    235,
+    -428,
+    282
+   ]
+  },
+  {
+   "name": "ringed_city_3",
+   "rect": [
+    -1048,
+    488,
+    -489,
+    1047
+   ],
+   "source": "its sandstone reads natural to the census, which is what this ledger is for"
+  },
+  {
+   "name": "monument",
+   "rect": [
+    -768,
+    -1024,
+    -257,
+    -513
+   ],
+   "source": "the great wall is sandstone, which the census calls natural, and the ground under the\npalace was levelled"
+  },
+  {
+   "name": "concentric",
+   "rect": [
+    -536,
+    2792,
+    23,
+    3351
+   ],
+   "source": "out/concentric/round.json results.write.region."
+  },
+  {
+   "name": "ground",
+   "rect": [
+    -1048,
+    -3096,
+    -233,
+    -2281
+   ],
+   "source": "it is the demo"
+  },
+  {
+   "name": "occupancy",
+   "rect": [
+    -6168,
+    488,
+    -5353,
+    1303
+   ],
+   "source": "out/occupancy/round.json results.write.region."
+  }
+ ]
+}

@@ -1,0 +1,33 @@
+{
+ "name": "japanese_minka",
+ "notes": {
+  "blurb": "Farmhouse timber under deep thatch. Dark posts and pale boards, the floor lifted clear of the ground, the roof by far the biggest thing about the building.",
+  "construction": "boarded walls between a heavy exposed frame, openings wide rather than tall and screened rather than glazed, dark timber against pale board",
+  "ground": "a raised floor on posts clear of the wet, with a veranda along the long side at floor level",
+  "roofs": "irimoya or hip, shallow (1,2) then steep (2,1) at the ridge, eaves deep and upturned, one or two tiers",
+  "signature": "the engawa -- the boarded veranda running the length of the building under the overhanging eave"
+ },
+ "roles": {
+  "floor": "spruce",
+  "footing": "stone_brick",
+  "frame": "stripped_spruce_log",
+  "roof": "thatch",
+  "trim": "bamboo_planks",
+  "wall": "spruce"
+ },
+ "roof": {
+  "eave": "upturned",
+  "ends": "irimoya",
+  "profile": [
+   [
+    1,
+    2
+   ],
+   [
+    2,
+    1
+   ]
+  ],
+  "tiers": 1
+ }
+}

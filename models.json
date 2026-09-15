@@ -1,0 +1,77 @@
+{
+ "_readme": [
+  "Which model does which job. Read by src/ethoslm/model.py; ETHOSLM_MODELS points at another file.",
+  "Nothing here is used until ETHOSLM_MODEL_API names a provider (or ETHOSLM_MODEL_<ROLE> names one for a role);",
+  "with neither set every role is staged for the supervising agent, which is the default path.",
+  "providers: api is `anthropic` (Messages) or `openai` (Chat Completions, which OpenRouter, Groq, Together,",
+  "  DeepSeek, Mistral, xAI, Gemini's compatibility endpoint, Ollama, llama.cpp, vLLM, LM Studio and a LiteLLM",
+  "  proxy all speak); key names the environment variable holding the key (null: none needed);",
+  "  base_url_env names a variable that overrides base_url; extra is merged into every request body",
+  "  (provider-specific knobs, e.g. {\"output_config\": {\"effort\": \"high\"}}); a tier may be a model id or",
+  "  {\"model\": id, \"vision\": false} for a model that cannot see images.",
+  "tiers: per provider, the model id each tier resolves to. The ids below are examples current when this",
+  "  file was written; check them against your provider's model list and change them freely.",
+  "roles: spec (sentence -> place spec, and the voice), plan (every planner level), type (type authoring),",
+  "  build (part and wave authoring), revise (findings revision), judge (pairwise vision judge). Each is a",
+  "  tier name, a literal provider/model, or `subagent` to leave that role staged.",
+  "Environment: ETHOSLM_MODEL_API=<provider> routes every role through that provider's tiers;",
+  "  ETHOSLM_MODEL_<ROLE>=<provider>/<model> overrides one role; ETHOSLM_MODEL_<ROLE>=subagent stages it;",
+  "  ETHOSLM_MODEL_API=anthropic with ETHOSLM_MODEL_NAME=<id> (the types_n knob) means that model for every role."
+ ],
+ "providers": {
+  "anthropic": {
+   "api": "anthropic",
+   "base_url": "https://api.anthropic.com/v1",
+   "key": "ANTHROPIC_API_KEY",
+   "base_url_env": "ETHOSLM_ANTHROPIC_BASE_URL"
+  },
+  "openai": {
+   "api": "openai",
+   "base_url": "https://api.openai.com/v1",
+   "key": "OPENAI_API_KEY",
+   "base_url_env": "ETHOSLM_OPENAI_BASE_URL"
+  },
+  "openrouter": {
+   "api": "openai",
+   "base_url": "https://openrouter.ai/api/v1",
+   "key": "OPENROUTER_API_KEY"
+  },
+  "local": {
+   "api": "openai",
+   "base_url": "http://localhost:11434/v1",
+   "key": null,
+   "base_url_env": "ETHOSLM_LOCAL_BASE_URL",
+   "timeout": 3600
+  }
+ },
+ "tiers": {
+  "anthropic": {
+   "small": "claude-haiku-4-5",
+   "frontier": "claude-opus-5",
+   "vision": "claude-sonnet-5"
+  },
+  "openai": {
+   "small": "gpt-5-mini",
+   "frontier": "gpt-5",
+   "vision": "gpt-5"
+  },
+  "openrouter": {
+   "small": "anthropic/claude-haiku-4.5",
+   "frontier": "anthropic/claude-sonnet-4.6",
+   "vision": "anthropic/claude-sonnet-4.6"
+  },
+  "local": {
+   "small": "llama3.2",
+   "frontier": "qwen2.5-coder:32b",
+   "vision": "llama3.2-vision"
+  }
+ },
+ "roles": {
+  "spec": "frontier",
+  "plan": "frontier",
+  "type": "frontier",
+  "build": "frontier",
+  "revise": "small",
+  "judge": "vision"
+ }
+}

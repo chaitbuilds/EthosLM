@@ -1,0 +1,28 @@
+{
+ "name": "example",
+ "voice": "white_render_dark_frame",
+ "base_volume": "world.npz",
+ "site": {
+  "origin": [
+   -1152,
+   -384
+  ],
+  "size": 192
+ },
+ "flags": {
+  "sight": false,
+  "split": false,
+  "select": 0,
+  "spaces": false,
+  "max_bounces": 1,
+  "types": [
+   "wall",
+   "gate_tower",
+   "square",
+   "townhouse",
+   "workshop",
+   "hall"
+  ]
+ },
+ "waves": []
+}

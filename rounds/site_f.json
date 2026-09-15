@@ -1,0 +1,321 @@
+{
+ "name": "site_f",
+ "voice": "white_render_dark_frame",
+ "base_volume": "world.npz",
+ "site": {
+  "origin": [
+   1536,
+   384
+  ],
+  "size": 192
+ },
+ "flags": {
+  "sight": false,
+  "split": true,
+  "select": 0,
+  "spaces": false,
+  "arm": "site_f",
+  "check": true,
+  "max_bounces": 1
+ },
+ "waves": [
+  {
+   "name": "wave1",
+   "plots": [
+    "moot_hall",
+    "fish_house",
+    "crag_beacon"
+   ]
+  },
+  {
+   "name": "wave2",
+   "plots": [
+    "boat_shed",
+    "waterside_inn",
+    "reeve_house"
+   ]
+  },
+  {
+   "name": "wave3",
+   "plots": [
+    "smithy",
+    "wet_row",
+    "north_gate"
+   ]
+  },
+  {
+   "name": "wave4",
+   "plots": [
+    "granary",
+    "upper_crofts",
+    "kirk"
+   ]
+  },
+  {
+   "name": "wave5",
+   "plots": [
+    "byre",
+    "bamboo_works"
+   ]
+  }
+ ],
+ "shots": {
+  "frames": [
+   "step4_shots",
+   "frames"
+  ],
+  "geometry": "E1D",
+  "spp": 40,
+  "size": [
+   900,
+   560
+  ],
+  "prefix": "site_f"
+ },
+ "cards": [
+  {
+   "name": "chunky",
+   "frames": "out/site_f/step4_shots/frames",
+   "out": "out/site_f/step4_shots",
+   "layout": "quad",
+   "size": [
+    900,
+    560
+   ],
+   "strict": true,
+   "tags": [
+    "r11_bamboo_works",
+    "r11_boat_shed",
+    "r11_byre",
+    "r11_crag_beacon",
+    "r11_fish_house",
+    "r11_granary",
+    "r11_kirk",
+    "r11_moot_hall",
+    "r11_north_gate",
+    "r11_reeve_house",
+    "r11_smithy",
+    "r11_upper_crofts",
+    "r11_waterside_inn",
+    "r11_wet_row"
+   ]
+  }
+ ],
+ "judgements": [
+  {
+   "name": "r11_vs_r10",
+   "stage_name": "step4_chunky",
+   "score": "winners",
+   "question": "Which of these two buildings is better made? A or B, one sentence.",
+   "pairs": [
+    {
+     "label": "bamboo_works vs boat_landing",
+     "a": "out/site_f/step4_shots/r11_bamboo_works_card.png",
+     "b": "out/site_e/step4_shots/r10_boat_landing_card.png"
+    },
+    {
+     "label": "boat_shed vs byre",
+     "a": "out/site_f/step4_shots/r11_boat_shed_card.png",
+     "b": "out/site_e/step4_shots/r10_byre_card.png"
+    },
+    {
+     "label": "byre vs cistern_house",
+     "a": "out/site_f/step4_shots/r11_byre_card.png",
+     "b": "out/site_e/step4_shots/r10_cistern_house_card.png"
+    },
+    {
+     "label": "crag_beacon vs croft",
+     "a": "out/site_f/step4_shots/r11_crag_beacon_card.png",
+     "b": "out/site_e/step4_shots/r10_croft_card.png"
+    },
+    {
+     "label": "fish_house vs east_gate",
+     "a": "out/site_f/step4_shots/r11_fish_house_card.png",
+     "b": "out/site_e/step4_shots/r10_east_gate_card.png"
+    },
+    {
+     "label": "granary vs fold_barn",
+     "a": "out/site_f/step4_shots/r11_granary_card.png",
+     "b": "out/site_e/step4_shots/r10_fold_barn_card.png"
+    },
+    {
+     "label": "kirk vs granary",
+     "a": "out/site_f/step4_shots/r11_kirk_card.png",
+     "b": "out/site_e/step4_shots/r10_granary_card.png"
+    },
+    {
+     "label": "moot_hall vs house_row_lower",
+     "a": "out/site_f/step4_shots/r11_moot_hall_card.png",
+     "b": "out/site_e/step4_shots/r10_house_row_lower_card.png"
+    },
+    {
+     "label": "north_gate vs house_row_upper",
+     "a": "out/site_f/step4_shots/r11_north_gate_card.png",
+     "b": "out/site_e/step4_shots/r10_house_row_upper_card.png"
+    },
+    {
+     "label": "reeve_house vs kiln_yard",
+     "a": "out/site_f/step4_shots/r11_reeve_house_card.png",
+     "b": "out/site_e/step4_shots/r10_kiln_yard_card.png"
+    },
+    {
+     "label": "smithy vs mine_head",
+     "a": "out/site_f/step4_shots/r11_smithy_card.png",
+     "b": "out/site_e/step4_shots/r10_mine_head_card.png"
+    },
+    {
+     "label": "upper_crofts vs moot_hall",
+     "a": "out/site_f/step4_shots/r11_upper_crofts_card.png",
+     "b": "out/site_e/step4_shots/r10_moot_hall_card.png"
+    },
+    {
+     "label": "waterside_inn vs smithy",
+     "a": "out/site_f/step4_shots/r11_waterside_inn_card.png",
+     "b": "out/site_e/step4_shots/r10_smithy_card.png"
+    },
+    {
+     "label": "wet_row vs west_watch",
+     "a": "out/site_f/step4_shots/r11_wet_row_card.png",
+     "b": "out/site_e/step4_shots/r10_west_watch_card.png"
+    }
+   ]
+  },
+  {
+   "name": "r11_vs_r7",
+   "stage_name": "step4_chunky",
+   "score": "winners",
+   "question": "Which of these two buildings is better made? A or B, one sentence.",
+   "pairs": [
+    {
+     "label": "bamboo_works vs byre",
+     "a": "out/site_f/step4_shots/r11_bamboo_works_card.png",
+     "b": "out/site_c/step4_shots/r7_byre_card.png"
+    },
+    {
+     "label": "boat_shed vs court_wellhouse",
+     "a": "out/site_f/step4_shots/r11_boat_shed_card.png",
+     "b": "out/site_c/step4_shots/r7_court_wellhouse_card.png"
+    },
+    {
+     "label": "byre vs drovers_rest",
+     "a": "out/site_f/step4_shots/r11_byre_card.png",
+     "b": "out/site_c/step4_shots/r7_drovers_rest_card.png"
+    },
+    {
+     "label": "crag_beacon vs east_row",
+     "a": "out/site_f/step4_shots/r11_crag_beacon_card.png",
+     "b": "out/site_c/step4_shots/r7_east_row_card.png"
+    },
+    {
+     "label": "fish_house vs granary",
+     "a": "out/site_f/step4_shots/r11_fish_house_card.png",
+     "b": "out/site_c/step4_shots/r7_granary_card.png"
+    },
+    {
+     "label": "granary vs mill",
+     "a": "out/site_f/step4_shots/r11_granary_card.png",
+     "b": "out/site_c/step4_shots/r7_mill_card.png"
+    },
+    {
+     "label": "kirk vs moot_hall",
+     "a": "out/site_f/step4_shots/r11_kirk_card.png",
+     "b": "out/site_c/step4_shots/r7_moot_hall_card.png"
+    },
+    {
+     "label": "moot_hall vs north_gate",
+     "a": "out/site_f/step4_shots/r11_moot_hall_card.png",
+     "b": "out/site_c/step4_shots/r7_north_gate_card.png"
+    },
+    {
+     "label": "north_gate vs potters_yard",
+     "a": "out/site_f/step4_shots/r11_north_gate_card.png",
+     "b": "out/site_c/step4_shots/r7_potters_yard_card.png"
+    },
+    {
+     "label": "reeve_house vs quarry_shed",
+     "a": "out/site_f/step4_shots/r11_reeve_house_card.png",
+     "b": "out/site_c/step4_shots/r7_quarry_shed_card.png"
+    },
+    {
+     "label": "smithy vs smithy",
+     "a": "out/site_f/step4_shots/r11_smithy_card.png",
+     "b": "out/site_c/step4_shots/r7_smithy_card.png"
+    },
+    {
+     "label": "upper_crofts vs south_water_gate",
+     "a": "out/site_f/step4_shots/r11_upper_crofts_card.png",
+     "b": "out/site_c/step4_shots/r7_south_water_gate_card.png"
+    },
+    {
+     "label": "waterside_inn vs watch_spur",
+     "a": "out/site_f/step4_shots/r11_waterside_inn_card.png",
+     "b": "out/site_c/step4_shots/r7_watch_spur_card.png"
+    },
+    {
+     "label": "wet_row vs west_croft_row",
+     "a": "out/site_f/step4_shots/r11_wet_row_card.png",
+     "b": "out/site_c/step4_shots/r7_west_croft_row_card.png"
+    }
+   ]
+  }
+ ],
+ "preregistered": {
+  "written_before": "any block was placed. The site briefing (out/site_f/site.json) and plan.json are the only site_f artefacts that predate this file; no lane had been laid, no wave brief composed and no builder called. The snapshot site_f.before is taken after this file and before the circulation pass.",
+  "site": {
+   "origin": [
+    1536,
+    384
+   ],
+   "size": 192,
+   "relief": 60,
+   "std": 7.2,
+   "min_y": 61,
+   "max_y": 121,
+   "source": "out/step4_sites.json, entry '1536,384'",
+   "untouched": "no settlement has ever been built here; rounds 4, 6, 7, 8, 9 and 10 are at (-1536,768), (1536,1152), (1536,-768), (-1152,1152), (1536,-1536) and (-1536,1536)",
+   "terrain": "a drowned inlet in swamp and jungle: water over 58% of the sampled columns at y=62, grass, mud, podzol, bamboo and mangrove at the surface, a rock ridge rising to y=121 along the west edge with cell roughness 36-44, and a dry gravel spur running north-east from the inlet head at y=64-68. All four orientation probes agree with the grid."
+  },
+  "bars": {
+   "walk_from_outdoors_pct": {
+    "bar": ">= 90",
+    "measure": "scripts/walk_fraction.py site_f, from_outdoors_walking_pct over every room on a plot in\nthe finished town, with the same perimeter seeding rounds 7 to 10 were measured with.\nRead against the **corrected** walk model."
+   },
+   "e002_walk_only": {
+    "bar": "0 findings",
+    "measure": "E002 over the finished town in the round's own lint stage, reading Context.from_outdoors, which is seeded from the lane where a network exists."
+   },
+   "own_lint_errors": {
+    "bar": "0",
+    "measure": "the build family on each wave's own plots, the way settlement_run scopes it; out/site_f/passes.json"
+   },
+   "builder_calls": {
+    "bar": "<= 2 x waves = 10",
+    "measure": "build_request_<i>.json files on disk under out/site_f/arms/site_f/. `split` is on, so a wave costs a massing call and an elaboration call; a bounce is a third and puts the round over."
+   },
+   "program_lines": {
+    "bar": "<= 200 mean per wave",
+    "measure": "lines of each adopted elaboration program, out/site_f/<wave>.py, meaned over the waves. This is the bar on whether the shell actually moved into the library: a builder still rasterising walls by hand will not come near it."
+   },
+   "writes_covered_over": {
+    "bar": "<= 15%",
+    "measure": "(positions written - blocks standing) / positions written, summed over the adopted programs and re-executed offline against the base volume. The cheap half of placed-versus-attempted.",
+    "today": "72,611 written for 44,557 standing, 39%"
+   }
+  },
+  "reported_no_bar": {
+   "building_calls_and_refusals": "every building() call in every adopted program and every refusal with its reason, from scripts/round11_readout.py. A refusal is the library saying what its vocabulary cannot reach, and that list is the next spec.",
+   "fitting_refusals": "the same for fitting(), flight() and dais()",
+   "forms_used": "the form and roof the planner gave each structure, against what stands; out/site_f/plan.json holds the ask",
+   "true_tokens_per_call": "as each isolated subagent reports its own usage. The model_call log under-reads by about six times and must not be quoted as the cost. The planner call was 47,299.",
+   "check_runs_per_builder": "check_run rows on out/measurements.jsonl",
+   "judge": "r11_vs_r10 and r11_vs_r7 above: 14 pairs each, both orders, blinded and position-\nswapped, on cards shot with the identical E1D geometry. Pairing rule, fixed here before\nany frame was rendered. How many losing reasons name a flue or a chimney, and how many\nsay thin, flat, unfinished, floating, bare, buried or swallowed. **r10_fold_barn has no\ncard**. Part A7 gives a refused panel a ladder of further-back cameras, so it will be\nre-shot under that; if it still refuses, that pair is reported unpaired and r11_vs_r10\nis 13 pairs, not 14.",
+   "a_person_walks_it": "First 'is there anything you cannot get into or move about in on foot, and any stair you\nhit your head on?', then 'does this read as a different town from the last two, or the\nsame in a different font?'"
+  },
+  "rules_held": [
+   "nothing beyond part A's items A1-A8; no new lint check; the lint and primitive suites stay frozen",
+   "the builder is told the API, the plot, the form and the roof, never what is measured or that anything is compared",
+   "rounds 4, 6, 7, 8, 9 and 10 are not touched: no block of any of them is written",
+   "a miss on any row is reported as a miss and the bar does not move"
+  ]
+ }
+}

@@ -1,0 +1,81 @@
+{
+ "site": [
+  1536,
+  -1536,
+  192
+ ],
+ "material": "cobblestone",
+ "notes": {
+  "max_step": 3,
+  "stranded": [],
+  "court": [
+   1585,
+   -1502,
+   3
+  ],
+  "hub": "moot_hall",
+  "landing_rounds": 11,
+  "cut_max": 9,
+  "fill_max": 5,
+  "sites": 16,
+  "served": 16,
+  "material": "cobblestone",
+  "blocks": 4345
+ },
+ "lane": {
+  "cells": 985,
+  "steps": 274,
+  "fill": 54,
+  "cut": 897,
+  "rails": 20,
+  "lanterns": 2,
+  "trees": 92,
+  "tree_columns": 52,
+  "dressed": 18,
+  "thresholds": 16
+ },
+ "walk_check": {
+  "cells": 985,
+  "reached": 985,
+  "unreachable": [],
+  "unreachable_n": 0
+ },
+ "flush": {
+  "placed": 4345,
+  "failed": 0,
+  "errors": {},
+  "seconds": 0.28,
+  "blocks_per_sec": 15473,
+  "unique_positions": 4345,
+  "connective_rejoined": 293,
+  "calls": {
+   "place_block": 4364,
+   "place_cuboid": 0,
+   "fill_region": 0,
+   "get_height": 2094,
+   "get_block": 7566
+  },
+  "palette_size": 5,
+  "light_sources": 2,
+  "footprint_columns": 1055,
+  "ground_relief_under_build": 51,
+  "floor_level_stdev": 10.11,
+  "columns_floating": 41,
+  "columns_cut_into_ground": 290
+ },
+ "lint": {
+  "ok": true,
+  "seconds": 1.15,
+  "counts": {},
+  "findings": []
+ },
+ "pieces": [
+  985
+ ],
+ "seconds": {
+  "load": 1.2,
+  "plan": 0.3,
+  "emit": 0.0,
+  "lint": 5.2
+ }
+}

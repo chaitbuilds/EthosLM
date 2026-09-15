@@ -1,0 +1,47 @@
+{
+ "name": "e_craft",
+ "base_volume": "",
+ "waves": [],
+ "cards": [],
+ "judgements": [
+  {
+   "name": "e_craft",
+   "stage_name": "e_craft",
+   "question": "Which of these two buildings is better made? A or B, one sentence.",
+   "pairs": [
+    {
+     "label": "house",
+     "a": "out/e_craft/step2_v1_house_card.png",
+     "b": "out/e_craft/step2_house_card.png",
+     "correct": "a"
+    },
+    {
+     "label": "tower",
+     "a": "out/e_craft/step2_v1_tower_card.png",
+     "b": "out/e_craft/step2_tower_card.png",
+     "correct": "a"
+    },
+    {
+     "label": "wall",
+     "a": "out/e_craft/step2_v1_wall_card.png",
+     "b": "out/e_craft/step2_wall_card.png",
+     "correct": "b"
+    },
+    {
+     "label": "inn",
+     "a": "out/e_craft/step2_v1_inn_card.png",
+     "b": "out/e_craft/step2_inn_card.png",
+     "correct": "a"
+    }
+   ]
+  }
+ ],
+ "preregistered": {
+  "purpose": "craft axis on undamaged pairs, terrain held constant.",
+  "pairs": "step2_v1 (no library) vs step2 (library+loop) for house, tower, wall, inn",
+  "question": "Which of these two buildings is better made? A or B, one sentence.",
+  "metric": "agreement with the orchestrator's own blind picks, recorded before any judgement: house=v1, tower=v1, wall=step2, inn=v1. Note these contradict the project's proxy-based library>>no-library label on 3 of 4, which is itself at issue: the label came from family counts, never from looking.",
+  "reading": "3-4/4 agreement, few ties = judge has a craft axis on undamaged pairs. Mostly ties = fine-craft preference weak (consistent with E1d blind spots). Systematic disagreement with both me and the proxies = judge has an axis but an alien one -- examine reasons.",
+  "blind_picks": "recorded before any judgement: house=v1, tower=v1, wall=library, inn=v1 -- three of the four contradict the project's own proxy-based library>>no-library label, which is what was at issue"
+ }
+}

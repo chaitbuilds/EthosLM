@@ -1,0 +1,413 @@
+{
+ "calls": {
+  "ringed_city": {
+   "answered": {
+    "defining_parts": [
+     {
+      "count": 3,
+      "family": "wall",
+      "kind": "edge",
+      "name": "ring_walls",
+      "notes": "Three walls, each one inside the last; Ringed City is the city that is named for its walls, and without three of them it is some other walled city.",
+      "relation": "concentric",
+      "structures": 0
+     },
+     {
+      "count": 3,
+      "family": "gate",
+      "kind": "point",
+      "name": "ring_gates",
+      "notes": "One way through each wall; a ring you cannot pass is a boundary and not a gate, and the rings are only rings of a single city because they are joined.",
+      "relation": "gateway",
+      "structures": 0
+     },
+     {
+      "count": 1,
+      "family": "palace",
+      "kind": "plot",
+      "name": "royal_palace",
+      "notes": "The palace at the middle of the innermost ring; the walls are concentric about something, and in Ringed City that something is the seat at the centre.",
+      "relation": "centre",
+      "structures": 1
+     },
+     {
+      "count": 3,
+      "family": "district",
+      "kind": "group",
+      "name": "ring_districts",
+      "notes": "One district band between each pair of walls, outer to inner; Ringed City sorts its people by ring, so the ring divisions are defining and the houses inside them are not.",
+      "relation": "concentric",
+      "structures": 0
+     }
+    ],
+    "kind": "city",
+    "notes": "\"Build Ringed City.\" is a bare naming with no style word in it, so the voice is left for the ground to decide rather than guessed here. The name is read for its shape only -- three concentric walls with gates, a palace at the centre, and districts banded by ring -- and not for its extent; no size, count of ordinary buildings or footprint is given, and the district structure counts are left at zero for the band and the later planning to fill.",
+    "voice": null
+   },
+   "read": {
+    "sentence": "Build Ringed City.",
+    "kind": "city",
+    "size_band": [
+     270,
+     900
+    ],
+    "structures": 585,
+    "explicit_count": null,
+    "defining_parts": [
+     {
+      "name": "ring_walls",
+      "kind": "edge",
+      "family": "wall",
+      "relation": "concentric",
+      "count": 3,
+      "structures": 0,
+      "needs": {
+       "max_relief": null,
+       "plateau": null,
+       "max_water_pct": null,
+       "max_forest_pct": null
+      },
+      "forms": null,
+      "density": null,
+      "notes": "Three walls, each one inside the last; Ringed City is the city that is named for its walls, and without three of them it is some other walled city.",
+      "role": "defensive"
+     },
+     {
+      "name": "ring_gates",
+      "kind": "point",
+      "family": "gate",
+      "relation": "gateway",
+      "count": 3,
+      "structures": 0,
+      "needs": {
+       "max_relief": null,
+       "plateau": null,
+       "max_water_pct": null,
+       "max_forest_pct": null
+      },
+      "forms": null,
+      "density": null,
+      "notes": "One way through each wall; a ring you cannot pass is a boundary and not a gate, and the rings are only rings of a single city because they are joined.",
+      "role": "defensive"
+     },
+     {
+      "name": "royal_palace",
+      "kind": "plot",
+      "family": "palace",
+      "relation": "centre",
+      "count": 1,
+      "structures": 1,
+      "needs": {
+       "max_relief": null,
+       "plateau": null,
+       "max_water_pct": null,
+       "max_forest_pct": null
+      },
+      "forms": null,
+      "density": null,
+      "notes": "The palace at the middle of the innermost ring; the walls are concentric about something, and in Ringed City that something is the seat at the centre.",
+      "role": "civic"
+     },
+     {
+      "name": "ring_districts",
+      "kind": "group",
+      "family": "district",
+      "relation": "concentric",
+      "count": 3,
+      "structures": 585,
+      "needs": {
+       "max_relief": null,
+       "plateau": null,
+       "max_water_pct": null,
+       "max_forest_pct": null
+      },
+      "forms": null,
+      "density": null,
+      "notes": "One district band between each pair of walls, outer to inner; Ringed City sorts its people by ring, so the ring divisions are defining and the houses inside them are not.",
+      "role": "urban"
+     }
+    ],
+    "voice": null,
+    "form": null,
+    "setting": {
+     "surface": null,
+     "water": null,
+     "relief": null,
+     "biome": null,
+     "notes": ""
+    },
+    "needs": {
+     "footprint": 768,
+     "max_relief": 422.4,
+     "max_water_pct": 25.0,
+     "max_forest_pct": 60.0,
+     "plateau": null
+    },
+    "ceiling": {
+     "footprint": 768,
+     "structures": 900,
+     "sessions": 1
+    },
+    "notes": "\"Build Ringed City.\" is a bare naming with no style word in it, so the voice is left for the ground to decide rather than guessed here. The name is read for its shape only -- three concentric walls with gates, a palace at the centre, and districts banded by ring -- and not for its extent; no size, count of ordinary buildings or footprint is given, and the district structure counts are left at zero for the band and the later planning to fill."
+   },
+   "sentence": "Build Ringed City.",
+   "true_tokens": 8500
+  },
+  "hamlet": {
+   "answered": {
+    "defining_parts": [
+     {
+      "count": 1,
+      "family": "district",
+      "kind": "group",
+      "name": "dwelling_cluster",
+      "notes": "The single loose cluster of dwellings that is the hamlet itself; the sentence asks for a hamlet and nothing else, and a hamlet is one group of houses standing together, so this is the only division the place needs and later calls fill it with whatever the band allows.",
+      "relation": "centre",
+      "structures": 0
+     }
+    ],
+    "kind": "hamlet",
+    "notes": "The sentence is bare: it names a kind and no feature, no name, no style. So the reading takes the kind at its word and adds nothing -- no wall, no gate, no square, no hall, since none of those is implied by 'hamlet' and each would be a decision the asker did not make. The one defining part is the cluster of dwellings, because without a group of houses there is no hamlet; its structures count is left at 0 rather than stated, since with a single group that number would be the size of the place, and the size is computed from the kind and not given here. No style is named or implied, so voice is null and the voice is chosen against the ground later.",
+    "voice": null
+   },
+   "read": {
+    "sentence": "Build a hamlet.",
+    "kind": "hamlet",
+    "size_band": [
+     5,
+     12
+    ],
+    "structures": 8,
+    "explicit_count": null,
+    "defining_parts": [
+     {
+      "name": "dwelling_cluster",
+      "kind": "group",
+      "family": "district",
+      "relation": "centre",
+      "count": 1,
+      "structures": 8,
+      "needs": {
+       "max_relief": null,
+       "plateau": null,
+       "max_water_pct": null,
+       "max_forest_pct": null
+      },
+      "forms": null,
+      "density": null,
+      "notes": "The single loose cluster of dwellings that is the hamlet itself; the sentence asks for a hamlet and nothing else, and a hamlet is one group of houses standing together, so this is the only division the place needs and later calls fill it with whatever the band allows.",
+      "role": "urban"
+     }
+    ],
+    "voice": null,
+    "form": null,
+    "setting": {
+     "surface": null,
+     "water": null,
+     "relief": null,
+     "biome": null,
+     "notes": ""
+    },
+    "needs": {
+     "footprint": 144,
+     "max_relief": 79.2,
+     "max_water_pct": 25.0,
+     "max_forest_pct": 60.0,
+     "plateau": null
+    },
+    "ceiling": {
+     "footprint": 512,
+     "structures": 400,
+     "sessions": 1
+    },
+    "notes": "The sentence is bare: it names a kind and no feature, no name, no style. So the reading takes the kind at its word and adds nothing -- no wall, no gate, no square, no hall, since none of those is implied by 'hamlet' and each would be a decision the asker did not make. The one defining part is the cluster of dwellings, because without a group of houses there is no hamlet; its structures count is left at 0 rather than stated, since with a single group that number would be the size of the place, and the size is computed from the kind and not given here. No style is named or implied, so voice is null and the voice is chosen against the ground later."
+   },
+   "sentence": "Build a hamlet.",
+   "true_tokens": 11800
+  },
+  "walled_town": {
+   "answered": {
+    "defining_parts": [
+     {
+      "count": 1,
+      "family": "wall",
+      "kind": "edge",
+      "name": "town_wall",
+      "notes": "A single circuit of wall enclosing the whole settlement, because the sentence calls the town walled and that is the one word that separates it from an open town.",
+      "relation": "perimeter",
+      "structures": 0
+     },
+     {
+      "count": 2,
+      "family": "gate",
+      "kind": "point",
+      "name": "town_gate",
+      "notes": "Ways through the circuit, implied by the wall itself: an inhabited walled town must be enterable, and a road that meets a wall makes a gate.",
+      "relation": "gateway",
+      "structures": 0
+     },
+     {
+      "count": 1,
+      "family": "square",
+      "kind": "area",
+      "name": "market_square",
+      "notes": "An open public area at the middle of the town, asked for outright by 'with a market square' and taking the centre because a market is where the ways meet.",
+      "relation": "centre",
+      "structures": 0
+     },
+     {
+      "count": 1,
+      "family": "keep",
+      "kind": "plot",
+      "name": "keep",
+      "notes": "A single strong building asked for outright by 'and a keep', set flanking the centre rather than on it because the square already holds the middle.",
+      "relation": "beside_the_centre",
+      "structures": 0
+     },
+     {
+      "count": 1,
+      "family": "district",
+      "kind": "group",
+      "name": "houses_district",
+      "notes": "The dwelling quarter inside the wall that the houses belong to; the houses themselves are ordinary buildings and not defining parts, so the district that holds them is named instead and carries the count the sentence gave.",
+      "relation": "quarter",
+      "structures": 60
+     }
+    ],
+    "kind": "town",
+    "notes": "Read as a town on the strength of 'town' and of a size that is neither a hamlet nor a city: walled, so a wall and the gates through it; a market square, so an open area at the centre; a keep, so one strong plot beside it; and the sixty houses gathered into the single district that holds them. Nothing in the sentence names or implies a material or a style, so the voice is left for the ground to decide, and no size, footprint or coordinate is offered here.",
+    "voice": null
+   },
+   "read": {
+    "sentence": "Build a walled town of about sixty houses with a market square and a keep.",
+    "kind": "town",
+    "size_band": [
+     48,
+     72
+    ],
+    "structures": 60,
+    "explicit_count": {
+     "n": 60,
+     "about": true,
+     "phrase": "about sixty houses"
+    },
+    "defining_parts": [
+     {
+      "name": "town_wall",
+      "kind": "edge",
+      "family": "wall",
+      "relation": "perimeter",
+      "count": 1,
+      "structures": 0,
+      "needs": {
+       "max_relief": null,
+       "plateau": null,
+       "max_water_pct": null,
+       "max_forest_pct": null
+      },
+      "forms": null,
+      "density": null,
+      "notes": "A single circuit of wall enclosing the whole settlement, because the sentence calls the town walled and that is the one word that separates it from an open town.",
+      "role": "defensive"
+     },
+     {
+      "name": "town_gate",
+      "kind": "point",
+      "family": "gate",
+      "relation": "gateway",
+      "count": 2,
+      "structures": 0,
+      "needs": {
+       "max_relief": null,
+       "plateau": null,
+       "max_water_pct": null,
+       "max_forest_pct": null
+      },
+      "forms": null,
+      "density": null,
+      "notes": "Ways through the circuit, implied by the wall itself: an inhabited walled town must be enterable, and a road that meets a wall makes a gate.",
+      "role": "defensive"
+     },
+     {
+      "name": "market_square",
+      "kind": "area",
+      "family": "square",
+      "relation": "centre",
+      "count": 1,
+      "structures": 0,
+      "needs": {
+       "max_relief": null,
+       "plateau": null,
+       "max_water_pct": null,
+       "max_forest_pct": null
+      },
+      "forms": null,
+      "density": null,
+      "notes": "An open public area at the middle of the town, asked for outright by 'with a market square' and taking the centre because a market is where the ways meet.",
+      "role": "civic"
+     },
+     {
+      "name": "keep",
+      "kind": "plot",
+      "family": "keep",
+      "relation": "beside_the_centre",
+      "count": 1,
+      "structures": 0,
+      "needs": {
+       "max_relief": null,
+       "plateau": null,
+       "max_water_pct": null,
+       "max_forest_pct": null
+      },
+      "forms": null,
+      "density": null,
+      "notes": "A single strong building asked for outright by 'and a keep', set flanking the centre rather than on it because the square already holds the middle.",
+      "role": "defensive"
+     },
+     {
+      "name": "houses_district",
+      "kind": "group",
+      "family": "district",
+      "relation": "quarter",
+      "count": 1,
+      "structures": 60,
+      "needs": {
+       "max_relief": null,
+       "plateau": null,
+       "max_water_pct": null,
+       "max_forest_pct": null
+      },
+      "forms": null,
+      "density": null,
+      "notes": "The dwelling quarter inside the wall that the houses belong to; the houses themselves are ordinary buildings and not defining parts, so the district that holds them is named instead and carries the count the sentence gave.",
+      "role": "urban"
+     }
+    ],
+    "voice": null,
+    "form": null,
+    "setting": {
+     "surface": null,
+     "water": null,
+     "relief": null,
+     "biome": null,
+     "notes": ""
+    },
+    "needs": {
+     "footprint": 372,
+     "max_relief": 204.6,
+     "max_water_pct": 25.0,
+     "max_forest_pct": 60.0,
+     "plateau": null
+    },
+    "ceiling": {
+     "footprint": 512,
+     "structures": 400,
+     "sessions": 1
+    },
+    "notes": "Read as a town on the strength of 'town' and of a size that is neither a hamlet nor a city: walled, so a wall and the gates through it; a market square, so an open area at the centre; a keep, so one strong plot beside it; and the sixty houses gathered into the single district that holds them. Nothing in the sentence names or implies a material or a style, so the voice is left for the ground to decide, and no size, footprint or coordinate is offered here."
+   },
+   "sentence": "Build a walled town of about sixty houses with a market square and a keep.",
+   "true_tokens": 17000
+  }
+ }
+}

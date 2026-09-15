@@ -1,0 +1,1839 @@
+{
+ "waves": [
+  {
+   "wave": "walls",
+   "parts": [
+    {
+     "part": "town_wall",
+     "status": "built",
+     "type": "wall",
+     "stood": true,
+     "type_said": null,
+     "kind": "edge",
+     "seed": 1,
+     "params": {
+      "height": 5,
+      "parapet": "crenellated"
+     },
+     "program": "out/town/parts/town_wall.py",
+     "blocks": 130021,
+     "writes": 132223,
+     "placed": 130021,
+     "failed": 0,
+     "ground": "footing",
+     "floor_y": 61,
+     "sited": "a footing under 852 columns in 16 segment(s) over ground y=51..74; a level per segment at y=71,65,63,63,65,65,63,63,63,61,68,74,69,73,70,70",
+     "refusals": null,
+     "seconds": 14.1
+    },
+    {
+     "part": "town_gate",
+     "status": "built",
+     "type": "gate_tower",
+     "stood": true,
+     "type_said": null,
+     "kind": "point",
+     "seed": 2,
+     "params": {
+      "storeys": 3,
+      "crown": "hip"
+     },
+     "program": "out/town/parts/town_gate.py",
+     "blocks": 1044,
+     "writes": 1472,
+     "placed": 1044,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 67,
+     "sited": "platform at y=67 over ground y=66..80, 0 of 25 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.4
+    }
+   ],
+   "scope": [
+    -262,
+    -2,
+    -64,
+    260
+   ],
+   "errors": [],
+   "counts": {
+    "W007": 1
+   }
+  },
+  {
+   "wave": "squares",
+   "parts": [
+    {
+     "part": "market_square",
+     "status": "built",
+     "type": "square",
+     "stood": true,
+     "type_said": null,
+     "kind": "area",
+     "seed": 3,
+     "params": {
+      "paving": "banded",
+      "canopy": "hip"
+     },
+     "program": "out/town/parts/market_square.py",
+     "blocks": 7829,
+     "writes": 10129,
+     "placed": 7829,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 66,
+     "sited": "platform at y=66 over ground y=59..76, 0 of 484 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.4
+    }
+   ],
+   "scope": [
+    -198,
+    132,
+    -161,
+    169
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "defining",
+   "parts": [
+    {
+     "part": "keep",
+     "status": "built",
+     "type": "keep",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 4,
+     "params": {
+      "storeys": 3,
+      "plan": "hall_and_tower"
+     },
+     "program": "out/town/parts/keep.py",
+     "blocks": 645,
+     "writes": 1007,
+     "placed": 645,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 66,
+     "sited": "platform at y=66 over ground y=64..69, 0 of 36 columns wet; 4 columns of path laid; the door at (-156,67,147) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    }
+   ],
+   "scope": [
+    -167,
+    137,
+    -142,
+    162
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "east_bastion_ward_bastion_crown",
+   "parts": [
+    {
+     "part": "ward_temple",
+     "status": "built",
+     "type": "temple",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 3,
+     "params": {
+      "storeys": 2,
+      "plan": "cloister"
+     },
+     "program": "out/town/parts/ward_temple.py",
+     "blocks": 661,
+     "writes": 784,
+     "placed": 661,
+     "failed": 0,
+     "ground": "deck",
+     "floor_y": 63,
+     "sited": "deck at y=63 over ground y=55..61, 61 of 64 columns wet; 2 columns of path laid; the door at (-97,64,139) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    },
+    {
+     "part": "east_bastion_ward_moot_hall",
+     "status": "built",
+     "type": "hall",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 5,
+     "params": {
+      "dormers": 2,
+      "use": "moot"
+     },
+     "program": "out/town/parts/east_bastion_ward_moot_hall.py",
+     "blocks": 2969,
+     "writes": 3896,
+     "placed": 2969,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 69,
+     "sited": "platform at y=69 over ground y=63..69, 0 of 169 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.1
+    }
+   ],
+   "scope": [
+    -111,
+    122,
+    -79,
+    171
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "east_bastion_ward_bastion_foot",
+   "parts": [
+    {
+     "part": "foot_cottage",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 13,
+     "params": {
+      "storeys": 2,
+      "outshot": "scullery"
+     },
+     "program": "out/town/parts/foot_cottage.py",
+     "blocks": 1040,
+     "writes": 1280,
+     "placed": 1040,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 66,
+     "sited": "plinth at y=66 over ground y=62..64, 0 of 64 columns wet; 4 columns of path laid; the door at (-97,67,191) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.4
+    }
+   ],
+   "scope": [
+    -108,
+    181,
+    -81,
+    208
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "east_bastion_ward_east_terrace",
+   "parts": [
+    {
+     "part": "terrace_townhouse",
+     "status": "built",
+     "type": "townhouse",
+     "stood": true,
+     "type_said": "3 storey(s) at y=[69, 73, 77], eaves 81, ridge 91, door at (-101,70,173) facing south; the door is already walk-reachable from outside",
+     "kind": "plot",
+     "seed": 7,
+     "params": {
+      "storeys": 3,
+      "jetty_side": "street"
+     },
+     "program": "out/town/parts/terrace_townhouse.py",
+     "blocks": 2696,
+     "writes": 3543,
+     "placed": 2696,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 69,
+     "sited": "plinth at y=69 over ground y=65..68, 0 of 121 columns wet; 4 columns of path laid; the door at (-101,70,171) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.7
+    },
+    {
+     "part": "terrace_house",
+     "status": "built",
+     "type": "minka",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 11,
+     "params": {
+      "storeys": 2,
+      "plan": "wing"
+     },
+     "program": "out/town/parts/terrace_house.py",
+     "blocks": 487,
+     "writes": 611,
+     "placed": 487,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 67,
+     "sited": "plinth at y=67 over ground y=61..64, 0 of 25 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.9
+    }
+   ],
+   "scope": [
+    -112,
+    161,
+    -70,
+    191
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "east_ward_upper_granary_side",
+   "parts": [
+    {
+     "part": "town_granary",
+     "status": "built",
+     "type": "hall",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 17,
+     "params": {
+      "dormers": 2,
+      "use": "refectory"
+     },
+     "program": "out/town/parts/town_granary.py",
+     "blocks": 2013,
+     "writes": 2815,
+     "placed": 2013,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 62,
+     "sited": "platform at y=62 over ground y=61..65, 14 of 198 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    }
+   ],
+   "scope": [
+    -150,
+    98,
+    -122,
+    139
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "east_ward_upper_store_yard",
+   "parts": [
+    {
+     "part": "ward_store",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 23,
+     "params": {
+      "storeys": 1,
+      "yard_side": "west",
+      "trade": "joinery"
+     },
+     "program": "out/town/parts/ward_store.py",
+     "blocks": 2034,
+     "writes": 2630,
+     "placed": 2034,
+     "failed": 0,
+     "ground": "deck",
+     "floor_y": 63,
+     "sited": "deck at y=63 over ground y=55..63, 105 of 198 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.4
+    }
+   ],
+   "scope": [
+    -132,
+    101,
+    -104,
+    142
+   ],
+   "errors": [],
+   "counts": {
+    "W007": 1
+   }
+  },
+  {
+   "wave": "market_north_row_row_end",
+   "parts": [
+    {
+     "part": "north_row_joiner",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 5,
+     "params": {
+      "storeys": 1,
+      "yard_side": "north",
+      "trade": "joinery"
+     },
+     "program": "out/town/parts/north_row_joiner.py",
+     "blocks": 767,
+     "writes": 1065,
+     "placed": 767,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 66,
+     "sited": "plinth at y=66 over ground y=64..67, 0 of 72 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    }
+   ],
+   "scope": [
+    -163,
+    113,
+    -140,
+    142
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "market_north_row_square_frontage",
+   "parts": [
+    {
+     "part": "north_row_west_house",
+     "status": "built",
+     "type": "townhouse",
+     "stood": true,
+     "type_said": "3 storey(s) at y=[65, 69, 73], eaves 77, ridge 89, door at (-184,66,123) facing west; the door is already walk-reachable from outside",
+     "kind": "plot",
+     "seed": 3,
+     "params": {
+      "storeys": 3,
+      "jetty_side": "street"
+     },
+     "program": "out/town/parts/north_row_west_house.py",
+     "blocks": 2939,
+     "writes": 3816,
+     "placed": 2939,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 65,
+     "sited": "plinth at y=65 over ground y=63..65, 0 of 121 columns wet; 6 columns of path laid; the door at (-183,66,123) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.6
+    },
+    {
+     "part": "north_row_east_house",
+     "status": "built",
+     "type": "townhouse",
+     "stood": true,
+     "type_said": "2 storey(s) at y=[66, 70], eaves 74, ridge 82, door at (-172,67,125) facing south; the door is already walk-reachable from outside",
+     "kind": "plot",
+     "seed": 8,
+     "params": {
+      "storeys": 2,
+      "jetty_side": "both"
+     },
+     "program": "out/town/parts/north_row_east_house.py",
+     "blocks": 1903,
+     "writes": 2575,
+     "placed": 1903,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 66,
+     "sited": "plinth at y=66 over ground y=65..67, 0 of 121 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.2
+    }
+   ],
+   "scope": [
+    -203,
+    112,
+    -153,
+    142
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "north_east_yards_back_yards",
+   "parts": [
+    {
+     "part": "north_east_yards_west_cottage_upper",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 21,
+     "params": {
+      "storeys": 2,
+      "outshot": "byre"
+     },
+     "program": "out/town/parts/north_east_yards_west_cottage_upper.py",
+     "blocks": 1019,
+     "writes": 1275,
+     "placed": 1019,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 69,
+     "sited": "plinth at y=69 over ground y=66..68, 0 of 81 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    },
+    {
+     "part": "west_cottage_lower",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 22,
+     "params": {
+      "storeys": 1,
+      "outshot": "scullery"
+     },
+     "program": "out/town/parts/west_cottage_lower.py",
+     "blocks": 602,
+     "writes": 781,
+     "placed": 602,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 66,
+     "sited": "plinth at y=66 over ground y=63..65, 0 of 25 columns wet; 4 columns of path laid; the door at (-188,67,93) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.9
+    },
+    {
+     "part": "north_east_yards_east_cottage_upper",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 23,
+     "params": {
+      "storeys": 2,
+      "outshot": "store"
+     },
+     "program": "out/town/parts/north_east_yards_east_cottage_upper.py",
+     "blocks": 739,
+     "writes": 949,
+     "placed": 739,
+     "failed": 0,
+     "ground": "deck",
+     "floor_y": 63,
+     "sited": "deck at y=63 over ground y=55..62, 57 of 64 columns wet; 3 columns of path laid; the door at (-163,64,73) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.1
+    },
+    {
+     "part": "east_cottage_lower",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 24,
+     "params": {
+      "storeys": 1,
+      "outshot": "byre"
+     },
+     "program": "out/town/parts/east_cottage_lower.py",
+     "blocks": 1065,
+     "writes": 1419,
+     "placed": 1065,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 65,
+     "sited": "platform at y=65 over ground y=61..69, 0 of 81 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.7
+    }
+   ],
+   "scope": [
+    -199,
+    62,
+    -145,
+    107
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "north_east_yards_gate_front",
+   "parts": [
+    {
+     "part": "spine_house_north",
+     "status": "built",
+     "type": "townhouse",
+     "stood": true,
+     "type_said": "3 storey(s) at y=[68, 72, 76], eaves 80, ridge 86, door at (-184,69,16) facing east; the door is already walk-reachable from outside",
+     "kind": "plot",
+     "seed": 11,
+     "params": {
+      "storeys": 3,
+      "jetty_side": "street"
+     },
+     "program": "out/town/parts/spine_house_north.py",
+     "blocks": 1733,
+     "writes": 2341,
+     "placed": 1733,
+     "failed": 0,
+     "ground": "deck",
+     "floor_y": 68,
+     "sited": "deck at y=68 over ground y=59..67, 38 of 81 columns wet; 4 columns of path laid; the door at (-187,69,16) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.5
+    },
+    {
+     "part": "spine_house_middle",
+     "status": "built",
+     "type": "townhouse",
+     "stood": true,
+     "type_said": "2 storey(s) at y=[71, 75], eaves 79, ridge 87, door at (-188,72,38) facing east; the door is already walk-reachable from outside",
+     "kind": "plot",
+     "seed": 12,
+     "params": {
+      "storeys": 2,
+      "jetty_side": "left"
+     },
+     "program": "out/town/parts/spine_house_middle.py",
+     "blocks": 2815,
+     "writes": 3534,
+     "placed": 2815,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 71,
+     "sited": "platform at y=71 over ground y=63..69, 0 of 121 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.0
+    },
+    {
+     "part": "north_east_yards_gate_smithy",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 31,
+     "params": {
+      "storeys": 1,
+      "yard_side": "east",
+      "trade": "smithy"
+     },
+     "program": "out/town/parts/north_east_yards_gate_smithy.py",
+     "blocks": 992,
+     "writes": 1234,
+     "placed": 992,
+     "failed": 0,
+     "ground": "deck",
+     "floor_y": 63,
+     "sited": "deck at y=63 over ground y=54..57, 61 of 81 columns wet; 7 columns of path laid; the door at (-162,64,23) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.2
+    }
+   ],
+   "scope": [
+    -199,
+    5,
+    -145,
+    55
+   ],
+   "errors": [
+    "E003",
+    "E011"
+   ],
+   "counts": {
+    "E003": 1,
+    "E011": 1,
+    "W009": 1
+   }
+  },
+  {
+   "wave": "north_east_yards_ward_heart",
+   "parts": [
+    {
+     "part": "ward_moot_hall",
+     "status": "built",
+     "type": "hall",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 41,
+     "params": {
+      "dormers": 2,
+      "use": "moot"
+     },
+     "program": "out/town/parts/ward_moot_hall.py",
+     "blocks": 1043,
+     "writes": 1360,
+     "placed": 1043,
+     "failed": 0,
+     "ground": "deck",
+     "floor_y": 63,
+     "sited": "deck at y=63 over ground y=54..56, 81 of 81 columns wet; 14 columns of path laid; the door at (-162,64,37) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.4
+    },
+    {
+     "part": "spine_house_south",
+     "status": "built",
+     "type": "townhouse",
+     "stood": true,
+     "type_said": "3 storey(s) at y=[70, 74, 78], eaves 82, ridge 94, door at (-188,71,57) facing south; the door is already walk-reachable from outside",
+     "kind": "plot",
+     "seed": 13,
+     "params": {
+      "storeys": 3,
+      "jetty_side": "both"
+     },
+     "program": "out/town/parts/spine_house_south.py",
+     "blocks": 2996,
+     "writes": 3840,
+     "placed": 2996,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 70,
+     "sited": "platform at y=70 over ground y=65..69, 0 of 121 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.1
+    },
+    {
+     "part": "back_lane_pottery",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 32,
+     "params": {
+      "storeys": 1,
+      "yard_side": "north",
+      "trade": "pottery"
+     },
+     "program": "out/town/parts/back_lane_pottery.py",
+     "blocks": 669,
+     "writes": 877,
+     "placed": 669,
+     "failed": 0,
+     "ground": "deck",
+     "floor_y": 63,
+     "sited": "deck at y=63 over ground y=54..61, 52 of 64 columns wet; 2 columns of path laid; the door at (-163,64,57) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.2
+    }
+   ],
+   "scope": [
+    -199,
+    23,
+    -141,
+    75
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "north_west_yards_gate_yards",
+   "parts": [
+    {
+     "part": "gate_croft_west",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 3,
+     "params": {
+      "storeys": 2,
+      "outshot": "byre"
+     },
+     "program": "out/town/parts/gate_croft_west.py",
+     "blocks": 754,
+     "writes": 998,
+     "placed": 754,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 69,
+     "sited": "plinth at y=69 over ground y=66..68, 0 of 64 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    },
+    {
+     "part": "gate_croft_mid",
+     "status": "built",
+     "type": "minka",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 2,
+     "params": {
+      "storeys": 2,
+      "plan": "outshot"
+     },
+     "program": "out/town/parts/gate_croft_mid.py",
+     "blocks": 360,
+     "writes": 525,
+     "placed": 360,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 70,
+     "sited": "plinth at y=70 over ground y=69..70, 0 of 49 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.2
+    },
+    {
+     "part": "north_west_yards_gate_smithy",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 11,
+     "params": {
+      "storeys": 1,
+      "yard_side": "north",
+      "trade": "smithy"
+     },
+     "program": "out/town/parts/north_west_yards_gate_smithy.py",
+     "blocks": 575,
+     "writes": 810,
+     "placed": 575,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 71,
+     "sited": "platform at y=71 over ground y=59..72, 5 of 49 columns wet; 3 columns of path laid; the door at (-209,72,16) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.8
+    },
+    {
+     "part": "gate_croft_south",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 5,
+     "params": {
+      "storeys": 2,
+      "outshot": "store"
+     },
+     "program": "out/town/parts/gate_croft_south.py",
+     "blocks": 486,
+     "writes": 628,
+     "placed": 486,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 70,
+     "sited": "plinth at y=70 over ground y=70..70, 0 of 64 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.2
+    }
+   ],
+   "scope": [
+    -253,
+    5,
+    -192,
+    50
+   ],
+   "errors": [],
+   "counts": {
+    "W009": 1
+   }
+  },
+  {
+   "wave": "north_west_yards_middle_yards",
+   "parts": [
+    {
+     "part": "west_lane_croft",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 7,
+     "params": {
+      "storeys": 1,
+      "outshot": "scullery"
+     },
+     "program": "out/town/parts/west_lane_croft.py",
+     "blocks": 525,
+     "writes": 669,
+     "placed": 525,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 70,
+     "sited": "plinth at y=70 over ground y=70..70, 0 of 64 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    },
+    {
+     "part": "middle_joinery",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 12,
+     "params": {
+      "storeys": 1,
+      "yard_side": "west",
+      "trade": "joinery"
+     },
+     "program": "out/town/parts/middle_joinery.py",
+     "blocks": 532,
+     "writes": 725,
+     "placed": 532,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 70,
+     "sited": "plinth at y=70 over ground y=70..70, 0 of 64 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.7
+    },
+    {
+     "part": "east_lane_croft",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 4,
+     "params": {
+      "storeys": 2,
+      "outshot": "byre"
+     },
+     "program": "out/town/parts/east_lane_croft.py",
+     "blocks": 449,
+     "writes": 561,
+     "placed": 449,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 70,
+     "sited": "plinth at y=70 over ground y=70..70, 0 of 64 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.0
+    },
+    {
+     "part": "middle_croft_south",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 6,
+     "params": {
+      "storeys": 2,
+      "outshot": "store"
+     },
+     "program": "out/town/parts/middle_croft_south.py",
+     "blocks": 449,
+     "writes": 573,
+     "placed": 449,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 70,
+     "sited": "plinth at y=70 over ground y=70..70, 0 of 64 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.1
+    }
+   ],
+   "scope": [
+    -253,
+    41,
+    -192,
+    86
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "north_west_yards_south_crofts",
+   "parts": [
+    {
+     "part": "south_croft_west",
+     "status": "built",
+     "type": "minka",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 21,
+     "params": {
+      "storeys": 1,
+      "plan": "wing"
+     },
+     "program": "out/town/parts/south_croft_west.py",
+     "blocks": 500,
+     "writes": 639,
+     "placed": 500,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 72,
+     "sited": "plinth at y=72 over ground y=70..72, 0 of 49 columns wet; 4 columns of path laid; the door at (-242,73,93) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    },
+    {
+     "part": "south_croft_east",
+     "status": "built",
+     "type": "minka",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 22,
+     "params": {
+      "storeys": 2,
+      "plan": "hall"
+     },
+     "program": "out/town/parts/south_croft_east.py",
+     "blocks": 331,
+     "writes": 464,
+     "placed": 331,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 69,
+     "sited": "plinth at y=69 over ground y=67..69, 0 of 49 columns wet; 4 columns of path laid; the door at (-208,70,93) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.7
+    }
+   ],
+   "scope": [
+    -253,
+    77,
+    -193,
+    103
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "residential_district_hall_end",
+   "parts": [
+    {
+     "part": "joiners_yard",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 3,
+     "params": {
+      "storeys": 1,
+      "yard_side": "north",
+      "trade": "joinery"
+     },
+     "program": "out/town/parts/joiners_yard.py",
+     "blocks": 909,
+     "writes": 1151,
+     "placed": 909,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 72,
+     "sited": "plinth at y=72 over ground y=66..69, 0 of 49 columns wet; 5 columns of path laid; the door at (-242,73,108) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    },
+    {
+     "part": "west_row_a",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 11,
+     "params": {
+      "storeys": 2,
+      "outshot": "byre"
+     },
+     "program": "out/town/parts/west_row_a.py",
+     "blocks": 700,
+     "writes": 907,
+     "placed": 700,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 71,
+     "sited": "plinth at y=71 over ground y=67..69, 0 of 49 columns wet; 3 columns of path laid; the door at (-244,72,127) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.8
+    },
+    {
+     "part": "west_row_b",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 12,
+     "params": {
+      "storeys": 2,
+      "outshot": "scullery"
+     },
+     "program": "out/town/parts/west_row_b.py",
+     "blocks": 1152,
+     "writes": 1440,
+     "placed": 1152,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 69,
+     "sited": "plinth at y=69 over ground y=66..68, 0 of 100 columns wet; 4 columns of path laid; the door at (-243,70,151) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.1
+    },
+    {
+     "part": "street_row_a",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 15,
+     "params": {
+      "storeys": 2,
+      "outshot": "scullery"
+     },
+     "program": "out/town/parts/street_row_a.py",
+     "blocks": 645,
+     "writes": 870,
+     "placed": 645,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 69,
+     "sited": "platform at y=69 over ground y=68..80, 0 of 49 columns wet; 2 columns of path laid; the door at (-222,70,112) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.2
+    },
+    {
+     "part": "ward_hall",
+     "status": "built",
+     "type": "hall",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 5,
+     "params": {
+      "dormers": 2,
+      "use": "moot"
+     },
+     "program": "out/town/parts/ward_hall.py",
+     "blocks": 1133,
+     "writes": 1636,
+     "placed": 1133,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 68,
+     "sited": "platform at y=68 over ground y=65..75, 0 of 49 columns wet; 4 columns of path laid; the door at (-224,69,128) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.8
+    },
+    {
+     "part": "street_row_b",
+     "status": "built",
+     "type": "minka",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 23,
+     "params": {
+      "storeys": 2,
+      "plan": "outshot"
+     },
+     "program": "out/town/parts/street_row_b.py",
+     "blocks": 638,
+     "writes": 809,
+     "placed": 638,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 66,
+     "sited": "plinth at y=66 over ground y=64..65, 0 of 49 columns wet; 6 columns of path laid; the door at (-222,67,148) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.1
+    }
+   ],
+   "scope": [
+    -254,
+    98,
+    -206,
+    163
+   ],
+   "errors": [
+    "E002",
+    "E003"
+   ],
+   "counts": {
+    "E002": 1,
+    "E003": 1,
+    "W009": 1
+   }
+  },
+  {
+   "wave": "residential_district_middle_lanes",
+   "parts": [
+    {
+     "part": "west_row_c",
+     "status": "built",
+     "type": "minka",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 21,
+     "params": {
+      "storeys": 1,
+      "plan": "hall"
+     },
+     "program": "out/town/parts/west_row_c.py",
+     "blocks": 417,
+     "writes": 545,
+     "placed": 417,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 69,
+     "sited": "plinth at y=69 over ground y=66..67, 0 of 25 columns wet; 4 columns of path laid; the door at (-243,70,161) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    },
+    {
+     "part": "west_row_d",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 13,
+     "params": {
+      "storeys": 3,
+      "outshot": "store"
+     },
+     "program": "out/town/parts/west_row_d.py",
+     "blocks": 581,
+     "writes": 929,
+     "placed": 581,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 65,
+     "sited": "platform at y=65 over ground y=64..72, 0 of 56 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.8
+    },
+    {
+     "part": "smithy_yard",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 6,
+     "params": {
+      "storeys": 1,
+      "yard_side": "east",
+      "trade": "smithy"
+     },
+     "program": "out/town/parts/smithy_yard.py",
+     "blocks": 1025,
+     "writes": 1403,
+     "placed": 1025,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 64,
+     "sited": "plinth at y=64 over ground y=63..64, 0 of 81 columns wet; 4 columns of path laid; the door at (-224,65,171) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.2
+    },
+    {
+     "part": "street_row_c",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 16,
+     "params": {
+      "storeys": 1,
+      "outshot": "byre"
+     },
+     "program": "out/town/parts/street_row_c.py",
+     "blocks": 459,
+     "writes": 665,
+     "placed": 459,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 63,
+     "sited": "plinth at y=63 over ground y=62..63, 0 of 36 columns wet; 5 columns of path laid; the door at (-220,64,187) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.9
+    }
+   ],
+   "scope": [
+    -254,
+    151,
+    -206,
+    197
+   ],
+   "errors": [
+    "E003",
+    "E011"
+   ],
+   "counts": {
+    "E003": 1,
+    "E011": 1
+   }
+  },
+  {
+   "wave": "residential_district_south_tail",
+   "parts": [
+    {
+     "part": "west_row_e",
+     "status": "built",
+     "type": "minka",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 22,
+     "params": {
+      "storeys": 2,
+      "plan": "wing"
+     },
+     "program": "out/town/parts/west_row_e.py",
+     "blocks": 471,
+     "writes": 647,
+     "placed": 471,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 63,
+     "sited": "platform at y=63 over ground y=63..72, 0 of 36 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    },
+    {
+     "part": "west_row_f",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 14,
+     "params": {
+      "storeys": 2,
+      "outshot": "byre"
+     },
+     "program": "out/town/parts/west_row_f.py",
+     "blocks": 920,
+     "writes": 1162,
+     "placed": 920,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 71,
+     "sited": "platform at y=71 over ground y=66..72, 0 of 72 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.8
+    },
+    {
+     "part": "potters_yard",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 4,
+     "params": {
+      "storeys": 1,
+      "yard_side": "south",
+      "trade": "pottery"
+     },
+     "program": "out/town/parts/potters_yard.py",
+     "blocks": 596,
+     "writes": 793,
+     "placed": 596,
+     "failed": 0,
+     "ground": "deck",
+     "floor_y": 66,
+     "sited": "deck at y=66 over ground y=55..64, 22 of 49 columns wet; 4 columns of path laid; the door at (-238,67,226) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.3
+    },
+    {
+     "part": "street_row_d",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 17,
+     "params": {
+      "storeys": 2,
+      "outshot": "store"
+     },
+     "program": "out/town/parts/street_row_d.py",
+     "blocks": 1237,
+     "writes": 1658,
+     "placed": 1237,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 63,
+     "sited": "platform at y=63 over ground y=62..66, 0 of 100 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.8
+    },
+    {
+     "part": "street_row_e",
+     "status": "built",
+     "type": "minka",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 24,
+     "params": {
+      "storeys": 3,
+      "plan": "hall"
+     },
+     "program": "out/town/parts/street_row_e.py",
+     "blocks": 467,
+     "writes": 621,
+     "placed": 467,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 68,
+     "sited": "platform at y=68 over ground y=61..69, 0 of 49 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.2
+    }
+   ],
+   "scope": [
+    -254,
+    182,
+    -206,
+    241
+   ],
+   "errors": [
+    "E003",
+    "E003",
+    "E004",
+    "E004",
+    "E004",
+    "E004",
+    "E004",
+    "E010",
+    "E011",
+    "E011"
+   ],
+   "counts": {
+    "E003": 2,
+    "E004": 5,
+    "E010": 1,
+    "E011": 2
+   }
+  },
+  {
+   "wave": "south_east_ward_forge_row",
+   "parts": [
+    {
+     "part": "smithy_shed",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 1,
+     "params": {
+      "storeys": 1,
+      "yard_side": "east",
+      "trade": "smithy"
+     },
+     "program": "out/town/parts/smithy_shed.py",
+     "blocks": 967,
+     "writes": 1382,
+     "placed": 967,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 67,
+     "sited": "plinth at y=67 over ground y=65..66, 0 of 81 columns wet; 4 columns of path laid; the door at (-137,68,175) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.4
+    },
+    {
+     "part": "joiners_shed",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 2,
+     "params": {
+      "storeys": 1,
+      "yard_side": "west",
+      "trade": "joinery"
+     },
+     "program": "out/town/parts/joiners_shed.py",
+     "blocks": 1454,
+     "writes": 1924,
+     "placed": 1454,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 66,
+     "sited": "plinth at y=66 over ground y=63..65, 0 of 99 columns wet; 4 columns of path laid; the door at (-137,67,185) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.4
+    }
+   ],
+   "scope": [
+    -148,
+    157,
+    -120,
+    205
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "south_east_ward_kiln_yards",
+   "parts": [
+    {
+     "part": "pottery_kiln",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 3,
+     "params": {
+      "storeys": 1,
+      "yard_side": "east",
+      "trade": "pottery"
+     },
+     "program": "out/town/parts/pottery_kiln.py",
+     "blocks": 657,
+     "writes": 911,
+     "placed": 657,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 70,
+     "sited": "platform at y=70 over ground y=65..69, 0 of 49 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    },
+    {
+     "part": "dyeworks",
+     "status": "built",
+     "type": "workshop",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 4,
+     "params": {
+      "storeys": 1,
+      "yard_side": "north",
+      "trade": "dyeworks"
+     },
+     "program": "out/town/parts/dyeworks.py",
+     "blocks": 666,
+     "writes": 962,
+     "placed": 666,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 65,
+     "sited": "platform at y=65 over ground y=62..68, 0 of 63 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.7
+    }
+   ],
+   "scope": [
+    -130,
+    157,
+    -104,
+    201
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "south_east_ward_trades_close",
+   "parts": [
+    {
+     "part": "master_cottage",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 5,
+     "params": {
+      "storeys": 2,
+      "outshot": "store"
+     },
+     "program": "out/town/parts/master_cottage.py",
+     "blocks": 982,
+     "writes": 1282,
+     "placed": 982,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 64,
+     "sited": "plinth at y=64 over ground y=62..63, 0 of 72 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    },
+    {
+     "part": "yard_house",
+     "status": "built",
+     "type": "minka",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 6,
+     "params": {
+      "storeys": 2,
+      "plan": "wing"
+     },
+     "program": "out/town/parts/yard_house.py",
+     "blocks": 352,
+     "writes": 493,
+     "placed": 352,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 64,
+     "sited": "plinth at y=64 over ground y=62..65, 0 of 36 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.1
+    }
+   ],
+   "scope": [
+    -148,
+    191,
+    -105,
+    222
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "south_ward_lower_rows",
+   "parts": [
+    {
+     "part": "west_minka_lower",
+     "status": "built",
+     "type": "minka",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 31,
+     "params": {
+      "storeys": 1,
+      "plan": "outshot"
+     },
+     "program": "out/town/parts/west_minka_lower.py",
+     "blocks": 421,
+     "writes": 642,
+     "placed": 421,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 67,
+     "sited": "plinth at y=67 over ground y=64..67, 0 of 49 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.2
+    },
+    {
+     "part": "mid_cottage_lower",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 32,
+     "params": {
+      "storeys": 2,
+      "outshot": "store"
+     },
+     "program": "out/town/parts/mid_cottage_lower.py",
+     "blocks": 668,
+     "writes": 923,
+     "placed": 668,
+     "failed": 0,
+     "ground": "platform",
+     "floor_y": 63,
+     "sited": "platform at y=63 over ground y=62..70, 0 of 81 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.7
+    },
+    {
+     "part": "wall_end_house",
+     "status": "built",
+     "type": "townhouse",
+     "stood": false,
+     "type_said": "no massing stood on this pad",
+     "kind": "plot",
+     "seed": 33,
+     "params": {
+      "storeys": 2,
+      "jetty_side": "both"
+     },
+     "program": "out/town/parts/wall_end_house.py",
+     "blocks": 654,
+     "writes": 737,
+     "placed": 654,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 64,
+     "sited": "plinth at y=64 over ground y=62..63, 0 of 49 columns wet; 4 columns of path laid; the door at (-158,65,216) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.0
+    }
+   ],
+   "scope": [
+    -204,
+    206,
+    -140,
+    236
+   ],
+   "errors": [
+    "E010"
+   ],
+   "counts": {
+    "E010": 1
+   }
+  },
+  {
+   "wave": "south_ward_market_foot",
+   "parts": [
+    {
+     "part": "south_ward_moot_hall",
+     "status": "built",
+     "type": "hall",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 11,
+     "params": {
+      "dormers": 2,
+      "use": "moot"
+     },
+     "program": "out/town/parts/south_ward_moot_hall.py",
+     "blocks": 1072,
+     "writes": 1510,
+     "placed": 1072,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 63,
+     "sited": "plinth at y=63 over ground y=62..63, 0 of 81 columns wet; 4 columns of path laid; the door at (-187,64,169) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.4
+    },
+    {
+     "part": "square_end_house",
+     "status": "built",
+     "type": "townhouse",
+     "stood": true,
+     "type_said": "3 storey(s) at y=[65, 69, 73], eaves 77, ridge 85, door at (-163,66,170) facing south; the door is already walk-reachable from outside",
+     "kind": "plot",
+     "seed": 12,
+     "params": {
+      "storeys": 3,
+      "jetty_side": "street"
+     },
+     "program": "out/town/parts/square_end_house.py",
+     "blocks": 1977,
+     "writes": 2717,
+     "placed": 1977,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 65,
+     "sited": "plinth at y=65 over ground y=64..66, 0 of 81 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 6.3
+    }
+   ],
+   "scope": [
+    -198,
+    159,
+    -142,
+    192
+   ],
+   "errors": [],
+   "counts": {}
+  },
+  {
+   "wave": "south_ward_middle_rows",
+   "parts": [
+    {
+     "part": "south_ward_west_cottage_upper",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 21,
+     "params": {
+      "storeys": 2,
+      "outshot": "byre"
+     },
+     "program": "out/town/parts/south_ward_west_cottage_upper.py",
+     "blocks": 592,
+     "writes": 834,
+     "placed": 592,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 63,
+     "sited": "plinth at y=63 over ground y=62..63, 0 of 81 columns wet; 4 columns of path laid; the door at (-193,64,196) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 0.3
+    },
+    {
+     "part": "mid_minka",
+     "status": "built",
+     "type": "minka",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 22,
+     "params": {
+      "storeys": 2,
+      "plan": "wing"
+     },
+     "program": "out/town/parts/mid_minka.py",
+     "blocks": 512,
+     "writes": 683,
+     "placed": 512,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 64,
+     "sited": "plinth at y=64 over ground y=63..63, 0 of 49 columns wet; 5 columns of path laid; the door at (-175,65,196) is now walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.8
+    },
+    {
+     "part": "south_ward_east_cottage_upper",
+     "status": "built",
+     "type": "cottage",
+     "stood": true,
+     "type_said": null,
+     "kind": "plot",
+     "seed": 23,
+     "params": {
+      "storeys": 2,
+      "outshot": "scullery"
+     },
+     "program": "out/town/parts/south_ward_east_cottage_upper.py",
+     "blocks": 648,
+     "writes": 884,
+     "placed": 648,
+     "failed": 0,
+     "ground": "plinth",
+     "floor_y": 64,
+     "sited": "plinth at y=64 over ground y=64..65, 0 of 81 columns wet; the door is already walk-reachable from outside",
+     "refusals": null,
+     "seconds": 5.8
+    }
+   ],
+   "scope": [
+    -204,
+    186,
+    -142,
+    214
+   ],
+   "errors": [],
+   "counts": {}
+  }
+ ],
+ "built": 63,
+ "failed": 0
+}
