@@ -946,7 +946,11 @@ that holds them is. Each one is:
   - `relation` is how it sits: `concentric` for rings inside rings, `centre` for the
     thing at the middle, `perimeter` for what goes round the outside, `gateway` for a way
     through, `edge` for what sits at the boundary, `throughout` for what is spread over
-    the place, `quarter` for a division of it, `beside_the_centre` for what flanks it.
+    the place, `quarter` for a division of it, `beside_the_centre` for what flanks it,
+    and three that name another part in `of`: `near` for what stands on a side of that
+    part, `along` for what runs beside an edge's line, `on` for a point at a cell of
+    an edge's line (a tower on the wall). The library places every part from these
+    words; nothing here is a coordinate.
   - **`needs`** is the one place a *part* may speak about ground, and it exists because
     one number over a whole place says nothing a plan can act on. A compound at the
     centre wants a level square and says so; a ring of farmland on a hillside does not;
@@ -1429,6 +1433,36 @@ def _flattest_window(rnd, X: int, Z: int, S: int, n: int):
     return (X + a, Z + b, int(np.median(win)), int(rel[a, b]))
 
 
+def settle_designed(vol, pieces: list, *, relief=None) -> tuple:
+    """Designed ground -- a podium, a ring's terraces, the level run and the ramp
+        outside a gate -- declared and settled through the one ground contract. v2, B1.
+
+        `pieces` is `[(label, rect, level, what), ...]`, corners inclusive; each is a
+        **platform** of the `designed` class, declared in that order, and the resolution
+        settles every column once and derives the seams between the pieces and the
+        ground as found -- a step of `TERRACE_STEP` between two rings is a retaining face
+        by the drop, a ramp's tread a kerb. Returns `(resolved, record)`; the caller lays
+        each piece at `resolved.level_of(label)`.
+        
+    """
+    from .. import ground as _ground
+    from ..buildlib import Builder
+    found = _ground.Found(vol)
+    contract = _ground.Contract()
+    for label, rect, level, what in pieces:
+        contract.platform(label, tuple(int(v) for v in rect), int(level), cls="designed",
+                          reason=f"{what} at y={int(level)}",
+                          decision={"ground": what, "rect": [int(v) for v in rect]})
+    resolved = contract.resolve(found.bed, found.wet,
+                                relief=(Builder.SITE_RELIEF if relief is None else relief),
+                                surface=found.surface)
+    rec = resolved.record()
+    rec["pieces"] = [{"label": label, "rect": [int(v) for v in rect],
+                      "level": int(resolved.level_of(label)), "what": what}
+                     for label, rect, level, what in pieces]
+    return resolved, rec
+
+
 def _dry_plateau(rnd, spec, site, voice, terra, n, x0, z0, m, grew=None) -> dict:
     """The plateau, offline: cut into the cached volume and the volume written back.
 
@@ -1453,9 +1487,14 @@ def _dry_plateau(rnd, spec, site, voice, terra, n, x0, z0, m, grew=None) -> dict
     vol = offline.load_volume(before)
     b = Builder(offline.OfflineSite(vol))
     b._vol = vol
+    # **The podium is a declaration of the ground contract** (v2, B1): designed ground
+    # at the level the search or the terrace arithmetic chose, settled and its seams
+    # derived before the cut is made. One piece; the same resolver as a city's pads.
+    rect = (x0, z0, x0 + n - 1, z0 + n - 1)
+    settled, srec = settle_designed(vol, [(terra["part"], rect, int(m["y"]), "podium")])
     # The bound is the **place's**, not the registered 128: a quarter of the side of the
     # site (`Builder.plateau_max`). Found by running it.
-    rec = b.plateau((x0, z0, x0 + n - 1, z0 + n - 1), int(m["y"]),
+    rec = b.plateau(rect, int(settled.level_of(terra["part"])),
                     mat=pipeline_voice(voice), label=terra["part"],
                     bound=Builder.plateau_max(int(site["size"])))
     cut = dict(b._pending)
@@ -1464,6 +1503,8 @@ def _dry_plateau(rnd, spec, site, voice, terra, n, x0, z0, m, grew=None) -> dict
     out = {"part": terra["part"], "voice": voice, "plateau": rec,
            "placed": len(cut) if rec.get("ok") else 0,
            "rect": [x0, z0, x0 + n - 1, z0 + n - 1], "compound_ground": grew,
+           "contract": {k: srec[k] for k in ("columns", "seam_totals", "pieces",
+                                             "registered")},
            "terrace": m.get("terrace"),
            "dry_run": True, "volume": os.path.relpath(vp, _pipeline.ROOT),
            "volume_before": os.path.relpath(before, _pipeline.ROOT),
@@ -1632,7 +1673,9 @@ def stage_plateau(rnd, be, results: dict) -> dict:
         be.refresh()
         return out
     b = Builder(be.site)
-    rec = b.plateau((x0, z0, x0 + n - 1, z0 + n - 1), int(m["y"]),
+    rect = (x0, z0, x0 + n - 1, z0 + n - 1)
+    settled, srec = settle_designed(be.volume, [(terra["part"], rect, int(m["y"]), "podium")])
+    rec = b.plateau(rect, int(settled.level_of(terra["part"])),
                     mat=pipeline_voice(voice), label=terra["part"],
                     bound=Builder.plateau_max(int(site["size"])))
     placed = be.commit(b) if rec.get("ok") else {"placed": 0}
@@ -1646,7 +1689,9 @@ def stage_plateau(rnd, be, results: dict) -> dict:
     out = {"part": terra["part"], "voice": voice, "plateau": rec,
            "placed": placed.get("placed"), "compound_ground": grew,
            "terrace": m.get("terrace"),
-           "rect": [x0, z0, x0 + n - 1, z0 + n - 1]}
+           "rect": [x0, z0, x0 + n - 1, z0 + n - 1],
+           "contract": {k: srec[k] for k in ("columns", "seam_totals", "pieces",
+                                             "registered")}}
     json.dump(out, open(p, "w"), indent=1)
     be.rebind()
     print(f"   plateau: {rec.get('reason')}", flush=True)
@@ -1825,6 +1870,14 @@ def stage_terraces(rnd, be, results: dict) -> dict:
         return [rec]
 
     all_sides = set(Builder.TERRACE_SIDES)
+    # **Every ring's terrace is a declaration of the ground contract** (v2, B1): the
+    # annulus as four strips, each a platform of designed ground at the ring's level,
+    # declared outermost first and settled once -- every column owned by one ring, the
+    # step between two rings a retaining face by the drop -- before a block is laid.
+    # Each strip is then laid at its settled level, as a bounded call of its own facing
+    # only the sides that are the annulus's outer edge: north and south the full width,
+    # west and east between them.
+    ring_pieces: dict = {}
     for k in order:
         r = rings[k]
         oh = int(r["outer"]) + reach
@@ -1834,11 +1887,6 @@ def stage_terraces(rnd, be, results: dict) -> dict:
         else:
             ih = int(rings[k - 1]["outer"]) + reach
             inner = (cx - ih, cz - ih, cx + ih, cz + ih)
-        level = int(r["level"])
-        t1 = time.perf_counter()
-        # **The annulus as four strips**, each a bounded call of its own and each facing
-        # only the sides that are the annulus's outer edge: north and south the full
-        # width, west and east between them.
         if inner is None:
             pieces = [(outer, all_sides)]
         else:
@@ -1848,9 +1896,22 @@ def stage_terraces(rnd, be, results: dict) -> dict:
                       ((x0, iz1 + 1, x1, z1), {"south", "west", "east"}),
                       ((x0, iz0, ix0 - 1, iz1), {"west"}),
                       ((ix1 + 1, iz0, x1, iz1), {"east"})]
+        ring_pieces[k] = {"outer": outer, "inner": inner, "level": int(r["level"]),
+                          "pieces": [(f"{r['name']}/{i}", rect, sides)
+                                     for i, (rect, sides) in enumerate(pieces)]}
+    declared = [(label, rect, ring_pieces[k]["level"], "terrace")
+                for k in order for (label, rect, _s) in ring_pieces[k]["pieces"]]
+    settled, srec = settle_designed(offline.load_volume(vp) if dry else be.volume, declared)
+    print(f"   ground contract: {srec['columns']:,} columns of terrace settled over "
+          f"{len(declared)} pieces; seams {srec['seam_totals']}", flush=True)
+    for k in order:
+        r = rings[k]
+        outer, inner = ring_pieces[k]["outer"], ring_pieces[k]["inner"]
+        level = ring_pieces[k]["level"]
+        t1 = time.perf_counter()
         recs = []
-        for rect, sides in pieces:
-            recs += lay(rect, sides, level, r["name"])
+        for label, rect, sides in ring_pieces[k]["pieces"]:
+            recs += lay(rect, sides, int(settled.level_of(label)), r["name"])
         placed = sum(int(q.get("placed") or 0) for q in recs)
         ok = all(q.get("ok") for q in recs)
         rec = {"ok": ok, "pieces": len(recs),
@@ -1899,10 +1960,24 @@ def stage_terraces(rnd, be, results: dict) -> dict:
     if gates:
         vol_now = offline.load_volume(rnd.rel(rnd.base_volume)) if dry else be.volume
         h_now, _wet = observe.ground_heights(vol_now)
+        # ...declared with the rings and settled by the same contract. The approaches
+        # are read off the volume as the rings left it -- a ramp's foot is where it
+        # meets the feathered ground outside the wall, which is on the ground only once
+        # the rings are -- so they are declared after the rings are laid and before any
+        # approach is: the one resolution of both is the record.
+        found_aps = []
         for g in gates:
             ap = placeplan.gate_approach_pieces(h_now, vol_now.x0, vol_now.z0, layout, g)
-            if not ap:
-                continue
+            if ap:
+                found_aps.append(ap)
+        ap_declared = [(f"{ap['gate']}_approach/{i}", tuple(piece["rect"]),
+                        int(piece["level"]), "gate approach")
+                       for ap in found_aps for i, piece in enumerate(ap["pieces"])]
+        if ap_declared:
+            settled, srec = settle_designed(vol_now, declared + ap_declared)
+            print(f"   ground contract: {len(ap_declared)} approach piece(s) settled with "
+                  f"the rings; seams {srec['seam_totals']}", flush=True)
+        for ap in found_aps:
             ox, oz = ap["outward"]
             lateral = {"north", "south"} if ox else {"west", "east"}
             far_side = ({1: "east", -1: "west"}[ox] if ox else {1: "south", -1: "north"}[oz])
@@ -1910,7 +1985,8 @@ def stage_terraces(rnd, be, results: dict) -> dict:
             for n_piece, piece in enumerate(ap["pieces"]):
                 last = n_piece == len(ap["pieces"]) - 1
                 sides = set(lateral) | ({far_side} if last else set())
-                recs += lay(tuple(piece["rect"]), sides, piece["level"],
+                recs += lay(tuple(piece["rect"]), sides,
+                            int(settled.level_of(f"{ap['gate']}_approach/{n_piece}")),
                             f"{ap['gate']}_approach")
             ap["laid"] = [{"level": q.get("y"), "columns": q.get("columns"),
                            "ok": q.get("ok"), "placed": q.get("placed")} for q in recs]
@@ -1927,6 +2003,11 @@ def stage_terraces(rnd, be, results: dict) -> dict:
                 return out
     out = {"rings": records, "approaches": approaches, "terrace": terrace, "voice": voice,
            "preflight": pre,
+           "contract": {**{k: srec[k] for k in ("columns", "owned_by_class", "seam_totals",
+                                                 "pieces", "registered")},
+                        "settled": "the rings before a block was laid; the gates' "
+                                   "approaches with them, once the feathered ground "
+                                   "their ramps meet was on the ground"},
            "registered": {"TERRACE_STEP": placeplan.TERRACE_STEP,
                           "TERRACE_MAX_BLOCKS": Builder.TERRACE_MAX_BLOCKS,
                           "TERRACES_BOUND_BLOCKS": TERRACES_BOUND_BLOCKS},
@@ -2139,38 +2220,42 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     # --- level 1: the place ------------------------------------------------
     pb = rnd.rel("place_plan_prompt.md")
     pp = rnd.rel("plan.place.json")
-    # the ring rectangles from the shares, walls at the walled boundaries, one gate per
-    # walled ring, districts tiling every ring -- written to the same file the planner
-    # would have written, and then held to the same validator as the proof. There is no
-    # brief and no hand-back: nobody to hand it back to, and nothing here to guess. A
-    # place with no rings is the freehand place planner's, exactly as before.
-    arithmetic = bool(spec_mod.rings(spec))
-    if arithmetic and not os.path.exists(pp):
+    # **The place level is solved, not asked for.** v2, B2: every defining part is
+    # placed by its relation -- `placesolve.solve_place`, the ring arithmetic where the
+    # spec declares rings and the relation solver everywhere else -- written to the same
+    # file the planner used to write, and then held to the same validator as the proof.
+    # There is no brief and no hand-back: nobody to hand it back to, and the model never
+    # writes a coordinate at any level. A place the solver cannot lay out stops here, by
+    # name.
+    arithmetic = True
+    if not os.path.exists(pp):
+        from .. import placesolve
         os.makedirs(rnd.state, exist_ok=True)
-        place, lfails = placeplan.concentric_layout(spec, site, plateau, decls, voice,
-                                                    vol=_plan_volume(rnd, be))
+        place, lfails = placesolve.solve_place(spec, site, plateau, decls, voice,
+                                               vol=_plan_volume(rnd, be),
+                                               seed=int(rnd.flags.get("seed") or 1))
         if lfails:
             _record_level(rnd, "place", lfails, ["rings", "centred", "shares",
-                                                 "coverage", "type"])
+                                                 "coverage", "type", "relation",
+                                                 "vetoes", "district"])
             return {"plan": {"status": "error", "stop": True, "level": "place",
                              "arithmetic": True, "failures": lfails,
-                             "error": "the rings cannot be laid out on this site: "
+                             "error": "the place cannot be laid out on this site: "
                                       + "; ".join(f"{f.get('part')}: {f['why']}"
                                                   for f in lfails[:6])}}
         json.dump(place, open(pp, "w"), indent=1)
+        lay = place.get("layout") or {}
         print(f"   place: {len(place['districts'])} districts, "
               f"{len(place['parts'])} parts and {len(place['compounds'])} compound(s) "
-              f"laid out by arithmetic; gates on the {place['layout']['axis_side']}",
+              + (f"laid out by arithmetic; gates on the {lay['axis_side']}"
+                 if lay.get("axis_side") else
+                 f"placed by relation" + (f"; {len(lay.get('demoted') or [])} veto(es) "
+                                          f"demoted" if lay.get("demoted") else "")),
               flush=True)
-    if not arithmetic and not os.path.exists(pb):
-        os.makedirs(rnd.state, exist_ok=True)
-        open(pb, "w").write(placeplan.place_brief(spec, site, pp, types, voice,
-                                                  plateau=plateau))
     if not os.path.exists(pp):
-        return {"plan": {"status": "needs_model", "role": "plan", "request": pb, "write": pp,
-                         "level": "place", "voice": voice,
-                         "note": "the place level: the defining parts as edges, points "
-                                 "and areas, and the ground divided into districts"}}
+        return {"plan": {"status": "error", "stop": True, "level": "place",
+                         "error": "the place level was not written and nothing here "
+                                  "asks a model for it"}}
     place = json.load(open(pp))
     place.setdefault("voice", voice)
     vol = _plan_volume(rnd, be)

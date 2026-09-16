@@ -73,11 +73,16 @@ class _Editor:
 class OfflineSite:
     """A `world.Site` backed by a cached Volume instead of a live server."""
 
-    def __init__(self, vol: observe.Volume):
+    def __init__(self, vol: observe.Volume, heights=None):
         self.vol = vol
         sx, _, sz = vol.shape
         self.x, self.z, self.sx, self.sz = vol.x0, vol.z0, sx, sz
-        self.heights = surface_heights(vol)
+        # `heights` is the surface heightmap the ground contract fixed at resolution
+        # (v2, B1): a build reads one heightmap for the whole of it rather than one
+        # recomputed from the volume as each part left it. Taken only where it is the
+        # same shape over the same origin; else read off the volume, as always.
+        self.heights = (np.asarray(heights) if heights is not None
+                        and np.shape(heights) == (sx, sz) else surface_heights(vol))
         self.editor = _Editor(_Slice(vol, self.heights))
 
     def height(self, wx: int, wz: int) -> int:
@@ -119,7 +124,7 @@ BUILD_API = (
 
 def run_program(path: str, vol: observe.Volume, network=None, plots=None,
                 allow_collide: bool = False, src: str | None = None,
-                max_blocks: int | None = None):
+                max_blocks: int | None = None, ground=None):
     """Execute a build program against a cached world. Nothing is written anywhere.
 
         Returns the Builder, with its queued treads already resolved -- which is what
@@ -136,9 +141,19 @@ def run_program(path: str, vol: observe.Volume, network=None, plots=None,
     """
     from .buildlib import Builder
     from .frontage import Frontage
-    site = OfflineSite(vol)
+    # `ground` is the build's resolved ground contract (`ground.Resolved`), v2 B1:
+    # `site()` lays what it settled for this part, `grade()` reads its levels, and the
+    # heightmap the program reads is the one the resolution fixed, where it holds one
+    # over this volume's origin.
+    heights = None
+    if ground is not None and getattr(ground, "surface", None) is not None:
+        s = ground.surface
+        if (int(s.x0), int(s.z0)) == (int(vol.x0), int(vol.z0)):
+            heights = s.h
+    site = OfflineSite(vol, heights=heights)
     b = Builder(site)
     b._vol = vol
+    b.ground = ground
     b.allow_collide = bool(allow_collide)
     if max_blocks:
         b.max_blocks = int(max_blocks)      # the guard scaled by the site's area

@@ -242,7 +242,9 @@ def t_a1_a_spec_refuses_by_name_rather_than_completing_a_guess():
          "kind"),
         ({**ok, "defining_parts": [{**ok["defining_parts"][0], "family": "castle"}]},
          "family"),
-        ({**ok, "defining_parts": [{**ok["defining_parts"][0], "relation": "near"}]},
+        # `near` is a relation since the solver (v2, B2); a word that is not one still
+        # is
+        ({**ok, "defining_parts": [{**ok["defining_parts"][0], "relation": "nearby"}]},
          "relation"),
         ({**ok, "defining_parts": [{**ok["defining_parts"][0], "count": 0}]}, "count"),
         ({**ok, "defining_parts": [{**ok["defining_parts"][0], "name": "Crofts!"}]},

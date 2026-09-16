@@ -1981,7 +1981,68 @@ def preflight_parts(parts: list, voices: list, workers: int = 1,
     return out
 
 
-def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None) -> dict:
+def settle_ground(rnd, be, parts: list, mat_of) -> tuple:
+    """The ground contract of a build, settled once before the first part. v2, B1.
+
+        Every leaf declares what it needs of the ground -- its pad and level, an edge's
+        footing along its run -- read off the volume **as it stands before any part is
+        built**, and the network declares its lanes and doorsteps; `ground.Contract`
+        settles every column by precedence, holds each platform within reach of its own
+        ground and above any water under it, and derives the seams. What comes back is
+        read-only: `site()` lays what was settled for its part, and the surface heightmap
+        the whole build reads is the one fixed here. Saved beside the round's state as
+        `ground.npz` for a wave's worker and `ground.json` for a reader.
+
+        Returns `(resolved, record)`; `mat_of(part)` is the palette a part is composed in.
+        
+    """
+    from .. import ground as _ground, pipeline, stages
+    from ..buildlib import Builder
+    from ..frontage import Frontage
+    t0 = time.perf_counter()
+    vol = be.volume
+    net = rnd.network()
+    found = _ground.Found(vol)
+    b = Builder(offline.OfflineSite(vol, heights=found.surface.h))
+    b._vol = vol
+    b.frontage = Frontage(vol, net) if net else None
+    b.registry = stages._Registry(rnd.state)
+    contract = _ground.Contract()
+    decided = {}
+    refused = 0
+    for part in parts:
+        geo = {k: part[k] for k in pipeline.PART_GEOMETRY if k in part}
+        geo["label"] = part["name"]
+        geo["kind"] = part.get("kind", "plot")
+        geo["type"] = part.get("type")
+        try:
+            dec = b.declare(geo, mat=mat_of(part), contract=contract)
+        except Exception as e:                       # noqa: BLE001 -- reported, not raised
+            dec = {"ok": False, "kind": geo["kind"],
+                   "reason": f"{type(e).__name__}: {e}"}
+        refused += not dec.get("ok")
+        decided[part["name"]] = {
+            "ok": bool(dec.get("ok")), "kind": dec.get("kind"),
+            "ground": dec.get("ground"), "level": dec.get("level"),
+            "rect": dec.get("rect") or ([dec.get("x0"), dec.get("z0"), dec.get("x1"),
+                                         dec.get("z1")] if dec.get("ok") else None),
+            "reason": dec.get("reason")}
+    contract.network(net)
+    resolved = contract.resolve(found.bed, found.wet, relief=Builder.SITE_RELIEF,
+                                surface=found.surface)
+    resolved.save(rnd.rel("ground.npz"))
+    rec = resolved.record()
+    rec.update(parts=decided, declared=len(parts) - refused, refused=refused,
+               network={"cells": len(net.cells) if net else 0,
+                        "thresholds": len(net.thresholds) if net else 0},
+               seconds=round(time.perf_counter() - t0, 2),
+               saved=os.path.relpath(rnd.rel("ground.npz"), _pipeline.ROOT))
+    json.dump(rec, open(rnd.rel("ground.json"), "w"), indent=1)
+    return resolved, rec
+
+
+def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None,
+                     ground=None) -> dict:
     """One leaf, from the type it names. Returns what happened; never raises.
 
         The whole of Part C's claim is in this function being the only way a part gets
@@ -2036,7 +2097,8 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None) -> di
         b = offline.run_program(prog, be.volume, network=rnd.network(),
                                 plots=stages._Registry(rnd.state),
                                 allow_collide=bool(rnd.flags.get("allow_collide")),
-                                src=src, max_blocks=max_blocks_for(site.get("size")))
+                                src=src, max_blocks=max_blocks_for(site.get("size")),
+                                ground=ground)
     except Exception as e:                       # noqa: BLE001 -- reported, not raised
         import traceback
         return {"part": name, "status": "crashed", "type": part.get("type"),
@@ -2046,8 +2108,10 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None) -> di
     # What this part laid as a way in, beside the plot it was laid for. The finishing
     # pass reads it and keeps off those columns. Written here because `stage_parts` is
     # the pass now, and `settlement.add_paths` bakes its directory in from
-    # $ETHOSLM_SETTLEMENT at import. A wave run in a worker process hands a `paths_sink`
-    # and the driver writes the file once.
+    # $ETHOSLM_SETTLEMENT at import. `stage_parts` hands a `paths_sink` -- its own record,
+    # which it writes -- and so does a wave's worker; the append below is for a caller
+    # with neither, and it is the shape that let a stage run twice record every way in
+    # twice (v2, B0).
     if b.paths:
         if paths_sink is not None:
             paths_sink.extend(dict(r) for r in b.paths)
@@ -2125,17 +2189,21 @@ def _wave_worker(args: tuple) -> dict:
     the wave's own lint read on it, and the blocks, the rows, the paths and the lint
     handed back for the driver to merge in wave order. **The unit `par_map`
     distributes.**"""
-    from .. import lint, pipeline
-    rnd, wave, group, snapshot, palettes, plots, base_path, scope_margin, default = args
+    from .. import ground as _ground, lint, pipeline
+    (rnd, wave, group, snapshot, palettes, plots, base_path, scope_margin, default,
+     ground_path) = args
     vol = offline.load_volume(snapshot)
     be = _WaveBackend(vol)
     base = offline.load_volume(base_path) if base_path and os.path.exists(base_path) else None
+    # the build's settled ground, read back in this process (v2, B1)
+    ground = (_ground.load(ground_path) if ground_path and os.path.exists(ground_path)
+              else None)
     rows, paths = [], []
     t0 = time.perf_counter()
     for part in group:
         v = part.get("voice") or default
         mat, roof = palettes[v]
-        rec = instantiate_part(rnd, be, part, mat, roof, paths_sink=paths)
+        rec = instantiate_part(rnd, be, part, mat, roof, paths_sink=paths, ground=ground)
         rec["voice"] = v
         rows.append(rec)
     plots2 = floors_into(plots, rows)
@@ -2264,6 +2332,30 @@ def stage_parts(rnd, be, results: dict) -> dict:
         json.dump(out, open(rnd.rel("parts.json"), "w"), indent=1)
         return out
     floors: dict = {}
+    # **The ground, settled once, before the first part.** v2, B1: every leaf's pad and
+    # level, every edge's footing, the lanes and the doorsteps, declared on the volume
+    # as it stands now and resolved by one contract; each part then lays what was
+    # settled for it, and no part's ground is what its neighbour left behind.
+    resolved, ground_rec = settle_ground(rnd, be, parts, lambda p: voice_of(p)[1][0])
+    out["ground"] = {k: ground_rec[k] for k in ("columns", "declared", "refused",
+                                                 "owned_by_class", "seam_totals",
+                                                 "seconds", "saved")}
+    print(f"   ground: {ground_rec['columns']:,} columns settled for {ground_rec['declared']}"
+          f" of {len(parts)} parts and the network in {ground_rec['seconds']}s; seams "
+          f"{ground_rec['seam_totals']}", flush=True)
+    # **The record of every way in this stage lays is this stage's, written and not
+    # appended.** v2, B0. Each part's `approach()` and `flight()` paths went onto the
+    # end of whatever `paths.json` the last run left, so a `parts` stage run again
+    # duplicated every row -- the example's file read 332 rows for 32 after eight runs,
+    # and the finish pass reads it to keep off those columns. The stage owns the file:
+    # it starts empty and holds exactly what this run has laid so far, so a stage that
+    # dies half-way leaves a true record of the half.
+    laid: list = []
+    paths_path = rnd.rel("paths.json")
+
+    def write_paths():
+        json.dump(laid, open(paths_path, "w"), indent=1)
+    write_paths()
 
     def lint_wave(wave, rows, vol_for_lint):
         nonlocal plots
@@ -2315,7 +2407,9 @@ def stage_parts(rnd, be, results: dict) -> dict:
             if part.get("edge") and part["edge"].get("name") in floors:
                 part["edge"]["floor_y"] = floors[part["edge"]["name"]]
             v, (mat, roof) = voice_of(part)
-            rec = instantiate_part(rnd, be, part, mat, roof)
+            rec = instantiate_part(rnd, be, part, mat, roof, paths_sink=laid,
+                                   ground=resolved)
+            write_paths()
             rec["voice"] = v
             if rec.get("floor_y") is not None:
                 floors[part["name"]] = int(rec["floor_y"])
@@ -2335,14 +2429,13 @@ def stage_parts(rnd, be, results: dict) -> dict:
               f"{os.path.relpath(snapshot, _pipeline.ROOT)}", flush=True)
         from ..parallel import par_map
         jobs = [(rnd, w, g, snapshot, palettes, plots, base_path, pipeline.LINT_MARGIN,
-                 voice) for (w, g) in quarters]
+                 voice, rnd.rel("ground.npz")) for (w, g) in quarters]
         got = par_map(_wave_worker, jobs, n=n_workers)
         for res in got:
             be._vol = be.volume.overlay(res["blocks"]) if res["blocks"] else be.volume
             if res["paths"]:
-                pp = rnd.rel("paths.json")
-                rows_p = json.load(open(pp)) if os.path.exists(pp) else []
-                json.dump(rows_p + res["paths"], open(pp, "w"), indent=1)
+                laid.extend(res["paths"])
+                write_paths()
             plots = record_part_floors(rnd, res["rows"], plots)
             for r in res["rows"]:
                 print(f"   {res['wave']}/{r['part']}: {r['status']}"

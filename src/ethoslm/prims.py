@@ -4,6 +4,7 @@ Everything here exists to remove a specific observed failure. Nothing here makes
 design decision for the model — pitch, style, material and massing are all its choice."""
 from __future__ import annotations
 
+import functools
 import math
 
 # family -> (full block, stairs, slab). Roofs need all three shapes of one material.
@@ -248,14 +249,30 @@ def registry_version() -> str:
     return registry.VERSION
 
 
+@functools.lru_cache(maxsize=4096)
 def _has_block(block_id: str) -> bool:
     """Is this a real block in this Minecraft version? Offline, against the server's own
-    registry — the same data `preflight` rejects a program with."""
+        registry — the same data `preflight` rejects a program with.
+
+        A yes or a no, and nothing composed on the way to a no. This went through
+        `registry.check_all`, whose refusal of an unknown id carries the three nearest
+        names from `difflib` over the whole registry -- fourteen milliseconds a miss, and
+        `shape()` asks this of every candidate form of a family until one exists, so most
+        of its asks are misses by design. v2 B0's profile of the example's parts stage:
+        6,390 misses, 85 of the 97 profiled seconds the fourteen parts took, every one of
+        them spent suggesting a name to a caller that only asked whether one existed.
+        Memoised, because the registry does not change under a running build.
+        
+    """
     from . import registry
     try:
-        return not registry.check_all([block_id])
+        reg = registry.load()
     except Exception:
         return False
+    s = block_id.split(":")[-1].strip()
+    if s.split("[")[0] not in reg:
+        return False
+    return "[" not in s or not registry.validate(s, reg)
 
 
 def _occupies_cell(state: str) -> bool:
@@ -1222,6 +1239,10 @@ class Primitives:
             g = s.get((int(x), int(z)))
             if g is not None:
                 return g
+        # Not the ground contract's settled level (v2, B1): that is where a pad *will*
+        # be, and `_site_lay` sounds the bed under a pad to fill up to it -- read the
+        # settled level as the bed and the fill under every platform is air. The
+        # contract decides the rect and the level; the bed is always the world's.
         top = int(self.get_height(x, z))
         y = top
         for _ in range(self.MAX_SOUNDING):

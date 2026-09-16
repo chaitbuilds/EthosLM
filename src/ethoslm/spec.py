@@ -77,7 +77,15 @@ FORMS = ("european_vernacular", "east_asian", "fortification", "civic")
 #: How a defining part sits in the place. Free text is refused: a relation nothing can
 #: act on is a comment, and A5 plans the place level off exactly these words.
 RELATIONS = ("concentric", "centre", "edge", "perimeter", "gateway", "throughout",
-             "quarter", "beside_the_centre")
+             "quarter", "beside_the_centre",
+             # v2, B2: the three that name another part -- `of` -- and the solver places
+             # against it: `near` (on a side of it), `along` (a strip beside an edge's
+             # run), `on` (a point at a cell of an edge's line). `near` with no `of` is
+             # `beside_the_centre`.
+             "near", "along", "on")
+
+#: The relations that may name the part they are placed against, in `of`.
+RELATIONS_OF = ("near", "along", "on")
 
 #: How thickly a defining part that holds structures is built up. "large courtyard
 #: houses, gardens, low density" and "small courtyard houses and workshops, dense" are
@@ -187,7 +195,7 @@ class SpecError(ValueError):
 
 
 #: The fields of a defining part a hand-back may replace one at a time.
-PART_FIELDS = ("kind", "family", "relation", "count", "structures", "needs", "forms",
+PART_FIELDS = ("kind", "family", "relation", "of", "count", "structures", "needs", "forms",
                "density", "role", "ring", "share", "walled", "voice", "notes")
 
 
@@ -636,6 +644,16 @@ def read_part(d: dict, where: str) -> dict:
            "notes": str(d.get("notes") or "")}
     out["role"] = read_role(d.get("role"), out, f"{where} ({name})")
     read_ring_fields(d, out, f"{where} ({name})")
+    of = d.get("of")
+    if of is not None:
+        if rel not in RELATIONS_OF:
+            raise SpecError(f"{where} ({name}): `of` names the part a `near`, `along` "
+                            f"or `on` relation is placed against, and this part's "
+                            f"relation is `{rel}`", field="of", part=name)
+        if not isinstance(of, str) or not re.fullmatch(r"[a-z0-9_]{2,40}", of):
+            raise SpecError(f"{where} ({name}): `of` is another defining part's name, "
+                            f"not {of!r}", field="of", part=name)
+        out["of"] = of
     return out
 
 
@@ -862,6 +880,11 @@ def read_spec(doc: dict, sentence: str | None = None) -> dict:
             raise SpecError(f"two defining parts are called {row['name']!r}")
         seen.add(row["name"])
         out_parts.append(row)
+    for row in out_parts:
+        if row.get("of") is not None and row["of"] not in seen:
+            raise SpecError(f"defining part {row['name']!r}: `of` names "
+                            f"{row['of']!r} and no defining part is called that",
+                            field="of", part=row["name"])
     form = doc.get("form")
     if form is not None and form not in FORMS:
         raise SpecError(f"form is one of {list(FORMS)}, or null to accept every "

@@ -568,6 +568,10 @@ class Builder(Primitives):
         #: primitive that carries something down to real ground carries it down to the
         #: pad and not through it. Written by `site()` and by nothing else.
         self._sited: dict[tuple[int, int], int] = {}
+        #: The ground contract's resolution for the build this part is in
+        #: (`ground.Resolved`), or None: `site()` lays what it settled, and `grade()`
+        #: answers with a settled level for any column the contract owns. v2, B1.
+        self.ground = None
         #: The cells `fitting()` has laid, and the cells `dais()` has. see
         #: `observe.floor_stances`. A dais is recorded too and is **floor**.
         self.fitting_cells: set = set()
@@ -2036,15 +2040,48 @@ class Builder(Primitives):
                 footing is stone is a plinth, and under one whose footing is something else it is
                 somebody else's building. `part['roof']` is the voice's silhouette, as `roof()`'s
                 own four parameters, for a type that wants to take that from the voice too.
+
+                **The ground is settled before it is laid.** v2, B1. What this part needs of the
+                ground -- its pad and its level, or a wall's footing along its run -- is a
+                declaration of the ground contract (`ethoslm.ground`), and what is laid here is
+                the contract's resolution of it: the level held within reach of the part's own
+                ground as found and never below the waterline, whoever declared. A build hands
+                every part the one resolution it settled before the first block (`self.ground`);
+                a bare call with none declares this one part and resolves it here, on the ground
+                as found, through the same resolver. Either way the record on `sited` says which.
                 
         """
+        from . import ground as _ground
         before = set(self._pending)
         # **The seventh role. Read here and nowhere else, because this is the last
         # moment the ground under the part is the ground as found -- `_site_part` lays
         # the pad in the footing family the moment after. The voice's `ground` where it
         # names one, the setting's surface where it does not.
         ground = self._part_ground(part, mat)
-        out = self._site_part(part, mat=mat)
+        label = part.get("label")
+        res = self.ground
+        decl = res.declaration(label) if (res is not None and label) else None
+        settled = "the build's contract"
+        if decl is None:
+            one = _ground.Contract()
+            dec = self.declare(part, mat=mat, contract=one)
+            if dec.get("ok") and len(one):
+                res = one.resolve(self.bed, self.wet, relief=self.SITE_RELIEF)
+                decl = res.declaration(label)
+                settled = "a contract of this one part, on the ground as found"
+        decision = None
+        if decl is not None and res is not None:
+            decision = dict(decl.decision)
+            lvl = res.level_of(label)
+            if lvl is not None:
+                decision["level"] = int(lvl)
+            decision["contract"] = {"settled_by": settled, "class": decl.cls,
+                                    "kind": decl.kind, "columns": len(decl.columns),
+                                    "won": len(res.columns_of(label)),
+                                    "clamped": res.clamped(label),
+                                    "seams": {f"{a}|{b}": dict(v) for (a, b), v
+                                              in res.seams_of(label).items()}}
+        out = self._site_part(part, mat=mat, decision=decision)
         out["voice"] = {**_mat_roles(mat), _GROUND_ROLE: ground}
         alt = mat.get(_WALL_ALT) if isinstance(mat, dict) else None
         if alt:
@@ -2145,7 +2182,122 @@ class Builder(Primitives):
             gone += 1
         return gone
 
-    def _site_part(self, part: dict, *, mat=None) -> dict:
+    # --- the ground contract: decide, then lay ------------------------------ v2, B1.
+    # `site()` used to decide and lay in one breath, and the deciding half read the
+    # volume as the parts before it had left it. The deciding half is `declare()` now:
+    # what this part needs of the ground, read off the ground as found and handed to
+    # `ground.Contract`, which settles every part's columns at once, before a block is
+    # placed. The laying half reads the settled decision and lays it.
+
+    def declare(self, part: dict, *, mat=None, contract=None) -> dict:
+        """What this part needs of the ground, read off the ground as found.
+
+        The deciding half of `site()`: a plot's pad -- the flattest rectangle inside its
+        plot -- and its level (the doorstep's, held within reach of the pad's own
+        ground; the waterline over water); a point's pad round its anchor; an area's
+        rectangle; an edge's footing, a level per segment along its run. Returns the
+        decision -- `kind`, `rect` or `segments`, `level`, `ground`, `grade`, `relief`,
+        the threshold it followed -- and, where `contract` is given, declares it there:
+        a **platform** for a pad, its ledge with it, in the `footprint` class (a square
+        or a court is `designed` ground, a field a `field`); a **profile** for an edge.
+        The columns the circulation pass owns are never declared: a pad is allowed to
+        be near somebody else's front door and is not allowed to be on top of it.
+        Refuses, laying nothing, exactly where `site()` refused."""
+        kind = part.get("kind", "plot")
+        if kind == "edge":
+            dec = self._decide_edge(part)
+        elif kind == "point":
+            at = part.get("at") or [part.get("x0"), part.get("z0")]
+            ax, az = int(at[0]), int(at[-1])
+            size = max(3, int(part.get("size", self.SITE_POINT)))
+            h = (size - 1) // 2
+            dec = self._decide_rect(part, (ax - h, az - h, ax + h, az + h), kind="point")
+            dec["at"] = [ax, az]
+        elif kind == "area":
+            x0, x1 = int(min(part["x0"], part["x1"])), int(max(part["x0"], part["x1"]))
+            z0, z1 = int(min(part["z0"], part["z1"])), int(max(part["z0"], part["z1"]))
+            dec = self._decide_rect(part, (x0, z0, x1, z1), kind="area")
+        elif kind in ("plot", None):
+            px0, px1 = int(min(part["x0"], part["x1"])), int(max(part["x0"], part["x1"]))
+            pz0, pz1 = int(min(part["z0"], part["z1"])), int(max(part["z0"], part["z1"]))
+            dec = self._decide_rect(part, self._site_pad(px0, pz0, px1, pz1), kind="plot")
+        else:
+            dec = {"ok": False, "kind": kind,
+                   "reason": f"site() prepares the ground for a "
+                             f"{', '.join(self.PART_KINDS)}; it does not know what a "
+                             f"{kind!r} is"}
+        if contract is not None and dec.get("ok"):
+            self._declare_into(contract, part, dec)
+        return dec
+
+    def _decide_rect(self, part: dict, rect: tuple, *, kind: str) -> dict:
+        """The level of a rectangle of ground, decided as `site()` always has."""
+        x0, z0, x1, z1 = rect
+        cols = [(x, z) for x in range(x0, x1 + 1) for z in range(z0, z1 + 1)]
+        bed = {c: self.bed(c[0], c[1]) for c in cols}
+        water = {c: self.wet(c[0], c[1]) for c in cols}
+        wet_cols = [c for c in cols if water[c] is not None]
+        relief = max(bed.values()) - min(bed.values())
+        fr = self.floor_from_threshold(part.get("label"),
+                                       (x0 + x1) // 2, (z0 + z1) // 2) or {}
+        want = fr.get("floor_y") if fr.get("source") == "threshold" else None
+        waterline = max(water[c] for c in wet_cols) if wet_cols else None
+        if len(wet_cols) > self.SITE_WET * len(cols):
+            ground = "deck"
+            floor_y = waterline + 1
+            floor_y = max(floor_y, want) if want is not None else floor_y
+        elif relief > self.SITE_RELIEF:
+            ground = "platform"
+            floor_y = max(bed.values()) if want is None else self._within_reach(want, bed)
+        else:
+            ground = "plinth"
+            floor_y = max(bed.values()) if want is None else self._within_reach(want, bed)
+        return {"ok": True, "kind": kind, "rect": [int(v) for v in rect],
+                "level": int(floor_y), "ground": ground, "relief": int(relief),
+                "wet_columns": len(wet_cols), "columns": len(cols),
+                "grade": [int(min(bed.values())), int(max(bed.values()))],
+                "waterline": (int(waterline) if waterline is not None else None),
+                "want": (int(want) if want is not None else None),
+                "threshold": {"source": fr.get("source"), "facing": fr.get("facing"),
+                              "door": (list(fr["door"]) if fr.get("door") else None)}}
+
+    #: The area types that are **designed** ground -- levelled for what happens on them
+    #: -- against the ones that are a field: what is left between the plots, planted. A
+    #: declaration's class, and the contract's precedence.
+    DESIGNED_AREAS = ("square", "plaza", "court", "market")
+
+    def _declare_into(self, contract, part: dict, dec: dict) -> None:
+        """This part's decision, as declarations of the contract."""
+        from . import ground as _ground
+        label = part.get("label") or part.get("name") or f"part_{len(self.parts)}"
+        lanes = self._site_lanes()
+        if dec["kind"] == "edge":
+            floor_of = {tuple(c): y for c, y in dec["floor_of"]}
+            contract.profile(label, {c: y for c, y in floor_of.items() if c not in lanes},
+                             cls="footprint",
+                             rect=(dec["x0"], dec["z0"], dec["x1"], dec["z1"]),
+                             reason=dec["reason"], decision=dec)
+            return
+        x0, z0, x1, z1 = dec["rect"]
+        tname = str(part.get("type") or "")
+        if dec["kind"] == "area":
+            cls = ("designed" if any(tname.startswith(w) for w in self.DESIGNED_AREAS)
+                   else "field")
+        else:
+            cls = "footprint"
+        cols = [(x, z) for x in range(x0, x1 + 1) for z in range(z0, z1 + 1)]
+        cols += _ground.ledge((x0, z0, x1, z1))
+        contract.platform(label, [c for c in cols if c not in lanes], dec["level"],
+                          cls=cls, rect=(x0, z0, x1, z1),
+                          reason=(f"{dec['ground']} at y={dec['level']} over ground "
+                                  f"y={dec['grade'][0]}..{dec['grade'][1]}, "
+                                  f"{dec['wet_columns']} of {dec['columns']} columns wet"
+                                  + (f"; the doorstep at y={dec['want']}"
+                                     if dec.get("want") is not None else "")
+                                  + ", and the ledge one column out"),
+                          decision=dec)
+
+    def _site_part(self, part: dict, *, mat=None, decision: dict | None = None) -> dict:
         """Prepare the ground a part stands on, and say where its floor is.
 
         Called by the driver **before** the type's `build()`, once per instance. The
@@ -2153,12 +2305,13 @@ class Builder(Primitives):
         own rectangle, and the cell its door goes in -- and builds from `floor_y` up,
         touching no ground at all. See `TypeBuilder` for the half that enforces that.
 
-        For a plot, in the order the measurement found them:
-
-        Then `approach()`, from the doorway the circulation pass reserved to the lane,
-        over the ground this call has just made -- so the pad is walk-reachable from
-        the lane *before* the type has placed a block, and every door the type then
-        puts on it is reachable too.
+        `decision` is the contract's settled decision for this part (`declare()`'s
+        record with the resolved `level`); without one the part is decided here, on the
+        ground as found, as it always was. For a plot, in the order the measurement
+        found them: the pad, then `approach()`, from the doorway the circulation pass
+        reserved to the lane, over the ground this call has just made -- so the pad is
+        walk-reachable from the lane *before* the type has placed a block, and every
+        door the type then puts on it is reachable too.
 
         Returns the part: the same dict with `x0, z0, x1, z1` narrowed to the sited
         footprint, plus `floor_y`, `door`, `facing`, `ground` (which of the three) and
@@ -2166,22 +2319,22 @@ class Builder(Primitives):
         kind = part.get("kind", "plot")
         m = _mat_roles(mat)
         if kind == "edge":
-            return self._site_edge(part, m)
+            return self._site_edge(part, m, decision)
         if kind == "point":
-            return self._site_point(part, m)
+            return self._site_point(part, m, decision)
         if kind == "area":
-            return self._site_area(part, m)
+            return self._site_area(part, m, decision)
         if kind not in ("plot", None):
             return {**part, "ground": "unsited",
                     "sited": {"ok": False,
                               "reason": f"site() prepares the ground for a "
                                         f"{', '.join(self.PART_KINDS)}; it does not "
                                         f"know what a {kind!r} is"}}
-        foot_full = _solid(m["footing"])
         px0, px1 = int(min(part["x0"], part["x1"])), int(max(part["x0"], part["x1"]))
         pz0, pz1 = int(min(part["z0"], part["z1"])), int(max(part["z0"], part["z1"]))
-
-        rect = self._site_pad(px0, pz0, px1, pz1)
+        dec = decision or self._decide_rect(part, self._site_pad(px0, pz0, px1, pz1),
+                                            kind="plot")
+        rect = tuple(int(v) for v in dec["rect"])
         x0, z0, x1, z1 = rect
         self.clear_trees(x0 - 2, z0 - 2, x1 + 2, z1 + 2)
         # B2: this clearing is the library's own, so what it takes off the ground is
@@ -2198,31 +2351,13 @@ class Builder(Primitives):
         bed = {c: self.bed(c[0], c[1]) for c in cols}
         water = {c: self.wet(c[0], c[1]) for c in cols}
         wet_cols = [c for c in cols if water[c] is not None]
-        relief = max(bed.values()) - min(bed.values())
-
-        # A pad levelled to its own high side instead puts the floor above the doorstep
-        # the circulation pass levelled, and E008 -- "the doorway reserved for this
-        # structure cannot be walked into off its own threshold" -- says so, on every
-        # type built there. Measured across the six fixtures the two answers differ by
-        # -1 to +2, so following the doorstep costs a course of fill either way and buys
-        # the way in.
-        fr = self.floor_from_threshold(part.get("label"),
-                                       (x0 + x1) // 2, (z0 + z1) // 2) or {}
-        want = fr.get("floor_y") if fr.get("source") == "threshold" else None
-        if len(wet_cols) > self.SITE_WET * len(cols):
-            ground = "deck"
-            # ...except over water, where the floor has to clear the waterline: there is
-            # no arguing a doorstep under a lake.
-            floor_y = max(water[c] for c in wet_cols) + 1
-            floor_y = max(floor_y, want) if want is not None else floor_y
-        elif relief > self.SITE_RELIEF:
-            ground = "platform"
-            floor_y = max(bed.values()) if want is None else self._within_reach(want, bed)
-        else:
-            ground = "plinth"
-            floor_y = max(bed.values()) if want is None else self._within_reach(want, bed)
+        relief = int(dec["relief"])
+        floor_y = int(dec["level"])
+        ground = dec["ground"]
         laid = self._site_lay(rect, floor_y, bed, water, m)
 
+        fr = self.floor_from_threshold(part.get("label"),
+                                       (x0 + x1) // 2, (z0 + z1) // 2) or {}
         facing = fr.get("facing") or "north"
         door, why = _door_cell(facing, fr.get("door"), rect, [])
         # The pad is the ground now, and the doorstep is on it. Written down before the
@@ -2249,11 +2384,12 @@ class Builder(Primitives):
                 "ground": ground,
                 "sited": {"ok": bool(ap.get("ok")), "relief": int(relief),
                           "wet_columns": len(wet_cols), "columns": len(cols),
-                          "grade": [int(min(bed.values())), int(max(bed.values()))],
+                          "grade": list(dec["grade"]),
                           "laid": laid, "approach": ap,
+                          **({"contract": dec["contract"]} if dec.get("contract") else {}),
                           "reason": (f"{ground} at y={floor_y} over ground "
-                                     f"y={min(bed.values())}..{max(bed.values())}, "
-                                     f"{len(wet_cols)} of {len(cols)} columns wet; "
+                                     f"y={dec['grade'][0]}..{dec['grade'][1]}, "
+                                     f"{dec['wet_columns']} of {dec['columns']} columns wet; "
                                      + str(ap.get("reason")))}}
         self.parts.append(out)
         return out
@@ -3047,8 +3183,8 @@ class Builder(Primitives):
         45 degrees is refused: a wall on an integer lattice is one or the other."""
         return a[0] != b[0] and a[1] != b[1] and abs(b[0] - a[0]) == abs(b[1] - a[1])
 
-    def _site_edge(self, part: dict, m) -> dict:
-        """An edge: a polyline with a width, graded segment by segment.
+    def _decide_edge(self, part: dict) -> dict:
+        """An edge's footing, decided: a level per segment along its run.
 
                 A wall is not a building and it is not a rectangle. It runs, it turns, and it
                 crosses whatever the ground does; what the library owes a wall type is a footing
@@ -3060,18 +3196,15 @@ class Builder(Primitives):
         path = [(int(p[0]), int(p[1])) for p in (part.get("path") or [])]
         width = max(1, int(part.get("width", 1)))
         if len(path) < 2:
-            return {**part, "ground": "unsited",
-                    "sited": {"ok": False, "cells": 0,
-                              "reason": "an edge is a polyline: it needs at least two "
-                                        f"vertices and this one has {len(path)}"}}
+            return {"ok": False, "kind": "edge",
+                    "reason": "an edge is a polyline: it needs at least two "
+                              f"vertices and this one has {len(path)}"}
         for a, b in zip(path, path[1:]):
             if a[0] != b[0] and a[1] != b[1] and not self.diagonal(a, b):
-                return {**part, "ground": "unsited",
-                        "sited": {"ok": False, "cells": 0,
-                                  "reason": f"the segment {list(a)} -> {list(b)} runs "
-                                            f"at an angle that is neither along x, "
-                                            f"along z nor 45 degrees; a corner is a "
-                                            f"vertex"}}
+                return {"ok": False, "kind": "edge",
+                        "reason": f"the segment {list(a)} -> {list(b)} runs at an angle "
+                                  f"that is neither along x, along z nor 45 degrees; a "
+                                  f"corner is a vertex"}
         half = (width - 1) // 2
         segs = []
         for a, b in zip(path, path[1:]):
@@ -3086,6 +3219,57 @@ class Builder(Primitives):
             cells = sorted({(x + across[0] * d, z + across[1] * d)
                             for (x, z) in line for d in range(-half, half + 1)})
             segs.append({"a": list(a), "b": list(b), "axis": axis, "cells": cells})
+        cols = sorted({c for s in segs for c in s["cells"]})
+        xs = [c[0] for c in cols]
+        zs = [c[1] for c in cols]
+        bed = {c: self.bed(c[0], c[1]) for c in cols}
+        relief = max(bed.values()) - min(bed.values())
+        # One level for the whole wall where the ground allows it, and a level per
+        # segment where it does not -- so a wall over a rise steps at its corners, which
+        # is where a wall is entitled to step, rather than in the middle of a run. the
+        # footing below is laid to it as to any other.
+        one = max(bed.values()) if relief <= self.SITE_RELIEF else None
+        if part.get("level") is not None:
+            one = int(part["level"])
+        floor_of: dict = {}
+        for s in segs:
+            s["floor_y"] = int(one if one is not None
+                               else max(bed[c] for c in s["cells"]))
+            for c in s["cells"]:
+                floor_of[c] = max(floor_of.get(c, -1 << 30), s["floor_y"])
+        floor_y = min(s["floor_y"] for s in segs)
+        return {"ok": True, "kind": "edge", "path": [list(p) for p in path],
+                "width": width, "level": int(floor_y),
+                "segments": [{"a": s["a"], "b": s["b"], "axis": s["axis"],
+                              "floor_y": s["floor_y"],
+                              "cells": [list(c) for c in s["cells"]]} for s in segs],
+                "floor_of": [[list(c), int(y)] for c, y in sorted(floor_of.items())],
+                "x0": min(xs), "z0": min(zs), "x1": max(xs), "z1": max(zs),
+                "columns": len(cols), "relief": int(relief), "ground": "footing",
+                "grade": [int(min(bed.values())), int(max(bed.values()))],
+                "one": (int(one) if one is not None else None),
+                "terrace": (int(part["level"]) if part.get("level") is not None else None),
+                "reason": (f"a footing under {len(cols)} columns in {len(segs)} "
+                           f"segment(s) over ground y={min(bed.values())}.."
+                           f"{max(bed.values())}; "
+                           + (f"one level at y={floor_y}"
+                              + (" (the ring's terrace)"
+                                 if part.get("level") is not None else "")
+                              if one is not None
+                              else "a level per segment at y="
+                                   + ",".join(str(s["floor_y"]) for s in segs)))}
+
+    def _site_edge(self, part: dict, m, decision: dict | None = None) -> dict:
+        """An edge: a polyline with a width, graded segment by segment. See
+        `_decide_edge` for the decision; this lays it."""
+        dec = decision or self._decide_edge(part)
+        if not dec.get("ok"):
+            return {**part, "ground": "unsited",
+                    "sited": {"ok": False, "cells": 0, "reason": dec.get("reason")}}
+        path = [(int(p[0]), int(p[1])) for p in dec["path"]]
+        width = int(dec["width"])
+        segs = [{"a": s["a"], "b": s["b"], "axis": s["axis"], "floor_y": int(s["floor_y"]),
+                 "cells": [tuple(c) for c in s["cells"]]} for s in dec["segments"]]
         cols = sorted({c for s in segs for c in s["cells"]})
         xs = [c[0] for c in cols]
         zs = [c[1] for c in cols]
@@ -3108,24 +3292,9 @@ class Builder(Primitives):
             sxs = [c[0] for c in s["cells"]]
             szs = [c[1] for c in s["cells"]]
             self._site_sweep(min(sxs) - 1, min(szs) - 1, max(sxs) + 1, max(szs) + 1)
-
-        bed = {c: self.bed(c[0], c[1]) for c in cols}
-        relief = max(bed.values()) - min(bed.values())
-        # One level for the whole wall where the ground allows it, and a level per
-        # segment where it does not -- so a wall over a rise steps at its corners, which
-        # is where a wall is entitled to step, rather than in the middle of a run. the
-        # footing below is laid to it as to any other.
-        one = max(bed.values()) if relief <= self.SITE_RELIEF else None
-        if part.get("level") is not None:
-            one = int(part["level"])
-        floor_of = {}
-        for s in segs:
-            s["floor_y"] = int(one if one is not None
-                               else max(bed[c] for c in s["cells"]))
-            for c in s["cells"]:
-                floor_of[c] = max(floor_of.get(c, -1 << 30), s["floor_y"])
+        floor_of = {tuple(c): int(y) for c, y in dec["floor_of"]}
         laid = self._site_lay_columns(floor_of, m, parity=(min(xs), min(zs)))
-        floor_y = min(s["floor_y"] for s in segs)
+        floor_y = int(dec["level"])
         out = {**part, "kind": "edge", "path": [list(p) for p in path], "width": width,
                "floor_y": floor_y,
                "segments": [{"a": s["a"], "b": s["b"], "axis": s["axis"],
@@ -3134,25 +3303,16 @@ class Builder(Primitives):
                "vertices": [list(p) for p in path[1:-1]],
                "x0": min(xs), "z0": min(zs), "x1": max(xs), "z1": max(zs),
                "ground": "footing",
-               "sited": {"ok": True, "relief": int(relief), "columns": len(cols),
+               "sited": {"ok": True, "relief": int(dec["relief"]), "columns": len(cols),
                          "segments": len(segs), "laid": laid,
-                         "grade": [int(min(bed.values())), int(max(bed.values()))],
-                         "level": (int(part["level"]) if part.get("level") is not None
-                                   else None),
-                         "reason": (f"a footing under {len(cols)} columns in "
-                                    f"{len(segs)} segment(s) over ground "
-                                    f"y={min(bed.values())}..{max(bed.values())}; "
-                                    + (f"one level at y={floor_y}"
-                                       + (" (the ring's terrace)"
-                                          if part.get("level") is not None else "")
-                                       if one is not None
-                                       else "a level per segment at y="
-                                            + ",".join(str(s["floor_y"])
-                                                       for s in segs)))}}
+                         "grade": list(dec["grade"]),
+                         "level": dec.get("terrace"),
+                         **({"contract": dec["contract"]} if dec.get("contract") else {}),
+                         "reason": dec["reason"]}}
         self.parts.append(out)
         return out
 
-    def _site_point(self, part: dict, m) -> dict:
+    def _site_point(self, part: dict, m, decision: dict | None = None) -> dict:
         """A point: a pad round an anchor, facing the way the plan says.
 
                 A gatehouse is not sited on a rectangle somebody drew round it -- it is sited on
@@ -3167,9 +3327,10 @@ class Builder(Primitives):
         h = (size - 1) // 2
         rect = (ax - h, az - h, ax + h, az + h)
         return self._site_rect(part, m, rect, kind="point",
-                               facing=part.get("facing"), at=[ax, az], door_at=(ax, az))
+                               facing=part.get("facing"), at=[ax, az], door_at=(ax, az),
+                               decision=decision)
 
-    def _site_area(self, part: dict, m) -> dict:
+    def _site_area(self, part: dict, m, decision: dict | None = None) -> dict:
         """An area: a rectangle brought to one level and joined to the lane.
 
                 A square is the one part that is all ground: what the library owes it is a level
@@ -3181,10 +3342,11 @@ class Builder(Primitives):
         z0, z1 = int(min(part["z0"], part["z1"])), int(max(part["z0"], part["z1"]))
         return self._site_rect(part, m, (x0, z0, x1, z1), kind="area",
                                facing=part.get("facing"),
-                               door_at=((x0 + x1) // 2, (z0 + z1) // 2))
+                               door_at=((x0 + x1) // 2, (z0 + z1) // 2),
+                               decision=decision)
 
     def _site_rect(self, part, m, rect, *, kind, facing=None, at=None,
-                   door_at=None) -> dict:
+                   door_at=None, decision: dict | None = None) -> dict:
         """The plot case over a rectangle somebody else chose: sound, decide, lay, join.
 
                 `site()`'s own body decides which rectangle inside a plot to prepare, because a
@@ -3194,7 +3356,9 @@ class Builder(Primitives):
                 then `approach()` from it to the lane -- is the same.
                 
         """
-        x0, z0, x1, z1 = rect
+        dec = decision or self._decide_rect(part, rect, kind=kind)
+        x0, z0, x1, z1 = (int(v) for v in dec["rect"])
+        rect = (x0, z0, x1, z1)
         self.clear_trees(x0 - 2, z0 - 2, x1 + 2, z1 + 2)
         self.clear_ground_cover(x0 - 2, z0 - 2, x1 + 2, z1 + 2)
         self._site_sweep(x0, z0, x1, z1)
@@ -3202,17 +3366,11 @@ class Builder(Primitives):
         bed = {c: self.bed(c[0], c[1]) for c in cols}
         water = {c: self.wet(c[0], c[1]) for c in cols}
         wet_cols = [c for c in cols if water[c] is not None]
-        relief = max(bed.values()) - min(bed.values())
+        relief = int(dec["relief"])
         fr = self.floor_from_threshold(part.get("label"),
                                        (x0 + x1) // 2, (z0 + z1) // 2) or {}
-        want = fr.get("floor_y") if fr.get("source") == "threshold" else None
-        if len(wet_cols) > self.SITE_WET * len(cols):
-            ground = "deck"
-            floor_y = max(water[c] for c in wet_cols) + 1
-            floor_y = max(floor_y, want) if want is not None else floor_y
-        else:
-            ground = "platform" if relief > self.SITE_RELIEF else "plinth"
-            floor_y = max(bed.values()) if want is None else want
+        ground = dec["ground"]
+        floor_y = int(dec["level"])
         # a point standing in a wall keeps the wall either side of it: its ledge is cut
         # to a person's headroom, not to the wall's height
         laid = self._site_lay(rect, floor_y, bed, water, m,
@@ -3244,11 +3402,12 @@ class Builder(Primitives):
                "facing": face, "ground": ground,
                "sited": {"ok": bool(ap.get("ok")), "relief": int(relief),
                          "wet_columns": len(wet_cols), "columns": len(cols),
-                         "grade": [int(min(bed.values())), int(max(bed.values()))],
+                         "grade": list(dec["grade"]),
                          "laid": laid, "approach": ap,
+                         **({"contract": dec["contract"]} if dec.get("contract") else {}),
                          "reason": (f"{ground} at y={floor_y} over ground "
-                                    f"y={min(bed.values())}..{max(bed.values())}, "
-                                    f"{len(wet_cols)} of {len(cols)} columns wet; "
+                                    f"y={dec['grade'][0]}..{dec['grade'][1]}, "
+                                    f"{dec['wet_columns']} of {dec['columns']} columns wet; "
                                     + str(ap.get("reason")))}}
         if at is not None:
             out["at"] = list(at)

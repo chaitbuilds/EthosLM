@@ -413,6 +413,30 @@ def main():
     cases.append(("every arm writes its report where the ladder reads it",
                   on_disk["arm"] == "test_split", ""))
 
+    # --- B0: the parts stage writes its record of ways in; it does not append ---- A
+    # stage run twice on the same state left every `approach()` row twice in
+    # `paths.json`, and the finish pass reads that file. One plot on the slope fixture
+    # with its own lane, built twice off the same cache: one set of rows, both times.
+    import test_place_spec
+    from ethoslm import pipeline
+    from ethoslm.pipeline import stages_build
+    tmp = tempfile.mkdtemp(prefix="ethoslm-b0-paths-")
+    try:
+        rnd2, _plan = test_place_spec._voiced_fixture("white_render_dark_frame", tmp)
+        first = stages_build.stage_parts(rnd2, pipeline.OfflineBackend(rnd2, dry_run=True), {})
+        rows1 = json.load(open(os.path.join(tmp, "paths.json")))
+        second = stages_build.stage_parts(rnd2, pipeline.OfflineBackend(rnd2, dry_run=True), {})
+        rows2 = json.load(open(os.path.join(tmp, "paths.json")))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    approaches = [r for r in rows1 if r.get("kind") == "approach"]
+    cases.append(("B0: a parts stage run twice records each way in once",
+                  first.get("built") == 1 and second.get("built") == 1
+                  and rows1 and rows1 == rows2 and approaches
+                  and all(r.get("label") == "short_axis_slope" for r in rows1),
+                  f"{len(rows1)} row(s) after one run and {len(rows2)} after two, "
+                  f"{len(approaches)} of them approaches, all for the one part"))
+
     fails = 0
     for label, ok, detail in cases:
         print(f"{'ok  ' if ok else 'FAIL'} {label}" + (f"  ({detail})" if detail else ""))

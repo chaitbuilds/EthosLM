@@ -1,0 +1,111 @@
+{
+ "name": "ground",
+ "sentence": "Build Ringed City.",
+ "flags": {
+  "max_new_squares": 42,
+  "locate_biome": true,
+  "workers": 6
+ },
+ "shots": {
+  "place": true,
+  "prefix": "ground",
+  "frames": [
+   "step4_shots",
+   "frames"
+  ],
+  "spp": 40,
+  "size": [
+   900,
+   560
+  ],
+  "budget": {
+   "place": true,
+   "compound": true,
+   "defining": true,
+   "sample": 24,
+   "sample_seed": 1,
+   "flythrough": false
+  }
+ },
+ "preregistered": {
+  "walk_model": 6,
+  "written_before": "the place-spec call was made, the site was searched, the podium was cut, any terrace was laid, any planner was called or a part was instantiated. The nine bars are rounds/concentric.json's own -- which are rounds/demo.json's -- copied byte for byte and unmoved. One change to what a bar reads is registered here before the number is read: own_lint_errors counts reserved-threshold findings (E008) place-wide as well as each wave's own build-family errors; under that rule the concentric run's 8 reads 227 (8 + 219 of 250 doorways obstructed, measured by scripts/ground_measure.py before phase 1). The ground measure's five expectations and every threshold they read against -- BIOME_SHARE 0.5, TERRACE_STEP 4, zero decks where the setting says no water, every ring wall at one level, the podium above the innermost ring, E008 place-wide 0 -- and the search's new needs (a biome list as a need, steep as a floor at 0.55 per block) and the harness's bounds (SEARCH_BOUND_S 7200, PARTS_BOUND_S 21600, RENDER_BOUND_S 14400, TERRACE_MAX_BLOCKS 1.5M a call, CHIMNEY_ABOVE_EAVE 4, ROOF_RISE_MAX 1.5) were registered in phases 1-6, before this run's spec call. The baseline these numbers move is out/concentric/ground_measures.json: water per ring annulus 14.2/18.3/25.0/32.2%, wall segment levels spread 13-22 across a ring, 87 of 315 parts on decks, one court at y=38 over ground 56-62, E008 219 of 310.",
+  "order": "place_spec (one call) -> site_search -> site -> cache -> plateau (the podium) -> plan (arithmetic at the place level; one call for the compound, the districts as a batch) -> terraces -> circulation -> parts (waves in parallel) -> finish -> lint -> place_check -> readout, offline into a volume; then, once, write -> render against the server, the write taken from world.before-plateau.npz with a snapshot kept as the undo.",
+  "input": "one sentence, and nothing else; the spec, the site, the voice and the size are chosen from that sentence.",
+  "bars": {
+   "place_read": {
+    "bar": {
+     "comparator": "==",
+     "value": 1
+    },
+    "note": "ring walls nested closed loops, a gate on each ring and on an arterial, an arterial\ncrossing a ring only at a gate, the palace inside the innermost ring, every structure\ninside the outermost one. Holds or does not."
+   },
+   "walk_from_outdoors_pct": {
+    "bar": ">= 90",
+    "note": "interior floor walkable from outdoors over the whole place, walk-only, under walk model\n6."
+   },
+   "e002_from_the_lane": {
+    "bar": "0 findings",
+    "note": "doors reachable on foot from the lane. 0 in rounds 10 and 11."
+   },
+   "own_lint_errors": {
+    "bar": "0",
+    "note": "the build family over every part's own ground. The bar is 0 and the spec's section 2\nasks for no worse than 7. a reserved threshold or its doorway obstructed anywhere in the\nplace -- registered here before it is read; the bar is 0 and unmoved."
+   },
+   "instantiation": {
+    "bar": ">= 95",
+    "note": "per cent of the plan's leaves that stand. 100%. 98.4%. 'Stand' is the type's own answer,\nnot the program's."
+   },
+   "structures": {
+    "bar": "within the scaled band the spec produced",
+    "note": "plot leaves that stand, against the band the spec produced from the sentence after A2's ceiling scaled it. The driver reads the lower end as one comparator and the place read holds the round to both."
+   },
+   "hand_programs": {
+    "bar": "0",
+    "note": "programs in this build that are not an instance of a committed type. Every part is composed by place.instantiate_part from a file under types/. The eight types Part B names and the re-authorings Part C names are authored before the build, never during it."
+   },
+   "site_chosen": {
+    "bar": {
+     "comparator": "==",
+     "value": 1
+    },
+    "note": "the ground was chosen by the system and the record of why is on disk -- the top three candidates with their scores and every square the scan read or refused to read -- and this config names no site. 0 if a human wrote a coordinate."
+   },
+   "tokens_whole_effort": {
+    "bar": "<= 6",
+    "tokens": "tokens.json",
+    "note": "millions of true tokens over every model call this effort made, Part B included -- the\nplace spec call, the eight type authors, the re-authorings, the place-level planner, one\nplanner call per district and the judge -- as the isolated subagents reported them."
+   }
+  },
+  "reported_no_bar": {
+   "compound": "the palace as planned: the ground the library sized for it and why, its rectangle on that ground, its parts, their types and sizes, and the three compound clauses of the place read",
+   "great_wall": "the outermost ring's type and planned height against GREAT_WALL_HEIGHT",
+   "plan_levels": "the place level, the compound level and one level per district: what each was asked, what it answered, and whether it was handed back",
+   "camera": "how far outside the gate the arrival frame stands, and the height it was measured against",
+   "site": "the site is the search's own choice on this run, or the run stops: a square that fails any setting word -- biome, surface, relief, water -- is never chosen",
+   "concentric": "the five expectations of a concentric place, read by the `concentric` measure and reported clause by clause: the belt's share of the site against what the spec declared less BELT_SHARE_TOLERANCE (0.05); every ring covered by its districts at RING_COVERAGE (0.6) or more; the compound at the centre within CENTRED_TOLERANCE (4) blocks of the site centre; PALETTES_STANDING_MIN (3) or more distinct voices among the parts that stood; 0 columns of water under the compound in the built volume",
+   "layout": "the arithmetic's record on plan.json: every ring's share asked and got, its inner and outer half-side, its least width and the insets it came from, its wall and height, its districts and their coverage, the axis side the gates stand on, and which rings were squeezed to give the others their least widths",
+   "site_search": "the fresh search's record: which squares the cache held, which the region files gave, which this session made (named), what met the needs and what was chosen, with the flat/dry-core/green needs it was scored on",
+   "spec_call": "what the fresh spec call wrote: its invariants paragraph, the rings it declared with their shares, walls and voices, and whether it wrote fewer walled rings than the invariants it listed -- reported, not patched",
+   "ground": "the five expectations of designed ground, read by the `ground` measure and reported clause by clause: the site's biome share in the preferred list at BIOME_SHARE (0.5) or more; zero parts on decks where the setting says no water; every ring wall sited at one level (its ring's terrace level); the podium a step above the innermost ring's level; E008 place-wide at 0, or the miss named",
+   "preflights": "what every stage over a minute said it was about to do and cost before it did it -- the search's squares, the terraces' blocks, the parts' leaves and voices, the render's rows -- and whether any refused",
+   "search_cost": "how many squares were cached, assembled, read off the files, refused by biome, located and generated, and the wall clock of each, against the concentric run's 4 h 12 min",
+   "levels": "every ring's terrace level and the podium's, as the layout recorded them, and every wall part's sited level against its ring's"
+  },
+  "rules_held": [
+   "no coordinates, sizes or voices in this config; the system chooses and the record shows why",
+   "no builder call in the build; every part is an instance of a committed type",
+   "no live write of the city; one server session writes and photographs the palace and the skyline only",
+   "no bar is moved; a miss is reported as a miss",
+   "a library defect any test finds is fixed in the library and its case is kept",
+   "findings are fixed at their root, never patched at the leaf; standing cards and frames stay byte-identical; no new lint check; thresholds registered before the number that tests them",
+   "the demo is the probe and the mechanism is general",
+   "the place level is laid out by arithmetic and no place-level planner is called; every planner call is isolated and blinded and its true tokens recorded",
+   "ground the search makes beyond the region files is counted, capped by max_new_squares, and every square of it is named in the record",
+   "the site is chosen for what it is: every setting word is a need, and nothing met means nothing chosen and the run stopped with the record",
+   "every stage over a minute prints what it is about to do and refuses on its registered bound before it spends anything",
+   "no flythrough is rendered: the principal records their own"
+  ],
+  "expectation": "registered before the spec call: the nine bars as the demo registered them, with own_lint_errors counting E008 place-wide, and the run's own budget at <= 2M tokens; the concentric measure's five clauses and the ground measure's five all holding. A miss is a miss. If the fresh spec call writes fewer walled rings than the invariants it listed, or a biome list the search cannot meet, that is reported, not patched."
+ }
+}
