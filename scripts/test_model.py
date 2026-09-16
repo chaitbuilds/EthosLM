@@ -367,6 +367,30 @@ def stub_router(env, *answers, doc=DOC):
     return r
 
 
+def sleeping_http(delay, answer, refuse=None):
+    """A transport that waits on its socket, the way a real one does: the thing A3 is
+    about is time spent waiting, so a fake that answers instantly measures nothing.
+    `refuse` is a substring of a brief whose call raises instead."""
+    import threading
+    import time as _t
+    log, lock = [], threading.Lock()
+
+    def http(url, body, headers, timeout):
+        text = body["messages"][0]["content"][0]["text"]
+        with lock:
+            log.append({"url": url, "body": copy.deepcopy(body)})
+        _t.sleep(delay)
+        if refuse and refuse in text:
+            raise RuntimeError("the provider refused this one")
+        return copy.deepcopy(answer)
+    http.log = log
+    return http
+
+
+ANSWER = {"content": [{"type": "text", "text": '{"kind": "district"}'}],
+          "stop_reason": "end_turn", "usage": {"input_tokens": 10, "output_tokens": 4}}
+
+
 class RoleTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -453,6 +477,46 @@ class RoleTests(unittest.TestCase):
         # nothing routed: nothing answered, nothing sent
         self.assertEqual(Router(doc=DOC, env={}).fulfil(flat), 0)
         self.assertEqual(len(r.http.log), 1)
+
+    def _district_batch(self, n):
+        """`n` independent district asks, as `stage_plan` hands them over."""
+        res = {}
+        for i in range(n):
+            req = Path(self.tmp.name, f"d{i}.md")
+            req.write_text(f"plan the district d{i}")
+            res[f"plan/district/d{i}"] = {
+                "status": "needs_model", "role": "plan", "request": str(req),
+                "write": str(Path(self.tmp.name, f"d{i}.json"))}
+        return res
+
+    def test_a_batch_of_independent_asks_is_answered_together(self):
+        """A3: a plan's districts cost the longest call, not the sum of them."""
+        import time
+        delay, n = 0.25, 6
+        env = {"ETHOSLM_MODEL_API": "anthropic", "ANTHROPIC_API_KEY": "k"}
+        r = Router(doc=DOC, env=env, http=sleeping_http(delay, ANSWER))
+        res = self._district_batch(n)
+        t0 = time.perf_counter()
+        self.assertEqual(r.fulfil(res), n)
+        secs = time.perf_counter() - t0
+        for i in range(n):
+            self.assertEqual(json.load(open(Path(self.tmp.name, f"d{i}.json"))),
+                             {"kind": "district"})
+        self.assertEqual(len(r.http.log), n)
+        self.assertLess(secs, delay * n / 2,
+                        f"{n} asks of {delay}s took {secs:.2f}s; serially that is "
+                        f"{delay * n:.2f}s")
+        self.assertGreaterEqual(secs, delay)        # they were really made to wait
+
+    def test_one_refusal_in_a_batch_does_not_throw_the_others_away(self):
+        env = {"ETHOSLM_MODEL_API": "anthropic", "ANTHROPIC_API_KEY": "k"}
+        r = Router(doc=DOC, env=env,
+                   http=sleeping_http(0.05, ANSWER, refuse="d3"))
+        with self.assertRaises(RuntimeError):
+            r.fulfil(self._district_batch(6))
+        written = [i for i in range(6)
+                   if Path(self.tmp.name, f"d{i}.json").exists()]
+        self.assertEqual(written, [0, 1, 2, 4, 5])
 
     def test_fulfil_answers_staged_judgements_into_the_cache(self):
         from ethoslm import judge

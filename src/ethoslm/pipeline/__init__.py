@@ -196,6 +196,8 @@ from .stages_media import (
     _resolve,
     stage_judge,
     stage_write,
+    stage_map,
+    stage_sheet,
     stage_render,
     stage_candidate_render,
     stage_type_render,
@@ -206,7 +208,7 @@ from .stages_media import (
     _write_selection,
 )
 
-_owners.update({n: _stages_media for n in ('stage_cards', '_resolve', 'stage_judge', 'stage_write', 'stage_render', 'stage_candidate_render', 'stage_type_render', '_avg_ranks', '_pair', 'stage_selection', '_stage_human_look', '_write_selection')})
+_owners.update({n: _stages_media for n in ('stage_cards', '_resolve', 'stage_judge', 'stage_write', 'stage_map', 'stage_sheet', 'stage_render', 'stage_candidate_render', 'stage_type_render', '_avg_ranks', '_pair', 'stage_selection', '_stage_human_look', '_write_selection')})
 
 from . import blind as _blind
 
@@ -322,6 +324,10 @@ STAGES = {
     "measures": stage_measures,
     "lint": stage_lint,
     "write": stage_write,
+    # v2, A6: the two ways of looking that cost no server and no model call -- the plan
+    # as a map, and a type standing on a fixture at five seeds.
+    "map": stage_map,
+    "sheet": stage_sheet,
     "render": stage_render,
     "candidate_render": stage_candidate_render,
     "type_render": stage_type_render,

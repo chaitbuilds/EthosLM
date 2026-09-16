@@ -276,6 +276,16 @@ def stage_finish(rnd: Round, be, results: dict) -> dict:
                            "built world is cached from the volume the waves left"}
     if not be.live:
         return {"error": "the finish pass moves ground; run this stage --live"}
+    # **The one publish.** v2, A1: a live round builds its parts against the volume,
+    # exactly as a dry run does, and the world is written here -- once, in
+    # `Builder.flush`'s two passes, the second of which computes the connective states
+    # only a running server knows. It is before the seam pass because that pass runs in
+    # its own process against the world, and there is nothing for it to dress until the
+    # buildings are in it.
+    published = be.publish() if hasattr(be, "publish") else None
+    if published and published.get("published"):
+        print(f"  published {published['published']} blocks in "
+              f"{published.get('seconds')}s", flush=True)
     # "Leave the world as found if anything fails before the finish stage." A finish
     # pass over a half-built town regrades the seams of buildings that are not there
     # yet, and there is no undo short of the snapshot.
@@ -303,6 +313,8 @@ def stage_finish(rnd: Round, be, results: dict) -> dict:
         env=dict(os.environ, ETHOSLM_SETTLEMENT=rnd.name), capture_output=True, text=True)
     be.refresh()
     out = {"returncode": r.returncode, "log_tail": r.stdout[-2000:]}
+    if published is not None:
+        out["published"] = published
     fin = rnd.rel("finish.json")
     if os.path.exists(fin):
         d = json.load(open(fin))

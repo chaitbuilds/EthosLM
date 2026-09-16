@@ -55,6 +55,14 @@ MAX_TOKENS = {"spec": 8192, "plan": 16384, "type": 8192, "build": 8192,
 
 APIS = ("anthropic", "openai")
 
+#: How many routed text asks of one batch are in flight at once. v2, A3. A place asks
+#: for its districts as a batch and they are independent of each other, so the batch
+#: costs the longest call rather than the sum of them; the bound is here because a
+#: provider's rate limit is the other side of that trade and thirteen districts at once
+#: is the largest batch the record has. Threads, not processes: this is a wait on a
+#: socket, and every answer writes its own file.
+ROUTED_WORKERS = 8
+
 MEDIA = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
          ".webp": "image/webp", ".gif": "image/gif"}
 
@@ -539,6 +547,7 @@ class Router:
                 
         """
         n = 0
+        text_asks = []
         for rec in staged(res):
             role = rec.get("role")
             bl = rec.get("blinded") or {}
@@ -546,13 +555,15 @@ class Router:
                 n += 1
                 continue
             if role in ("spec", "plan") and self.route(role) is not None:
-                got = self.answer(role, rec["request"], rec["write"])
-                print(f"   answered {role} via {got['model']}: {got['write']} "
-                      f"({got['usage']['input_tokens']} in, "
-                      f"{got['usage']['output_tokens']} out, {got['seconds']} s)",
-                      flush=True)
-                n += 1
-            elif role == "judge" and rec.get("staged") and self.route(role) is not None:
+                # **Independent calls go together.** v2, A3. A place's thirteen
+                # districts arrive here as one batch of `needs_model` records -- that is
+                # what `district_asks` is for -- and they were answered one after the
+                # other, so a plan cost the sum of thirteen round trips when it owes the
+                # longest of them. They share nothing: each reads its own brief and
+                # writes its own file, and `answer()` holds no state.
+                text_asks.append(rec)
+                continue
+            if role == "judge" and rec.get("staged") and self.route(role) is not None:
                 from . import judge as judge_mod
                 ask = self.ask(role)
                 cache = judge_mod.load_cache(rec.get("cache") or judge_mod.CACHE)
@@ -573,7 +584,46 @@ class Router:
                           f"({self.last_usage['input_tokens']} in, "
                           f"{self.last_usage['output_tokens']} out)", flush=True)
                 n += k
+        return n + self._answer_text(text_asks)
+
+    def _answer_text(self, asks: list) -> int:
+        """The spec and plan asks of one batch, together. Returns how many were
+                answered. A3.
+
+                Bounded by `ROUTED_WORKERS`, reported in the order they were asked for however
+                they finish, and the first failure is raised after the rest have landed --
+                every answer writes its own file, so a batch of thirteen in which one refuses
+                has twelve answers on disk and nothing is thrown away. The judge is not here
+                on purpose: its branch shares `last_usage` and its cache, and it is warm.
+                
+        """
+        if not asks:
+            return 0
+        if len(asks) == 1:
+            got = self.answer(asks[0]["role"], asks[0]["request"], asks[0]["write"])
+            self._say_answer(asks[0]["role"], got)
+            return 1
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(min(len(asks), ROUTED_WORKERS)) as pool:
+            futures = [pool.submit(self.answer, a["role"], a["request"], a["write"])
+                       for a in asks]
+            done = [(a, f) for a, f in zip(asks, futures)]
+        first_error, n = None, 0
+        for a, f in done:
+            try:
+                self._say_answer(a["role"], f.result())
+                n += 1
+            except Exception as e:                   # noqa: BLE001 -- raised below
+                first_error = first_error or e
+        if first_error is not None:
+            raise first_error
         return n
+
+    @staticmethod
+    def _say_answer(role: str, got: dict) -> None:
+        print(f"   answered {role} via {got['model']}: {got['write']} "
+              f"({got['usage']['input_tokens']} in, "
+              f"{got['usage']['output_tokens']} out, {got['seconds']} s)", flush=True)
 
 
 def staged(res: dict):

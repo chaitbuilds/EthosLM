@@ -248,6 +248,9 @@ class LiveBackend:
         self.site = None
         self.X = self.Z = self.S = None
         self._vol = None
+        # A1: what has been committed into the volume and not yet written into the
+        # world. One publish owes the server this and nothing else.
+        self.blocks: dict = {}
         # `settlement.site_info()` falls back to it -- and every stage after the search
         # would be reading the wrong patch of world. A backend that cannot say where it
         # is yet says so instead of guessing.
@@ -294,6 +297,12 @@ class LiveBackend:
             self._vol = observe.Volume.from_world_slice(
                 self.editor.worldSlice, self.X - self.pad, self.Z - self.pad,
                 self.S + 2 * self.pad, self.S + 2 * self.pad, y0, y1)
+            # A1. `refresh()` means "read the ground again" -- a pass that ran in its
+            # own process has moved it -- and it never meant "forget what we built".
+            # While every commit went over the wire the two were the same thing; now
+            # that they are not, this line is what keeps them the same.
+            if self.blocks:
+                self._vol = self._vol.overlay(self.blocks)
         return self._vol
 
     def refresh(self):
@@ -303,10 +312,49 @@ class LiveBackend:
         return OfflineBackend(self.round).execute(program, vol)
 
     def commit(self, builder):
-        res = builder.flush() if builder._pending else {"placed": 0, "failed": 0}
+        """Take a part's writes into this backend's own volume. **Nothing is sent to
+                the server here.** v2, A1.
+
+                So a live round now builds its parts against the volume, like a dry run, and
+                the world is written once. `blocks` is what is owed the world, in the order it
+                was laid, and a part's own record still says how many blocks it placed.
+                
+        """
+        pending = dict(getattr(builder, "_pending", {}) or {})
+        if pending:
+            self._vol = self.volume.overlay(pending)
+            self.blocks.update(pending)
+        return {"placed": len(pending), "failed": 0,
+                "note": "the world is written once, "
+                        "by publish()"}
+
+    def publish(self) -> dict:
+        """Everything committed since the last publish, into the world, in one pass.
+
+                One write and one read-back. `Builder.flush` chunks the bulk pass with block
+                updates off and then re-places the connective blocks with them on, which is
+                the one thing only a running server computes -- a fence's joins, a wall's
+                posts, a stair's mitre -- and it is the reason this is a server's job at all.
+                The read-back is the single `loadWorldSlice` the per-part path did per part.
+                
+        """
+        if not self.blocks:
+            return {"published": 0, "note": "nothing was committed to publish"}
+        from ..buildlib import Builder
+        if not self._bind():
+            return {"error": "this backend has no site yet: nothing can be published"}
+        b = Builder(self.site)
+        for (x, y, z), state in self.blocks.items():
+            b.place_block(x, y, z, state)
+        t0 = time.perf_counter()
+        res = b.flush()
         self.editor.runCommand("save-all flush")
-        self.refresh()
-        return res
+        time.sleep(8)
+        published, self.blocks = len(self.blocks), {}
+        self.refresh()                     # one read-back, not one per part
+        return {"published": published, "placed": res.get("placed"),
+                "failed": res.get("failed"),
+                "seconds": round(time.perf_counter() - t0, 1)}
 
     def run_pass(self, name: str) -> dict:
         """One committed pass, through the proven live path -- scripts/settlement_run.py:"""

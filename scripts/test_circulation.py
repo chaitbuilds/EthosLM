@@ -539,6 +539,51 @@ check("a4: every plot is reachable on foot from outside the gate",
       f"{len(_a4_out)} columns outside the wall; unreached: {_a4_unreached}")
 
 
+# it is how a ring is round rather than square -- and `parts_to_routing` read every
+# segment as axial. A chamfer came out as a line running due east from one end of it,
+# twice as long as the chamfer and nowhere near it, so an octagon's four cut corners
+# were not obstacles at all. The router is 4-connected and a diagonal line of cells is
+# 8-connected, so the chamfer's own columns are all it takes to seal it.
+_oct_c, _oct_h = 56, 40
+_oct_path = _placeplan._octagon_path(_oct_c, _oct_c, _oct_h, max_run=64)
+_oct_diag = [(a, b) for a, b in zip(_oct_path, _oct_path[1:])
+             if a[0] != b[0] and a[1] != b[1]]
+_oct_parts = [
+    {"kind": "edge", "name": "ring", "type": "wall", "path": _oct_path, "width": 1},
+    {"kind": "point", "name": "ring_gate", "type": "gate_tower",
+     "at": [_oct_c, _oct_c - _oct_h], "facing": "north", "passage": True},
+    {"kind": "plot", "name": "keep", "type": "hall",
+     "x0": _oct_c - 4, "z0": _oct_c - 4, "x1": _oct_c + 4, "z1": _oct_c + 4},
+    {"kind": "plot", "name": "outside", "type": "cottage",
+     "x0": _oct_c - 4, "z0": _oct_c + _oct_h + 6, "x1": _oct_c + 4,
+     "z1": _oct_c + _oct_h + 12},
+]
+_oct_routing = circulate.parts_to_routing(_oct_parts, passage={"gate_tower"})
+_oct_want = {(int(a[0]) + (1 if b[0] > a[0] else -1) * i,
+              int(a[1]) + (1 if b[1] > a[1] else -1) * i)
+             for a, b in _oct_diag for i in range(abs(b[0] - a[0]) + 1)}
+_oct_missing = sorted(_oct_want - _oct_routing["obstacles"])
+check("a5: every column of an octagon's four chamfers is an obstacle",
+      len(_oct_diag) == 4 and _oct_want and not _oct_missing,
+      f"{len(_oct_diag)} diagonal segments, {len(_oct_want)} chamfer columns, "
+      f"{len(_oct_missing)} of them missing from obstacles")
+
+_oct_ground = np.full((128, 128), 70, dtype=np.int32)
+_oct_avoid = np.zeros((128, 128))
+for (wx, wz) in _oct_routing["obstacles"]:
+    _oct_avoid[wx, wz] = np.inf
+_oct_net = circulate.plan_network(_oct_ground, 0, 0, _oct_routing["sites"], max_step=3,
+                                  avoid_extra=_oct_avoid,
+                                  passable=_oct_routing["passable"])
+_oct_wall = _oct_routing["obstacles"] | _oct_routing["passable"]
+_oct_cross = sorted(set(_oct_net.cells) & (_oct_wall - _oct_routing["passable"]))
+_oct_on_chamfer = [c for c in _oct_cross if c in _oct_want]
+check("a5: the lane to the keep crosses the ring at its gate and not through a chamfer",
+      not _oct_cross and set(_oct_net.cells) & _oct_routing["passable"],
+      f"{len(_oct_cross)} cells of lane on the ring, {len(_oct_on_chamfer)} of them "
+      f"on a chamfer")
+
+
 print(f"\n{CASES - len(FAILURES)}/{CASES} cases pass")
 if FAILURES:
     print("\n".join(FAILURES))

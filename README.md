@@ -1,93 +1,87 @@
 # EthosLM
 
 **One sentence in, a finished place out.** Type "Build a walled town with a market and a
-keep," or "Build a fishing village," and a complete settlement gets planned, placed, built
-and checked inside a Minecraft world, with no person involved at any step. You give no
-coordinates, no size and no style, and you answer no follow-up questions. Nothing is left
-for you to fix afterwards. The system picks where to build, how big to make it, what palette
-of blocks to use, and lays every block itself.
+keep," or "Build a fishing village," and a complete settlement is planned, sited, built and
+checked in a Minecraft world -- with no human anywhere in the loop. No coordinates, no size,
+no style, no follow-ups, nothing for a person to fix afterwards. The system chooses where to
+build, how large, in what palette, and lays every block itself.
 
-What this project delivers is the **architecture** behind that. It is general. The towns it
-builds are tests of the architecture, not the product.
+The deliverable is the **architecture** that does that. It is general: the towns it builds
+are probes of the architecture, not the product.
 
-![A city built from one sentence](docs/city.jpg)
+<!-- IMAGE: a wide shot of a built city goes here. Nothing else in this file is a blank. -->
+
+![A city built from one sentence](docs/city.png)
 
 ## Why Minecraft
 
-Minecraft is predictable and built from whole units: a fixed set of blocks, a grid of round
-numbers, known physics, and lighting you can work out in advance. Everything that normally
-makes 3D modelling hard, like curved surfaces, texture mapping, materials and shading, does
-not exist here. What is left is deciding which block goes where, and that is the real
-problem.
+Deterministic and discrete: a finite palette, an integer lattice, known physics, computable
+lighting. Everything normally hard about 3D authoring -- topology, UVs, materials, shading,
+continuous coordinates -- does not exist here. What is left is deciding which blocks go
+where, and that is the whole problem.
 
-## How it works
+## The architecture
 
-**The model writes the plan, the library does the building.** A model reads your sentence
-and the shape of the ground, then writes short programs that call a building library. The
-library turns those programs into blocks. The model decides *what*: the location, the
-layout, the kinds of buildings, the palette. The library decides *how*: every physical
-rule, and the buildings themselves.
+**The model composes; the library builds.** A model reads the sentence and the ground and
+writes short programs against a building library; the library emits the geometry. The model
+decides *what* -- the place, the plan, the types, the palette. The library decides *how* --
+every physical rule and the shell itself.
 
-**A bug stays fixed once the library owns it.** If the library builds something correctly
-every time, that kind of bug can never come back. If you only check for it afterwards, it
-keeps returning. Stair direction, doors, entrances, indoor staircases, building on uneven
-ground, water, outer walls, the monument, and the route up to an upper floor were all repeat
-offenders until the library took charge of them, and none has come back since. The library
-grows by admitting what it cannot do yet, and that becomes the next thing to add.
+**A defect class dies when the library owns it.** Build a thing correctly *by construction*
+and its failure mode never returns; merely *check* for it and it survives. Stair facing,
+doors, entry, internal stairs, siting on any ground, water, the shell, the monument, the way
+up to a storey -- each was a recurring defect until the library built it right, and none has
+come back. The library grows by refusal: it says what it cannot yet do, and that is the next
+primitive.
 
-**A place is a tree of parts, and a type is a shape.** A plan is a hierarchy: a city holds
-rings, rings hold districts, districts hold plots. Walls are the edges, gates are the
-openings, and squares and fields are the open areas. Every leaf of that tree is an instance
-of a *type*, which is a generator for one kind of part. You write a type once, test it
-across different random seeds, sizes, ground and palettes, and after that you can place
-it anywhere for free. A type states what ground it needs and what it is for, but never names
-a material. It takes its palette from the settlement's *voice*. A monument is not simply a
-large type. It is a place in its own right, planned recursively into halls, courtyards, an
-inner wall and gates, which is also how a castle works.
+**A place is a tree of parts, and a type is a form.** A plan is a hierarchy -- a city of
+rings of districts of plots, with walls as edges, gates as points, squares and fields as
+areas. Each leaf is an instance of a *type*: a parametric generator per kind of part,
+authored once, checked across seeds, sizes, ground and palettes, then instantiated for free
+anywhere. A type declares what ground it needs and what it is for; it names no material,
+taking the palette from the settlement's *voice*. A monument is not a big type -- it is a
+**nested place**, planned recursively into halls, courts, an inner wall and gates, which is
+also how a castle works.
 
-**The builder can check its own work, and the library is verified offline.** Every call the
-model makes carries the real checker with it: the linter and the walking model, running on
-the actual cached ground. The model can run that checker as often as it likes before it
-finishes. The library itself is verified with no model involved: a hand-written reference
-type is built across a bank of saved ground, producing hundreds of buildings in a few
-minutes and making zero model calls. Model calls are for questions about the model, never
-for finding a bug in the library.
+**The builder can see, and correctness is proven offline.** Every authoring call carries the
+real checker -- the linter and the walk model on the real cached ground -- and runs it as
+often as it likes before finishing. Library correctness is proven deterministically: a
+hand-written reference type over a bank of terrain fixtures, hundreds of instances at zero
+model calls, in minutes. Model calls are for questions about the model, never for finding a
+bug in the library.
 
-**Two ways of reviewing, and neither gives a score.** Automatic checks catch what is
-*broken*, never what is *ugly*, and they are a fixed minimum standard. Separately, a judge
-compares two builds side by side, without being told which is which or which came first, and
-says which one is better made. Only a person decides whether something is *good*, and that
-is a diagnosis of what the checks cannot see. It is never a stage in the automated loop.
+**Two instruments, neither scores.** Deterministic checks catch *broken*, never *ugly*, and
+are a frozen floor. A blinded, position-swapped pairwise judge says which of two builds is
+better made. A person is the arbiter of *well* -- a diagnostic of what no check sees, and
+never a stage of the loop.
 
-**The harness is predictable, and only the content varies.** A run is one config file and
-one command. Every stage, camera angle, decision and record is code. A `--dry-run` builds
-the whole place in memory with no server, so "prove it before you write it" is a rule a run
-can actually follow.
+**The harness is deterministic; only the content is not.** A run is a config file and one
+command. Every stage, camera, judgement and record is code. A `--dry-run` builds the whole
+place in memory with no server, so "prove it before you write it" is a rule a run can obey.
 
 ## Where it stands
 
-A city now stands, built from a single sentence: concentric ring walls, gates, buildings
-that get denser as you move from the farmland to the wealthy centre, a grand palace
-district, all on green ground the system chose, in a palette it wrote itself. It is built,
-checked, walkable and rendered. What is left is polish.
+A city stands from one sentence: concentric ring walls, gates, a density gradient from
+farmland to a noble core, a monumental palace precinct, on green ground the system chose, in
+a palette it wrote -- built, checked, walkable and rendered. What is left is quality polish.
+"What is not finished" below is the honest list.
 
 ## Layout
 
     src/ethoslm/  the library, linter, walk model, judge, deterministic preview and the
                       model adapter; pipeline/ holds the staged driver (plan, build,
-                      measure, media, and the seam where authoring is blinded)
+                      measure, media, the blinded authoring seam)
     types/            one file per kind of part: FORM, ROLE, KIND, PARAMS, NEEDS and
-                      build(b, part, seed, **params). A part arrives already placed,
-                      carrying the settlement's palette; a type names neither ground
-                      nor material
-    voices/           one JSON per style: material roles, roof shape, prose for the
-                      brief. Checked on load; the model can write one from a sentence
-    rounds/           one JSON per run: the input, the flags, and the thresholds that were
-                      registered before it ran
+                      build(b, part, seed, **params). A part arrives already sited, carrying
+                      the settlement's palette; a type names neither ground nor material
+    voices/           one JSON per style: material roles, roof silhouette, prose for the
+                      brief. Validated on load; the model may author one from a sentence
+    rounds/           one JSON per run: the input, the flags, the thresholds registered
+                      before it ran
     scripts/          round.py (run a config), check_types.py, type_needs.py,
                       terrain_bank.py, test_*.py (the offline suites), server scripts
-    fixtures/         cached worlds and saved plans that the offline tools rely on
-    out/, run/        renders, caches, worlds, server. Never committed
+    fixtures/         cached worlds and recorded plans the offline instruments stand on
+    out/, run/        renders, caches, worlds, server -- never committed
 
 ## Running it
 
@@ -104,30 +98,29 @@ and skips.
 
     for t in scripts/test_*.py; do "$PY" "$t" || echo "FAILED $t"; done
 
-**A place, built offline from a world we ship.** A saved plan on a cached world that comes
-with the repository: placed, built out of the committed types, linted, with no server and no
+**A place, built offline from a shipped world.** A recorded plan on a cached world that ships
+with the repository: sited, built out of the committed types, linted, with no server and no
 model call anywhere in it. About three minutes.
 
     "$PY" scripts/round.py rounds/example.json --dry-run --stage parts,finish,lint
 
-**A place from a sentence.** `rounds/town.json` is one sentence and nothing else, with no
-coordinate, no size and no palette. This one calls a model, so read **Models** first.
+**A place from a sentence.** `rounds/town.json` is one sentence and nothing else -- no
+coordinate, no size, no palette. This one calls a model, so read **Models** first.
 
     "$PY" scripts/round.py rounds/town.json --dry-run                  # no server
     bash scripts/mcrun.sh scripts/round.py rounds/town.json --live --wait
 
-**Models.** By default, every call to the model is handed to a supervising agent, which is
-how all of the development work was done: the run stops, writes the request to disk, and
-carries on once an answer is there. To run it without supervision, `models.json` maps each
-role to a model. The roles are the place spec, the planner, type authoring, revision and the
-vision judge. `model.py` speaks both the Anthropic and the OpenAI-compatible wire formats,
-so any hosted provider or local server works. Set `ETHOSLM_MODEL_API` and a key, or override
-a single role with `ETHOSLM_MODEL_<ROLE>`.
+**Models.** By default every authoring call is staged for a supervising agent, which is the
+path all of development ran on: the run stops, writes the request to disk, and continues when
+an answer is there. To run headless, `models.json` maps each role -- the place spec, the
+planner, type authoring, revision, the vision judge -- to a model, and `model.py` speaks the
+Anthropic and OpenAI-compatible wire formats, so any hosted provider or local server works.
+Set `ETHOSLM_MODEL_API` and a key, or override one role with `ETHOSLM_MODEL_<ROLE>`.
 
-**The pipeline runs Python that a model wrote.** That is the design, since the model writes
-programs against the library, but it does mean a run executes model-written code in your
-process and on your file system. Run it somewhere that is acceptable: a container, a
-throwaway user account, or a virtual machine.
+**The pipeline executes model-written Python.** That is the design -- the model composes
+programs against the library -- and it means a run executes code a model wrote, in your
+process, with your file system. Run it where that is acceptable: a container, a throwaway
+user, a virtual machine.
 
 **A server.** The live path needs Minecraft with the GDMC-HTTP mod on `localhost:9000`
 (Fabric or NeoForge, GDMC-HTTP 1.8.4, WorldEdit 7.4.2, Minecraft 1.21.11). `scripts/mcrun.sh`
@@ -142,12 +135,13 @@ them. `ETHOSLM_LIBRARY_PATH`, `ETHOSLM_PYTHON` and `ETHOSLM_JAVA` override the r
 MIT. See `LICENSE`.
 
 <!-- PRINCIPAL: decisions to make before this is published.
-     1. The clone line and any badges: no repository URL is written anywhere in this file.
-     2. Asset and corpus licensing is unread and is a hard gate: Mojang's EULA, and the
+     1. The image above (docs/city.png) is not in this tree. Put one there or cut the line.
+     2. The clone line and any badges: no repository URL is written anywhere in this file.
+     3. Asset and corpus licensing is unread and is a hard gate: Mojang's EULA, and the
         block-registry data in src/ethoslm/data/blocks_*.json, which was dumped from a
         server jar. Decide whether that file may ship as it is, be regenerated by the
         reader, or be replaced.
-     3. Whether to publish the cached worlds and renders as a download, and under what
+     4. Whether to publish the cached worlds and renders as a download, and under what
         terms; fixtures/ ships the small ones the suites need and nothing else.
-     4. Whether to name the demo the system was built against anywhere in the public repo.
+     5. Whether to name the demo the system was built against anywhere in the public repo.
 -->

@@ -314,6 +314,59 @@ def t_floor_is_the_surface_not_what_stands_on_it():
             f"in; with no register all {len(none)} are")
 
 
+# ------------------------------------------------------- the palette tables, v2 A2
+def t_tables_updated_not_rebuilt():
+    """An overlay adds palette entries; it never changes what an entry means.
+
+        So the tables are extended by the rows the write added rather than dropped and
+        recomputed over the whole palette -- and the test of that is the two answers being
+        the same array, not merely the faster one arriving. A settlement's palette only
+        grows, so the old behaviour re-classified every entry once per part.
+        
+    """
+    v = world({})
+    before = v.tables()
+    n_before = len(v.palette)
+    classified = {"entries": 0}
+    real = observe._classify_palette
+
+    def counting(palette):
+        classified["entries"] += len(palette)
+        return real(palette)
+
+    observe._classify_palette = counting
+    try:
+        v.overlay({(3, GROUND + 1, 3): "oak_fence",
+                   (4, GROUND + 1, 4): "water",
+                   (5, GROUND + 1, 5): "oak_door[facing=north,half=lower,open=false]",
+                   (6, GROUND + 1, 6): "stone_brick_stairs[facing=east]",
+                   (7, GROUND + 1, 7): "minecraft:lantern",
+                   (3, GROUND + 2, 3): "oak_fence"})          # a repeat, not a new row
+        after = v.tables()
+    finally:
+        observe._classify_palette = real
+    added = len(v.palette) - n_before
+    assert after is before, "the tables were rebuilt, not extended"
+    assert classified["entries"] == added, \
+        f"{classified['entries']} entries classified for {added} new palette entries"
+    fresh = Volume(v.x0, v.y0, v.z0, v.codes.copy(), list(v.palette)).tables()
+    for k in sorted(fresh):
+        assert len(after[k]) == len(v.palette), \
+            f"{k} has {len(after[k])} rows for {len(v.palette)} palette entries"
+        assert (after[k] == fresh[k]).all(), \
+            f"{k} differs from a table built over the whole palette"
+    # ...and the rows are right, not merely equal to each other
+    i = v.palette.index("oak_fence")
+    j = v.palette.index("water")
+    assert after["tall"][i] and not after["liquid"][i], "a fence is tall and dry"
+    assert after["liquid"][j], "water is not liquid"
+    return (f"{added} entries added to a palette of {n_before}, {added} classified, "
+            f"{len(fresh)} columns identical to a full rebuild")
+
+
+case("tables_updated_not_rebuilt", t_tables_updated_not_rebuilt)
+
+
 for fn in (t_flat, t_headroom, t_slab_headroom, t_step_slab, t_jump_block,
            t_slab_on_block_impossible, t_jump_needs_headroom, t_fall,
            t_deep_fall_refused, t_stairs_forward, t_stairs_backwards, t_fence_blocks,

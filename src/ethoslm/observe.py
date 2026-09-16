@@ -369,6 +369,7 @@ class Volume:
                 
         """
         index = {s: i for i, s in enumerate(self.palette)}
+        first_new = len(self.palette)
         for (x, y, z), s in blocks.items():
             if not self.inside(x, y, z):
                 continue
@@ -378,8 +379,26 @@ class Volume:
                 i = index[s] = len(self.palette)
                 self.palette.append(s)
             self.codes[x - self.x0, y - self.y0, z - self.z0] = i
-        self._tables = None
+        # **The tables are updated, not thrown away.** v2, A2. A row of `tables()` is a
+        # fact about a *palette entry* -- is this block state solid, liquid, a door, a
+        # ladder, which way a stair faces -- and an overlay changes which entry a cell
+        # holds, never what an entry means. Dropping them made every part of a place re-
+        # parse and re-classify the whole palette from scratch, and a settlement's
+        # palette only grows: the work was quadratic in the number of parts and all of
+        # it but the last few rows was recomputing the same answer. What a write can do
+        # is *add* entries, so that is what is computed here.
+        if self._tables is not None:
+            if len(self.palette) > first_new:
+                self._append_rows(first_new)
         return self
+
+    def _append_rows(self, first_new: int) -> None:
+        """Extend the cached tables to cover `palette[first_new:]`."""
+        cols, unknown = _classify_palette(self.palette[first_new:])
+        for k, v in self._tables.items():
+            self._tables[k] = np.concatenate([v, cols[k]])
+        for name, n in unknown.items():
+            self.unknown_solids[name] = self.unknown_solids.get(name, 0) + n
 
     def counts(self) -> dict:
         vals, n = np.unique(self.codes, return_counts=True)
@@ -405,45 +424,61 @@ class Volume:
         """
         if self._tables is not None:
             return self._tables
-        n = len(self.palette)
-        cols = {k: np.zeros(n, t) for k, t in
-                (("lower", np.uint8), ("upper", np.uint8), ("surface", np.uint8),
-                 ("tall", bool), ("opaque", bool), ("emit", np.uint8),
-                 ("liquid", bool), ("deadly", bool), ("door", bool), ("ladder", bool),
-                 ("stair_face", np.uint8))}
-        unknown: dict[str, int] = {}
-        for i, s in enumerate(self.palette):
-            name = s.split("[")[0]
-            props = parse_props(s)
-            lo, up, su, rule = _classify(name, props)
-            cols["lower"][i], cols["upper"][i], cols["surface"][i] = lo, up, su
-            # fences and walls are 1.5 tall and overflow into the cell above; gates are
-            # passable (see _classify) so they must not
-            cols["tall"][i] = rule == "fence"
-            cols["liquid"][i] = name in _LIQUID
-            cols["deadly"][i] = name in _DEADLY
-            cols["door"][i] = name.endswith("_door") or name.endswith("_fence_gate")
-            cols["ladder"][i] = name in ("ladder", "vine", "scaffolding",
-                                         "twisting_vines", "weeping_vines")
-            # Light opacity is not movement collision, and conflating them makes every
-            # shut room read as daylit. A closed door is walked through (a player opens
-            # it) but stops light dead; glass and bars are the opposite.
-            shut_door = (name.endswith("_door") and props.get("open") != "true")
-            glassy = "glass" in name or name == "iron_bars" or name.endswith("_pane")
-            cols["opaque"][i] = ((bool(lo and up) and not cols["liquid"][i] and not glassy)
-                                 or shut_door)
-            for k, v in EMISSION.items():
-                if name == k or name.endswith("_" + k):
-                    cols["emit"][i] = max(int(cols["emit"][i]), v)
-            if props.get("lit") == "false":
-                cols["emit"][i] = 0
-            if name.endswith("_stairs"):
-                cols["stair_face"][i] = DIR_CODE.get(props.get("facing", ""), 0)
-            if not rule:
-                unknown[name] = unknown.get(name, 0) + 1
+        cols, unknown = _classify_palette(self.palette)
         self.unknown_solids = unknown
         self._tables = cols
         return cols
+
+
+#: The columns `Volume.tables()` holds, and their dtypes. One row per palette entry.
+_TABLE_COLUMNS = (("lower", np.uint8), ("upper", np.uint8), ("surface", np.uint8),
+                  ("tall", bool), ("opaque", bool), ("emit", np.uint8),
+                  ("liquid", bool), ("deadly", bool), ("door", bool), ("ladder", bool),
+                  ("stair_face", np.uint8))
+
+
+def _classify_palette(palette: list) -> tuple:
+    """`(columns, unknown)` for these palette entries, in order.
+
+        A pure function of the strings: nothing here reads a volume, which is what lets an
+        overlay classify the handful of entries a write added and leave the rest alone
+        (A2). Every row is decided by `_classify` and the tables below it, exactly as the
+        whole-palette pass decided it.
+        
+    """
+    n = len(palette)
+    cols = {k: np.zeros(n, t) for k, t in _TABLE_COLUMNS}
+    unknown: dict[str, int] = {}
+    for i, s in enumerate(palette):
+        name = s.split("[")[0]
+        props = parse_props(s)
+        lo, up, su, rule = _classify(name, props)
+        cols["lower"][i], cols["upper"][i], cols["surface"][i] = lo, up, su
+        # fences and walls are 1.5 tall and overflow into the cell above; gates are
+        # passable (see _classify) so they must not
+        cols["tall"][i] = rule == "fence"
+        cols["liquid"][i] = name in _LIQUID
+        cols["deadly"][i] = name in _DEADLY
+        cols["door"][i] = name.endswith("_door") or name.endswith("_fence_gate")
+        cols["ladder"][i] = name in ("ladder", "vine", "scaffolding",
+                                     "twisting_vines", "weeping_vines")
+        # Light opacity is not movement collision, and conflating them makes every shut
+        # room read as daylit. A closed door is walked through (a player opens it) but
+        # stops light dead; glass and bars are the opposite.
+        shut_door = (name.endswith("_door") and props.get("open") != "true")
+        glassy = "glass" in name or name == "iron_bars" or name.endswith("_pane")
+        cols["opaque"][i] = ((bool(lo and up) and not cols["liquid"][i] and not glassy)
+                             or shut_door)
+        for k, v in EMISSION.items():
+            if name == k or name.endswith("_" + k):
+                cols["emit"][i] = max(int(cols["emit"][i]), v)
+        if props.get("lit") == "false":
+            cols["emit"][i] = 0
+        if name.endswith("_stairs"):
+            cols["stair_face"][i] = DIR_CODE.get(props.get("facing", ""), 0)
+        if not rule:
+            unknown[name] = unknown.get(name, 0) + 1
+    return cols, unknown
 
 
 _KNOWN_SUFFIX = ("_planks", "_log", "_wood", "_stairs", "_slab", "_bricks", "_brick",

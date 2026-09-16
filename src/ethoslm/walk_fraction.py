@@ -27,9 +27,12 @@ def load(name):
                               region=(X, Z, X + S, Z + S)), net
 
 
-def measure(name, show_rooms=False):
+def measure(name, show_rooms=False, context=None):
+    """`context` is `(lint.Context, Network)` already built over this town's volume --
+    A4, so that a readout builds one and not five. With none, this builds its own, which
+    is what the command line does."""
     t0 = time.perf_counter()
-    ctx, net = load(name)
+    ctx, net = context if context is not None else load(name)
     rows = ctx.interior_walk()
     on_plot = [r for r in ctx.rooms if r.get("plot")]
 

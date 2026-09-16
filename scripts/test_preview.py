@@ -136,6 +136,98 @@ def main():
     else:
         print("skip speed: no site_b cache")
 
+    # --- v2 A6: the map and the instance sheet -------------------------------- Two
+    # more drawings, held to the same contract as the two above: a pure function of
+    # their input, byte-identical on the same input, and fast enough that looking is
+    # never the reason not to.
+    from ethoslm import pipeline, preview as preview_mod
+    from ethoslm.circulate import Network
+
+    ex = os.path.join(ROOT, "out", "example")
+    if os.path.exists(os.path.join(ex, "plan.json")):
+        plan = json.load(open(os.path.join(ex, "plan.json")))
+        net = Network.load(os.path.join(ex, "network.json"))
+        site = json.load(open(os.path.join(ex, "site.json")))
+        where = {"origin": site["origin"], "size": site["size"]}
+        m1 = preview_mod.plan_map(plan, net, where)
+        t0 = time.perf_counter()
+        m2 = preview_mod.plan_map(plan, net, where)
+        map_s = time.perf_counter() - t0
+        cases.append(("A6 map: byte-identical across two calls",
+                      m1.shape == m2.shape and bool((m1 == m2).all()), f"{m1.shape}"))
+        cases.append(("A6 map: the site at one pixel a column, and under a second",
+                      m1.shape[0] == site["size"] + 16 and map_s < 1.0,
+                      f"{m1.shape[0]}px for a site of {site['size']}, {map_s:.2f}s"))
+        # ...and it draws what it says it draws: every named colour is on the map
+        seen = {tuple(c) for c in np.unique(m1.reshape(-1, 3), axis=0)}
+        want = {k: preview_mod.MAP_COLOURS[k]
+                for k in ("ground", "lane", "plot", "area", "wall", "point", "door")}
+        missing = sorted(k for k, c in want.items() if tuple(c) not in seen)
+        cases.append(("A6 map: districts, lanes, plots, areas, walls, gates and doors "
+                      "are all on it", not missing, f"missing: {missing}"))
+        # a plan with no network still draws, which is what makes it a *plan* map
+        cases.append(("A6 map: a plan alone is enough to draw one",
+                      preview_mod.plan_map(plan, None, where).shape == m1.shape, ""))
+    else:
+        print("skip A6 map: no out/example/plan.json")
+
+    types_cfg = os.path.join(ROOT, "rounds", "types_g.json")
+    if os.path.exists(types_cfg):
+        rnd = pipeline.Round.load(types_cfg)
+        fixture = (rnd.types or {}).get("check_fixtures", [{}])[0]
+        t0 = time.perf_counter()
+        s1 = preview_mod.instances("cottage", fixture, seeds=(21, 22, 23, 24, 25))
+        sheet_s = time.perf_counter() - t0
+        s2 = preview_mod.instances("cottage", fixture, seeds=(21, 22, 23, 24, 25))
+        cases.append(("A6 sheet: byte-identical across two calls",
+                      s1.shape == s2.shape and bool((s1 == s2).all()), f"{s1.shape}"))
+        cases.append(("A6 sheet: five buildings in seconds, with no server",
+                      sheet_s < 10 and s1.shape[1] > 5 * 20,
+                      f"{sheet_s:.1f}s, {s1.shape[1]}px wide"))
+        # the five are not five copies: a type varies by seed, and a sheet is how you
+        # see it
+        one = preview_mod.instances("cottage", fixture, seeds=(21,))
+        cases.append(("A6 sheet: the seeds differ, so the sheet shows something",
+                      s1.shape[1] > 4 * one.shape[1], f"{s1.shape} against {one.shape}"))
+    else:
+        print("skip A6 sheet.")
+
+    # --- the colour table covers every voice on disk, not three cached towns --- The
+    # audit above reads the palettes of three towns built in 2025. The sheet's first
+    # outing stood a wall in `white_render_dark_frame` and drew it magenta: quartz, the
+    # material two committed voices render in, had no entry in the table at all. A
+    # palette audit that only reads what has already been built cannot see the voice
+    # nothing has been built in yet.
+    from ethoslm import prims
+    import glob
+    magenta = {}
+    for p in sorted(glob.glob(os.path.join(ROOT, "voices", "*.json"))):
+        roles = (json.load(open(p)).get("roles") or {})
+        for role, family in roles.items():
+            if not isinstance(family, str):
+                continue
+            for kind in prims.SHAPES:
+                try:
+                    block = prims.shape(family, kind)
+                except Exception:                    # noqa: BLE001 -- not every shape
+                    continue
+                if not block:
+                    continue
+                name = str(block).split("[")[0].split(":")[-1]
+                if block_colour(name) == UNKNOWN:
+                    magenta.setdefault(name, set()).add(
+                        f"{os.path.basename(p)[:-5]}:{role}")
+    cases.append(("palette: every shape of every role of every voice on disk resolves",
+                  not magenta,
+                  f"magenta: {sorted(magenta)[:6]}"))
+    # ...and every material family, whether a voice uses it or not: a family with no
+    # reading is a family the card names without a colour and the previewer draws
+    # magenta, and the two are the same hole.
+    from ethoslm.prims import MATERIALS, solid
+    families = sorted(f for f in MATERIALS if block_colour(solid(f)) == UNKNOWN)
+    cases.append(("palette: every material family the library can shape has a colour",
+                  not families, f"no reading for: {families}"))
+
     fails = 0
     for label, ok, detail in cases:
         print(f"{'ok  ' if ok else 'FAIL'} {label}" + (f"  ({detail})" if detail else ""))

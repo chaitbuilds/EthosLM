@@ -331,13 +331,32 @@ def parts_to_routing(parts: list, passage=()) -> dict:
             half = max(1, int(p.get("width", 1))) // 2
             path = [(int(a[0]), int(a[1])) for a in p["path"]]
             for a, b in zip(path, path[1:]):
-                step = (0, 1) if a[0] == b[0] else (1, 0)
-                n = abs(b[0] - a[0]) + abs(b[1] - a[1])
-                sign = 1 if (b[0] + b[1]) >= (a[0] + a[1]) else -1
-                for i in range(n + 1):
-                    cx, cz = a[0] + step[0] * i * sign, a[1] + step[1] * i * sign
+                # **A 45-degree run is an obstacle too.** v2, A5. it is how a ring is
+                # round rather than square -- and this read every segment as axial:
+                # `step` came out (1, 0) for a chamfer, `n` was its Manhattan length,
+                # and the columns marked were a line twice as long running due east from
+                # one end of it. So an octagon's chamfers were not in `obstacles` at all
+                # and a lane could be routed straight through the city wall. The frame
+                # is the one the library sites in: the run's own direction, and the
+                # width along the perpendicular lattice diagonal. A diagonal line of
+                # cells is 8-connected, and `_grid_graph` is 4-connected, so the line
+                # alone is a barrier -- nothing has to be thickened to seal it.
+                if a[0] != b[0] and a[1] != b[1]:
+                    sx = 1 if b[0] > a[0] else -1
+                    sz = 1 if b[1] > a[1] else -1
+                    line = [(a[0] + sx * i, a[1] + sz * i)
+                            for i in range(abs(b[0] - a[0]) + 1)]
+                    across = (-sz, sx)
+                else:
+                    step = (0, 1) if a[0] == b[0] else (1, 0)
+                    n = abs(b[0] - a[0]) + abs(b[1] - a[1])
+                    sign = 1 if (b[0] + b[1]) >= (a[0] + a[1]) else -1
+                    line = [(a[0] + step[0] * i * sign, a[1] + step[1] * i * sign)
+                            for i in range(n + 1)]
+                    across = (step[1], step[0])
+                for (cx, cz) in line:
                     for d in range(-half, half + 1):
-                        obstacles.add((cx + step[1] * d, cz + step[0] * d))
+                        obstacles.add((cx + across[0] * d, cz + across[1] * d))
             continue
         if kind == "point":
             at = p.get("at") or [p.get("x0"), p.get("z0")]

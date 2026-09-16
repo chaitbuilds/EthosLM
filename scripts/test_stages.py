@@ -330,6 +330,84 @@ def main():
                   and bool(got.get("snapshot")),
                   f"{got.get('verified')}"))
 
+    # --- A1: a live round publishes once, not once per part ---------------- The live
+    # path used to flush every part over the wire, `save-all flush`, drop the volume and
+    # pull the padded site back out of the server -- once per part. What is under test
+    # is the contract that replaced it: a commit goes into the volume and nowhere else,
+    # the world is owed the difference, and one `publish()` pays it in one
+    # `Builder.flush` (whose second pass is the connective states only a server
+    # computes) and one read-back. The server here is the pre-build cache.
+    import time as _time
+    import types as _types
+    from ethoslm import observe as _observe
+
+    class _CountingEditor:
+        """The three things `LiveBackend.volume` and `publish` ask a server for."""
+
+        def __init__(self, vol):
+            self.loads = 0
+            self.commands = []
+            hm = offline.surface_heights(vol) + 1
+            self.worldSlice = _types.SimpleNamespace(
+                heightmaps={world_mod.HEIGHTMAP: hm}, _vol=vol)
+
+        def loadWorldSlice(self, rect, cache=True):
+            self.loads += 1
+
+        def runCommand(self, cmd):
+            self.commands.append(cmd)
+
+    class _Pending:
+        def __init__(self, cells):
+            self._pending = dict(cells)
+
+    live_pre = offline.load_volume(os.path.join(site, "world.npz"))
+    ed = _CountingEditor(live_pre)
+    be_live = pipeline.LiveBackend.__new__(pipeline.LiveBackend)
+    be_live.round, be_live.pad, be_live.editor = _WriteRound(site), 0, ed
+    be_live.site = offline.OfflineSite(live_pre)
+    be_live.X, be_live.Z = X, Z
+    be_live.S, be_live._vol, be_live.blocks = S, None, {}
+    parts = [_Pending({(X + 4 + i, 80, Z + 4 + j): "minecraft:stone_bricks"
+                       for j in range(3)}) for i in range(4)]
+    wrote2, slept = {}, []
+    real_from_ws = _observe.Volume.__dict__["from_world_slice"]
+    real_sleep = _time.sleep
+    _observe.Volume.from_world_slice = staticmethod(
+        lambda ws, *a, **k: offline.load_volume(os.path.join(site, "world.npz")))
+    _B.flush = lambda self, **k: (wrote2.update(self._pending),
+                                  {"placed": len(self._pending), "failed": 0})[1]
+    _time.sleep = lambda s: slept.append(s)
+    try:
+        for p in parts:
+            be_live.commit(p)
+        committed = dict(be_live.blocks)
+        in_volume = all(be_live.volume.name(*c) == "stone_bricks" for c in committed)
+        loads_building, wrote_building = ed.loads, dict(wrote2)
+        cmds_building = list(ed.commands)
+        pub = be_live.publish()
+        after = be_live.volume                   # the one read-back
+        loads_after = ed.loads
+    finally:
+        _observe.Volume.from_world_slice = real_from_ws
+        _B.flush, _time.sleep = real_flush, real_sleep
+    cases.append(("A1: a part's commit reaches the volume and not the world",
+                  in_volume and not wrote_building and not cmds_building
+                  and len(committed) == 12,
+                  f"{len(committed)} cells committed, {len(wrote_building)} written, "
+                  f"{len(cmds_building)} server command(s)"))
+    cases.append(("A1: four parts are one read of the world, not four",
+                  loads_building == 1,
+                  f"{loads_building} loadWorldSlice call(s) over four parts"))
+    cases.append(("A1: one publish writes every committed block, once",
+                  wrote2 == committed and pub.get("published") == len(committed)
+                  and ed.commands == ["save-all flush"] and not be_live.blocks,
+                  f"{pub.get('published')} published, {len(wrote2)} placed, "
+                  f"commands {ed.commands}"))
+    cases.append(("A1: publishing reads the world back once, and off the world",
+                  loads_after == loads_building + 1 and after is not None,
+                  f"{loads_after} read(s) in all for four parts and one publish"))
+
     # --- report always lands on disk ---------------------------------------
     on_disk = json.load(open(os.path.join(res2["arm_dir"], "report.json")))
     cases.append(("every arm writes its report where the ladder reads it",

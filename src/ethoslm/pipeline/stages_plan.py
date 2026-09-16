@@ -1636,6 +1636,13 @@ def stage_plateau(rnd, be, results: dict) -> dict:
                     mat=pipeline_voice(voice), label=terra["part"],
                     bound=Builder.plateau_max(int(site["size"])))
     placed = be.commit(b) if rec.get("ok") else {"placed": 0}
+    # **Ground is published where it is cut.** v2, A1: a commit no longer writes
+    # through, and this cut is read back out of the *server* by the re-briefing below --
+    # `prepare_settlement.py` in its own process -- so a plateau left in the volume
+    # would be a plan made against the hillside it was levelled out of. A1 moves the
+    # per-part round trips, not the ground passes: there is one plateau.
+    if be.live:
+        be.publish()
     out = {"part": terra["part"], "voice": voice, "plateau": rec,
            "placed": placed.get("placed"), "compound_ground": grew,
            "terrace": m.get("terrace"),
@@ -1812,6 +1819,8 @@ def stage_terraces(rnd, be, results: dict) -> dict:
             rec["placed"] = len(cut) if rec.get("ok") else 0
         else:
             rec["placed"] = (be.commit(b) if rec.get("ok") else {"placed": 0}).get("placed")
+            if be.live:
+                be.publish()             # A1: ground is published where it is cut
             be.rebind()
         return [rec]
 

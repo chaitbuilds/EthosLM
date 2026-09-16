@@ -39,6 +39,17 @@ COLOURS = [
     ("terracotta", (152, 94, 67)), ("blackstone", (42, 36, 42)),
     ("deepslate", (72, 72, 76)), ("basalt", (80, 78, 84)), ("obsidian", (20, 16, 30)),
     ("tuff", (108, 109, 102)), ("calcite", (223, 226, 220)),
+    # **Quartz, which two committed voices are rendered in and this table had no entry
+    # for at all.** v2, A6: the instance sheet's first outing stood `wall` in
+    # `white_render_dark_frame` -- the example round's own voice -- and drew 68 blocks
+    # of it magenta. The palette audit only ever ran over three cached towns' palettes,
+    # and none of them was built in a voice whose wall is quartz. Six names: the block,
+    # smooth, chiseled, the pillar, the stairs and the slab.
+    ("quartz", (232, 228, 219)),
+    # ...and purpur, the last family in `prims.MATERIALS` with no reading at all. No
+    # voice on disk is written in it, so nothing had ever drawn it -- which is exactly
+    # the case the audit above cannot reach and the reason it now reads every family.
+    ("purpur", (169, 125, 169)),
     ("amethyst", (150, 110, 200)), ("lapis", (40, 70, 150)),
     ("cobblestone", (127, 127, 127)), ("andesite", (136, 136, 136)),
     ("diorite", (188, 188, 188)), ("granite", (149, 103, 86)),
@@ -232,6 +243,217 @@ def elevation(vol: observe.Volume, facing: str = "south", scale: int = 2,
     col = np.clip(base * fade, 0, 255).astype(np.uint8)
     img[sy - 1 - rows, cols] = col
     return _trim(img, scale)
+
+
+# --------------------------------------------------------------- the plan, as a map v2,
+# A6. Everything above draws *blocks*: what a build looks like once it exists. A plan is
+# decided before any of that and there was no way to look at one -- a tree of rectangles
+# in a JSON file, read by eye or not at all. This is the same instrument one layer up,
+# and it is the same kind of instrument: a pure function, a tenth of a second, no
+# server, byte-identical on the same input. One pixel is one column, so the map is the
+# site at 1:1 and the scale is only how many screen pixels a column gets.
+
+#: The map's palette, in the previewer's key: ground, then what stands on it, in the
+#: order they are drawn. Deliberately flat -- this answers "is the plan the shape it was
+#: asked for", not "what does it look like".
+MAP_COLOURS = {
+    "ground": (238, 236, 230),
+    "outside": (214, 212, 206),          # inside the raster, outside the site
+    "ring": (206, 200, 188),
+    "lane": (198, 180, 150),
+    "arterial": (170, 146, 108),
+    "plot": (150, 120, 90),
+    "area": (146, 180, 118),
+    "wall": (92, 92, 98),
+    "point": (206, 92, 56),              # a gate, a tower, a well: a part at a point
+    "door": (52, 86, 172),
+}
+#: One tint per district, in plan order. Six, because the record's largest place has
+#: thirteen districts in four rings and a cycle of six keeps neighbours apart in every
+#: layout this project has drawn.
+DISTRICT_TINTS = [(226, 228, 236), (228, 234, 224), (236, 230, 220),
+                  (224, 232, 236), (234, 224, 232), (230, 234, 214)]
+
+
+def plan_map(plan: dict, network=None, site: dict | None = None,
+             scale: int = 1) -> np.ndarray:
+    """The plan as a picture: districts, rings, lanes, plots, areas, walls and doors.
+
+        `plan` is `plan.json`, `network` a `circulate.Network` or None, `site` the
+        `{"origin": [x, z], "size": n}` the plan was made on -- without one the map is the
+        bounding box of what the plan holds. Rows are x and columns are z, so the map is
+        read the way every other coordinate in this project is written.
+
+        Deterministic: every part is drawn in plan order, every colour is a constant, and
+        nothing here reads a clock or a random number.
+        
+    """
+    from . import circulate, pipeline
+    leaves = pipeline.plan_parts(plan)
+    rects = [p for p in leaves if p.get("kind") in ("plot", "area")
+             and p.get("x0") is not None]
+    if site:
+        X, Z = int(site["origin"][0]), int(site["origin"][1])
+        S = int(site["size"])
+        x0, z0, x1, z1 = X, Z, X + S - 1, Z + S - 1
+    else:
+        xs = [p["x0"] for p in rects] + [p["x1"] for p in rects]
+        zs = [p["z0"] for p in rects] + [p["z1"] for p in rects]
+        if not xs:
+            return np.full((2, 2, 3), MAP_COLOURS["ground"], np.uint8)
+        x0, z0, x1, z1 = min(xs) - 8, min(zs) - 8, max(xs) + 8, max(zs) + 8
+    pad = 8
+    W, H = x1 - x0 + 1 + 2 * pad, z1 - z0 + 1 + 2 * pad
+    img = np.full((W, H, 3), MAP_COLOURS["outside"], np.uint8)
+    img[pad:W - pad, pad:H - pad] = MAP_COLOURS["ground"]
+
+    def box(ax0, az0, ax1, az1, colour, fill=True):
+        i0, j0 = max(int(min(ax0, ax1)) - x0 + pad, 0), max(int(min(az0, az1)) - z0 + pad, 0)
+        i1, j1 = min(int(max(ax0, ax1)) - x0 + pad, W - 1), min(int(max(az0, az1)) - z0 + pad, H - 1)
+        if i1 < i0 or j1 < j0:
+            return
+        if fill:
+            img[i0:i1 + 1, j0:j1 + 1] = colour
+            return
+        img[i0:i1 + 1, [j0, j1]] = colour
+        img[[i0, i1], j0:j1 + 1] = colour
+
+    def dots(cells, colour):
+        pts = [(int(cx) - x0 + pad, int(cz) - z0 + pad) for cx, cz in cells]
+        pts = [(i, j) for i, j in pts if 0 <= i < W and 0 <= j < H]
+        if pts:
+            ii = np.fromiter((p[0] for p in pts), int, len(pts))
+            jj = np.fromiter((p[1] for p in pts), int, len(pts))
+            img[ii, jj] = colour
+
+    # districts, as the extent of what is in them, tinted in plan order
+    order, by_district = [], {}
+    for p in leaves:
+        d = (p.get("in") or [None])[0]
+        if d is None or p.get("x0") is None:
+            continue
+        if d not in by_district:
+            by_district[d] = [p["x0"], p["z0"], p["x1"], p["z1"]]
+            order.append(d)
+            continue
+        q = by_district[d]
+        q[0], q[1] = min(q[0], p["x0"]), min(q[1], p["z0"])
+        q[2], q[3] = max(q[2], p["x1"]), max(q[3], p["z1"])
+    for i, d in enumerate(order):
+        box(*by_district[d], DISTRICT_TINTS[i % len(DISTRICT_TINTS)])
+
+    # the rings a concentric place declares, as outlines about its centre
+    layout = plan.get("layout") or {}
+    centre = layout.get("centre")
+    for r in (layout.get("rings") or []):
+        if centre is None or r.get("outer") is None:
+            continue
+        cx, cz, h = int(centre[0]), int(centre[1]), int(r["outer"])
+        box(cx - h, cz - h, cx + h, cz + h, MAP_COLOURS["ring"], fill=False)
+
+    # what fills the ground
+    for p in leaves:
+        if p.get("kind") == "area" and p.get("x0") is not None:
+            box(p["x0"], p["z0"], p["x1"], p["z1"], MAP_COLOURS["area"])
+    for p in leaves:
+        if p.get("kind") == "plot" and p.get("x0") is not None:
+            box(p["x0"], p["z0"], p["x1"], p["z1"], MAP_COLOURS["plot"])
+
+    # the lanes, by rank, then the walls over them: an edge is the one thing a lane may
+    # not cross, and the map has to show that it does not
+    if network is not None:
+        ranked = sorted(network.cells.items(), key=lambda kv: -kv[1]["rank"])
+        dots([c for c, rec in ranked if rec["rank"] <= 0], MAP_COLOURS["lane"])
+        dots([c for c, rec in ranked if rec["rank"] > 0], MAP_COLOURS["arterial"])
+    # ...and a gate is the hole in the wall, not part of it, which is the one thing a
+    # map of a walled place has to get right.
+    passage = {n for n in {p.get("type") for p in leaves if p.get("type")}
+               if os.path.exists(os.path.join(settlement.ROOT, "types", f"{n}.py"))
+               and _type_is_passage(n)}
+    routing = circulate.parts_to_routing(leaves, passage=passage)
+    dots(sorted(routing["obstacles"]), MAP_COLOURS["wall"])
+    for p in leaves:
+        if p.get("kind") == "point":
+            at = p.get("at") or [p.get("x0"), p.get("z0")]
+            box(int(at[0]) - 1, int(at[-1]) - 1, int(at[0]) + 1, int(at[-1]) + 1,
+                MAP_COLOURS["point"])
+    if network is not None:
+        dots([(t.x, t.z) for t in network.thresholds], MAP_COLOURS["door"])
+
+    img = np.transpose(img, (1, 0, 2))           # x across, z down
+    if scale > 1:
+        img = np.repeat(np.repeat(img, scale, 0), scale, 1)
+    return img
+
+
+# -------------------------------------------------------------- the instance sheet v2,
+# A6. A type is authored blind and checked by a report of numbers; the only way to see
+# one standing has been to build a town. This stands it on a fixture as many times as
+# you like and draws each one with `preview`, at no model call and no server.
+
+def instances(type_name: str, fixture: dict, seeds=(21, 22, 23, 24, 25),
+              params: dict | None = None, voice: str | None = None,
+              scale: int = 2, gutter: int = 6) -> np.ndarray:
+    """`len(seeds)` instances of one type on one fixture plot, side by side.
+
+        `fixture` is `{"round": name, "plot": label}` for a plot type, or one of the
+        `check_parts` entries for an edge, a point or an area -- the same fixtures a type's
+        checker stands it on. Each instance is built through `stages_build.instantiate`, its
+        pending set applied to a copy of the fixture's volume, cropped to the rectangle the
+        part is answerable for and drawn by `preview`; the strips are composited on one
+        background, aligned at the bottom, in seed order.
+        
+    """
+    from . import stages
+    from .pipeline import blind, stages_build
+    frnd, fbe = blind._fixture_round(fixture["round"])
+    plots = {p["label"]: p for p in blind._plots_of(frnd)}
+    plot = pipeline_fixture_part(fixture, plots)
+    if plot is None:
+        raise ValueError(f"no part {fixture.get('plot') or fixture.get('part')!r} in "
+                         f"round {fixture['round']}")
+    prog = os.path.join(settlement.ROOT, "types", f"{type_name}.py")
+    base = fbe.volume
+    x0, z0, x1, z1 = pipeline_part_rect(plot)
+    shots = []
+    for seed in seeds:
+        b = stages_build.instantiate(prog, plot, base, seed=int(seed),
+                                     network=frnd.network(), params=dict(params or {}),
+                                     voice=voice)
+        vol = stages.apply_pending(base, b._pending)
+        shots.append(preview(crop(vol, x0, z0, x1, z1), scale=1))
+    W = sum(s.shape[1] for s in shots) + gutter * (len(shots) + 1)
+    H = max(s.shape[0] for s in shots) + 2 * gutter
+    sheet = np.full((H, W, 3), BG, np.uint8)
+    at = gutter
+    for s in shots:
+        sheet[H - gutter - s.shape[0]:H - gutter, at:at + s.shape[1]] = s
+        at += s.shape[1] + gutter
+    if scale > 1:
+        sheet = np.repeat(np.repeat(sheet, scale, 0), scale, 1)
+    return sheet
+
+
+def _type_is_passage(name: str) -> bool:
+    """Does `types/<name>.py` declare itself a way through? Bound late for the same
+    reason `plan_map` binds the pipeline late."""
+    from . import pipeline
+    return bool(pipeline.load_type(
+        os.path.join(settlement.ROOT, "types", f"{name}.py"))["passage"])
+
+
+def pipeline_fixture_part(fixture: dict, plots: dict):
+    """`pipeline.fixture_part`, bound late so importing the previewer does not import
+    the pipeline."""
+    from . import pipeline
+    return pipeline.fixture_part(fixture, plots)
+
+
+def pipeline_part_rect(part: dict) -> tuple:
+    """`pipeline.part_rect`: the rectangle a part is answerable for, whatever its kind.
+    A wall is a swept polyline and a gate is a pad, so neither has an `x0`."""
+    from . import pipeline
+    return pipeline.part_rect(part)
 
 
 if __name__ == "__main__":

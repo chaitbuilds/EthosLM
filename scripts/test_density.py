@@ -822,9 +822,34 @@ def t_3_the_voice_card_shows_a_materials_colour_beside_its_name():
         assert f"{f} (" not in rows, f
     brief = spec_brief("Build a ringed capital.", "/tmp/out.json")
     assert "oxidized_copper (pale green)" in brief, "the brief carries no colours"
+
+    # v2, A7: ...and on the card itself, beside every role of every voice on disk. The
+    # card is what a builder, a type's author and the judge's brief all read, and it
+    # named the material and never said what colour it is.
+    from ethoslm import styles
+    roles = coloured = 0
+    for vname in sorted(styles.VOICES):
+        card = styles.voice_card(vname)
+        for role, mat in styles.VOICES[vname]["palette"].items():
+            line = [ln for ln in card.splitlines() if ln.strip().startswith(role + " ")]
+            assert line, f"{vname}: no line for the {role} role on the card"
+            roles += 1
+            try:
+                block, known_here = solid(mat), True
+            except Exception:                        # noqa: BLE001
+                block, known_here = None, False
+            if known_here and block_colour(block) != UNKNOWN:
+                want = f"{mat} ({colour_of(block)})"
+                assert want in line[0], f"{vname}/{role}: {line[0].strip()!r} lacks {want!r}"
+                coloured += 1
+            else:
+                assert f"{mat} (" not in line[0], \
+                    f"{vname}/{role}: a colour was guessed for {mat}"
+    assert coloured == roles, f"{roles - coloured} of {roles} roles carry no colour"
     return (f"{len(known)} of {len(MATERIALS)} families carry a colour in the spec "
-            f"brief and {len(unknown)} are named without one; oxidized_copper reads "
-            f"{colour_of('oxidized_copper')} and copper_block "
+            f"brief and {len(unknown)} are named without one; {coloured} of {roles} "
+            f"roles over {len(styles.VOICES)} voices carry one on the card itself; "
+            f"oxidized_copper reads {colour_of('oxidized_copper')} and copper_block "
             f"{colour_of('copper_block')}, which it did not before")
 
 

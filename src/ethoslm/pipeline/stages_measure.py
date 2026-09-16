@@ -660,7 +660,10 @@ def _m_walk_from_outdoors_pct(rnd, be, results, bar) -> dict:
         
     """
     from .. import walk_fraction as mod
-    row, _rep = mod.measure(rnd.name)
+    # A4: the context this readout has already built, rather than a fifth one over the
+    # same volume. The two differed only in the region's last column and in whether the
+    # pre-build cache was handed over, and neither reaches this number.
+    row, _rep = mod.measure(rnd.name, context=_town_context(rnd, be))
     return {"got": row["from_outdoors_walking_pct"],
             "rooms": row["rooms_on_plots"], "floor_cells": row["floor_cells"],
             "rooms_at_zero": row["rooms_zero_walkable_from_outdoors"],
@@ -678,7 +681,49 @@ def _stair_clear() -> int:
     return observe.STAIR_CLEAR
 
 
+#: The last town context built, by (state directory, the built volume's digest). One
+#: entry: a readout reads one place, and holding two would hold two cities in memory.
+_TOWN_CONTEXT: dict = {}
+
+
+def _built_digest(rnd) -> str:
+    """A digest of the volume the readout is being read off, or "" where there is none.
+
+        The key a memo has to be keyed on. A stage that re-built the town between two
+        measures -- or a `--measure` re-read against a volume that has since been written
+        again -- must get a fresh context, and the file's own content is what says so.
+        
+    """
+    import hashlib
+    p = rnd.rel("world_built.npz")
+    if not os.path.exists(p):
+        return ""
+    with open(p, "rb") as fh:
+        return hashlib.file_digest(fh, "sha256").hexdigest()
+
+
 def _town_context(rnd, be):
+    """The whole place as the linter sees it, built once per readout. A4.
+
+        **It was built four times, and `walk_fraction` built a fifth.** Every measure that
+        asks a question about the finished town -- E002 from the lane, own lint errors, the
+        place read -- built its own `lint.Context` over the same volume, and building one is
+        the expensive half of a readout: a minute and a half on a walled town, where the
+        measure that follows it is under a second. Nothing between them changes the volume,
+        so this is one memo on the built volume's digest, and `walk_fraction.measure` takes
+        the same object rather than making a fifth.
+        
+    """
+    key = (rnd.state, _built_digest(rnd))
+    got = _TOWN_CONTEXT.get(key)
+    if got is not None:
+        return got
+    _TOWN_CONTEXT.clear()
+    got = _TOWN_CONTEXT[key] = _build_town_context(rnd, be)
+    return got
+
+
+def _build_town_context(rnd, be):
     from .. import lint, offline, settlement
     from ..circulate import Network
     vol = offline.load_volume(rnd.rel("world_built.npz"))

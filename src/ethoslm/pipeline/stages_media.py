@@ -485,6 +485,104 @@ def stage_write(rnd: Round, be, results: dict) -> dict:
                     "one that does not -- is the readout's answer and not this stage's"}
 
 
+def stage_map(rnd: Round, be, results: dict) -> dict:
+    """The plan as a picture: `<state>/plan_map.png`. v2, A6.
+
+        Deterministic, offline, under a second, and it needs nothing but the plan -- so it
+        can be asked for the moment `plan` has run and long before a block is placed, which
+        is the point of it. `preview.plan_map` is the drawing; this is the stage.
+        
+    """
+    import cv2
+    from .. import preview as preview_mod
+    plan = rnd.plan()
+    if not plan:
+        return {"error": "no plan.json: there is no plan to draw"}
+    site = rnd.site or (json.load(open(rnd.rel("site.json")))
+                        if os.path.exists(rnd.rel("site.json")) else None)
+    scale = int((rnd.shots or {}).get("map_scale", 1))
+    t0 = time.perf_counter()
+    img = preview_mod.plan_map(plan, rnd.network(),
+                               {"origin": site["origin"], "size": site["size"]}
+                               if site else None, scale=scale)
+    out = rnd.rel("plan_map.png")
+    os.makedirs(rnd.state, exist_ok=True)
+    cv2.imwrite(out, img[:, :, ::-1])
+    secs = round(time.perf_counter() - t0, 2)
+    record("preview", settlement=rnd.name, seconds=secs, shape=list(img.shape),
+           out=os.path.basename(out))
+    return {"map": out, "shape": list(img.shape), "scale": scale, "seconds": secs,
+            "parts": len(_pipeline.plan_parts(plan)),
+            "lane_cells": len((rnd.network().cells if rnd.network() else {}))}
+
+
+def stage_sheet(rnd: Round, be, results: dict) -> dict:
+    """A sheet of instances per type: `<state>/sheets/<type>.png`. v2, A6.
+
+        The types are the round's own `types.list`, the fixture and the seeds are the ones
+        its **checker** would use for a type of that kind (`blind._fixtures_for`,
+        `_seeds_for`) -- a wall is not stood on a house's plot. A type is authored blind and
+        read as a table of numbers; this is the first way to *look* at one that does not
+        cost a town.
+        
+    """
+    import cv2
+    from .. import preview as preview_mod
+    from . import blind
+    t = rnd.types or {}
+    specs = [s for s in (t.get("list") or []) if s.get("name")]
+    # which is the ground it is actually going to stand on, and a better subject than a
+    # fixture borrowed from another round.
+    own: dict = {}
+    if not specs and rnd.flags.get("types"):
+        specs = [{"name": n} for n in rnd.flags["types"]]
+        plots = [p for p in blind._plots_of(rnd) if p.get("kind", "plot") == "plot"]
+        if plots:
+            big = max(plots, key=lambda q: (q["x1"] - q["x0"]) * (q["z1"] - q["z0"]))
+            own["plot"] = {"round": rnd.name, "plot": big["label"]}
+        # ...and a wall, a gate and a square are not in a plot registry, so they are
+        # stood on this place's own first part of their kind, by its geometry.
+        for leaf in rnd.parts() or []:
+            kind = leaf.get("kind", "plot")
+            if kind in ("edge", "point", "area") and kind not in own:
+                own[kind] = {"round": rnd.name, "kind": kind, "part": leaf["name"],
+                             **{k: leaf[k] for k in _pipeline.PART_GEOMETRY
+                                if k in leaf}}
+    if not specs:
+        return {"error": "`types.list` or `flags.types` is "
+                         "where they are"}
+    out_dir = rnd.rel("sheets")
+    os.makedirs(out_dir, exist_ok=True)
+    sheets, failed = {}, {}
+    for spec in specs:
+        name = spec["name"]
+        t0 = time.perf_counter()
+        try:
+            decl = _pipeline.load_type(spec.get("file")
+                                       or os.path.join(_pipeline.ROOT, "types",
+                                                       f"{name}.py"))
+            want = dict(spec, part=spec.get("part") or decl["kind"])
+            fixtures = blind._fixtures_for(rnd, want) or (
+                [own[want["part"]]] if own.get(want["part"]) else [])
+            if not fixtures:
+                failed[name] = (f"no fixture of kind {want['part']!r} in this round, "
+                                f"and no plot of its own to stand it on")
+                continue
+            img = preview_mod.instances(
+                name, fixtures[0], seeds=blind._seeds_for(rnd, want) or (21, 22, 23),
+                voice=spec.get("voice") or rnd.voice_name() or None)
+        except Exception as e:                   # noqa: BLE001 -- reported, not raised
+            failed[name] = f"{type(e).__name__}: {e}"
+            continue
+        p = os.path.join(out_dir, f"{name}.png")
+        cv2.imwrite(p, img[:, :, ::-1])
+        sheets[name] = {"path": p, "shape": list(img.shape),
+                        "fixture": f"{fixtures[0]['round']}/"
+                                   f"{fixtures[0].get('plot') or fixtures[0].get('part')}",
+                        "seconds": round(time.perf_counter() - t0, 2)}
+    return {"sheets": sheets, "failed": failed}
+
+
 def stage_render(rnd: Round, be, results: dict) -> dict:
     """The round's shot list. Needs Chunky; needs a server only if the world on disk
     is stale, which is what `--no-server` in `step4_render` has always meant."""

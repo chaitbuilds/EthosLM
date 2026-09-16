@@ -278,10 +278,35 @@ def fittings_for(kind: str) -> str:
     return ""
 
 
+def _colour_note(material: str) -> str:
+    """` (mid warm grey)` for a material the colour table knows, and nothing for one it
+        does not. v2, A7.
+
+        The card has always named the materials and never said what colour they are, so
+        every pass that reads it -- a builder, a type's author, the judge's brief -- has had
+        to know Minecraft's block list by heart. `block_colour` has had the answer all
+        along. A family with no reading is named **without** a colour rather than with a
+        guessed one, which is the rule the family list already follows: a wrong colour is
+        worse than none, and magenta is what "nobody has met this block" looks like.
+        
+    """
+    from .preview import UNKNOWN, block_colour
+    try:
+        from .pipeline.stages_plan import colour_of
+        from .prims import solid
+        block = solid(material)
+    except Exception:                            # noqa: BLE001 -- name it without one
+        return ""
+    if block_colour(block) == UNKNOWN:
+        return ""
+    return f" ({colour_of(block)})"
+
+
 def voice_card(name: str, site_surface: dict | None = None) -> str:
     """The settlement's voice, as the text every pass reads."""
     v = VOICES[name]
-    pal = "\n".join(f"    {k:9} {mat}" for k, mat in v["palette"].items())
+    pal = "\n".join(f"    {k:9} {mat}{_colour_note(mat)}"
+                    for k, mat in v["palette"].items())
     ground = ""
     if site_surface:
         # The surface census samples the top block of a column, which in woodland is a
