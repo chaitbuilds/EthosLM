@@ -1,6 +1,21 @@
 {
  "method": "Recorded site.json bounds, plus a conservative origin-build reservation; a 64-block\nmargin keeps a new place away from their edges. The origin reservation is a policy\nbound, not a measured building footprint. A round that writes a place into the world\nadds its written region here before the next search runs.",
+ "released_method": "A reservation is for ground a place is *standing* on. A write that has been undone -- the world folder restored from the snapshot the round took before it wrote -- leaves no place there, so its row moves here rather than being deleted: the record of what stood, and the snapshot the world was put back from. `groundread.excluded` reads `sites` only, so released ground is searchable again; the row stays so that a round's write record still has something answering for it.",
  "margin": 64,
+ "released": [
+  {
+   "name": "occupancy",
+   "rect": [
+    -6168,
+    488,
+    -5353,
+    1303
+   ],
+   "source": "out/occupancy/round.json results.write.region.",
+   "restored_from": "occupancy.before-write",
+   "why": "The only square within any search radius that meets every need of a 768-footprint city at zero excess on every class, and the last city stands on it. The world folder was restored from the snapshot that round took before it wrote, so the ground is the plain the search read in the first place; the 8.8M cells are gone from the save and the round's caches, frames and readout are untouched on disk."
+  }
+ ],
  "sites": [
   {
    "name": "origin_builds",
@@ -150,16 +165,6 @@
     -2281
    ],
    "source": "it is the demo"
-  },
-  {
-   "name": "occupancy",
-   "rect": [
-    -6168,
-    488,
-    -5353,
-    1303
-   ],
-   "source": "out/occupancy/round.json results.write.region."
   }
  ]
 }

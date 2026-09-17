@@ -74,8 +74,10 @@ SENTENCES = {
                       "relation": "throughout", "count": 1, "structures": 8,
                       "notes": "the houses, and there is nothing else a hamlet is"}],
                  "voice": None},
-        "expect": {"structures": 8, "size_band": [5, 12], "walls": 0,
-                   "scaled": False}},
+        # the craft round (E1) re-expresses every kind's band at the fabric the library
+        # actually lays, so a hamlet declaring eight is brought up into its own band the
+        # same way an out-of-band ask has always been; `scaled` says so
+        "expect": {"band_of": "hamlet", "walls": 0, "scaled": None}},
     "walled_town": {
         "sentence": ("Build a walled town of about sixty houses with a market square "
                      "and a keep."),
@@ -117,8 +119,11 @@ SENTENCES = {
                       "relation": "concentric", "count": 3, "structures": 1200,
                       "notes": "districts by ring: the inner, middle and outer rings"}],
                  "voice": None},
-        "expect": {"kind": "city", "rings": 3, "palace": 1, "scaled": True,
-                   "at_most": 400}},
+        # `scaled` is not asserted: under the craft round's bands a declaration that
+        # used to be over the top of the city band now lands inside it, and what this
+        # case is about is the band being the kind's and the count being in it
+        "expect": {"kind": "city", "rings": 3, "palace": 1, "scaled": None,
+                   "band_of": "city"}},
 }
 
 
@@ -141,9 +146,14 @@ def t_a1_three_sentences_round_trip_through_the_schema_validator():
             assert s["structures"] == e["structures"], (key, s["structures"])
         if "size_band" in e:
             assert s["size_band"] == e["size_band"], (key, s["size_band"])
+        if "band_of" in e:
+            want = list(spec_mod.size_band_for(e["band_of"]))
+            assert s["size_band"] == want, (key, s["size_band"], want)
+            assert want[0] <= s["structures"] <= want[1], (key, s["structures"], want)
         if "walls" in e:
             assert len(spec_mod.walls(s)) == e["walls"], key
-        assert bool(s.get("scaled_from")) == e["scaled"], (key, s.get("scaled_from"))
+        if e.get("scaled") is not None:
+            assert bool(s.get("scaled_from")) == e["scaled"], (key, s.get("scaled_from"))
         # ...and it is idempotent: reading a spec that has already been read gives the
         # same spec, which is what lets `Round.place_spec()` be called by any stage.
         again = spec_mod.read_spec(json.loads(json.dumps(s)))
@@ -318,14 +328,20 @@ def t_setting_a_spec_may_say_what_land_the_place_stands_in_and_the_brief_asks():
 def t_a2_twelve_hundred_structures_scale_to_the_ceiling_with_three_rings_intact():
     """The spec's own case, and the rule it registers: **never by dropping a part.**"""
     doc = json.loads(json.dumps(SENTENCES["ringed_city"]["spec"]))
+    # an ask well over the kind's own ceiling, whatever the ceiling is: the craft round
+    # moved it with the fabric, and what this case is about is what scaling may touch
+    over = 3 * spec_mod.structures_ceiling("city")
+    for p in doc["defining_parts"]:
+        if p.get("family") == "district":
+            p["structures"] = over
     s = spec_mod.read_spec(doc, "Build Ringed City.")
-    assert s["scaled_from"], "1,200 structures were not scaled"
+    assert s["scaled_from"], f"{over} structures were not scaled"
     assert s["structures"] <= spec_mod.structures_ceiling(s["kind"]), s["structures"]
     rings = [p for p in s["defining_parts"] if p["family"] == "wall"][0]
     assert rings["count"] == 3, f"the rings were reduced to {rings['count']}"
     dis = [p for p in s["defining_parts"] if p["family"] == "district"][0]
     assert dis["count"] == 3, f"the districts were reduced to {dis['count']}"
-    assert dis["structures"] < 1200 and dis["structures"] >= 1, dis
+    assert dis["structures"] < over and dis["structures"] >= 1, dis
     # Nothing dropped: every defining part that went in came out.
     before = {p["name"] for p in doc["defining_parts"]}
     after = {p["name"] for p in s["defining_parts"]}
@@ -334,7 +350,7 @@ def t_a2_twelve_hundred_structures_scale_to_the_ceiling_with_three_rings_intact(
     pal = [p for p in s["defining_parts"] if p["family"] == "palace"][0]
     assert pal["structures"] >= 1, pal
     f = s["scaled_from"]
-    assert f["structures"] == 1201 or f["structures"] > 400, f["structures"]
+    assert f["structures"] > spec_mod.structures_ceiling("city"), f["structures"]
     assert f["to"]["structures"] == s["structures"]
     assert s["needs"]["footprint"] <= spec_mod.footprint_ceiling(s["kind"])
     return (f"{f['structures']} -> {s['structures']} by {f['factor']}, three rings and "
@@ -461,9 +477,11 @@ def t_a3_meeting_the_needs_beats_any_score_and_the_escapes_fire_in_order():
     # what the terraforming escape buys.
     assert fs.excess(m(0, 0.0, 0.0, 4), needs,
                      plateau_relief=fs.PLATEAU_RELIEF)["meets"]
-    # A band drop is a real loss and is recorded as one.
+    # A band drop is a real loss and is recorded as one. Read from a sentence with no
+    # number in it, because a count the sentence gave is kept whatever band it lands in
+    # -- "about sixty houses" is sixty -- and what a drop buys is ground.
     s = spec_mod.read_spec(dict(SENTENCES["walled_town"]["spec"]),
-                           SENTENCES["walled_town"]["sentence"])
+                           "Build a walled town with a market square and a keep.")
     lower = fs._drop_band(s)
     assert lower and lower["kind"] == "village", lower and lower["kind"]
     assert lower["needs"]["footprint"] < s["needs"]["footprint"], lower["needs"]

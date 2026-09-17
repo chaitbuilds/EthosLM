@@ -48,10 +48,10 @@
     "sentence": "Build Ringed City.",
     "kind": "city",
     "size_band": [
-     270,
-     900
+     547,
+     1824
     ],
-    "structures": 585,
+    "structures": 1186,
     "explicit_count": null,
     "defining_parts": [
      {
@@ -114,7 +114,7 @@
       "family": "district",
       "relation": "concentric",
       "count": 3,
-      "structures": 585,
+      "structures": 1186,
       "needs": {
        "max_relief": null,
        "plateau": null,
@@ -145,7 +145,7 @@
     },
     "ceiling": {
      "footprint": 768,
-     "structures": 900,
+     "structures": 1824,
      "sessions": 1
     },
     "notes": "\"Build Ringed City.\" is a bare naming with no style word in it, so the voice is left for the ground to decide rather than guessed here. The name is read for its shape only -- three concentric walls with gates, a palace at the centre, and districts banded by ring -- and not for its extent; no size, count of ordinary buildings or footprint is given, and the district structure counts are left at zero for the band and the later planning to fill."
@@ -174,10 +174,10 @@
     "sentence": "Build a hamlet.",
     "kind": "hamlet",
     "size_band": [
-     5,
-     12
+     10,
+     24
     ],
-    "structures": 8,
+    "structures": 17,
     "explicit_count": null,
     "defining_parts": [
      {
@@ -186,7 +186,7 @@
       "family": "district",
       "relation": "centre",
       "count": 1,
-      "structures": 8,
+      "structures": 17,
       "needs": {
        "max_relief": null,
        "plateau": null,
@@ -209,15 +209,15 @@
      "notes": ""
     },
     "needs": {
-     "footprint": 144,
-     "max_relief": 79.2,
+     "footprint": 204,
+     "max_relief": 112.2,
      "max_water_pct": 25.0,
      "max_forest_pct": 60.0,
      "plateau": null
     },
     "ceiling": {
      "footprint": 512,
-     "structures": 400,
+     "structures": 811,
      "sessions": 1
     },
     "notes": "The sentence is bare: it names a kind and no feature, no name, no style. So the reading takes the kind at its word and adds nothing -- no wall, no gate, no square, no hall, since none of those is implied by 'hamlet' and each would be a decision the asker did not make. The one defining part is the cluster of dwellings, because without a group of houses there is no hamlet; its structures count is left at 0 rather than stated, since with a single group that number would be the size of the place, and the size is computed from the kind and not given here. No style is named or implied, so voice is null and the voice is chosen against the ground later."
@@ -401,7 +401,7 @@
     },
     "ceiling": {
      "footprint": 512,
-     "structures": 400,
+     "structures": 811,
      "sessions": 1
     },
     "notes": "Read as a town on the strength of 'town' and of a size that is neither a hamlet nor a city: walled, so a wall and the gates through it; a market square, so an open area at the centre; a keep, so one strong plot beside it; and the sixty houses gathered into the single district that holds them. Nothing in the sentence names or implies a material or a style, so the voice is left for the ground to decide, and no size, footprint or coordinate is offered here."
@@ -409,5 +409,6 @@
    "sentence": "Build a walled town of about sixty houses with a market square and a keep.",
    "true_tokens": 17000
   }
- }
+ },
+ "read_note": "`read` is derived: it is what `spec.read_spec` gives for `answered` under the instruments as they now stand, and it is regenerated whenever one of them moves. The craft round re-expressed every kind's size band at the fabric the library lays (`spec.fabric_ratio`), which moved these three: ringed_city 585->1186 in [270, 900]->[547, 1824]; hamlet 8->17 in [5, 12]->[10, 24]; walled_town 60->60 in [48, 72]->[48, 72]"
 }

@@ -6,6 +6,7 @@ at the transcripts.
 """
 from __future__ import annotations
 
+import hashlib
 import zlib
 
 from gdpc import Block
@@ -209,6 +210,29 @@ _WALL_ALT = "wall_alt"
 #: How many of them. A quarter: enough that a street is not one extrusion, few enough
 #: that the ring still reads as one voice rather than as two.
 WALL_ALT_SHARE = 0.25
+
+#: How far a district's own share may sit from that before the number is a miss. The
+#: craft round, E3, registered before it was read: the choice is a hash of the part's
+#: name and seed, so the share is a **distribution** and not a quota -- `TypeBuilder`
+#: decides one part at a time and never sees the district. A tenth either way over a
+#: street of twenty or more.
+WALL_ALT_TOLERANCE = 0.1
+
+
+def wall_alt_for(name: str, seed) -> bool:
+    """Is this part faced in the voice's second wall material? The craft round, E3.
+
+        **A hash and not a checksum.** This was `zlib.crc32` of `"<name>:<seed>"`, and a
+        compiler's names are `b0_0_00`, `b0_0_01`, `b0_0_02` with seeds 1, 2, 3 -- strings
+        that differ in one character, which crc32 is designed to distinguish and not to
+        scatter. Over a compiled district of 45 houses it faced **17** of them in the second
+        stone, a share of 0.378 against a registered 0.25. `sha256` is what `_seeded` uses
+        for the same reason.
+        
+    """
+    key = f"{name or ''}:{seed or 0}"
+    h = int(hashlib.sha256(key.encode()).hexdigest()[:12], 16) / float(16 ** 12)
+    return h < WALL_ALT_SHARE
 
 
 def _mat_roles(mat) -> dict:
@@ -2004,6 +2028,19 @@ class Builder(Primitives):
     def joinery(mat, kind: str = "door") -> str:
         """The door, fence, trapdoor or gate of a voice. Never refuses. See `joinery()`."""
         return joinery(mat, kind)
+
+    @staticmethod
+    def axial(block: str, axis: str = "y") -> str:
+        """A block laid on an axis, where the game gives that block one. See
+        `prims.axial()`: the registry answers, not the block's name."""
+        from .prims import axial as _axial
+        return _axial(block, axis)
+
+    @staticmethod
+    def foliage(mat: str) -> str:
+        """The leaf of a timber, oak last. See `prims.foliage()`."""
+        from .prims import foliage as _foliage
+        return _foliage(mat)
 
     def _part_ground(self, part: dict, mat) -> str:
         """A ring round the part's own rectangle rather than the rectangle itself: the
@@ -4937,8 +4974,15 @@ class TypeBuilder:
         self.wall_alt = False
         alt = self.voice.get(_WALL_ALT)
         if alt:
-            key = f"{part.get('name') or part.get('label') or ''}:{part.get('seed') or 0}"
-            self.wall_alt = (zlib.crc32(key.encode()) % 1000) < int(WALL_ALT_SHARE * 1000)
+            # **The plan may say, and where it does not the hash does.** The craft
+            # round, E3: `TypeBuilder` sees one part and never the street, so a hash
+            # gives a *distribution* and a compiled district of 45 houses came out at
+            # 0.156 and one of 19 at 0.368 against a registered 0.25. A compiler that
+            # can see the whole street writes the share onto the leaf exactly; anything
+            # standing outside a compiled district keeps the hash.
+            said = part.get(_WALL_ALT)
+            self.wall_alt = (bool(said) if isinstance(said, bool) else wall_alt_for(
+                part.get("name") or part.get("label") or "", part.get("seed")))
             if self.wall_alt:
                 self.voice["wall"] = str(alt)
         self.voice.pop(_WALL_ALT, None)
@@ -5088,6 +5132,19 @@ class TypeBuilder:
     def block(self, mat, kind: str = "full") -> str:
         """`Builder.block()`, the floor's shapes standing in as `_shapeable` says."""
         return self._b.block(self._shapeable(mat, kind, "block"), kind)
+
+    @staticmethod
+    def axial(block: str, axis: str = "y") -> str:
+        """A block laid on an axis, where the game gives that block one. See
+        `prims.axial()`."""
+        from .prims import axial as _axial
+        return _axial(block, axis)
+
+    @staticmethod
+    def foliage(mat: str) -> str:
+        """The leaf of a timber, oak last. See `prims.foliage()`."""
+        from .prims import foliage as _foliage
+        return _foliage(mat)
 
     def _shaped(self, name: str):
         """A Builder method whose material is passed through `_shapeable` first."""

@@ -959,6 +959,11 @@ that holds them is. Each one is:
                    {{"frontage": {frontages}, "block": columns along a street,
                    "lot_depth": columns back from it, "attached": true | false,
                    "courtyard_share": 0..1, "open_share": 0..1,
+                   "variety": 0..1 of the lot's own side -- how far one lot's
+                   size may stray from the next's, so a street is a rhythm and
+                   not a comb, "storeys": [lo, hi] -- the band the buildings on
+                   it take their height from, clamped into what each type
+                   declares, so a run of roofs steps rather than lying flat,
                    "landmarks": [{{"type": a type name, "notes": ...}}]}} -- every
                    field optional (the density word fills the rest); omit the whole
                    object and the district is planned plot by plot instead,
@@ -973,8 +978,15 @@ that holds them is. Each one is:
     that is half the place is half the place, and a `share` of 0.1 makes it a hedge. The
     rings' shares sum to at most 1 and **what is left is the centre's**. The `concentric`
     wall part's `count` is the number of walled rings and is refused if it says otherwise.
-    A ring's `voice` is how a place of one tradition still reads as quarters: the poor
-    ring and the court's ring are not the same colour. For example, a ringed capital: a
+    **Where the rings are classes, each ring carries its own voice**, and no two of them
+    share one: the poor ring and the court's ring are not the same colour, and a place
+    whose rings differ in wealth and not in palette reads from the air as one quarter
+    repeated. The axis runs **from the darkest and plainest at the outside to the
+    brightest and richest at the centre** -- mud and rough stone under dark tile on the
+    edge, dressed stone under a strong roof in the middle, white stone and a gilded roof
+    at the court. Each voice card below carries the colour of every material in it, so
+    choose with your eyes: pick a voice from the list for each ring, or write one, and
+    say in its `blurb` which end of the axis it is. For example, a ringed capital: a
     palace compound at the `centre`; ring 0 the court's quarter, share 0.06, low, not
     walled; ring 1 the merchants', share 0.1, medium; ring 2 the artisans' and the poor,
     share 0.2, dense, walled; ring 3 the farm belt, share 0.6, sparse, rural, walled --
@@ -1171,8 +1183,21 @@ parts.
 def spec_brief(sentence: str, out_path: str) -> str:
     from .. import groundread, spec as spec_mod, styles
     from ..prims import MATERIALS
-    voices = "\n".join(f"  - `{k}` — {v['blurb'].splitlines()[0][:110]}"
-                       for k, v in styles.VOICES.items())
+    # **Every voice with the colour of the three materials a person sees of it**, the
+    # craft round (E2): a call choosing a palette per ring is choosing by colour, and a
+    # blurb alone asks it to know Minecraft's block list by heart. `ceremonial` is said
+    # out loud, because a voice that is a quarter's and not a place's is a candidate for
+    # a ring and never an answer to `voice` at the place level.
+    def _line(k, v):
+        seen = ", ".join(f"{r} {v['palette'][r]}{styles._colour_note(v['palette'][r])}"
+                         for r in ("wall", "roof", "trim") if v["palette"].get(r))
+        return (f"  - `{k}`{' — **ceremonial**, for a ring and not for a whole place'
+                            if v.get('ceremonial') else ''} — "
+                f"{v['blurb'].splitlines()[0][:110]}\n      {seen}; "
+                f"value {v['value']['darkest'] * 100:.0f}-"
+                f"{v['value']['lightest'] * 100:.0f}% of white")
+
+    voices = "\n".join(_line(k, v) for k, v in styles.VOICES.items())
     lines = _family_colours()
     return SPEC_BRIEF.format(
         sentence=sentence.strip(), out=out_path,
@@ -2551,7 +2576,22 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     for c in (place.get("compounds") or []):
         cb = rnd.rel(f"compound_{c['name']}_prompt.md")
         cp = rnd.rel(f"plan.compound.{c['name']}.json")
-        if not os.path.exists(cb):
+        # **An axial compound is laid by the library and no model is asked**, the craft
+        # round (E5), at the same seam a compiled district is read from: a family whose
+        # composition declares an axis is a *sequence* -- the gate, a forecourt, a hall,
+        # an inner court and the greatest hall at the far end -- and an order is not
+        # something a validator can ask for after the fact.
+        if not os.path.exists(cp):
+            cpart = next((d for d in spec_mod.compounds(spec)
+                          if placeplan._answers(c, d)), None)
+            _ct, cdecl = placeplan.compound_types(types, spec, cpart or {})
+            laid, why = placeplan.compound_axial(c, cpart, place, cdecl or decls,
+                                                 spec=spec, seed=1)
+            if laid is not None:
+                json.dump(laid, open(cp, "w"), indent=1)
+                json.dump(why, open(rnd.rel(f"compound_{c['name']}_axial.json"), "w"),
+                          indent=1)
+        if not os.path.exists(cb) and not os.path.exists(cp):
             open(cb, "w").write(placeplan.compound_brief(
                 spec, site, c, place, cp, types, voice, plateau=plateau))
         if not os.path.exists(cp):
@@ -2751,9 +2791,15 @@ def _choose_voice(spec: dict, site: dict, check_types: bool = True) -> str:
                          f"{spec.get('form') or 'any'} builds "
                          f"{', '.join(missing)}: the place cannot be planned until one "
                          f"is written")
-    available = sorted(styles.VOICES)
-    if not available:
+    every = sorted(styles.VOICES)
+    if not every:
         raise ValueError("there are no voices under voices/")
+    # **A ceremonial palette is a candidate and never a default.** The craft round, E2:
+    # a voice may declare itself the palette of a place's richest quarter, and this is
+    # the choice made when nothing said -- a whole place in white stone under a gilded
+    # roof has no centre. A spec call naming one for a ring is answered above, where a
+    # named voice is returned whatever it says about itself.
+    available = [v for v in every if not styles.VOICES[v]["ceremonial"]] or every
     ok = [v for v in available if placeread._palette(v, site)[0]]
     return (ok or available)[0]
 

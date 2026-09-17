@@ -44,7 +44,7 @@ def _deck(b):
 
 def _post(b):
     p = b.block(b.voice["frame"], "post")
-    return f"{p}[axis=y]" if p.endswith(("_log", "_pillar", "_wood")) else p
+    return b.axial(p, "y")
 
 
 def _screen(b):

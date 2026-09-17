@@ -92,14 +92,28 @@ def t_1_a_dense_plot_is_the_smallest_house_the_library_can_build_a_quarter_of():
     assert d["type"], d
     assert d["columns"] == d["plot"] ** 2, d
     assert d["plot"] == d["pad"] + 2 * d["inset"], d
-    # ...and it is what `columns_per_plot` answers for the word, and only for that word.
+    # ...and it is what `columns_per_plot` answers for the word...
     assert spec_mod.columns_per_plot({"density": "dense"}) == d["columns"], d
-    for word in ("sparse", "low", "medium"):
-        want = int(round(spec_mod.COLUMNS_PER_PLOT * spec_mod.DENSITIES[word]))
-        assert spec_mod.columns_per_plot({"density": word}) == want, word
-    assert spec_mod.columns_per_plot({}) == spec_mod.COLUMNS_PER_PLOT
+    # ...and the craft round (E1): it is the **anchor of the whole ladder**, where the
+    # other three words were the village constant times their multiplier. Every word is
+    # that dense lot scaled by `DENSITIES` in area and clamped to a side a plot type of
+    # the role actually declares, so the ladder is monotone and nothing on it is a lot
+    # the library cannot build on.
+    sides = {w: placeplan.admitted_plot_sides(placeplan.DENSITY_ROLE[w])
+             for w in spec_mod.DENSITIES}
+    last = 0
+    for word in ("dense", "medium", "low", "sparse"):
+        lot = placeplan.density_lot(word, placeplan.DENSITY_ROLE[word])
+        assert lot["side"] in sides[word], (word, lot)
+        assert lot["columns"] == spec_mod.columns_per_plot({"density": word}), word
+        want = d["columns"] * spec_mod.DENSITIES[word] / spec_mod.DENSITIES["dense"]
+        assert abs(lot["target_side"] - round(want ** 0.5)) < 1e-9, (word, lot, want)
+        assert lot["columns"] >= last, (word, lot, last)
+        last = lot["columns"]
+    assert spec_mod.columns_per_plot({}) == spec_mod.columns_per_plot({"density":
+                                                                      "medium"})
     # A dense plot is smaller than a medium one, or the word means nothing.
-    assert d["columns"] < spec_mod.COLUMNS_PER_PLOT, d
+    assert d["columns"] < spec_mod.columns_per_plot({"density": "medium"}), d
     was = int(round(spec_mod.COLUMNS_PER_PLOT * spec_mod.DENSITIES["dense"]))
     # ...and it is read off the files: restricted to one type, it is that type's.
     only = placeplan.dense_plot([d["type"]])
@@ -114,10 +128,15 @@ def t_1_the_two_shares_are_one_derivation_and_a_district_can_hold_both():
 
         Registered separately they could not both be met: 0.42 of plots and 0.70 of cover
         for `dense` asks a 300-square district for 400 plots of ten and 168 areas of twelve,
-        which needs 133,602 columns of a rectangle that has 90,000. So `PLOT_CELLS` is
-        registered -- how much of the tiled ground is plots rather than areas, which is what
-        the density word means -- and both shares are arithmetic over it, the library's own
-        plot and area sizes, and the five blocks a lane needs.
+        which needs 133,602 columns of a rectangle that has 90,000.
+
+        **The craft round, E1, re-derives both from the compiler's own fabric.** They were
+        `PLOT_CELLS x tiled(plot side)`, where `tiled` charges a *square* plot a five-block
+        lane on all four sides -- a village of freestanding cottages, and not what any
+        compiled district is. `placeplan.fabric` is the ground a house of that density
+        actually costs: its frontage, its depth, the gap to its flanks and its share of the
+        street round its block, with the open and courtyard blocks the density's own
+        character takes out of the houses.
         
     """
     got = placeplan.occupancy_shares()
@@ -125,18 +144,28 @@ def t_1_the_two_shares_are_one_derivation_and_a_district_can_hold_both():
     said = []
     for w in ("sparse", "low", "medium", "dense"):
         v = got[w]
+        f = v["fabric"]
         # the plots are under what a district may hold in plots...
         assert v["plot_share"] < placeplan.DISTRICT_FILL, (w, v)
-        # ...and the two together are under what the same ground can be tiled to at all
-        assert v["ground_cover"] <= max(v["plot_tiled"], v["area_tiled"]) + 1e-9, (w, v)
-        # ...and the derivation is the one written down
-        want = v["plot_cells"] * v["plot_tiled"]
-        assert abs(v["plot_share"] - want) < 0.001, (w, v)
-        assert abs(v["ground_cover"] - (want + (1 - v["plot_cells"]) * v["area_tiled"])) \
+        # ...and nothing is covered more than the ground there is
+        assert 0 < v["ground_cover"] <= 1.0, (w, v)
+        assert v["plot_share"] <= v["ground_cover"] + 1e-9, (w, v)
+        # ...and the derivation is the one written down: the lot over what one house of
+        # this fabric costs, and one block's lots, courts and open ground over the block
+        # with its share of the streets
+        assert abs(v["plot_share"] - f["lot_columns"] / f["columns_per_structure"]) \
             < 0.001, (w, v)
-        said.append(f"{w} {v['plot_share']:.3f}/{v['ground_cover']:.3f}")
-    # denser is more of the ground in plots and, because a street at a house's scale is
-    # a third of the ground, **less** of it covered
+        assert f["block_columns"] == (f["block"] + f["street"]) \
+            * (f["block_depth"] + f["street"]), (w, f)
+        assert abs(f["columns_per_structure"]
+                   - f["block_columns"] / f["houses_per_block"]) < 0.1, (w, f)
+        assert abs(f["houses_per_block"] - f["lots_per_block"]
+                   * (2 - 2 * f["open_share"] - f["courtyard_share"])) < 1e-9, (w, f)
+        said.append(f"{w} {v['plot_share']:.3f}/{v['ground_cover']:.3f} at "
+                    f"{f['columns_per_structure']:.0f} a house")
+    # denser is less ground a house, which is the whole of what the word means
+    per = {w: got[w]["fabric"]["columns_per_structure"] for w in got}
+    assert per["dense"] < per["medium"] < per["low"] < per["sparse"], per
     assert got["dense"]["plot_cells"] > got["sparse"]["plot_cells"]
     assert got["dense"]["ground_cover"] < got["sparse"]["ground_cover"]
     # ...and the whole point.
@@ -145,15 +174,18 @@ def t_1_the_two_shares_are_one_derivation_and_a_district_can_hold_both():
     # counting each rectangle with the lane it needs round it. This is the check that
     # was missing: two shares that each look reasonable can together ask for half as
     # much ground again as the rectangle has.
-    L = placeplan.PLOT_LANE
+    from ethoslm.district_compile import AREA_GAP
     fits = []
     for w in ("sparse", "low", "medium", "dense"):
         d = {"name": "q", "x0": 0, "z0": 0, "x1": 299, "z1": 299, "structures": 0}
         part = {"density": w}
         d["structures"] = spec_mod.structures_for(300 * 300, part)
         t = placeplan.district_target(d, part)
-        tiled = (t["count"] * (got[w]["plot_side"] + L) ** 2
-                 + t["areas"] * (got[w]["area_side"] + L) ** 2)
+        # each rectangle with the clearance it actually keeps: a lot keeps the fabric's
+        # own gap to its flanks, one piece of open ground keeps AREA_GAP from the next
+        g = got[w]["fabric"]["gap"]
+        tiled = (t["count"] * (got[w]["plot_side"] + g) ** 2
+                 + t["areas"] * (got[w]["area_side"] + AREA_GAP) ** 2)
         assert tiled <= t["columns"], (w, tiled, t["columns"], t["count"], t["areas"])
         fits.append(f"{w} {t['count']}+{t['areas']} in {tiled}/{t['columns']}")
     return ("plot share / ground cover: " + ", ".join(said)
@@ -161,6 +193,51 @@ def t_1_the_two_shares_are_one_derivation_and_a_district_can_hold_both():
             + f"; all under DISTRICT_FILL {placeplan.DISTRICT_FILL:g}; the ground "
               f"round's four rings read plots 0.258/0.179/0.152/0.154 and areas "
               f"0.000/0.003/0.004/0.396")
+
+
+@case
+def t_1_a_density_words_ground_a_house_is_the_fabric_the_compiler_lays():
+    """**The craft round, E1**, and the number `a dense ring is dense` turns on.
+
+        The ceiling a ring is read against was one plot's columns over the share of a
+        district that is plots over `RING_COVERAGE` -- the plot being a square with a lane
+        on four sides -- and it came out at 500 columns a house for `dense`. The last city's
+        dense ring read 451, **under** that ceiling, and every frame of the look shows
+        detached houses on lawns. The ceiling is the compiler's own fabric now, so the
+        number the ring is judged by is the ground the compiler actually spends.
+        
+    """
+    cps = placeplan.columns_per_structure_ceiling()
+    was = {"sparse": 3832, "low": 2044, "medium": 1111, "dense": 500}
+    assert sorted(cps) == sorted(was), cps
+    for w, v in cps.items():
+        # every ceiling is tighter than the one it replaced: no bar is loosened
+        assert v < was[w], (w, v, was[w])
+        f = placeplan.fabric(w, placeplan.DENSITY_ROLE[w])
+        assert abs(v - f["columns_per_structure"] / placeplan.RING_COVERAGE) < 1.0, (w, v)
+    assert cps["dense"] < cps["medium"] < cps["low"] < cps["sparse"], cps
+    # ...and a character that says `attached` is charged its frontage and no gap at all
+    row = placeplan.fabric("dense", "urban", {"attached": True})
+    assert row["attached"] and row["gap"] == 0 and row["type"], row
+    assert row["columns_per_structure"] < cps["dense"] * placeplan.RING_COVERAGE, row
+    # ...and the structures ceiling moved with it, so it does not clip what the fabric
+    # asks for: a city of four rings on 768 at the shares the last one used
+    S = spec_mod.footprint_ceiling("city")
+    shares = {"low": 0.07, "medium": 0.12, "dense": 0.20, "sparse": 0.55}
+    total = sum(int(S * S * sh
+                    / placeplan.fabric(w, placeplan.DENSITY_ROLE[w])
+                    ["columns_per_structure"])
+                for w, sh in shares.items())
+    lo, hi = spec_mod.size_band_for("city")
+    assert total <= spec_mod.structures_ceiling("city"), (total,
+                                                          spec_mod.structures_ceiling("city"))
+    assert lo <= total <= hi, (total, lo, hi)
+    return (f"columns a structure, ceiling: "
+            + ", ".join(f"{w} {cps[w]} (was {was[w]})" for w in
+                        ("dense", "medium", "low", "sparse"))
+            + f"; a row of party walls is {row['columns_per_structure']:.0f}; a city of "
+              f"four rings on {S} asks for {total} against a ceiling of "
+              f"{spec_mod.structures_ceiling('city')} and a band of {lo}-{hi}")
 
 
 @case
@@ -183,7 +260,8 @@ def t_1_a_ring_asks_for_the_count_its_own_ground_says_and_not_the_bands_share():
     for d in place["districts"]:
         part = rings[d["defines"]]
         area = (d["x1"] - d["x0"] + 1) * (d["z1"] - d["z0"] + 1)
-        want = spec_mod.structures_for(area, part)
+        shape = (d["x1"] - d["x0"] + 1, d["z1"] - d["z0"] + 1)
+        want = spec_mod.structures_for(area, part, shape)
         cap = int(area * placeplan.DISTRICT_FILL // spec_mod.columns_per_plot(part))
         assert d["structures"] == min(cap, max(1, want)), (d["name"], d["structures"],
                                                            want, cap)
@@ -205,11 +283,21 @@ def t_1_a_ring_asks_for_the_count_its_own_ground_says_and_not_the_bands_share():
 
 @case
 def t_1_the_structures_ceiling_scales_with_the_footprint_ceiling_by_area():
-    """Two ceilings about how big a place is, and they scale together or they lie."""
-    assert spec_mod.structures_ceiling("town") == spec_mod.CEILING["structures"]
+    """Two ceilings about how big a place is, and they scale together or they lie.
+
+        The craft round, E1, adds the third number in the same statement: the ground one
+        structure takes. `CEILING` is 400 things on 512 square, which is 655 columns a
+        structure, and the compiler lays a medium district at a third of that -- so a
+        ceiling left at the old fabric clips the count the new arithmetic gives.
+        
+    """
+    ratio = spec_mod.fabric_ratio()
+    assert ratio > 1.0, ratio
+    assert spec_mod.structures_ceiling("town") == int(round(
+        spec_mod.CEILING["structures"] * ratio))
     f = spec_mod.footprint_ceiling("city")
     want = int(round(spec_mod.CEILING["structures"] * f * f
-                     / float(spec_mod.CEILING["footprint"] ** 2)))
+                     / float(spec_mod.CEILING["footprint"] ** 2) * ratio))
     assert spec_mod.structures_ceiling("city") == want, want
     assert want > spec_mod.CEILING["structures"], want
     # and a layout that derives more than the ceiling is scaled to it, none to nothing
@@ -224,8 +312,9 @@ def t_1_the_structures_ceiling_scales_with_the_footprint_ceiling_by_area():
     if rec["applied"]:
         assert rec["asked"] > want and 0 < rec["factor"] < 1, rec
     return (f"a city's ground ceiling is {f}x{f} and its structures ceiling {want} "
-            f"against a town's {spec_mod.structures_ceiling('town')}; the layout asked "
-            f"for {rec['asked']} and laid {rec['laid']}"
+            f"against a town's {spec_mod.structures_ceiling('town')}, at a fabric "
+            f"{ratio:.2f}x denser than the one CEILING was registered at; the layout "
+            f"asked for {rec['asked']} and laid {rec['laid']}"
             + (f" scaled by {rec['factor']}" if rec["applied"] else " untouched"))
 
 
@@ -285,7 +374,14 @@ def t_1_a_district_under_its_count_or_its_cover_is_handed_back_with_the_number()
 @case
 def t_1_a_place_whose_ground_is_found_keeps_the_band_as_it_was():
     """The derivation is the designed layout's. A place with no rings is untouched:
-    its planner is handed `spec["structures"]` and that is the band's, as it was."""
+        its planner is handed `spec["structures"]` and that is the band's, as it was.
+
+        The craft round: the band a kind is read at is re-expressed at the fabric the
+        library actually lays (`spec.size_band_for`), which is the same statement as the
+        ground ratio and moves every kind's band, so what this holds is that the band is
+        the **kind's own** and not a rectangle's.
+        
+    """
     import test_rings
     doc = json.loads(json.dumps(test_rings.THREE_RING))
     for p in doc["defining_parts"]:
@@ -295,9 +391,9 @@ def t_1_a_place_whose_ground_is_found_keeps_the_band_as_it_was():
     doc.pop("needs", None)
     spec = spec_mod.read_spec(doc, "Build a town on a plain.")
     lo, hi = spec["size_band"]
-    assert (lo, hi) == spec_mod.SIZE_BANDS["town"], spec["size_band"]
+    assert (lo, hi) == spec_mod.size_band_for("town"), spec["size_band"]
     assert lo <= spec["structures"] <= hi, spec["structures"]
-    assert spec["ceiling"]["structures"] == spec_mod.CEILING["structures"]
+    assert spec["ceiling"]["structures"] == spec_mod.structures_ceiling("town")
     # ...and the place brief quotes the band's number, not a rectangle's
     _place, fails = _layout(spec)
     assert fails and fails[0]["check"] == "rings", fails
@@ -541,7 +637,8 @@ def t_2_a_district_under_its_ground_cover_is_handed_back_with_the_number():
                 i += 1
         return out
 
-    plots = leaves(t["count"], 15, "plot", "p")
+    side = placeplan.occupancy_shares()[part["density"]]["plot_side"]
+    plots = leaves(t["count"], side, "plot", "p")
     bare = placeplan.occupancy_failures(district, plots, part, "urban")
     assert [f["check"] for f in bare] == ["ground_cover"], bare
     assert str(t["min_ground_columns"]) in bare[0]["why"], bare[0]["why"]
@@ -553,7 +650,7 @@ def t_2_a_district_under_its_ground_cover_is_handed_back_with_the_number():
     assert not placeplan.occupancy_failures(district, plots, part, "rural"), \
         placeplan.occupancy_failures(district, plots, part, "rural")
     return (f"a 100x100 medium district with {len(plots)} plots and no areas covers "
-            f"{sum(15 * 15 for _ in plots)} of {t['columns']} and is refused naming "
+            f"{sum(side * side for _ in plots)} of {t['columns']} and is refused naming "
             f"{t['min_ground_columns']}; with 24 areas of 12 it holds; a rural district "
             f"is held to RURAL_COVER {placeplan.RURAL_COVER:g} and not to this")
 
@@ -949,27 +1046,33 @@ def t_4_a_compound_that_does_not_fill_its_rectangle_is_handed_back_with_the_numb
     # ...and a compound small enough that `COMPOUND_MIN_HALLS` is what it holds is asked
     # for the floor composition and **not** for a density's share of cover as well: two
     # numbers about one rectangle that cannot both be met is the thing
-    # `occupancy_shares` exists to stop, and it applies here too.
-    small = dict(comp, x1=comp["x0"] + 63, z1=comp["z0"] + 63)
+    # `occupancy_shares` exists to stop, and it applies here too. the largest compound
+    # the floor is still what it holds, read off the arithmetic rather than written
+    # down, because the lot a density word means is the library's
+    n = max(s for s in range(placeplan.COMPOUND_MIN, 160)
+            if placeplan.compound_target(dict(comp, x1=comp["x0"] + s - 1,
+                                              z1=comp["z0"] + s - 1))["count"]
+            <= placeplan.COMPOUND_MIN_HALLS)
+    small = dict(comp, x1=comp["x0"] + n - 1, z1=comp["z0"] + n - 1)
     st = placeplan.compound_target(small)
     assert st["count"] == placeplan.COMPOUND_MIN_HALLS, st
     sgot = json.loads(json.dumps(got))
     for p in sgot["parts"]:
         for k in ("x1", "z1"):
             if k in p:
-                p[k] = min(p[k], comp["x0"] + 58)
+                p[k] = min(p[k], comp["x0"] + n - 6)
         if p.get("path"):
-            p["path"] = [[min(a, comp["x0"] + 60), min(b, comp["z0"] + 60)]
+            p["path"] = [[min(a, comp["x0"] + n - 4), min(b, comp["z0"] + n - 4)]
                          for a, b in p["path"]]
         if p.get("at"):
-            p["at"] = [min(p["at"][0], comp["x0"] + 60), p["at"][1]]
+            p["at"] = [min(p["at"][0], comp["x0"] + n - 4), p["at"][1]]
     checks = [f["check"] for f in
               placeplan.compound_failures(small, sgot, place, decls, spec=spec)]
     assert "cover" not in checks, checks
     return (f"a 154-square compound drawing 2 halls and 1 court is refused on both: it "
             f"holds {t['count']} halls and covers {t['min_ground_columns']} of "
             f"{t['columns']} columns, and the brief says so before the call is made; "
-            f"a 64-square one holds {st['count']} -- the floor -- and is asked for no "
+            f"a {n}-square one holds {st['count']} -- the floor -- and is asked for no "
             f"cover at all")
 
 
@@ -1007,11 +1110,24 @@ def t_5_the_plateau_bound_reaches_the_call_that_cuts_it():
 
 @case
 def t_5_every_city_this_project_has_written_is_in_the_reservation_ledger():
-    """Found by running it."""
+    """Found by running it.
+
+        A reservation is for ground a place is *standing* on, so a write that has been undone
+        answers for itself from the ledger's `released` list instead -- which has to name the
+        snapshot the world was put back from, or the row is a deletion wearing a record's
+        clothes.
+        
+    """
     import importlib.util
     p = os.path.join(ROOT, "src", "ethoslm", "data", "site-exclusions.json")
     led = json.load(open(p))
     rects = {s["name"]: s["rect"] for s in led["sites"]}
+    released = {s["name"]: s["rect"] for s in led.get("released", [])}
+    for row in led.get("released", []):
+        assert row.get("restored_from") and row.get("why"), \
+            f"released without the snapshot it was restored from: {row.get('name')}"
+        assert row["name"] not in rects, f"both reserved and released: {row['name']}"
+    rects.update(released)
     out = os.path.join(ROOT, "out")
     if not os.path.isdir(out):
         raise Skip("no out/")
@@ -1033,9 +1149,62 @@ def t_5_every_city_this_project_has_written_is_in_the_reservation_ledger():
         if not covered:
             missed.append((name, region, w.get("placed")))
     assert not missed, f"written into the world and not reserved: {missed}"
-    return (f"{len(rects)} reservations; every round in out/ that wrote blocks into the "
+    return (f"{len(rects) - len(released)} reservations and {len(released)} released; "
+            f"every round in out/ that wrote blocks into the "
             f"world -- {sum(1 for n in os.listdir(out) if os.path.exists(os.path.join(out, n, 'round.json')))} "
             f"records read -- lies inside one of them")
+
+
+@case
+def t_craft_e6_every_leaf_the_library_lays_names_a_type_the_validator_admits():
+    """**The craft round, E6**, and the last of the occupancy look's findings: eight leaves
+    of 813 did not stand -- four `keep` plots a composition refused and four that named
+    a type the table does not carry. Both are a model naming a type the level below it
+    will not admit, and both are impossible for a leaf the **library** lays: a compiled
+    district draws from the role's own table and an axial compound from what its
+    composition admits.
+    """
+    import test_compile
+    from ethoslm import district_compile as dc
+    said = []
+    # a compiled district, at every density word and both roles it is drawn for
+    for density, role in (("dense", "urban"), ("medium", "urban"), ("low", "urban"),
+                          ("sparse", "rural")):
+        part = test_compile._part(density=density, role=role)
+        spec = test_compile._spec(part)
+        got, rec, d, place, decls = test_compile._compile(spec, road=False)
+        leaves = test_compile._leaves(got)
+        named = sorted({p.get("type") for p in leaves})
+        assert all(n in decls for n in named), (density, [n for n in named
+                                                          if n not in decls])
+        fails = test_compile._fails(spec, got, d, place, decls)
+        assert not [f for f in fails if f["check"] in ("type", "role", "form")], fails
+        said.append(f"{density} {len(leaves)} leaves of {len(named)} types")
+    # ...and an axial compound, at every family whose composition declares an axis
+    import test_compounds as tm
+    for family in sorted(f for f, row in spec_mod.COMPOSITIONS.items()
+                         if row.get("axis")):
+        part = dict(tm.COMPOSITIONS_FIXTURE.get(
+            "castle" if family == "keep" else "monument", ({}, []))[0],
+            name="great", kind="group", family=family, relation="centre",
+            count=1, structures=3, needs={"plateau": 64})
+        spec = tm._spec_with(part)
+        place = tm._place_for("great")
+        comp = place["compounds"][0]
+        _t, cdecls = placeplan.compound_types(None, spec, part)
+        laid, why = placeplan.compound_axial(comp, part, place, cdecls, spec=spec,
+                                             seed=1)
+        if laid is None:
+            said.append(f"{family}: not laid ({why})")
+            continue
+        named = sorted({p.get("type") for p in laid["parts"]})
+        assert all(n in cdecls for n in named), (family, named, sorted(cdecls))
+        fails = placeplan.compound_failures(comp, laid, place, cdecls, spec=spec)
+        assert not [f for f in fails if f["check"] in ("type", "role", "form")], \
+            (family, fails)
+        said.append(f"{family} {len(laid['parts'])} leaves of {len(named)} types")
+    return ("every leaf the library lays names a type its own level admits, and no "
+            "type, role or form refusal is possible on the fixture: " + "; ".join(said))
 
 
 @case

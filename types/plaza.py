@@ -59,6 +59,13 @@ def _ring(x0, z0, x1, z1):
     return out
 
 
+#: **How far apart the bands of trim in a plaza's floor are**, the craft round (E6).
+#: Every fourth column made a quarter of a paved square the voice's trim, and in a voice
+#: whose trim is red sandstone a plaza the size of nine houses reads from the air as a
+#: red rectangle. A band every eighth is a band.
+BAND_EVERY = 8
+
+
 def _pave(b, x0, z0, x1, z1, y, style, rng):
     """The floor of the plaza: the voice's floor, banded or framed in its trim."""
     floor = b.block(b.voice["floor"])
@@ -68,7 +75,7 @@ def _pave(b, x0, z0, x1, z1, y, style, rng):
     for x in range(x0, x1 + 1):
         for z in range(z0, z1 + 1):
             if style == "banded":
-                block = trim if (x - x0) % 4 == 0 else floor
+                block = trim if (x - x0) % BAND_EVERY == 0 else floor
             elif style == "quartered":
                 block = trim if (x == cx or z == cz) else floor
             else:                                     # framed

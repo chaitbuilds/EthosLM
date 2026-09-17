@@ -215,8 +215,13 @@ def t_2_one_bounded_revision_of_the_characters_or_the_voice_and_then_the_build()
         after = compiled()
         # the spec carries what the principal wrote; each district compiles from it and
         # may lower it again to hold its own count (v2, C5), so what is asserted here is
-        # that the revision reached the districts and moved the fabric
-        assert 1.0 in after["courtyard_share"], after
+        # that the revision reached the districts and moved the fabric ...and under the
+        # craft round's fabric (E1) a district's count is high enough that every one of
+        # them gives some of the share back, so what is held here is that the
+        # principal's number reached the compiler and moved it up, not that any district
+        # kept the whole of it
+        assert max(after["courtyard_share"]) > max(before["courtyard_share"]), \
+            (before, after)
         assert after["courtyard_blocks"] > before["courtyard_blocks"], (before, after)
         assert after["courts"] > before["courts"], (before, after)
         assert rnd.voice_name() == "drystone_and_thatch"
@@ -232,8 +237,10 @@ def t_2_one_bounded_revision_of_the_characters_or_the_voice_and_then_the_build()
         assert res["preview"]["revisions"] == 1
     return (f"planned and compiled in {plan_s:.1f}s; drawn and read in {prev_s:.1f}s; "
             f"the principal asked once with the reading, the characters and the voices; "
-            f"a revision applied in {apply_s:.1f}s -- houses' courtyard share 1.0 over "
-            f"{after['districts']} districts (courtyard blocks "
+            f"a revision applied in {apply_s:.1f}s -- houses' courtyard share 1.0 on "
+            f"the spec and {sorted(after['courtyard_share'])} over "
+            f"{after['districts']} districts after each held its own count (courtyard "
+            f"blocks "
             f"{before['courtyard_blocks']} -> {after['courtyard_blocks']}, courts "
             f"{before['courts']} -> {after['courts']}), voice {voice0} -> "
             f"drystone_and_thatch; two things it "

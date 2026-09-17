@@ -158,6 +158,14 @@ def _compound(**over):
         {"kind": "plot", "name": "great_hall", "type": "hall", "seed": 6,
          "params": {"dormers": 2, "use": "moot"},
          "x0": 88, "z0": 105, "x1": 105, "z1": 118, "notes": "the great hall"},
+        # the craft round's fabric (E1) asks a 48-square precinct for four halls where
+        # the village constant asked for the floor of two, so the fixture holds four
+        {"kind": "plot", "name": "north_west_hall", "type": "hall", "seed": 7,
+         "params": {"dormers": 1, "use": "moot"},
+         "x0": 72, "z0": 72, "x1": 83, "z1": 83, "notes": "a lesser hall"},
+        {"kind": "area", "name": "east_garden", "type": "garden", "seed": 8,
+         "params": {}, "x0": 107, "z0": 72, "x1": 119, "z1": 86,
+         "notes": "the garden east of the court"},
     ]
     got = {"notes": "the palace", "axis": "north", "parts": parts}
     got.update(over)
@@ -224,11 +232,14 @@ def t_m1_a_palace_is_a_compound_and_a_keep_is_a_building_unless_the_spec_says_gr
     doc = json.loads(json.dumps(TOWN_SPEC))
     doc["defining_parts"][0]["kind"] = "group"
     doc["defining_parts"][0]["structures"] = 9
-    doc["defining_parts"][1]["structures"] = 60
+    # a number inside the kind's own band, so what is read here is the compound being
+    # left out of the count and not `read_spec` bringing an out-of-band ask into it
+    n = sum(spec_mod.size_band_for("town")) // 2
+    doc["defining_parts"][1]["structures"] = n
     got = spec_mod.read_spec(doc, SENTENCE)
     houses = next(p for p in got["defining_parts"] if p["name"] == "houses")
-    assert got["structures"] == 60 and houses["structures"] == 60, \
-        (got["structures"], houses["structures"])
+    assert got["structures"] == n and houses["structures"] == n, \
+        (n, got["structures"], houses["structures"])
     p = os.path.join(ROOT, "out", "setting", "place.json")
     note = ""
     if os.path.exists(p):
@@ -403,17 +414,17 @@ def t_m5_a_compound_is_a_quarter_of_its_own_and_its_parts_are_ordinary_leaves():
     spec, decls, place, plan = _assembled()
     parts = pipeline.plan_parts(plan)
     mine = [p for p in parts if p.get("compound") == "palace"]
-    assert len(mine) == 6 and all(p.get("defines") == "palace" for p in mine), \
+    assert len(mine) == 8 and all(p.get("defines") == "palace" for p in mine), \
         [(p["name"], p.get("defines")) for p in mine]
     assert all(p["in"][-1] == "palace" for p in mine)
     assert all(p.get("role") == "civic" for p in mine)
     assert plan["compounds"][0]["name"] == "palace"
-    assert plan["levels"]["compounds"] == {"palace": 6}, plan["levels"]
+    assert plan["levels"]["compounds"] == {"palace": 8}, plan["levels"]
     waves = dict(pipeline.part_waves(parts))
     assert {p["name"] for p in waves["walls"]} == {"palace_wall", "palace_gate"}
-    assert {p["name"] for p in waves["squares"]} == {"great_court"}
+    assert {p["name"] for p in waves["squares"]} == {"great_court", "east_garden"}
     assert {p["name"] for p in waves["palace"]} == {"west_hall", "east_hall",
-                                                     "great_hall"}
+                                                     "great_hall", "north_west_hall"}
     whole = pipeline.plan_failures(
         parts, pipeline.type_declarations(parts),
         ground={p["name"]: {"relief": 2, "water_pct": 0.0, "class": "dry",
@@ -565,12 +576,100 @@ def t_m7_the_sweep_is_a_floor_inside_the_range_a_type_reaches_and_not_a_ceiling(
     # ...and an edge's band is untouched
     erows = [{"size": [w, r], "of": 2, "failed": 0, "first": None}
              for w in tn.EDGE_WIDTHS for r in tn.EDGE_RUNS]
-    assert tn.band("edge", erows)["footprint"] == [1, 4, 3, 128]
+    # the craft round (E4) swept the two edge types over the widths a place may declare
+    # as its wall's mass, so the band an all-passing sweep gives is the widths swept
+    assert tn.band("edge", erows)["footprint"] == [1, 4, max(tn.EDGE_WIDTHS), 128]
     assert 32 in tn.PLOT_SIZES and 48 in tn.AREA_SIZES
     return ("a type clean at 8-12 and 19-28 declares 8-28 except 13-18; the plan "
             "refuses 15x15 and 24x13 by name and admits 24x24; a plot's exception is "
             "said in plots; three malformed declarations are refused; the plot sweep "
             f"reaches {max(tn.PLOT_SIZES)}")
+
+
+@case
+def t_craft_e5_an_axial_compound_is_laid_as_a_sequence_and_the_greatest_hall_is_last():
+    """**The craft round, E5.** A composition says what a great thing *holds* and said
+    nothing about the order, so a palace precinct a quarter of a city wide came out as
+    halls and courts arranged to fit and reads in the ground look as five buildings on a
+    plaza. A family whose composition declares an `axis` is an **approach**, and the
+    library lays it: the gate, a forecourt, the flanking ranges paired across the axis,
+    an inner court, and the greatest hall at the far end.
+    """
+    import cv2
+    from ethoslm import preview
+    assert spec_mod.composition("palace")["axis"] is True
+    assert spec_mod.composition("monument")["axis"] is False
+    spec, decls, place = _spec(), _decls(), _place()
+    vol = _ground()
+    net, nodes = placeplan.plan_arterials(place, decls, _heights(vol), 0, 0)
+    place["arterials"] = placeplan.arterial_record(net, nodes, place)
+    comp = place["compounds"][0]
+    part = spec_mod.compounds(spec)[0]
+    _t, cdecls = placeplan.compound_types(None, spec, part)
+    got, rec = placeplan.compound_axial(comp, part, place, cdecls, spec=spec, seed=1)
+    assert got is not None, rec
+    assert not placeplan.compound_failures(comp, got, place, cdecls, spec=spec)
+
+    # the parts, in order along the axis from the gate
+    def along(p):
+        r = pipeline.part_rect(p)
+        return (r[1] + r[3]) / 2.0            # the road arrives on the north side
+    plots = [p for p in got["parts"] if p["kind"] == "plot"]
+    courts = [p for p in got["parts"] if p["kind"] == "area"]
+    great = next(p for p in plots if p["name"].endswith("_great_hall"))
+    fore = next(p for p in courts if p["name"].endswith("_forecourt"))
+    inner = next(p for p in courts if p["name"].endswith("_inner_court"))
+    assert along(fore) < along(inner) < along(great), \
+        [(p["name"], along(p)) for p in got["parts"] if p.get("x0") is not None]
+    # the greatest hall is the last thing on the axis and the largest inside the wall
+    def area(p):
+        r = pipeline.part_rect(p)
+        return (r[2] - r[0] + 1) * (r[3] - r[1] + 1)
+    assert all(along(p) < along(great) for p in plots if p is not great)
+    assert area(great) == max(area(p) for p in plots), \
+        [(p["name"], area(p)) for p in plots]
+    # the ranges are paired across the axis: for each one there is another at the same
+    # distance from the gate on the other side
+    ranges = [p for p in plots if "_range_" in p["name"]]
+    assert ranges, [p["name"] for p in plots]
+    cx = (comp["x0"] + comp["x1"]) / 2.0
+    for r in ranges:
+        rr = pipeline.part_rect(r)
+        mid = (rr[0] + rr[2]) / 2.0
+        assert any(abs(along(o) - along(r)) <= 2 and (mid - cx) * (
+            ((pipeline.part_rect(o)[0] + pipeline.part_rect(o)[2]) / 2.0) - cx) < 0
+            for o in ranges if o is not r), (r["name"], [x["name"] for x in ranges])
+    # ...and a plan that is a set and not a sequence is refused by name
+    shuffled = json.loads(json.dumps(got))
+    for p in shuffled["parts"]:
+        if p["name"].endswith("_great_hall"):
+            d = p["z1"] - p["z0"]
+            p["z0"], p["z1"] = comp["z0"] + 10, comp["z0"] + 10 + d
+    why = [f["check"] for f in placeplan.compound_failures(comp, shuffled, place,
+                                                           cdecls, spec=spec)]
+    assert "axis" in why, why
+    # a family with no axis is unchanged: the monument fixture is laid by nobody
+    mon = COMPOSITIONS_FIXTURE["monument"][0]
+    none, why2 = placeplan.compound_axial(_place_for("monument")["compounds"][0], mon,
+                                          _place_for("monument"), cdecls,
+                                          spec=_spec_with(mon), seed=1)
+    assert none is None and "no axis" in why2, why2
+    # the place read holds on the assembled plan, and the map is on disk
+    plan = placeplan.assemble(place, {"houses": _district()}, spec, {comp["name"]: got})
+    read = placeread.read(spec, plan, _stood(plan), voice=VOICE, site=SITE,
+                          plateau=dict(PLATEAU, part=part["name"]))
+    bad = [c["clause"] for c in read["clauses"] if not c["holds"]]
+    assert not bad, bad
+    out = os.path.join(ROOT, "out", "craft", "e5")
+    os.makedirs(out, exist_ok=True)
+    cv2.imwrite(os.path.join(out, "axial-compound.png"),
+                preview.plan_map(plan, None, SITE, scale=3)[:, :, ::-1])
+    return (f"the {rec['axis']} gate, then " + " -> ".join(rec["order"])
+            + f"; the greatest hall {rec['great'][0]}x{rec['great'][1]} is last on the "
+              f"axis and the largest of {len(plots)} plots; {len(ranges)} ranges paired "
+              f"across it; a greatest hall moved to the gate end is refused by name; a "
+              f"monument declares no axis and is laid by nobody; the place read holds "
+              f"{len(read['clauses'])} clauses; the map is at out/craft/e5")
 
 
 # ------------------------------------------------------------------ M8. built
@@ -703,7 +802,13 @@ COMPOSITIONS_FIXTURE = {
                  "notes": "the shrine"},
                 {"kind": "plot", "name": "lesser_shrine", "type": "temple", "seed": 5,
                  "params": {}, "x0": 100, "z0": 104, "x1": 115, "z1": 119,
-                 "notes": "a lesser shrine"}]),
+                 "notes": "a lesser shrine"},
+                {"kind": "plot", "name": "west_shrine", "type": "temple", "seed": 6,
+                 "params": {}, "x0": 64, "z0": 104, "x1": 70, "z1": 110,
+                 "notes": "a shrine at the west"},
+                {"kind": "plot", "name": "east_shrine", "type": "temple", "seed": 7,
+                 "params": {}, "x0": 120, "z0": 104, "x1": 126, "z1": 110,
+                 "notes": "a shrine at the east"}]),
     # a castle: a group of the keep family -- the keep inside its curtain wall, a
     # gatehouse on it, and the bailey
     "castle": ({"name": "castle", "kind": "group", "family": "keep",
@@ -715,7 +820,13 @@ COMPOSITIONS_FIXTURE = {
                  "x0": 84, "z0": 72, "x1": 107, "z1": 90, "notes": "the bailey"},
                 {"kind": "plot", "name": "the_keep", "type": "keep", "seed": 4,
                  "params": {}, "x0": 84, "z0": 94, "x1": 107, "z1": 117,
-                 "notes": "the keep"}]),
+                 "notes": "the keep"},
+                {"kind": "plot", "name": "west_tower", "type": "keep", "seed": 5,
+                 "params": {}, "x0": 72, "z0": 96, "x1": 81, "z1": 105,
+                 "notes": "a flanking tower"},
+                {"kind": "plot", "name": "east_tower", "type": "keep", "seed": 6,
+                 "params": {}, "x0": 110, "z0": 96, "x1": 119, "z1": 105,
+                 "notes": "a flanking tower"}]),
 }
 
 

@@ -40,6 +40,9 @@ NEEDS = {
 #: role any voice names and E014 reads material positions, not every string.
 _FLOWERS = ("poppy", "dandelion", "cornflower", "azure_bluet", "oxeye_daisy",
             "allium", "lily_of_the_valley")
+#: The craft round, E6: a hedge's leaf is the **voice's**, matched to its frame timber
+#: by `b.foliage()`, and this is only what a garden falls back to where nothing is
+#: handed it.
 _BUSH = "oak_leaves[persistent=true]"
 
 
@@ -75,11 +78,22 @@ def _paths(x0, z0, x1, z1, layout, cx, cz):
         for (x, z) in _ring(x0 + 1, z0 + 1, x1 - 1, z1 - 1):
             out.add((x, z))
     else:                                            # beds
+        # the craft round (E6): the planted share rises -- a path every seven columns
+        # rather than every five takes the paving from 36% of a garden to 26%
         for x in range(x0, x1 + 1):
             for z in range(z0, z1 + 1):
-                if (x - x0) % 5 == 0 or (z - z0) % 5 == 0:
+                if (x - x0) % 7 == 0 or (z - z0) % 7 == 0:
                     out.add((x, z))
     return out
+
+
+def _worked(b, ground):
+    """The setting's own surface as a path: the game's worked version of it where it has
+    one, and the block itself where it does not. The craft round, E6."""
+    for cand in ("dirt_path",) if str(ground) in ("grass_block", "dirt",
+                                                  "coarse_dirt", "podzol") else ():
+        return cand
+    return b.block(ground)
 
 
 def build(b, part, seed, **params):
@@ -98,7 +112,15 @@ def build(b, part, seed, **params):
         layout = "cross"
 
     ground = b.block(b.voice["ground"])
-    path = b.block(b.voice["floor"])
+    # **A garden's path is the ground worked, not the voice's paving**, the craft round
+    # (E6): a path of the voice's `floor` under a kerb of its `trim` made an area the
+    # size of nine houses a large red rectangle in a voice whose trim is red sandstone,
+    # and from the air the upper ring's gardens read as terracotta. A garden is planted
+    # ground with a way through it; the floor is what a place that **names its own
+    # ground** paves with, and everywhere else it is the setting's own surface, swept.
+    bush = b.foliage(b.voice["frame"]) + "[persistent=true]"
+    made = str(b.voice.get("ground") or "") not in ("", "grass_block")
+    path = b.block(b.voice["floor"]) if made else _worked(b, b.voice["ground"])
     kerb = b.block(b.voice["trim"], "slab")
     b.fill_region(x0, y + 1, z0, x1, y + 4, z1, "air")
 
@@ -134,7 +156,7 @@ def build(b, part, seed, **params):
             continue
         if edge == "hedge":
             b.place_block(x, y, z, ground)
-            b.place_block(x, y + 1, z, _BUSH)
+            b.place_block(x, y + 1, z, bush)
         elif edge == "rail":
             b.place_block(x, y + 1, z, rail)
         else:
@@ -156,7 +178,7 @@ def build(b, part, seed, **params):
             b.place_block(x, y + 1, z, rng.choice(_FLOWERS))
             flowers += 1
         elif min(w, d) >= 9 and i % 23 == 1:
-            b.place_block(x, y + 1, z, _BUSH)
+            b.place_block(x, y + 1, z, bush)
             bushes += 1
 
     # ...and a bench or a lamp on the path, where a person would stop.

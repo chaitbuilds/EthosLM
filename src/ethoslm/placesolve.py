@@ -902,14 +902,23 @@ class Solver:
             if p is None:
                 continue
             area = (r[2] - r[0] + 1) * (r[3] - r[1] + 1)
+            shape = (r[2] - r[0] + 1, r[3] - r[1] + 1)
             per = spec_mod.columns_per_plot(p)
             cap = int(area * DISTRICT_FILL // per)
             rows.append({"label": label, "rect": r, "part": p, "area": area, "per": per,
-                         "cap": cap, "from_ground": min(cap, max(1, spec_mod.structures_for(area, p)))})
+                         "cap": cap,
+                         "from_ground": min(cap, max(1, spec_mod.structures_for(
+                             area, p, shape)))})
         declared = int(self.spec.get("structures") or 0)
         want = declared or sum(row["from_ground"] for row in rows)
+        # **A district is never asked for more than its own ground holds.** The craft
+        # round, E1, found by a case: the cap was `area x DISTRICT_FILL / plot`, a
+        # looser number than `structures_for` and about a different thing, so a spec
+        # whose declared total is above what the ground gives had that total spread over
+        # the sectors anyway -- 51 houses asked of 13,440 columns that hold 41, and the
+        # compiled district stopped the run because it could draw only 27.
         counts = _largest_remainder([row["area"] for row in rows], want,
-                                    caps=[row["cap"] for row in rows])
+                                    caps=[row["from_ground"] for row in rows])
         # **A sector the place cannot ask for `DISTRICT_MIN_STRUCTURES` in is not a
         # district.** v2, C5: a district is a division of the place that holds houses,
         # and the strips cut round a centre leave slivers -- a 35x46 corner beside a
@@ -928,7 +937,7 @@ class Solver:
                 rows = [row for row, n in zip(rows, counts)
                         if n >= DISTRICT_MIN_STRUCTURES]
                 counts = _largest_remainder([row["area"] for row in rows], want,
-                                            caps=[row["cap"] for row in rows])
+                                            caps=[row["from_ground"] for row in rows])
         role_of = {}
         for row, n in zip(rows, counts):
             p = row["part"]

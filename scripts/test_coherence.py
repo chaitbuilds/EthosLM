@@ -222,7 +222,12 @@ class Coherence(unittest.TestCase):
             # Given the host's own save it reads three squares off it instead, scores
             # them, and the synthetic caches under test are never looked at.
             empty = _regions.Regions(os.path.join(d, "no-regions"))
-            fresh = functools.partial(fs.search_fresh, editor=None, radii=(512,),
+            # A radius wide enough that some square of it is outside the reservation
+            # ledger at this spec's footprint: the craft round (E1) re-expressed the
+            # size bands at the fabric the library lays, so the hamlet this case checks
+            # asks for more ground and every square within 512 of the origin is now
+            # reserved. What this case is about is the cache, not the ledger.
+            fresh = functools.partial(fs.search_fresh, editor=None, radii=(1024,),
                                       stride=512, directory=d, regions=empty,
                                       log=lambda *a: None)
             # nothing cached and no session: every square is unread and says so
@@ -244,7 +249,7 @@ class Coherence(unittest.TestCase):
                     canopy=np.zeros((size, size), bool),
                     manmade=np.zeros((size, size), np.int64),
                     occupied=np.full((size, size), 100, np.int64), **extra)
-            for (x, z) in fs.candidates_at(512, size, 512):
+            for (x, z) in fs.candidates_at(1024, size, 512):
                 write(x, z)
 
             one = fresh(s)
@@ -273,7 +278,7 @@ class Coherence(unittest.TestCase):
                           no["top"][0]["excess"]["setting_failures"][0])
             self.assertEqual(no["setting"]["surface"], "green")
             # ...and a square read since carries it, and meets
-            for (x, z) in fs.candidates_at(512, size, 512):
+            for (x, z) in fs.candidates_at(1024, size, 512):
                 write(x, z, surface=True)
             yes = fresh(want)
             self.assertEqual(yes["squares"]["cache"], yes["candidates"])

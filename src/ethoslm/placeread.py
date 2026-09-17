@@ -622,6 +622,12 @@ def _gates_on(wall: dict, parts: list, decls: dict) -> list:
 #: or the natural skin `site()` puts back on a column it worked.
 BUILT_SHARE = 0.9
 
+#: **How many family-bearing cells a part has to lay before its share is a reading.**
+#: The craft round, registered before the number that tests it. A part under this is
+#: `unread` and not `failed`: a garden of worked earth and planting lays almost nothing
+#: the palette can resolve, and one stray fence made it 0% in the voice.
+BUILT_MIN_CELLS = 24
+
 
 def built_palette(voice: str | None, parts: list, stood: dict, built, base) -> dict:
     """What every standing part is **made of**, against the voice it was meant to be in.
@@ -666,7 +672,14 @@ def built_palette(voice: str | None, parts: list, stood: dict, built, base) -> d
             if f:
                 by_fam[f] = by_fam.get(f, 0) + n
         total = sum(by_fam.values())
-        if not total:
+        # **A part with almost nothing the palette can read is unread, not failed.** The
+        # craft round, and the third time this project has had to write the rule
+        # (`Context.ENCLOSED` at 0.85, `walk_fraction`'s seed): a garden is planted
+        # ground, and since E6 its paths are the setting's own worked earth and its
+        # planting the ground's -- none of which belongs to a material family. One stray
+        # fence left it reading `oak x1, 0% in the voice` and failing the clause for
+        # being exactly what a garden should be. A share of one block is not a share.
+        if total < BUILT_MIN_CELLS:
             unread.append(name)
             continue
         mine = families(own)

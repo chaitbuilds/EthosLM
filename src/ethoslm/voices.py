@@ -143,7 +143,7 @@ def validate(voice: dict, where: str = "a voice") -> dict:
     # `stage_place_spec` -> `author` -> validate and was refused on the second pass,
     # naming a field the model had never written. the case is kept.
     unknown = sorted(set(voice) - {"name", "roles", "roof", ROOF_CIVIC, "notes", "value",
-                                   "chimney"})
+                                   "chimney", "ceremonial"})
     if unknown:
         raise VoiceError(f"{where}: no such field as {unknown[0]!r}; a voice has "
                          f"'roles', 'roof', 'notes' and, if it wants them, "
@@ -152,6 +152,15 @@ def validate(voice: dict, where: str = "a voice") -> dict:
     if chimney is not None and not isinstance(chimney, bool):
         raise VoiceError(f"{where}: 'chimney' is true, false, or absent for the place's "
                          f"form to decide, not {chimney!r}")
+    # **A voice may say it is not a whole place's.** The craft round, E2: a palette for
+    # the richest quarter of a place -- white stone, a gilded roof -- is a candidate a
+    # spec call may name for a ring, and is never what the deterministic chooser falls
+    # back to when nothing said (`stages_plan._choose_voice`). A place built end to end
+    # in a ceremonial palette has no centre.
+    ceremonial = voice.get("ceremonial")
+    if ceremonial is not None and not isinstance(ceremonial, bool):
+        raise VoiceError(f"{where}: 'ceremonial' is true, false, or absent, not "
+                         f"{ceremonial!r}")
     roles = voice.get("roles")
     if not isinstance(roles, dict):
         raise VoiceError(f"{where}: 'roles' is an object naming a material for each of "
@@ -229,6 +238,7 @@ def validate(voice: dict, where: str = "a voice") -> dict:
            "roof": out_roof,
            ROOF_CIVIC: out_civic,
            "chimney": chimney,
+           "ceremonial": bool(ceremonial),
            "notes": {k: str(v) for k, v in notes.items() if v}}
     out["value"] = value_range(out["roles"])
     return out

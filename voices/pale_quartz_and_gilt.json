@@ -1,0 +1,52 @@
+{
+ "name": "pale_quartz_and_gilt",
+ "ceremonial": true,
+ "notes": {
+  "blurb": "White quartz under a gilded copper roof, banded in purple: the brightest and richest palette this project has, for the quarter at a place's centre and never for the whole of an ordinary one.",
+  "construction": "Dressed quartz ashlar on a pale diorite footing, birch posts and lintels framing tall openings, purpur string courses at sill and cornice; the second stone is cherry, a rose-tinted wall for the houses between the white ones.",
+  "ground": "Smooth quartz paving, swept and laid flat; the ground of a ceremonial quarter is made rather than planted.",
+  "roofs": "Copper tile over two pitches, steep at the ridge and easing out to an upturned eave, hipped and gabled together at the ends; the civic halls carry the same tile in two tiers.",
+  "signature": "A gilded roof on a white wall with a purple band under the eave, so the richest ring of a place reads from the air as the one bright thing in it."
+ },
+ "roles": {
+  "floor": "smooth_quartz",
+  "footing": "diorite",
+  "frame": "birch",
+  "ground": "smooth_quartz",
+  "roof": "copper",
+  "trim": "purpur",
+  "wall": "quartz",
+  "wall_alt": "cherry"
+ },
+ "roof": {
+  "eave": "upturned",
+  "ends": "irimoya",
+  "profile": [
+   [
+    1,
+    2
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "tiers": 1
+ },
+ "roof_civic": {
+  "eave": "upturned",
+  "ends": "irimoya",
+  "profile": [
+   [
+    1,
+    2
+   ],
+   [
+    2,
+    1
+   ]
+  ],
+  "tiers": 2
+ },
+ "chimney": false
+}

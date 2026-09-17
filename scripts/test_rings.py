@@ -291,10 +291,11 @@ def t_1_districts_that_declare_no_number_share_the_size_by_share_over_density():
         {"name": "east_end", "kind": "group", "family": "quarter", "relation": "quarter",
          "count": 1}, {"name": "west_end", "kind": "group", "family": "quarter",
                        "relation": "quarter", "count": 1}], "voice": None}, "Build a town.")
-    assert [p["structures"] for p in flat["defining_parts"]] == [40, 40], flat
+    half = int(round(sum(spec_mod.size_band_for("town")) / 2)) // 2
+    assert [p["structures"] for p in flat["defining_parts"]] == [half, half], flat
     return (f"{n} structures spread {got} by share over ground per structure; a spec "
             f"that gave numbers keeps their ratios; two bare quarters split a town "
-            f"40/40")
+            f"{half}/{half}")
 
 
 # ------------------------------------------------- phase 2: the arithmetic
@@ -550,7 +551,14 @@ def t_2_the_plan_stage_lays_a_ringed_place_out_and_asks_for_no_place_planner():
         be = pipeline.OfflineBackend(rnd)
         got = stages_plan.stage_plan_levels(rnd, be, {}, s)["plan"]
         assert got["status"] == "needs_model", got
-        assert got["level"].startswith("compound/great_court"), got["level"]
+        # **the compound is laid by the library and no model is asked for it**, the
+        # craft round (E5): a palace's composition declares an axis, so the stage writes
+        # `plan.compound.<name>.json` itself and the next thing it asks for is a
+        # district
+        assert got["level"].startswith("district/"), got["level"]
+        assert os.path.exists(os.path.join(tmp, "plan.compound.great_court.json"))
+        assert os.path.exists(os.path.join(tmp, "compound_great_court_axial.json"))
+        assert not os.path.exists(os.path.join(tmp, "compound_great_court_prompt.md"))
         assert os.path.exists(os.path.join(tmp, "plan.place.json"))
         assert not os.path.exists(os.path.join(tmp, "place_plan_prompt.md"))
         place = json.load(open(os.path.join(tmp, "plan.place.json")))
@@ -558,8 +566,10 @@ def t_2_the_plan_stage_lays_a_ringed_place_out_and_asks_for_no_place_planner():
         log = json.load(open(os.path.join(tmp, "plan_validation.json")))
         first = [a for a in log["attempts"] if a["level"] == "place"][0]
         assert first["failures"] == [] and "arithmetic" in first["checked"], first
-        return (f"the stage wrote {len(place['districts'])} districts and asked next for "
-                f"{got['level']}; no place brief exists")
+        axial = json.load(open(os.path.join(tmp, "compound_great_court_axial.json")))
+        return (f"the stage wrote {len(place['districts'])} districts, laid the compound "
+                f"itself as a sequence ({' -> '.join(axial['order'])}) and asked next "
+                f"for {got['level']}; no place brief and no compound brief exists")
 
 
 # ---------------------------------------------- phase 3: the site and the core
@@ -889,6 +899,131 @@ def t_4_two_districts_in_two_voices_build_in_two_palettes_and_the_read_passes_bo
             f"quarter's two parts fail by name; matches_voice and mixed_voices are gone")
 
 
+#: **The class axis**, the craft round (E2): the darkest and plainest ring on the
+#: outside, the brightest and richest at the centre. Named here outward-in, so the list
+#: is read the way the brief states the rule.
+CLASS_AXIS = ("packed_earth_and_dark_tile", "ochre_stone_green_tile",
+              "pale_quartz_and_gilt")
+
+
+@case
+def t_4_the_rings_are_coloured_by_class_on_one_axis_and_each_builds_in_its_own():
+    """**The craft round, E2.** The last city chose three voices and gave its two upper
+    rings the same one, because nothing ever told the spec call that a ringed place
+    whose rings differ in wealth differs in colour. The brief says it now, the voice
+    list it says it in carries the colour of every material, and the bright end of the
+    axis is a voice on disk -- a candidate a call may name for a ring, never what the
+    deterministic chooser falls back to.
+    """
+    import test_types
+    from ethoslm import prims, styles, voices as voices_mod
+    from ethoslm.observe import Volume
+    from ethoslm.pipeline import stages_plan
+
+    # 1. the brief says it, and says it beside the colours
+    brief = stages_plan.spec_brief("Build a ringed capital.", "/tmp/x.json")
+    assert "each ring carries its own voice" in brief, "the brief does not say it"
+    assert "darkest and plainest at the outside to the" in brief and \
+        "brightest and richest at the centre" in brief, brief[:0]
+    for v in CLASS_AXIS:
+        assert f"`{v}`" in brief, v
+    assert "**ceremonial**, for a ring and not for a whole place" in brief
+    assert "wall quartz (pale grey), roof copper (light red)" in brief, \
+        "the voice list does not carry the colour of what a person sees"
+    assert "% of white" in brief, "the voice list does not carry its value range"
+
+    # 2. the axis is a measurement and not a word: lightest rising inward
+    light = [styles.VOICES[v]["value"]["lightest"] for v in CLASS_AXIS]
+    assert light == sorted(light) and light[0] < light[-1], dict(zip(CLASS_AXIS, light))
+
+    # 3. the new voice validates, is ceremonial, and is never the chooser's default
+    raw = json.load(open(os.path.join(ROOT, "voices", "pale_quartz_and_gilt.json")))
+    ok = voices_mod.validate(raw, "pale_quartz_and_gilt")
+    assert ok["ceremonial"] and voices_mod.validate(ok, "again") == ok, ok
+    site = {"origin": [0, 0], "size": 64, "surface_blocks": {"grass_block": 100}}
+    bare = spec_mod.read_spec({"kind": "town", "defining_parts": [
+        {"name": "houses", "kind": "group", "family": "quarter", "relation": "quarter",
+         "count": 1}], "voice": None}, "Build a town.")
+    assert stages_plan._choose_voice(bare, site) != "pale_quartz_and_gilt"
+    # ...and a call that names it for a ring gets it
+    assert stages_plan._choose_voice(dict(bare, voice="pale_quartz_and_gilt"), site) \
+        == "pale_quartz_and_gilt"
+
+    # 4. each voice **builds**: a real instance of a committed type in each, and every
+    # block it laid that belongs to a family belongs to that voice's own six
+    built_in = {}
+    for v in CLASS_AXIS:
+        got = test_types._stand("townhouse", v, 12)
+        assert got["ok"] and not got["bad"], (v, got["bad"])
+        fams = {f for f in (prims.family(m) for m in
+                            styles.VOICES[v]["palette"].values()) if f}
+        classed = {b: n for b, n in got["blocks"].items() if prims.family(b)}
+        mine = sum(n for b, n in classed.items() if prims.family(b) in fams)
+        share = mine / max(1, sum(classed.values()))
+        assert share >= placeread.BUILT_SHARE, (v, share)
+        built_in[v] = (len(got["blocks"]), round(share, 3))
+    walls = [prims.solid(styles.VOICES[v]["palette"]["wall"]) for v in CLASS_AXIS]
+    assert len(set(walls)) == 3, walls
+
+    # 5. the place read holds on a plan of three rings in three voices
+    spec = spec_mod.read_spec({"kind": "city", "form": "east_asian", "defining_parts": [
+        {"name": "court", "kind": "group", "family": "district", "relation": "concentric",
+         "count": 1, "structures": 2, "ring": 0, "share": 0.2, "walled": False,
+         "voice": CLASS_AXIS[2], "density": "low", "role": "urban"},
+        {"name": "middle", "kind": "group", "family": "district",
+         "relation": "concentric", "count": 1, "structures": 2, "ring": 1, "share": 0.3,
+         "walled": False, "voice": CLASS_AXIS[1], "density": "medium", "role": "urban"},
+        {"name": "outer", "kind": "group", "family": "district", "relation": "concentric",
+         "count": 1, "structures": 2, "ring": 2, "share": 0.4, "walled": False,
+         "voice": CLASS_AXIS[0], "density": "dense", "role": "urban"}],
+        "voice": CLASS_AXIS[1]}, "Build a ringed capital.")
+    place = {"parts": [], "voice": CLASS_AXIS[1], "districts": [
+        {"name": "d0", "x0": 0, "z0": 0, "x1": 60, "z1": 18, "structures": 2,
+         "defines": "court", "voice": CLASS_AXIS[2], "ring": 0},
+        {"name": "d1", "x0": 0, "z0": 22, "x1": 60, "z1": 40, "structures": 2,
+         "defines": "middle", "voice": CLASS_AXIS[1], "ring": 1},
+        {"name": "d2", "x0": 0, "z0": 44, "x1": 60, "z1": 62, "structures": 2,
+         "defines": "outer", "voice": CLASS_AXIS[0], "ring": 2}]}
+    quarters = {}
+    for i, d in enumerate(place["districts"]):
+        quarters[d["name"]] = {"quarters": [{"name": "q", "plots": [
+            {"kind": "plot", "name": f"house_{i}{j}", "type": "townhouse",
+             "seed": 1 + j, "x0": 10 + 20 * j, "z0": d["z0"] + 2,
+             "x1": 24 + 20 * j, "z1": d["z0"] + 16} for j in (0, 1)]}]}
+    plan = placeplan.assemble(place, quarters, spec)
+    parts = pipeline.plan_parts(plan)
+    base_blocks = {(x, 59, z): "stone" for x in range(0, 64) for z in range(0, 64)}
+    built_blocks = dict(base_blocks)
+    for p in parts:
+        mat = prims.solid(styles.VOICES[p.get("voice") or CLASS_AXIS[1]]
+                          ["palette"]["wall"])
+        for x in range(p["x0"], p["x1"] + 1):
+            for z in range(p["z0"], p["z1"] + 1):
+                for y in (60, 61, 62):
+                    built_blocks[(x, y, z)] = mat
+    base = Volume.from_blocks(base_blocks, 0, 50, 0, 64, 24, 64)
+    built = Volume.from_blocks(built_blocks, 0, 50, 0, 64, 24, 64)
+    record = {"waves": [{"wave": "w", "parts": [{"part": p["name"], "stood": True,
+                                                 "status": "built", "blocks": 675}
+                                                for p in parts]}]}
+    got = placeread.read(spec, plan, record, voice=CLASS_AXIS[1], site=site,
+                         built=built, base=base)
+    pal = next(c for c in got["clauses"] if c["clause"] == "palette")
+    assert pal["holds"] and sorted(pal["voices"]) == sorted(CLASS_AXIS), pal
+    b = next(c for c in got["clauses"] if c["clause"] == "palette/built")
+    assert b["holds"] and sorted(b["per_voice"]) == sorted(CLASS_AXIS), b
+    assert b["share_min"] == 1.0, b
+    # ...and three voices standing is what the concentric measure's clause asks for
+    from ethoslm.pipeline import stages_measure
+    assert len(set(CLASS_AXIS)) >= stages_measure.PALETTES_STANDING_MIN, CLASS_AXIS
+    return (f"the brief names the axis and every voice with its colours; lightest "
+            f"{light[0]:.2f} -> {light[-1]:.2f} outward-in; pale_quartz_and_gilt "
+            f"validates, is ceremonial and is never chosen by the ground; a townhouse "
+            f"stands in each of the three at "
+            + ", ".join(f"{v.split('_')[0]} {built_in[v][1]:.0%}" for v in CLASS_AXIS)
+            + f"; six leaves in three voices hold palette and palette/built at 100%")
+
+
 @case
 def t_4_the_great_wall_builds_in_three_faces_and_they_differ():
     import test_types
@@ -898,9 +1033,11 @@ def t_4_the_great_wall_builds_in_three_faces_and_they_differ():
     frame = prims.family(prims.solid(pal["frame"]))
     trim = prims.family(prims.solid(pal["trim"]))
     decl = pipeline.load_type(os.path.join(ROOT, "types", "great_wall.py"))
-    # the plain face on both sides -- as a fourth choice; the three here are the bytes
-    # they were
-    assert list(decl["params"]["face"][1])[:3] == ["framed", "banded", "plain"], \
+    # the plain face on both sides -- as a fourth choice; the craft round (E4) replaced
+    # it with `masonry`, dressed stonework with a plinth, string courses, buttress piers
+    # and a batter, which is what an unbroken wall gets and carries the sparse stairs
+    # `unbroken` carried. The three here are the bytes they were.
+    assert list(decl["params"]["face"][1]) == ["framed", "banded", "plain", "masonry"], \
         decl["params"]["face"]
     got = {}
     for face in ("framed", "banded", "plain"):
@@ -936,17 +1073,163 @@ def t_4_the_great_wall_builds_in_three_faces_and_they_differ():
                                    {"invariants": "dressed ashlar courses"}) == "banded"
     s4 = ring_spec()                         # its wall is "earthen ... monolithic"
     place, fails, decls, site, plateau = _layout(s4)
-    # "unbroken" reaches both faces, so the great wall's is `unbroken` (plain, sparse
-    # stairs) and a `wall` part carries its face by name
+    # "unbroken" reaches both faces, so the great wall's is dressed `masonry` with
+    # sparse stairs and a `wall` part carries its face by name
     faces = {p["params"].get("face") for p in place["parts"]
              if p["kind"] == "edge" and p["type"] == "great_wall"}
-    assert faces == {"unbroken"}, faces
+    assert faces == {"masonry"}, faces
     assert all(p.get("face") == "plain" for p in place["parts"] if p["kind"] == "edge")
     return ("frame blocks framed/banded/plain "
             f"{got['framed']['frame']}/{got['banded']['frame']}/{got['plain']['frame']}, "
             f"trim {got['framed']['trim']}/{got['banded']['trim']}/{got['plain']['trim']} on "
             f"one body of {got['framed']['blocks']} blocks; the default is the grid; "
             f"'earthen' chooses plain")
+
+
+@case
+def t_4_a_wall_carries_the_mass_its_place_declares_and_its_gate_is_framed():
+    """**The craft round, E4.** `great_wall` declared `width` as three and only three,
+    because three is all its sweep had ever tried, so a city's outer wall was forty-
+    eight high and three thick -- a screen. A great wall is an earthwork: wide enough
+    that its crown is a road with a parapet on both edges and its ways up stand in its
+    own thickness. The place says which: a screen, a curtain, a rampart or a levee, from
+    its own words.
+    """
+    import test_types
+    from ethoslm import prims, styles
+    import types as _pytypes
+    gw = pipeline.load_type(os.path.join(ROOT, "types", "great_wall.py"))
+    wl = pipeline.load_type(os.path.join(ROOT, "types", "wall.py"))
+
+    # 1. the band reaches a rampart's, and the bank says the sweep stood it there
+    assert gw["needs"]["footprint"] == (1, 4, 12, 128), gw["needs"]["footprint"]
+    assert wl["needs"]["footprint"] == (1, 4, 12, 128), wl["needs"]["footprint"]
+    bank = json.load(open(os.path.join(ROOT, "rounds", "type-needs.json")))
+    assert bank["swept"]["edge_widths"] == [1, 2, 3, 5, 7, 9, 12], bank["swept"]
+    for n in ("great_wall", "wall"):
+        assert bank["types"][n]["band"]["footprint"] == [1, 4, 12, 128], n
+
+    # 2. the place declares the mass, in its own words, and the layout lays it
+    assert placeplan.WALL_MASSES == {"screen": 3, "curtain": 5, "rampart": 9,
+                                     "levee": 12}
+    assert placeplan.wall_mass_for({"notes": "a curtain wall"}) == "curtain"
+    assert placeplan.wall_mass_for({}, {"invariants": "the largest wall in the world, "
+                                        "unbroken earth and stone"}) == "rampart"
+    assert placeplan.wall_mass_for({"notes": "a levee against the river"}) == "levee"
+    assert placeplan.wall_mass_for({}) == "screen"
+    assert placeplan.wall_mass_for({"mass": "levee"}) == "levee"
+    # the fixture's own wall says nothing about its mass and is a screen, three thick,
+    # as every wall this project has ever built was
+    spec4 = ring_spec()
+    place, fails, decls, site, plateau = _layout(spec4)
+    assert not fails, fails
+    walls = [p for p in place["parts"] if p["kind"] == "edge"]
+    masses = {p["type"]: (p["width"], p.get("mass")) for p in walls}
+    assert masses["great_wall"] == (3, "screen"), masses
+    # ...and the same spec whose wall the sentence calls the largest in the world is a
+    # rampart, and the layout lays nine columns of it
+    heavy = json.loads(json.dumps(spec4))
+    for p in heavy["defining_parts"]:
+        if p.get("family") == "wall":
+            p["notes"] = ("the largest wall in the world, an earthwork of rammed earth "
+                          "and stone round the belt")
+    place_h, fails_h, decls_h, site_h, plateau_h = _layout(
+        spec_mod.read_spec(json.loads(json.dumps(heavy)), heavy["sentence"]))
+    assert not fails_h, fails_h
+    heavy_walls = {p["type"]: (p["width"], p.get("mass")) for p in place_h["parts"]
+                   if p["kind"] == "edge"}
+    assert heavy_walls["great_wall"] == (placeplan.WALL_MASSES["rampart"], "rampart"), \
+        heavy_walls
+    masses = heavy_walls
+
+    # 3. it stands, at every face, at every mass, in two voices
+    said = []
+    for voice in ("ochre_stone_green_tile", "pale_quartz_and_gilt"):
+        for width in (3, 5, 9, 12):
+            for face in list(gw["params"]["face"][1]):
+                r = test_types._stand("great_wall", voice, 40, seed=1,
+                                      params={"height": 40, "width": 3,
+                                              "parapet": "crenellated", "face": face},
+                                      part_over={"width": width})
+                assert r["ok"] and not r["bad"], (voice, width, face, r["bad"])
+        said.append(voice)
+
+    # 4. the crown is a road at `CROWN_ROAD_MIN`: a parapet on **both** edges
+    def _profile(width, face="masonry"):
+        r = test_types._stand("great_wall", "ochre_stone_green_tile", 40, seed=1,
+                              params={"height": 40, "width": 3, "parapet": "crenellated",
+                                      "face": face}, part_over={"width": width})
+        zs = sorted({z for (_x, _y, z) in r["shape"]})
+        top = max(y for (_x, y, _z) in r["shape"])
+        edge = {}
+        for z in (zs[0], zs[-1]):
+            edge[z] = max((y for (_x, y, zz) in r["shape"] if zz == z), default=0)
+        return r, zs, top, edge
+    thin, zs_t, top_t, _e = _profile(3)
+    wide, zs_w, top_w, _e = _profile(9)
+    # the mass is the part's own width and the wall is that thick
+    lanes_t = len({z for (_x, _y, z) in thin["shape"]})
+    lanes_w = len({z for (_x, _y, z) in wide["shape"]})
+    assert lanes_w > lanes_t, (lanes_t, lanes_w)
+    assert placeplan.WALL_MASSES["curtain"] == 5
+
+    # 5. the masonry face is not the plain one: string courses and a plinth in trim and
+    # footing where a plain face has one cornice, and a batter that stops the outer
+    # lanes short of the crown
+    pal = styles.VOICES["pale_quartz_and_gilt"]["palette"]
+    trim = prims.family(prims.solid(pal["trim"]))
+    got = {}
+    for face in ("plain", "masonry"):
+        r = test_types._stand("great_wall", "pale_quartz_and_gilt", 40, seed=1,
+                              params={"height": 40, "width": 3, "parapet": "crenellated",
+                                      "face": face}, part_over={"width": 9})
+        fam = {}
+        for block, n in r["blocks"].items():
+            f = prims.family(block.split("[")[0])
+            fam[f] = fam.get(f, 0) + n
+        tops = {}
+        for (x, y, z) in r["shape"]:
+            tops[z] = max(tops.get(z, 0), y)
+        got[face] = {"trim": fam.get(trim, 0), "tops": tops}
+    # a plain face has its cornice and nothing else; a masonry one has that, a plinth
+    # and a string course every `STRING_EVERY`
+    assert got["masonry"]["trim"] >= 2 * got["plain"]["trim"], \
+        (got["masonry"]["trim"], got["plain"]["trim"])
+    # the batter: the outermost lane of a masonry face stops below the crown, and a
+    # plain one does not
+    m, p_ = got["masonry"]["tops"], got["plain"]["tops"]
+    lower = [z for z in m if m[z] < p_.get(z, 0)]
+    assert len(lower) >= 2, (m, p_)
+    # ...and they are the outer lanes of the wall and not a scatter: the batter steps
+    # the face in from one end
+    assert lower == sorted(m)[:len(lower)] or lower == sorted(m)[-len(lower):], \
+        (lower, sorted(m))
+
+    # 6. the gate's arch is framed
+    from ethoslm import prims as _p
+    frames = {}
+    for voice in ("pale_quartz_and_gilt",):
+        r = test_types._stand("ring_gate", voice, 15, seed=1,
+                              part_over={"edge": {"name": "a_wall",
+                                                  "type": "great_wall",
+                                                  "height": 48, "width": 9}})
+        assert r["ok"] and not r["bad"], r["bad"]
+        fam = {}
+        for block, n in r["blocks"].items():
+            f = _p.family(block.split("[")[0])
+            fam[f] = fam.get(f, 0) + n
+        t = _p.family(_p.solid(styles.VOICES[voice]["palette"]["trim"]))
+        frames[voice] = fam.get(t, 0)
+    assert frames["pale_quartz_and_gilt"] > 0, frames
+    return (f"the band reaches 12 on both edge types and the bank says the sweep stood "
+            f"them there; a place declares its wall's mass in its own words "
+            f"({masses['great_wall'][1]}, {masses['great_wall'][0]} thick); every face "
+            f"at four masses in {len(said)} voices stands clean; a mass of 9 is "
+            f"{lanes_w} lanes against a screen's {lanes_t}; the masonry face carries "
+            f"{got['masonry']['trim']} trim blocks against a plain one's "
+            f"{got['plain']['trim']} and {len(lower)} outer lanes batter in; the "
+            f"gate's arch is "
+            f"framed in {frames['pale_quartz_and_gilt']} trim blocks")
 
 
 @case

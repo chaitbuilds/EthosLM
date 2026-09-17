@@ -159,28 +159,40 @@ def t_a1_a_districts_structures_is_a_share_and_a_count_only_inside_the_band():
     assert sum(groups.values()) == s["structures"], groups
     # The **ratios** are the model's and they survive: six-to-one between the ring it
     # declared at 6 and the ring it declared at 1 is what it actually said, and it is
-    # what comes out.
-    assert groups["middle_ring"] == 6 * groups["inner_ring"], groups
-    assert groups["lower_ring"] == 4 * groups["inner_ring"], groups
+    # what comes out. ...within the one structure the largest-remainder apportionment
+    # may move: the shares are 1:6:4:2 of a total the band gives and the band need not
+    # divide by 13
+    assert abs(groups["middle_ring"] - 6 * groups["inner_ring"]) <= 1, groups
+    assert abs(groups["lower_ring"] - 4 * groups["inner_ring"]) <= 1, groups
     assert min(groups.values()) >= 1, groups
     # A sum **at or above** the floor is a count, and too big a count is the ceiling's
     # job. 1,200 still scales to 400.
     big = json.loads(json.dumps(CITY_SPEC))
+    over = spec_mod.structures_ceiling("city")
     for p in big["defining_parts"]:
         if p["kind"] == "group":
-            p["structures"] = 300
+            p["structures"] = over
     b = spec_mod.read_spec(big, CITY_SENTENCE)
     assert b["scaled_from"], "a count over the ceiling was not scaled"
     assert b["structures"] <= spec_mod.structures_ceiling(b["kind"]), b["structures"]
     # ...and a spec whose groups already sum inside the band is untouched.
     exact = json.loads(json.dumps(CITY_SPEC))
+    lo, hi = spec_mod.size_band_for("city")
+    want = {"inner_ring": 0.1, "middle_ring": 0.3, "lower_ring": 0.5,
+            "agrarian_ring": 0.1}
+    total = int(round((lo + hi) / 2))
+    for p in exact["defining_parts"]:
+        if p["name"] in want:
+            p["structures"] = int(round(want[p["name"]] * total))
+    total = sum(p["structures"] for p in exact["defining_parts"]
+                if p["name"] in want)
     e = spec_mod.read_spec(exact, CITY_SENTENCE)
-    assert e["structures"] == 400 and "scaled_from" not in e, e["structures"]
+    assert e["structures"] == total and "scaled_from" not in e, e["structures"]
     assert {p["name"]: p["structures"] for p in e["defining_parts"]
-            if p["kind"] == "group"} == {"inner_ring": 40, "middle_ring": 120,
-                                         "lower_ring": 200, "agrarian_ring": 40}
+            if p["kind"] == "group"} == {n: int(round(v * int(round((lo + hi) / 2))))
+                                         for n, v in want.items()}
     return (f"shares 1/6/4/2 -> {groups} summing to {s['structures']} in "
-            f"{s['size_band']}; a count of 1,200 still scales to {b['structures']} by "
+            f"{s['size_band']}; a count of {over * 4} still scales to {b['structures']} by "
             f"the ceiling; a sum already in band is untouched at {e['structures']}")
 
 

@@ -875,7 +875,9 @@ def _stand_ring(name, voice, params, *, gates=True, half=30, seed=1, face=None):
 @case
 def t_4_the_great_wall_carries_sparse_stairs_at_its_corners_and_gates_only():
     decl = pipeline.load_type(os.path.join(ROOT, "types", "great_wall.py"))
-    assert list(decl["params"]["face"][1]) == ["framed", "banded", "plain", "unbroken"]
+    # the craft round (E4): `masonry` is what an unbroken wall gets, and `unbroken` --
+    # the plain face on both sides with sparse stairs -- says nothing it does not
+    assert list(decl["params"]["face"][1]) == ["framed", "banded", "plain", "masonry"]
     assert len(pipeline.param_combinations(decl["params"])) <= 27
     out = {}
     for voice in ("ochre_stone_green_tile", "white_render_dark_frame"):
@@ -883,7 +885,7 @@ def t_4_the_great_wall_carries_sparse_stairs_at_its_corners_and_gates_only():
         # columns to belong to, and the ground look read the inner rings' mural stairs
         # as diagonal bracing painted on the wall. `framed` is the default and is
         # `every` as it was.
-        for stairs, face in (("every", "framed"), ("sparse", "unbroken")):
+        for stairs, face in (("every", "framed"), ("sparse", "masonry")):
             got = _stand_ring("great_wall", voice, {"height": 30, "width": 3,
                                                     "parapet": "crenellated",
                                                     "face": face})
@@ -907,7 +909,7 @@ def t_4_the_great_wall_carries_sparse_stairs_at_its_corners_and_gates_only():
             (plain["res"]["stair_blocks"], sparse["res"]["stair_blocks"])
     e, sp = out[("ochre_stone_green_tile", "every")], out[("ochre_stone_green_tile", "sparse")]
     return (f"a closed ring of four sides with one gate: {e['res']['stair_blocks']} ways "
-            f"down on a framed face, {sp['res']['stair_blocks']} on an unbroken and on a "
+            f"down on a framed face, {sp['res']['stair_blocks']} on a masonry one and on a "
             f"plain one (four corners, one gate), in both voices; the default is "
             f"'framed' and 'every' byte for byte")
 
@@ -960,14 +962,14 @@ def t_4_the_layout_chooses_both_faces_from_the_specs_words():
     assert not fails, fails
     walls = [p for p in place["parts"] if p["kind"] == "edge"]
     chosen = {p["type"]: (p["params"].get("face"), p.get("face")) for p in walls}
-    assert chosen.get("great_wall") == ("unbroken", "plain"), chosen
+    assert chosen.get("great_wall") == ("masonry", "plain"), chosen
     for p in walls:
         if p["type"] == "wall":
             assert p.get("face") == "plain" and "face" not in p["params"], p
     s3 = test_rings.three_ring_spec()
     place3, _f, _d, _s, _p = test_rings._layout(s3)
     walls3 = {p["type"]: p["params"].get("face") for p in place3["parts"] if p["kind"] == "edge"}
-    return (f"'unbroken' chooses the unbroken face (plain, sparse stairs) on the great "
+    return (f"'unbroken' chooses the masonry face (dressed, sparse stairs) on the great "
             f"wall and the plain face on the wall part: {chosen}; the three-ring spec's "
             f"walls carry {walls3}")
 

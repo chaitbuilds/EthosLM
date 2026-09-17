@@ -31,9 +31,8 @@ NEEDS = {
 # --- the settlement palette, by role. A gate tower is a form -- a passage, a stair, a
 # chamber over it and a crown -- and it is the same tower in every palette.
 
-def _axial(block, axis):
-    return (f"{block}[axis={axis}]"
-            if block.endswith(("_log", "_pillar", "_wood")) else block)
+def _axial(b, block, axis):
+    return b.axial(block, axis)
 
 
 def _wall(b):
@@ -113,7 +112,7 @@ def _axis_of(facing):
 
 
 def _post(b, axis):
-    return _axial(_frame(b), axis)
+    return _axial(b, _frame(b), axis)
 
 
 def _stair(block, facing, half="bottom"):
@@ -323,7 +322,7 @@ def _bracket(b, x, y, z, out_dir, block=None):
     """A corbel under a jetty or an oriel: the end of a joist, showing.
     A timber bracket, not a tread -- so it is a log, laid on its side."""
     axis = "x" if out_dir in ("east", "west") else "z"
-    b.place_block(x, y, z, _axial(block or _trim(b), axis))
+    b.place_block(x, y, z, _axial(b, block or _trim(b), axis))
 
 
 def _clear(b, F, p):
@@ -540,7 +539,7 @@ def _shell(b, F, p):
                 elif k == p["stage_h"] - 1:
                     ax = band_axis if not end_face else (
                         "z" if band_axis == "x" else "x")
-                    b.place_block(x, y, z, _trim(b) + "[axis=" + ax + "]")
+                    b.place_block(x, y, z, _axial(b, _trim(b), ax))
                 elif k == 1:
                     b.place_block(x, y, z, PANE)
                 else:

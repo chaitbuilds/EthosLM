@@ -244,6 +244,57 @@ def shape(name: str, kind: str = "full") -> str:
         f"shape this family has, or choose the role whose family does")
 
 
+def foliage(mat: str) -> str:
+    """The leaf of a timber, where the game has one, and oak last.
+
+        The craft round, E6, and the same rule `joinery()` runs on: a grove built its canopy
+        out of a module constant (`oak_leaves`), so a belt of orchards in a Japanese voice
+        had dark-oak trunks under oak leaves and every palette this project has read the
+        same green. A tree's leaf is its timber's; a family the game grows no leaf of --
+        stone, a brick -- gets oak, which is the one place a fallback is right, because the
+        choice being made is which tree.
+        
+    """
+    fam = family(mat) or str(mat or "")
+    for cand in (f"{fam}_leaves", f"{fam}_wart_block"):
+        if _has_block("minecraft:" + cand):
+            return cand
+    return "oak_leaves"
+
+
+def axial(block: str, axis: str = "y") -> str:
+    """`block` laid on `axis`, where the game gives that block an axis at all.
+
+        The craft round, E2, and the eleventh time a rule has been in two places. Nine
+        committed types carry a private `_axial` that decides by the block's **name** --
+        `endswith(("_log", "_pillar", "_wood"))` -- and four of them then compose
+        `[axis=...]` at other call sites without going through it. A voice whose trim is
+        `purpur` lays `bare` as `purpur_block`, which is a cube with no axis and no name
+        ending in one of those three, and `purpur_block[axis=z]` is a block state the game
+        does not have: `workshop`'s bay beam and `gate_tower`'s lintel wrote it the day the
+        voice existed and the block registry is what found it.
+
+        So it is the **registry's** answer and not a string test: a block gets its axis
+        where the registry says it has one, keeps any properties it already carries, and is
+        returned untouched otherwise. The same shape as `VEGETATION` containing `grass`, and
+        the same fix -- ask what a thing *is*.
+        
+    """
+    from . import registry
+    if not block:
+        return block
+    name = block.split(":")[-1].split("[")[0]
+    props = registry.load().get(name) or {}
+    if axis not in (props.get("axis") or ()):
+        return block
+    if "[" not in block:
+        return f"{block}[axis={axis}]"
+    head, rest = block.split("[", 1)
+    kept = [p for p in rest[:-1].split(",") if p.strip()
+            and p.split("=", 1)[0].strip() != "axis"]
+    return head + "[" + ",".join(kept + [f"axis={axis}"]) + "]"
+
+
 def registry_version() -> str:
     from . import registry
     return registry.VERSION

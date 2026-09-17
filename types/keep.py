@@ -43,9 +43,8 @@ NEEDS = {
 # form -- a tower, a hall beside it, a stair to the deck and a battlement -- and it is
 # the same keep in ochre stone under green tile as in white render.
 
-def _axial(block, axis):
-    return (f"{block}[axis={axis}]"
-            if block.endswith(("_log", "_pillar", "_wood")) else block)
+def _axial(b, block, axis):
+    return b.axial(block, axis)
 
 
 def _wall(b):
@@ -126,11 +125,11 @@ def _clamp(v, lo, hi):
 
 
 def _log(b, axis):
-    return _axial(_frame(b), axis)
+    return _axial(b, _frame(b), axis)
 
 
 def _trim(b, axis):
-    return _axial(_trim_b(b), axis)
+    return _axial(b, _trim_b(b), axis)
 
 
 def _inner(rect, t):
@@ -667,7 +666,7 @@ def _oriel(b, rect, interior, pad, side, cx, cz, y, top, h, width, t):
     mid = cells[len(cells) // 2]
     for (sx, sz, ox, oz) in cells:
         # the brackets it is carried on
-        b.place_block(ox, y - 1, oz, _trim_b(b) + "[axis=" + axis + "]")
+        b.place_block(ox, y - 1, oz, _axial(b, _trim_b(b), axis))
         b.place_cuboid(ox, y, oz, ox, top, oz, _wall2(b))
     for ys in range(y, top, h):
         for (sx, sz, ox, oz) in cells:
@@ -999,8 +998,8 @@ def build(b, part, seed, **params):
                 cx = base[0] + pvx * k
                 cz = base[1] + pvz * k
                 b.place_cuboid(cx, y, cz, cx, y + 1, cz, "air")
-                b.place_block(cx, y + 2, cz, _trim_b(b) + "[axis=" +
-                              ("x" if dirn in ("east", "west") else "z") + "]")
+                b.place_block(cx, y + 2, cz, _axial(
+                    b, _trim_b(b), "x" if dirn in ("east", "west") else "z"))
             inner = (base[0] + pvx * t, base[1] + pvz * t)
             avoid[s].add(inner)
             nostair[s].add(inner)

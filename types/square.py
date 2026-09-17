@@ -59,7 +59,7 @@ def _panel(b):
 
 def _post(b):
     p = b.block(b.voice["frame"], "post")
-    return f"{p}[axis=y]" if p.endswith(("_log", "_pillar", "_wood")) else p
+    return b.axial(p, "y")
 
 
 def _slab(b):
@@ -72,7 +72,7 @@ def _fence(b):
 
 def _beam(b, axis):
     t = b.block(b.voice["trim"], "bare")
-    return f"{t}[axis={axis}]" if t.endswith(("_log", "_pillar", "_wood")) else t
+    return b.axial(t, axis)
 
 OPP = {"n": "s", "s": "n", "e": "w", "w": "e"}
 FACING = {"n": "north", "s": "south", "e": "east", "w": "west"}

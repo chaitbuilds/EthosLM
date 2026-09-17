@@ -82,7 +82,11 @@ PLOT_SIZES = tuple(range(3, 23)) + (24, 28, 32)
 #: integer to 48 is four times the work for the same answer.
 AREA_SIZES = PLOT_SIZES + (40, 48)
 POINT_SIZES = tuple(range(3, 17))
-EDGE_WIDTHS = (1, 2, 3)
+#: **A wall's mass reaches a rampart's**, the craft round (E4): these were 1, 2 and 3,
+#: so three was all that was ever certified and a city's outer wall was forty-eight high
+#: and three thick -- a screen. The widths a place may declare are
+#: `placeplan.WALL_MASSES`, and the sweep tries them and the ones between.
+EDGE_WIDTHS = (1, 2, 3, 5, 7, 9, 12)
 #: An edge's runs reach a district's scale on purpose.
 EDGE_RUNS = (4, 8, 16, 32, 64, 96, 128)
 

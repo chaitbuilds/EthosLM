@@ -234,6 +234,29 @@ def build(b, part, seed, **params):
             if not is_lane(u, v):
                 put(u, v, HEAD, FOOT_SLAB + "[type=top]")
 
+    # **The arch is framed**, the craft round (E4). Sized from its wall the opening is
+    # eleven wide and seventeen high in a pier of forty-eight, and from the air it still
+    # reads as a dark slit in an otherwise unbroken face, because nothing frames it. A
+    # jamb down each side of the mouth, an arch ring over the head, a relieving course
+    # two above it and the pier stepping back either side of that: the opening reads as
+    # an entrance rather than a hole cut in a cliff.
+    for u in (u0, u1):
+        for v in (pv0 - 1, pv1 + 1):
+            if v0 <= v <= v1 and not is_lane(u, v):
+                box(u, v, F + 1, u, v, HEAD - 1, TRIM)
+        for v in range(pv0 - 1, pv1 + 2):
+            if v0 <= v <= v1 and not is_lane(u, v):
+                put(u, v, HEAD, TRIM)
+        if HEAD + 2 <= DECK - 1:
+            for v in range(pv0 - 2, pv1 + 3):
+                if v0 <= v <= v1 and not is_lane(u, v):
+                    put(u, v, HEAD + 2, TRIM)
+        # the pier's mass stepping back either side of the relieving course
+        if HEAD + 3 <= DECK - 1:
+            for v in (pv0 - 2, pv1 + 2):
+                if v0 <= v <= v1 and not is_lane(u, v):
+                    put(u, v, HEAD + 3, TRIM)
+
     # guard alcoves beside the arch, where a pier is thick enough to hold one; in a
     # tower they are guard rooms at the foot of the base, a person's height and a
     # course, and the mural stair rises out of one of them

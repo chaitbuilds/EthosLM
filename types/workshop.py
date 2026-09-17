@@ -33,9 +33,8 @@ NEEDS = {
 # -- one working floor, a walled yard, a wide cart door -- and it is the same workshop
 # in every palette.
 
-def _axial(block, axis):
-    return (f"{block}[axis={axis}]"
-            if block.endswith(("_log", "_pillar", "_wood")) else block)
+def _axial(b, block, axis):
+    return b.axial(block, axis)
 
 
 def _wallb(b):
@@ -56,11 +55,11 @@ def _wall_faces(b):
 
 
 def _post(b, axis="y"):
-    return _axial(b.block(b.voice["frame"], "post"), axis)
+    return _axial(b, b.block(b.voice["frame"], "post"), axis)
 
 
 def _trim(b, axis="y"):
-    return _axial(b.block(b.voice["trim"], "bare"), axis)
+    return _axial(b, b.block(b.voice["trim"], "bare"), axis)
 
 
 def _foot(b):
@@ -249,7 +248,7 @@ def _hood(b, rng, side, fixed, lo, hi, top, lamp):
     deck = rng.choice([_cap(b), b.block(b.voice["floor"], "slab") + "[type=top]"])
     for a in (lo, hi):
         x, z = _cell(side, fixed, a, 1)
-        b.place_block(x, top - 1, z, beam + "[axis=%s]" % oax)
+        b.place_block(x, top - 1, z, b.axial(beam, oax))
     for a in range(lo, hi + 1):
         x, z = _cell(side, fixed, a, 1)
         b.place_block(x, top, z, deck)

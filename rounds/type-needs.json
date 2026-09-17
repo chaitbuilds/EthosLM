@@ -73,7 +73,11 @@
   "edge_widths": [
    1,
    2,
-   3
+   3,
+   5,
+   7,
+   9,
+   12
   ],
   "edge_runs": [
    4,
@@ -92,7 +96,8 @@
    "flat",
    "slope"
   ],
-  "slope_fall": 8
+  "slope_fall": 8,
+  "edge_widths_note": "The craft round, E4, re-swept the two edge types over the widths a place may declare as its wall's mass (placeplan.WALL_MASSES: 3, 5, 9, 12) and the ones between -- 1, 2, 3, 5, 7, 9, 12 -- at runs 4, 16, 64 and 128, on the plane and on the bank, at every face, parapet and crown at the bottom, the middle and the top of the height range: 1,680 instances of great_wall and 2,520 of wall. Every one of them passes. The sweep found great_wall broken at width 2 under the new `masonry` face -- a buttress pier standing proud of a wall too thin to carry a walk closes a pocket behind the parapet, E003 -- and the type was fixed with the case kept (a pier needs CROWN_ROAD_MIN of mass), so width 2 passes too. The rest of the band -- every run and every plot size of every other type -- is the full sweep's and is unmoved."
  },
  "types": {
   "_area": {
@@ -4137,18 +4142,259 @@
      ],
      "on": [],
      "first": null
+    },
+    {
+     "size": [
+      5,
+      4
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      5,
+      16
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      5,
+      64
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      5,
+      128
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      7,
+      4
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      7,
+      16
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      7,
+      64
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      7,
+      128
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      9,
+      4
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      9,
+      16
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      9,
+      64
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      9,
+      128
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      12,
+      4
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      12,
+      16
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      12,
+      64
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      12,
+      128
+     ],
+     "of": 1680,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
     }
    ],
    "band": {
     "footprint": [
      1,
      4,
-     3,
+     12,
      128
     ],
     "runs": [],
     "except": [],
-    "note": "an edge's pair is (width, run of the longest segment); the band is the widest box every pair in which passed"
+    "note": "an edge's pair is (width, run of the longest segment); the band is the widest box every pair in which passed",
+    "craft_e4": "The craft round, E4, re-swept the two edge types over the widths a place may declare as its wall's mass (placeplan.WALL_MASSES: 3, 5, 9, 12) and the ones between -- 1, 2, 3, 5, 7, 9, 12 -- at runs 4, 16, 64 and 128, on the plane and on the bank, at every face, parapet and crown at the bottom, the middle and the top of the height range: 1,680 instances of great_wall and 2,520 of wall. Every one of them passes. The sweep found great_wall broken at width 2 under the new `masonry` face -- a buttress pier standing proud of a wall too thin to carry a walk closes a pocket behind the parapet, E003 -- and the type was fixed with the case kept (a pier needs CROWN_ROAD_MIN of mass), so width 2 passes too. The rest of the band -- every run and every plot size of every other type -- is the full sweep's and is unmoved."
    }
   },
   "hall": {
@@ -8774,18 +9020,259 @@
      ],
      "on": [],
      "first": null
+    },
+    {
+     "size": [
+      5,
+      4
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      5,
+      16
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      5,
+      64
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      5,
+      128
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      7,
+      4
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      7,
+      16
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      7,
+      64
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      7,
+      128
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      9,
+      4
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      9,
+      16
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      9,
+      64
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      9,
+      128
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      12,
+      4
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      12,
+      16
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      12,
+      64
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
+    },
+    {
+     "size": [
+      12,
+      128
+     ],
+     "of": 2520,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "bank"
+     ],
+     "on": [],
+     "first": null,
+     "swept_by": "the craft round, E4"
     }
    ],
    "band": {
     "footprint": [
      1,
      4,
-     3,
+     12,
      128
     ],
     "runs": [],
     "except": [],
-    "note": "an edge's pair is (width, run of the longest segment); the band is the widest box every pair in which passed"
+    "note": "an edge's pair is (width, run of the longest segment); the band is the widest box every pair in which passed",
+    "craft_e4": "The craft round, E4, re-swept the two edge types over the widths a place may declare as its wall's mass (placeplan.WALL_MASSES: 3, 5, 9, 12) and the ones between -- 1, 2, 3, 5, 7, 9, 12 -- at runs 4, 16, 64 and 128, on the plane and on the bank, at every face, parapet and crown at the bottom, the middle and the top of the height range: 1,680 instances of great_wall and 2,520 of wall. Every one of them passes. The sweep found great_wall broken at width 2 under the new `masonry` face -- a buttress pier standing proud of a wall too thin to carry a walk closes a pocket behind the parapet, E003 -- and the type was fixed with the case kept (a pier needs CROWN_ROAD_MIN of mass), so width 2 passes too. The rest of the band -- every run and every plot size of every other type -- is the full sweep's and is unmoved."
    }
   },
   "workshop": {

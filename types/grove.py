@@ -35,6 +35,10 @@ NEEDS = {
     "clearance": 1,
 }
 
+#: The craft round, E6: the leaf is the **voice's**, matched to its frame timber by
+#: `b.foliage()`, and this is only what a grove falls back to where nothing is handed
+#: it. A belt of orchards in a Japanese voice had dark-oak trunks under oak leaves, and
+#: every palette this project has read the same green.
 _LEAF = "oak_leaves[persistent=true]"
 _UNDER = ("fern", "poppy", "dandelion", "azure_bluet")
 
@@ -81,7 +85,7 @@ def _spots(x0, z0, x1, z1, planting, rng, cx, cz):
     return out
 
 
-def _tree(b, x, z, y, height, trunk, rng):
+def _tree(b, x, z, y, height, trunk, rng, leaf=_LEAF):
     """A trunk with a canopy that touches it everywhere."""
     for i in range(height):
         b.place_block(x, y + 1 + i, z, trunk)
@@ -92,8 +96,8 @@ def _tree(b, x, z, y, height, trunk, rng):
             for dz in range(-r, r + 1):
                 if dy == 0 and dx == 0 and dz == 0:
                     continue
-                b.place_block(x + dx, top + dy, z + dz, _LEAF)
-    b.place_block(x, top + 1, z, _LEAF)
+                b.place_block(x + dx, top + dy, z + dz, leaf)
+    b.place_block(x, top + 1, z, leaf)
 
 
 def build(b, part, seed, **params):
@@ -111,7 +115,8 @@ def build(b, part, seed, **params):
 
     ground = b.block(b.voice["ground"])
     swept = b.block(b.voice["footing"])
-    trunk = b.block(b.voice["frame"])
+    trunk = b.axial(b.block(b.voice["frame"], "post"), "y")
+    leaf = b.foliage(b.voice["frame"]) + "[persistent=true]"
     b.fill_region(x0, y + 1, z0, x1, y + 8, z1, "air")
 
     door = part.get("door")
@@ -136,7 +141,7 @@ def build(b, part, seed, **params):
              if c not in walk]
     planted = 0
     for (tx, tz) in spots:
-        _tree(b, tx, tz, y, rng.randint(*_TRUNK), trunk, rng)
+        _tree(b, tx, tz, y, rng.randint(*_TRUNK), trunk, rng, leaf)
         planted += 1
 
     # the undergrowth, where the floor is turf and nothing stands

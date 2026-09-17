@@ -70,34 +70,94 @@ def _tiled(side: int) -> float:
     return (s * s) / float((s + PLOT_LANE) ** 2)
 
 
+#: Which role's plot types each density word's lot is measured against, where nothing
+#: says. A `sparse` district is farmland and the rest are town quarters; a district that
+#: carries its own role is measured against that and this is only the fallback for the
+#: registered table, which is keyed by the word alone.
+DENSITY_ROLE = {"sparse": "rural", "low": "urban", "medium": "urban", "dense": "urban"}
+
+
 def occupancy_shares() -> dict:
-    """Two numbers per density word, from one registered ratio (`spec.PLOT_CELLS`) and the
-        library's own sizes -- the plot `columns_per_plot` gives, the area `AREA_PLOTS` gives
-        capped at the largest square a committed area type admits, and the five blocks a
-        lane needs between two footprints:
+    """E1).
 
-            plot_share    = PLOT_CELLS x tiled(plot side)
-            ground_cover  = plot_share + (1 - PLOT_CELLS) x tiled(area side)
+        Three numbers per density word, from the lot the committed types declare
+        (`density_lot`) and the ground the compiler lays round it (`fabric`):
 
-        Derived rather than registered because the two cannot be chosen independently and
-        a district drawn to one of them can fail the other: 0.42 of plots and 0.70 of cover
-        for `dense`, each perfectly reasonable on its own, together ask for 133,602 columns
-        of a 90,000-column rectangle.
+            columns_per_plot  the lot itself, `density_lot`'s side squared
+            plot_share        the lots' share of a block and its streets
+            ground_cover      the lots, the courts and the open blocks' share of the same
+
+        What this replaced, and why. The shares were `PLOT_CELLS x tiled(plot side)`, where
+        `tiled` charges a **square** plot a five-block lane on all four sides -- a model of
+        a village of freestanding cottages, and not what any compiled district is. A terrace
+        house on a street needs its frontage, its depth and its share of the street: on the
+        old arithmetic a dense house on a 10-square lot was charged 500 columns of its ring
+        and the last city's dense ring came in **under** that at 451 and reads as detached
+        houses on lawns in every frame of the look.
+
+        `AREA_PLOTS` still says how big one piece of open ground is, capped at the largest
+        square a committed area type admits; `PLOT_CELLS` is still what a spec call is shown
+        as the word's place on the ladder, and is no longer what charges the ground.
+        
     """
     big = largest_area()[0] or 48
     out = {}
-    for word, cells in spec_mod.PLOT_CELLS.items():
-        per = spec_mod.columns_per_plot({"density": word})
-        p = max(1, int(round(per ** 0.5)))
+    for word in spec_mod.PLOT_CELLS:
+        fab = fabric(word, DENSITY_ROLE.get(word))
+        per = int(fab["lot_columns"])
+        p = int(fab["lot"][0])
         a = max(3, min(big, int(round((per * AREA_PLOTS[word]) ** 0.5))))
-        plot_share = cells * _tiled(p)
         out[word] = {
-            "plot_cells": cells, "plot_side": p, "area_side": a,
+            "plot_cells": spec_mod.PLOT_CELLS[word], "plot_side": p, "area_side": a,
             "columns_per_plot": per, "area_columns": a * a,
-            "plot_tiled": round(_tiled(p), 4), "area_tiled": round(_tiled(a), 4),
-            "plot_share": round(plot_share, 4),
-            "ground_cover": round(plot_share + (1.0 - cells) * _tiled(a), 4)}
+            "columns_per_structure": fab["columns_per_structure"],
+            "plot_share": fab["plot_share"], "ground_cover": fab["ground_cover"],
+            "fabric": fab}
     return out
+
+
+def fabric_fit(w: int, d: int, density: str, role: str | None = None,
+               character: dict | None = None) -> int:
+    """**How many structures the compiler's grid fits in a `w` by `d` rectangle.**
+        The craft round, E1, found by a case.
+
+        `spec.structures_for` divides ground by what one house of the fabric costs, which is
+        right for a rectangle big enough to run a grid on and wrong for a strip: a district
+        of 3,640 columns is eleven houses' worth of ground and holds four, because a block
+        with its streets is 1,504 columns of it and the edges are most of the rest. A count
+        about a rectangle has to be about that rectangle's **shape**, and asking a district
+        for a number its own ground cannot lay is a hand-back nobody can answer -- which for
+        a compiled district stops the run, because no model drew it.
+
+        The same runs the compiler lays (`district_compile._runs`), the same lots along
+        them, two rows to a block where it is deep enough for two, less the open blocks and
+        the back rows the courtyard blocks give up.
+        
+    """
+    from . import district_compile as dc
+    f = fabric(density, role, character)
+    U, V = max(int(w), int(d)), min(int(w), int(d))
+    lw, ld = f["lot"]
+    gap, row_gap, street = f["gap"], f["row_gap"], f["street"]
+    cols = dc._runs(0, U - 1, street, f["block"], lw)
+    rows = dc._runs(0, V - 1, street, f["block_depth"], ld)
+    if not cols or not rows:
+        return 0
+    along = [max(0, (b - a + 1 + gap) // (lw + gap)) for a, b in cols]
+    across = [2 if (b - a + 1) >= 2 * ld + row_gap else 1 for a, b in rows]
+    # the lots of each block of the grid, the shortest runs included: the end of a run
+    # is a block one lot long, and counting the grid as `lots x rows` credits it a full
+    # one. Sorted, because the blocks the compiler takes for a landmark and for open
+    # ground are whole blocks and the landmark's is the one nearest the middle.
+    per = sorted((a * b for a in along for b in across), reverse=True)
+    n = len(per)
+    take = int(round(f["open_share"] * n)) + (1 if (character or {}).get("landmarks")
+                                              else 0)
+    per = per[min(take, n):]
+    courts = int(round(f["courtyard_share"] * n))
+    for i in range(min(courts, len(per))):
+        per[i] = per[i] - per[i] // 2
+    return max(0, int(sum(per)))
 
 
 def ground_cover(density: str | None) -> float:
@@ -105,18 +165,16 @@ def ground_cover(density: str | None) -> float:
     return float(occupancy_shares()[density or "medium"]["ground_cover"])
 
 #: **How much ground per standing structure a ring of each density may have**, as a
-#: ceiling the readout reports against. Not a fourth table of taste: it is the
-#: arithmetic above at the **worst coverage a ring is allowed** -- one plot's columns,
-#: over the share of a district that is plots, over `RING_COVERAGE`, which is the least
-#: of an annulus its districts may cover. A ring laid out by `concentric_layout` and
-#: filled to its brief comes in under it by however much better than the floor its
-#: coverage is.
+#: ceiling the readout reports against. Not a fourth table of taste: it is what one
+#: house of that density's own fabric costs -- its frontage, its depth and its share of
+#: the street (`fabric`) -- over `RING_COVERAGE`, which is the least of an annulus its
+#: districts may cover. A ring laid out by `concentric_layout` and filled to its brief
+#: comes in under it by however much better than the floor its coverage is.
 def columns_per_structure_ceiling() -> dict:
     """The ceiling per density word, derived. See `COLUMNS_PER_STRUCTURE_CEILING`."""
-    got = occupancy_shares()
-    return {w: int(round(got[w]["columns_per_plot"]
-                         / (got[w]["plot_share"] * RING_COVERAGE)))
-            for w in got}
+    return {w: int(round(fabric(w, DENSITY_ROLE.get(w))["columns_per_structure"]
+                         / RING_COVERAGE))
+            for w in spec_mod.PLOT_CELLS}
 
 
 #: phase 4 is what makes it true and this is where it is written down. 34% -- and from
@@ -307,6 +365,145 @@ def largest_area(types: list | None = None) -> tuple:
         if clean and max(clean) > best[0]:
             best = (max(clean), name)
     return best
+
+
+def admitted_plot_sides(role: str | None = None) -> list:
+    """Every **plot** side a committed plot type of this role stands on, sorted.
+
+        In plot columns -- the pad plus `site()`'s inset on four sides -- which is the unit
+        a plan is drawn in and the unit `Builder.pad_extent` converts. `role` of `None` is
+        every plot type on disk. The craft round, E1: a lot the library cannot build on is
+        not a lot, and until this the only place on the ladder that was read off the files
+        was its dense end (`dense_plot`).
+        
+    """
+    d = os.path.join(ROOT, "types")
+    out: set = set()
+    i = 2 * Builder.SITE_INSET
+    for f in sorted(os.listdir(d)):
+        name = f[:-3]
+        if not f.endswith(".py") or name.startswith("_"):
+            continue
+        decl = pipeline.load_type(os.path.join(d, f))
+        if decl["kind"] != "plot":
+            continue
+        if role is not None and decl.get("role") != role:
+            continue
+        needs = decl.get("needs") or {}
+        a, b, c, e = needs.get("footprint", (3, 3, 3, 3))
+        ex = set(needs.get("except") or ())
+        for v in range(min(a, b), max(c, e) + 1):
+            if a <= v <= c and b <= v <= e and v not in ex:
+                out.add(v + i)
+    return sorted(out)
+
+
+def density_lot(density: str, role: str | None = None) -> dict:
+    """**The lot one structure of a district of this density stands on**, off the
+        committed types. The craft round, E1.
+
+        `dense_plot()` measured the dense end of this ladder off the files -- the urban plot
+        type whose band tops out soonest, at its top, plus `site()`'s inset on four sides --
+        and the other three words were `spec.COLUMNS_PER_PLOT`, a townhouse's 15x15 written
+        for a village, times `spec.DENSITIES`. One end of the ladder was the
+        library's and the other three were a constant nothing had ever measured.
+
+        The whole ladder is the library's now: the dense lot is the **anchor**, a density
+        word is its place on `spec.DENSITIES` **in area**, and the side that comes out is
+        clamped to one the role's own plot types declare (`admitted_plot_sides`: nearest,
+        the larger on a tie). A word asking for more ground never gets a smaller lot than
+        one asking for less, because `DENSITIES` is monotone and the clamp is nearest.
+        
+    """
+    anchor = dense_plot()
+    base = float(anchor["columns"])
+    dens = spec_mod.DENSITIES
+    want = base * (dens.get(density, 1.0) / dens["dense"])
+    side = max(3, int(round(want ** 0.5)))
+    sides = admitted_plot_sides(role)
+    got = min(sides, key=lambda v: (abs(v - side), -v)) if sides else side
+    return {"density": density, "role": role, "target_side": side, "side": int(got),
+            "columns": int(got) * int(got), "anchor_columns": int(anchor["columns"]),
+            "anchor_type": anchor.get("type"),
+            "why": (f"the dense lot is {anchor.get('plot')} square ({anchor['why']}); "
+                    f"`{density}` is {dens.get(density, 1.0)}/{dens['dense']} of that in "
+                    f"area, which is {side} a side, and the nearest side a "
+                    f"{role or 'committed'} plot type admits is {got}")}
+
+
+def fabric(density: str, role: str | None = None, character: dict | None = None) -> dict:
+    """**What a district of this density is made of, and what one structure of it costs
+        in ground.** The craft round, E1.
+
+        A terrace house on a street needs its frontage, its depth and its share of the
+        street, and nothing else. What charged it before was a **square** plot with a
+        five-block lane on all four sides (`_tiled`) over `spec.PLOT_CELLS`: a dense house
+        on a ten-square lot was charged 500 columns of its ring for 100 columns of plot, and
+        the last city's dense ring came in at 451 a house -- **under** that ceiling -- and
+        reads in every frame as detached houses on lawns.
+
+        This is the compiler's own arithmetic (`ethoslm.district_compile`), which is what
+        actually lays the ground: lots `w` by `ld` along a street, `gap` between flanks,
+        two rows back to back with `row_gap` between their backs, `BLOCK_LOTS` lots to a
+        block, a street of `PLOT_LANE` round every block, and the open and courtyard blocks
+        the density's own character takes out of the houses. One block and its share of the
+        streets round it is `(block + street) x (block_depth + street)`; the houses on it
+        are `lots_per_block x (2 - 2 x open_share - courtyard_share)`, because an open
+        block has none and a courtyard block's back row is the court its front row shares.
+
+        `character` is a district's own where it has one -- a row of party walls is charged
+        its frontage and no gap at all -- and the density's registered default otherwise,
+        which is what `columns_per_structure_ceiling()` is the table of.
+        
+    """
+    from . import district_compile as dc
+    ch = dict(spec_mod.CHARACTER_DEFAULTS[density])
+    for k, v in (character or {}).items():
+        if v is not None and k in ch:
+            ch[k] = v
+    lot = density_lot(density, role)
+    w = ld = int(lot["side"])
+    attached = bool(ch.get("attached"))
+    open_front = ch.get("frontage") == "open"
+    house = None
+    if attached:
+        _t, every = types_card()
+        for n, d in dc.house_types(every, role):
+            if not d.get("attached"):
+                continue
+            got = dc._attached_lot(d, w, ("west", "east"))
+            if got:
+                house, (w, ld) = n, got
+                break
+        attached = house is not None
+    gap = 0 if attached else (PLOT_LANE if open_front else dc.LOT_GAP)
+    row_gap = PLOT_LANE if open_front else dc.LOT_GAP
+    per_block = int(ch.get("block_lots") or dc.BLOCK_LOTS.get(density, 3))
+    block = max(w, per_block * w + (per_block - 1) * gap)
+    depth = 2 * ld + row_gap
+    street = PLOT_LANE
+    total = float((block + street) * (depth + street))
+    op, cs = float(ch.get("open_share") or 0.0), float(ch.get("courtyard_share") or 0.0)
+    houses = per_block * (2.0 - 2.0 * op - cs)
+    per = total / houses if houses > 0 else total
+    lots_area = houses * w * ld
+    court_area = block * ld * cs
+    open_area = block * depth * op
+    return {"density": density, "role": role, "type": house, "attached": attached,
+            "frontage": ch.get("frontage"), "lot": [int(w), int(ld)],
+            "lot_columns": int(w * ld), "gap": int(gap), "row_gap": int(row_gap),
+            "lots_per_block": int(per_block), "block": int(block),
+            "block_depth": int(depth), "street": int(street),
+            "open_share": op, "courtyard_share": cs,
+            "houses_per_block": round(houses, 4),
+            "block_columns": int(total),
+            "columns_per_structure": round(per, 1),
+            "plot_share": round(lots_area / total, 4),
+            "ground_cover": round((lots_area + court_area + open_area) / total, 4),
+            "why": (f"{int(per_block)} lots of {int(w)}x{int(ld)} a side of a block "
+                    f"{int(block)} long and {int(depth)} deep, a street of {street} "
+                    f"round it, {op:g} of the blocks open and {cs:g} courtyard: "
+                    f"{int(total)} columns hold {houses:g} houses")}
 
 
 def _clearances(types: list | None = None) -> tuple:
@@ -855,46 +1052,102 @@ def district_brief(spec: dict, site: dict, district: dict, place: dict,
         structures=district.get("structures", 0), arterial=_arterial_note(place,
                                                                          district),
         role_note=_role_note(role),
-        cover_note=_cover_note(district, role, _district_part(spec, district)),
+        cover_note=_cover_note(district, role, _district_part(spec, district),
+                               place, decls),
         types=table, needs=pipeline.needs_table(decls), out=out_path)
 
 
-def district_target(district: dict, part: dict) -> dict:
-    """What one district is asked for: a count **and** a cover, with the floors."""
+def developable_columns(district: dict, place: dict | None,
+                        decls: dict | None = None) -> int:
+    """How much of a district's rectangle anything can be put on: its columns less the
+        arterial's band and less every standing part's rectangle with the clearance it keeps.
+
+        The craft round, E1, found by a case. A district is asked for a cover, and the cover
+        was over the whole rectangle -- so a road cut corner to corner across one, a band of
+        558 columns, fragmented the grid, took a third of the rectangle out of it, and the
+        district was still held to covering 46% of the whole. A floor asked of ground nobody
+        may build on is a floor about somebody else's decision, and the district is the one
+        that gets handed back for it.
+        
+    """
     x0, x1 = min(district["x0"], district["x1"]), max(district["x0"], district["x1"])
     z0, z1 = min(district["z0"], district["z1"]), max(district["z0"], district["z1"])
     area = (x1 - x0 + 1) * (z1 - z0 + 1)
+    if not place:
+        return area
+    from .district_compile import LOT_GAP
+    gone: set = set()
+    # the road's own cells, the band the compiler dilates them into, and the clearance a
+    # lot has to keep off that band: ground no leaf may stand on
+    k = 1 + LOT_GAP
+    for c in ((place.get("arterials") or {}).get("cells") or []):
+        x, z = int(c[0]), int(c[1])
+        for dx in range(-k, k + 1):
+            for dz in range(-k, k + 1):
+                if x0 <= x + dx <= x1 and z0 <= z + dz <= z1:
+                    gone.add((x + dx, z + dz))
+    every = decls
+    if every is None:
+        try:
+            _t, every = types_card()
+        except Exception:                        # noqa: BLE001 -- no types on disk
+            every = {}
+    for p in (place.get("parts") or []):
+        d = (every or {}).get(p.get("type")) or {}
+        m = int((d.get("needs") or {}).get("clearance", 2)) + 1
+        for (rx0, rz0, rx1, rz1) in pipeline.part_rects(p):
+            for xx in range(max(x0, rx0 - m), min(x1, rx1 + m) + 1):
+                for zz in range(max(z0, rz0 - m), min(z1, rz1 + m) + 1):
+                    gone.add((xx, zz))
+    return max(1, area - len(gone))
+
+
+def district_target(district: dict, part: dict, place: dict | None = None,
+                    decls: dict | None = None) -> dict:
+    """What one district is asked for: a count **and** a cover, with the floors.
+
+        The craft round: the cover is over the ground the district can **develop**
+        (`developable_columns`) and not over its whole rectangle, where the caller knows the
+        place well enough to say. The count is untouched: it is the layout's own ask and the
+        compiler's retry is what answers it.
+        
+    """
+    x0, x1 = min(district["x0"], district["x1"]), max(district["x0"], district["x1"])
+    z0, z1 = min(district["z0"], district["z1"]), max(district["z0"], district["z1"])
+    area = (x1 - x0 + 1) * (z1 - z0 + 1)
+    usable = developable_columns(district, place, decls)
     share = spec_mod.plot_share(part)
     count = int(district.get("structures") or 0)
     density = part.get("density") or "medium"
     per = spec_mod.columns_per_plot(part)
     cover = ground_cover(density)
-    ground_columns = int(math.ceil(cover * area))
-    plot_columns = int(math.ceil(share * area))
+    ground_columns = int(math.ceil(cover * usable))
+    plot_columns = int(math.ceil(share * usable))
     area_columns = max(0, ground_columns - plot_columns)
     area_size = int(occupancy_shares()[density]["area_columns"])
-    return {"columns": area, "density": density,
+    return {"columns": area, "usable_columns": int(usable), "density": density,
             "plot_share": share, "count": count,
             "plot_columns": plot_columns,
             "columns_per_plot": per,
             "min_count": int(math.ceil(DISTRICT_MIN_FRACTION * count)),
-            "min_plot_columns": int(math.ceil(DISTRICT_MIN_FRACTION * share * area)),
+            "min_plot_columns": int(math.ceil(DISTRICT_MIN_FRACTION * share * usable)),
             "ground_cover": cover, "ground_columns": ground_columns,
-            "min_ground_columns": int(math.ceil(DISTRICT_MIN_FRACTION * cover * area)),
+            "min_ground_columns": int(math.ceil(DISTRICT_MIN_FRACTION * cover * usable)),
             "area_columns": area_columns, "area_size": area_size,
             "area_side": int(round(area_size ** 0.5)),
             "areas": max(0, area_columns // area_size),
             "fraction": DISTRICT_MIN_FRACTION}
 
 
-def _cover_note(district: dict, role: str | None, part: dict | None = None) -> str:
+def _cover_note(district: dict, role: str | None, part: dict | None = None,
+                place: dict | None = None, decls: dict | None = None) -> str:
     """What a district is held to: a count and a cover, in columns."""
     x0, x1 = min(district["x0"], district["x1"]), max(district["x0"], district["x1"])
     z0, z1 = min(district["z0"], district["z1"]), max(district["z0"], district["z1"])
     area = (x1 - x0 + 1) * (z1 - z0 + 1)
     out = ""
     if part is not None:
-        t = district_target(district, part)
+        t = district_target(district, part, place, decls)
         out += (
             f"**How full this district is, in two numbers, and it is handed back on "
             f"either.** It is a **{t['density']}** district, and a density is a fact "
@@ -1566,9 +1819,16 @@ def _edge_cells(edge: dict) -> list:
 
 
 def occupancy_failures(district: dict, plots: list, part: dict,
-                       role: str | None = None) -> list:
-    """A district that came back under the count or under the cover it was asked for."""
-    t = district_target(district, part)
+                       role: str | None = None, place: dict | None = None,
+                       decls: dict | None = None) -> list:
+    """A district that came back under the count or under the cover it was asked for.
+
+        The craft round: the cover floor is over the ground the district can develop
+        (`developable_columns`), where the caller passes the place. The road across it is
+        not the district's to cover.
+        
+    """
+    t = district_target(district, part, place, decls)
     if not t["count"]:
         return []
     x0, x1 = min(district["x0"], district["x1"]), max(district["x0"], district["x1"])
@@ -1673,7 +1933,7 @@ def district_failures(district: dict, got: dict, place: dict, decls: dict,
     # own rectangles, clipped to the district, so a field drawn over the edge is not
     # credit.
     if role == "rural" and plots:
-        area = float((x1 - x0 + 1) * (z1 - z0 + 1))
+        area = float(developable_columns(district, place, decls))
         covered = 0
         for p in plots:
             r = pipeline.part_rect(p)
@@ -1694,7 +1954,7 @@ def district_failures(district: dict, got: dict, place: dict, decls: dict,
                         "covered": covered, "columns": int(area),
                         "share": round(share, 3)})
     if part is not None and plots:
-        out += occupancy_failures(district, plots, part, role)
+        out += occupancy_failures(district, plots, part, role, place, decls)
     standing = [{**p, "name": p.get("name"), "in": []}
                 for p in (place.get("parts") or [])]
     out += pipeline.plan_failures(plots + standing, decls, ground=ground, form=form)
@@ -2195,6 +2455,15 @@ def compound_failures(comp: dict, got: dict, place: dict, decls: dict,
              f"thing is a composition, and at this size {t['min_count']} plot(s) is the "
              f"least it can be (the floor for a {t['family']} is {t['floor']} and "
              f"{t['courts']} court(s))")
+    # **An axial compound is a sequence and not a set**, the craft round (E5): a family
+    # whose composition declares an axis is an *approach* -- the gate, a forecourt, a
+    # hall, an inner court and the greatest hall at the far end -- and a plan that holds
+    # the right parts in the wrong order is five buildings on a plaza, which is what the
+    # ground look saw. Refused by name so a compound a model drew is held to it too.
+    if compound_composition(part, spec=spec).get("axis") and halls and courts:
+        why = _axis_failure(comp, place, halls, courts)
+        if why:
+            fail(name, "axis", why)
     # ...and the cover is asked **where the arithmetic asks for more than the floor**.
     # the family's floor is binding on a small rectangle -- two halls and a court is all
     # a 64-square precinct holds at the sizes the types admit -- and asking that
@@ -2259,8 +2528,11 @@ def assemble(place: dict, districts: dict, spec: dict,
     for cn, c in comp_specs.items():
         part = next((d for d in spec_mod.compounds(spec) if _answers(c, d)), None)
         kids = []
+        cvoice = c.get("voice")
         for p in compound_parts((compounds or {}).get(cn) or {}, part, cn, spec):
             p = {k: v for k, v in p.items() if k != "in"}
+            if cvoice and not p.get("voice"):
+                p["voice"] = cvoice
             if p.get("name") in clashes:
                 was, p["name"] = p["name"], f"{cn}_{p['name']}"
                 renamed[p["name"]] = {"was": was, "compound": cn}
@@ -2630,7 +2902,21 @@ CENTRED_TOLERANCE = 4
 
 #: How far inside the site's edge the outermost boundary's wall line runs: the wall's
 #: swept half-width plus the margin `place_failures` needs to see it inside the site.
+#: **Four was a three-thick wall's**, the craft round (E4 and E7): a place now declares
+#: the *mass* its wall carries and a rampart of nine reached a column outside the site,
+#: which `place_failures` refuses by name. `ring_edge_inset()` is the half-width of the
+#: mass the place actually declared plus this margin, so the constant is the margin and
+#: the arithmetic is the wall's.
 RING_EDGE_INSET = 4
+
+
+def ring_edge_inset(wall_part: dict | None = None, spec: dict | None = None,
+                    decl: dict | None = None) -> int:
+    """How far inside the site's edge the outermost wall line runs, for the mass this
+    place's wall actually carries."""
+    mass = wall_width_for(wall_part, spec, decl) if wall_part is not None \
+        else WALL_MASSES["screen"]
+    return int(RING_EDGE_INSET + max(0, (int(mass) - 3 + 1) // 2))
 
 #: The clear ground between two districts, and between a district and a boundary no wall
 #: stands on: the five blocks the circulation pass needs between footprints, and one
@@ -2725,7 +3011,17 @@ def _square_path(cx: int, cz: int, h: int, max_run: int) -> list:
 #: An octagon whose diagonal sides are half the axial ones reads as round from the air
 #: and costs the districts their corner pockets only. Every hand-built copy of the
 #: demo's place on record draws its rings as circles; ours were squares because an
-#: edge's segments ran along x or z.
+#: edge's segments ran along x or z. **A regular octagon is what a round ring should be
+#: and is not what this draws**, the craft round (E4), measured and not delivered. A
+#: regular octagon has its eight sides equal -- `c = 2R / (2 + sqrt(2))`, 0.5858 of the
+#: half-side -- and reads as a curve where a quarter reads as a square with its corners
+#: cut. What stops it is not the wall type: `great_wall` draws the diagonal run at any
+#: depth and its sweep stands it. It is the **districts**, which tile a ring as
+#: rectangles laid in the square annulus and know nothing about the diagonal: at 0.5858
+#: the outermost ring's districts overlap their own wall and the ring falls to 57%
+#: covered against `RING_COVERAGE` 0.6. The number of sides a lattice can carry is
+#: eight; making them equal needs the ring's own tiling to follow the octagon, which is
+#: a layout change and not a constant.
 RING_CHAMFER = 0.25
 
 #: The words in a spec's invariants or a wall part's notes that say the place's rings
@@ -2858,6 +3154,52 @@ WALL_FACE_WORDS = (("plain", ("earth", "rammed", "monolith", "solid", "unbroken"
                    ("banded", ("banded", "coursed", "ashlar", "masonry", "dressed")))
 
 
+#: **The mass a wall carries**, the craft round (E4), registered before the numbers that
+#: test it: the width in columns each word means. `great_wall` declared `width` as three
+#: and only three because three is all its sweep had ever tried, so a city's outer wall
+#: was forty-eight high and three thick -- a screen. What a curtain wall, a rampart and
+#: a levee differ by is their mass, and it is the **place** that says which it has.
+#: screen 3 -- a boundary, not a thing you walk along. curtain 5 --
+#: `great_wall.CROWN_ROAD_MIN`: the crown is a road between two parapets, one on each
+#: edge. rampart 9 -- an earthwork: wide enough that its ways up stand in its own
+#: thickness (`great_wall.STAIR_INSIDE_SPARE`) and its face can be battered. levee 12 --
+#: the greatest mass the sweep certifies, and the widest a ring wall may be before its
+#: own footprint is a district.
+WALL_MASSES = {"screen": 3, "curtain": 5, "rampart": 9, "levee": 12}
+
+#: The words in a wall part's description that choose its mass, in the order they are
+#: tried. The heaviest words first: a rampart described as a great wall is a rampart.
+WALL_MASS_WORDS = (("levee", ("levee", "dyke", "dike", "embankment", "bund")),
+                   ("rampart", ("rampart", "earthwork", "bulwark", "the largest wall",
+                                "greatest wall", "mound", "berm")),
+                   ("curtain", ("curtain", "battlement", "rampart walk", "wall walk",
+                                "walk along", "road along")))
+
+
+def wall_mass_for(part: dict, spec: dict | None = None) -> str:
+    """The mass a ring wall carries, from the words the spec used of it, and `screen`
+    where it used none. A word in the spec and never a place's name."""
+    said = str((part or {}).get("mass") or "").strip().lower()
+    if said in WALL_MASSES:
+        return said
+    text = " ".join([str((part or {}).get("notes") or ""),
+                     str((spec or {}).get("invariants") or "")]).lower()
+    for mass, words in WALL_MASS_WORDS:
+        if any(w in text for w in words):
+            return mass
+    return "screen"
+
+
+def wall_width_for(part: dict, spec: dict | None = None, decl: dict | None = None) -> int:
+    """The mass in columns, held to what the type's own band admits."""
+    want = WALL_MASSES[wall_mass_for(part, spec)]
+    if decl:
+        lo_w, _lo_d, hi_w, _hi_d = (decl.get("needs") or {}).get(
+            "footprint", (1, 1, want, want))
+        want = max(int(lo_w), min(int(hi_w), want))
+    return int(want)
+
+
 def wall_stairs_for(part: dict, spec: dict | None = None) -> str:
     """How often a ring wall carries a way down its inner face, from the spec's words."""
     text = " ".join([str(part.get("notes") or ""),
@@ -2912,6 +3254,16 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         fails.append({"part": name, "check": check, "why": why, **more})
 
     rings = spec_mod.rings(spec)
+    place_voice = voice
+    # **The outermost wall's own mass, before the boundaries are drawn.** The craft
+    # round: a rampart of nine reaches four columns further than a screen of three and
+    # the site's edge does not move.
+    _wall_part = next((p for p in spec.get("defining_parts") or []
+                       if p.get("family") == "wall"), None)
+    edge_inset = ring_edge_inset(_wall_part, spec,
+                                 (decls or {}).get("great_wall")
+                                 or next((d for n, d in sorted((decls or {}).items())
+                                          if d.get("kind") == "edge"), None))
     if not rings:
         fail("place", "rings", "the spec declares no rings; the freehand place planner "
                                "plans this place")
@@ -2944,7 +3296,7 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         want = centre_side
         if spec_mod.compound(core):
             want = max(want, int(compound_ground(spec=spec, site_side=S)["side"]))
-        want = max(COMPOUND_MIN, min(want, S - 2 * RING_EDGE_INSET - 2 * dmin))
+        want = max(COMPOUND_MIN, min(want, S - 2 * edge_inset - 2 * dmin))
         half = want // 2
         comp_rect = (cx - half, cz - half, cx - half + want - 1, cz - half + want - 1)
     comp_half_x = (comp_rect[2] - comp_rect[0]) // 2
@@ -2962,7 +3314,7 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         fail("ring_walls", "type", "no committed edge type of this place's form has a "
                                    "height parameter to build a ring wall with")
         return None, fails
-    h_last = S // 2 - RING_EDGE_INSET
+    h_last = S // 2 - edge_inset
     n = len(rings)
     # the wall at each walled boundary, outermost first, so heights step down inward
     heights: dict = {}
@@ -3079,34 +3431,57 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                                       f"square: {tname} draws no diagonal run")
         if octagon:
             chamfers[k] = max(2, int(round(hs[k] * RING_CHAMFER)))
+        # **The mass the place declared**, the craft round (E4). The part's `width` is
+        # the swept line siting hands the type and is what the wall actually is; the
+        # `width` *parameter* stays at the one value the sweep runs every combination
+        # at.
+        mass_word = wall_mass_for(wall_part, spec) if wall_part is not None else "screen"
+        mass = (wall_width_for(wall_part, spec, tdecl) if wall_part is not None
+                else WALL_MASSES["screen"])
         params = {"height": int(height)}
         if "width" in (tdecl.get("params") or {}):
-            params["width"] = 3
+            params["width"] = int((tdecl["params"]["width"] or ("int", 3, 3))[1])
         face_word = None
         if wall_part is not None:
             face_word = wall_face_for(wall_part, spec)
             if "face" in (tdecl.get("params") or {}):
                 choices = list(tdecl["params"]["face"][1])
-                # `unbroken` is the plain face on both sides.
-                params["face"] = ("unbroken" if face_word == "plain"
+                # **A wall the spec calls unbroken is dressed masonry**, the craft round
+                # (E4): `plain` is forty-eight blocks of one flat plane and reads as a
+                # render, and `masonry` carries the ways up at the corners and the gates
+                # as `unbroken` did. `unbroken` was the word for the two together and
+                # says nothing this does not.
+                params["face"] = ("masonry" if face_word == "plain"
                                   and wall_stairs_for(wall_part, spec) == "sparse"
-                                  and "unbroken" in choices else face_word)
+                                  and "masonry" in choices else face_word)
         wname = f"{(wall_part or {}).get('name', 'ring_wall')}_{r['name']}"
         parts.append({"kind": "edge", "name": wname, "type": tname, "seed": seed,
                       "params": params,
                       "path": (_octagon_path(cx, cz, hs[k], max_run) if octagon
                                else _square_path(cx, cz, hs[k], max_run)),
                       **({"shape": "octagon"} if octagon else {}),
-                      "width": 3, "defines": (wall_part or {}).get("name"),
+                      "width": mass, "mass": mass_word,
+                      # **A ring's wall is in its ring's palette**, the craft round: a
+                      # place whose rings differ in colour differs in colour at its
+                      # walls too, and a wall left in the place's own voice is the one
+                      # thing in a ring that is not the ring's.
+                      "voice": r.get("voice") or place_voice,
+                      "defines": (wall_part or {}).get("name"),
                       "ring": int(r["ring"]),
                       # the ring's terrace level: the wall stands on the terrace edge at
                       # one level, and `_site_edge` reads it
                       **({"level": levels[k]} if levels[k] is not None else {}),
                       # ...and the face the spec's words chose, for a type that reads it
-                      # off the part rather than a parameter (`wall`)
+                      # off the part rather than a parameter (`wall`), and with it how
+                      # often that face carries a way down: the craft round (E6) gives
+                      # `wall` the `stairs` word `great_wall` has had, so a low ring
+                      # wall of an unbroken place stops zigzagging.
                       **({"face": face_word} if face_word else {}),
+                      **({"stairs": wall_stairs_for(wall_part, spec)}
+                         if wall_part is not None else {}),
                       "notes": f"the wall on the outside of ring {r['ring']} "
-                               f"({r['name']}), {height} high as `{tname}`, laid by "
+                               f"({r['name']}), {height} high and {mass} thick as "
+                               f"`{tname}` -- a {mass_word} -- laid by "
                                f"arithmetic at half-side {hs[k]} about the centre"
                                + (f", on the ring's terrace at y={levels[k]}"
                                   if levels[k] is not None else "")})
@@ -3128,7 +3503,7 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
     # 5. the districts
     districts = []
     layout_rings = []
-    place_voice = voice
+    left_over = []
     for k, r in enumerate(rings):
         a = comp_half if k == 0 else hs[k - 1]
         i_in, i_out = insets[k]
@@ -3171,9 +3546,20 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         # a declaration the readout reports against and nothing reads.
         per = spec_mod.columns_per_plot(r)
         areas = [(rc[2] - rc[0] + 1) * (rc[3] - rc[1] + 1) for _l, rc in sectors]
+        shapes = [(rc[2] - rc[0] + 1, rc[3] - rc[1] + 1) for _l, rc in sectors]
         caps = [int(ar * DISTRICT_FILL // per) for ar in areas]
-        counts = [min(cap, max(1, spec_mod.structures_for(ar, r)))
-                  for ar, cap in zip(areas, caps)] if sectors else []
+        counts = [min(cap, spec_mod.structures_for(ar, r, sh))
+                  for ar, cap, sh in zip(areas, caps, shapes)] if sectors else []
+        # **A sector the fabric fits no house in is asked for none**, the craft round,
+        # found by running it: the count used to be floored at one, so a sliver of 4,257
+        # columns in the corner of a ring was asked for a house its own shape cannot
+        # hold, drew none and stopped the run. It stays a district -- its ground is the
+        # ring's and the coverage clause counts it -- and what it holds is the open
+        # ground a district asked for nothing lays.
+        left_over.extend({"ring": r["name"], "label": lab, "rect": list(rc),
+                          "why": "its own shape fits no house of this density, so it is "
+                                 "asked for none and lays open ground"}
+                         for (lab, rc), n in zip(sectors, counts) if n < 1)
         declared = int(r.get("structures") or 0)
         capped = ({"asked": declared, "room": sum(caps)}
                   if declared > sum(caps) else None)
@@ -3250,9 +3636,15 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
 
     # 6. the centre
     compounds = []
+    # **The centre is inside the innermost ring and carries its palette**, the craft
+    # round, found by running it: a compound part may not name a voice -- a voice is a
+    # ring's -- so a palace stood in the place's own voice while every ring round it was
+    # in its class's, and the brightest end of the axis had nothing at its centre.
+    centre_voice = next((r.get("voice") or place_voice
+                         for r in rings if r.get("ring") == 0), place_voice)
     if core is not None and spec_mod.compound(core):
         compounds.append({
-            "name": core["name"], "defines": core["name"],
+            "name": core["name"], "defines": core["name"], "voice": centre_voice,
             "x0": comp_rect[0], "z0": comp_rect[1], "x1": comp_rect[2], "z1": comp_rect[3],
             "notes": (f"The {core['family']} at the centre of the place, the fixed point "
                       f"every ring is set out around, over the whole of the ground "
@@ -3317,6 +3709,8 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                                   "TERRACE_STEP": TERRACE_STEP,
                                   "RING_CHAMFER": RING_CHAMFER,
                                   "RING_EDGE_INSET": RING_EDGE_INSET,
+                                  "ring_edge_inset": edge_inset,
+                                  "left_over": left_over,
                                   "LANE_GAP": LANE_GAP, "SECTOR_MAX": SECTOR_MAX}},
     }
     return place, fails
@@ -3346,3 +3740,438 @@ def _centre_leaf(core: dict, decls: dict, rect: tuple, seed: int) -> dict | None
     return {"kind": kind, "name": core["name"], "type": name, "seed": seed, "params": {},
             "x0": x0, "z0": z0, "x1": x0 + w - 1, "z1": z0 + d - 1,
             "defines": core["name"], "notes": "the thing at the centre, at its largest"}
+
+
+# ------------------------------------------------ an axial compound, laid by the
+# library
+
+#: **How deep the forecourt and the inner court are**, as a share of the axial run each.
+#: The craft round, E5: an approach is a sequence and the courts are the pauses in it.
+#: The greatest hall takes what is left after them and the flanking ranges' band.
+COMPOUND_COURT_SHARE = 0.22
+
+#: How much of the axial run the greatest hall takes, at the least: it is the end of the
+#: sequence and the thing the whole approach is for, so it is never a band like the
+#: rest.
+COMPOUND_GREAT_SHARE = 0.28
+
+
+def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
+                   spec: dict | None = None, seed: int = 1) -> tuple:
+    """**A compound of a family that declares an axis, laid as a sequence.** The craft
+        round, E5, and the same seam the district compiler writes at.
+
+        A composition says what a great thing *holds* -- so many halls, so many courts -- and
+        said nothing about the order, so a palace precinct a quarter of a city wide came out
+        as halls and courts arranged to fit and read as five buildings on a plaza. An
+        approach is an order: the gate, then a forecourt, then a hall, then an inner court,
+        then **the greatest hall at the far end**, with the flanking ranges paired down the
+        axis either side of the inner court. The greatest hall is the largest plot inside the
+        wall, which is what makes it the thing the sequence is for.
+
+        Returns `(got, record)` in the shape a model's answer has, or `(None, why)` where the
+        rectangle is too small to lay a sequence in and the compound is asked for as before.
+        
+    """
+    import random
+    made_of = compound_composition(part, spec=spec)
+    if not made_of.get("axis"):
+        return None, "this family's composition declares no axis"
+    x0, z0 = min(comp["x0"], comp["x1"]), min(comp["z0"], comp["z1"])
+    x1, z1 = max(comp["x0"], comp["x1"]), max(comp["z0"], comp["z1"])
+    t = compound_target(comp, spec)
+    margin = int(t["margin"])
+    # the side the road arrives on is where the gate is, and the axis runs from it to
+    # the far side: `_arrival_side` is the same answer the brief gives a model
+    cells = ((place.get("arterials") or {}).get("joins") or {}).get(comp.get("name")) or []
+    side = _arrival_side(comp, cells) if cells else "north"
+    # (u, v): u runs along the axis away from the gate, v across it
+    horiz = side in ("west", "east")
+    U = (x1 - x0 + 1) if horiz else (z1 - z0 + 1)
+    V = (z1 - z0 + 1) if horiz else (x1 - x0 + 1)
+    flip = side in ("east", "south")
+
+    def rect(u_a, u_b, v_a, v_b):
+        """(x0, z0, x1, z1) of a (u, v) box, u measured from the gate."""
+        if flip:
+            u_a, u_b = U - 1 - u_b, U - 1 - u_a
+        if horiz:
+            return (x0 + u_a, z0 + v_a, x0 + u_b, z0 + v_b)
+        return (x0 + v_a, z0 + u_a, x0 + v_b, z0 + u_b)
+
+    # **inside the wall and clear of it**: the composition's own margin, which is the
+    # wall's inset and the clearance it keeps, and no more -- a margin of thirteen on a
+    # sixty-four-square precinct leaves 1,444 columns of 2,304 and no composition can
+    # cover that.
+    if made_of["walled"]:
+        clear = int(((decls.get(_axial_type(decls, "edge", part, spec)) or {})
+                     .get("needs") or {}).get("clearance", 4))
+        margin = max(margin, COMPOUND_WALL_INSET + 2 + clear)
+    inner_u = (margin, U - 1 - margin)
+    inner_v = (margin, V - 1 - margin)
+    run = inner_u[1] - inner_u[0] + 1
+    span = inner_v[1] - inner_v[0] + 1
+    if run < 3 * COMPOUND_MIN // 2 or span < COMPOUND_MIN:
+        return None, (f"a {U}x{V} compound leaves {run}x{span} inside its wall, which is "
+                      f"too little to lay a sequence in")
+
+    plot_t = _axial_type(decls, "plot", part, spec)
+    area_t = _axial_type(decls, "area", part, spec)
+    if not plot_t or not area_t:
+        return None, "this compound admits no plot type or no area type"
+    gap = 3                                  # a plot keeps two clear and an area one
+
+    # **The sequence.** Two pauses and an end: the forecourt inside the gate, the inner
+    # court, and the greatest hall at the far side. The flanking ranges are what the
+    # courts are flanked *by* -- the strips either side of each court band, paired
+    # across the axis and divided along it until the composition's halls are all placed.
+    fore = max(5, int(round(run * COMPOUND_COURT_SHARE)))
+    inner_c = max(5, int(round(run * COMPOUND_COURT_SHARE)))
+    great = max(COMPOUND_MIN // 2, int(round(run * COMPOUND_GREAT_SHARE)))
+    gap = 3                                  # a plot keeps two clear and an area one
+    spare = run - fore - inner_c - great - 2 * gap
+    if spare > 0:                            # what is left deepens the two courts
+        fore += spare // 2
+        inner_c += spare - spare // 2
+    elif spare < 0:
+        take = -spare
+        fore = max(5, fore - (take + 1) // 2)
+        inner_c = max(5, inner_c - take // 2)
+    bands, at = [], inner_u[0]
+    for name, depth in (("forecourt", fore), ("inner_court", inner_c), ("great", great)):
+        bands.append((name, at, min(inner_u[1], at + depth - 1)))
+        at += depth + gap
+    if bands[-1][1] > inner_u[1] or bands[-1][2] - bands[-1][1] + 1 < 5:
+        return None, "the sequence's bands do not fit the rectangle"
+
+    rng = random.Random(f"{seed}/{comp['name']}/axial")
+    parts, order = [], []
+    n_plot = [0]
+
+    def plot(kind, tname, r, notes, name=None):
+        n_plot[0] += 1
+        nm = name or f"{comp['name']}_range_{n_plot[0]}"
+        decl = decls.get(tname) or {}
+        params = {}
+        for pn, sp in (decl.get("params") or {}).items():
+            if isinstance(sp, (list, tuple)) and sp and sp[0] == "int" and len(sp) >= 3:
+                params[pn] = rng.randint(int(sp[1]), int(sp[2]))
+            elif isinstance(sp, (list, tuple)) and sp and sp[0] == "choice" and sp[1]:
+                params[pn] = rng.choice(list(sp[1]))
+        row = {"kind": "area" if kind == "court" else "plot", "name": nm, "type": tname,
+               "seed": 1 + (n_plot[0] % 89), "params": params,
+               "x0": r[0], "z0": r[1], "x1": r[2], "z1": r[3], "notes": notes}
+        parts.append(row)
+        order.append(nm)
+        return row
+
+    lo_p, hi_p = _axial_band(decls.get(plot_t), "plot")
+    lo_a, hi_a = _axial_band(decls.get(area_t), "area")
+    want_halls = max(1, int(t["count"]))
+
+    def admit(tname, d, w, lo):
+        """The largest (depth, width) at or under this that the type actually admits.
+
+                The band is a first cut and the **pad** is the answer: `Builder.pad_extent`
+                insets a plot by one on every side where a side of it is under nine, so a lot 36
+                by 7 gives a pad of 34 by 5 and a type written for at most 32 refuses it. Asked
+                of the same check the plan validator asks, and shrunk a column at a time.
+                
+        """
+        decl = decls.get(tname) or {}
+        kind = decl.get("kind", "plot")
+        for _k in range(160):
+            if d < lo or w < lo:
+                return None
+            r = {"kind": kind, "x0": 0, "z0": 0, "x1": int(w) - 1, "z1": int(d) - 1}
+            if pipeline.needs_footprint_failure(r, decl["needs"]) is None:
+                return (int(d), int(w))
+            if w >= d:
+                w -= 1
+            else:
+                d -= 1
+        return None
+
+    # **The spine, and the wings either side of it.** The sequence is the middle strip:
+    # the forecourt inside the gate, the inner court, and the greatest hall across the
+    # far end. What a great thing holds beyond those is its **ranges**, and on a
+    # precinct a hundred and eighty-eight square a composition asks for fifty of them --
+    # so the ground either side of the spine is a grid of halls with lanes between,
+    # paired across the axis, and not a single file. The craft round, E5 and E7. the
+    # spine's own width: the court an area type will take, at most a third of the span,
+    # so the wings either side of it are the greater part of the precinct
+    spine_w = max(lo_a, min(hi_a, max(span // 3, lo_a)))
+    wing_w = max(0, (span - spine_w - 2 * gap) // 2)
+    court_w = span - 2 * (wing_w + gap) if wing_w >= lo_p else span
+    court_w = max(lo_a, min(hi_a, court_w))
+    wing = wing_w >= lo_p and want_halls > 1
+    per_side = max(0, (want_halls - 1 + 1) // 2) if wing else 0
+
+    # the spine's own bands
+    bands, at = [], inner_u[0]
+    for name, depth in (("forecourt", fore), ("middle", inner_c), ("great", great)):
+        bands.append((name, at, min(inner_u[1], at + depth - 1)))
+        at += depth + gap
+    if bands[-1][1] > inner_u[1] or bands[-1][2] - bands[-1][1] + 1 < 5:
+        return None, "the sequence's bands do not fit the rectangle"
+
+    rng = random.Random(f"{seed}/{comp['name']}/axial")
+    parts, order = [], []
+    n_plot = [0]
+
+    def plot(kind, tname, r, notes, name=None):
+        n_plot[0] += 1
+        nm = name or f"{comp['name']}_range_{n_plot[0]}"
+        decl = decls.get(tname) or {}
+        params = {}
+        for pn, sp in (decl.get("params") or {}).items():
+            if isinstance(sp, (list, tuple)) and sp and sp[0] == "int" and len(sp) >= 3:
+                params[pn] = rng.randint(int(sp[1]), int(sp[2]))
+            elif isinstance(sp, (list, tuple)) and sp and sp[0] == "choice" and sp[1]:
+                params[pn] = rng.choice(list(sp[1]))
+        row = {"kind": "area" if kind == "court" else "plot", "name": nm, "type": tname,
+               "seed": 1 + (n_plot[0] % 89), "params": params,
+               "x0": r[0], "z0": r[1], "x1": r[2], "z1": r[3], "notes": notes}
+        parts.append(row)
+        order.append(nm)
+        return row
+
+    # 1. the spine
+    great_row = None
+    for (name, u_a, u_b) in bands:
+        depth = u_b - u_a + 1
+        if name == "great":
+            got = admit(plot_t, max(lo_p, min(hi_p, depth)),
+                        max(lo_p, min(hi_p, court_w if wing else span)), lo_p)
+            if got is None:
+                return None, "no admitted plot type stands the greatest hall"
+            d, w = got
+            v_a = inner_v[0] + (span - w) // 2
+            great_row = plot("great", plot_t, rect(u_b - d + 1, u_b, v_a, v_a + w - 1),
+                             "the greatest hall, at the far end of the axis",
+                             name=f"{comp['name']}_great_hall")
+            continue
+        got = admit(area_t, max(lo_a, min(hi_a, depth)), court_w, lo_a)
+        if got is None:
+            continue
+        d, cw = got
+        v_a = inner_v[0] + (span - cw) // 2
+        plot("court", area_t, rect(u_a, u_a + d - 1, v_a, v_a + cw - 1),
+             "the forecourt inside the gate" if name == "forecourt"
+             else "the inner court, before the greatest hall",
+             name=(f"{comp['name']}_forecourt" if name == "forecourt"
+                   else f"{comp['name']}_inner_court"))
+
+    # 2. the wings: a grid of ranges either side of the spine, paired across it
+    laid = 0
+    if wing and per_side:
+        # **the wings stop where the greatest hall begins**: a range beyond it is a
+        # range past the end of the approach, and the axis clause refuses it by name
+        wing_u1 = bands[-1][1] - gap - 1
+        run_w = max(0, wing_u1 - inner_u[0] + 1)
+        cols_n = max(1, min(per_side, wing_w // (lo_p + gap)))
+        rows_n = max(1, min(-(-per_side // cols_n), run_w // (lo_p + gap)))
+        cell_w = (wing_w - (cols_n - 1) * gap) // cols_n
+        cell_d = (run_w - (rows_n - 1) * gap) // rows_n
+        got = admit(plot_t, cell_d, cell_w, lo_p)
+        if got is not None:
+            cell_d, cell_w = got
+            for r_i in range(rows_n):
+                uu = inner_u[0] + r_i * (cell_d + gap)
+                if uu + cell_d - 1 > wing_u1:
+                    break
+                for c_i in range(cols_n):
+                    # **a pair or nothing**: a range on one side of an approach with
+                    # nothing opposite it is not a flanking range
+                    left = inner_v[0] + c_i * (cell_w + gap)
+                    right = inner_v[1] - c_i * (cell_w + gap) - cell_w + 1
+                    if left + cell_w - 1 >= right:
+                        break
+                    for v_a in (left, right):
+                        plot("range", plot_t,
+                             rect(uu, uu + cell_d - 1, v_a, v_a + cell_w - 1),
+                             "a flanking range, paired across the axis")
+                        laid += 1
+
+    # 3. **the courts and gardens between them**: every free rectangle inside the wall
+    # that an area type will take, largest first, until none is left. A composition asks
+    # a great thing for a cover as well as a count, and the ground the grid leaves
+    # between its ranges is what the courts of a palace actually are.
+    import numpy as _np
+    from .district_compile import _largest_free as _free_rect
+    UU, VV = inner_u[1] - inner_u[0] + 1, inner_v[1] - inner_v[0] + 1
+    if UU > 0 and VV > 0:
+        taken = _np.zeros((UU, VV), dtype=bool)
+        for p_ in parts:
+            if p_.get("x0") is None:
+                continue
+            for uu_ in range(UU):
+                pass
+            # mark the part's own box, grown by the clearance, in (u, v)
+            r0 = (p_["x0"], p_["z0"], p_["x1"], p_["z1"])
+            for xx in range(r0[0], r0[2] + 1):
+                for zz in range(r0[1], r0[3] + 1):
+                    uu_, vv_ = ((xx - x0, zz - z0) if horiz else (zz - z0, xx - x0))
+                    if flip:
+                        uu_ = U - 1 - uu_
+                    uu_ -= inner_u[0]
+                    vv_ -= inner_v[0]
+                    # a lot keeps the plot clearance; one piece of open ground keeps
+                    # only an area's, which is what the validator holds two areas to
+                    k_ = gap if p_.get("kind") != "area" else 2
+                    if 0 <= uu_ < UU and 0 <= vv_ < VV:
+                        taken[max(0, uu_ - k_):uu_ + k_ + 1,
+                              max(0, vv_ - k_):vv_ + k_ + 1] = True
+        room = ~taken
+        for _k in range(64):
+            r_ = _free_rect(room)
+            if r_ is None:
+                break
+            ua_, ub_, va_, vb_ = (int(v) for v in r_)
+            got = admit(area_t, ub_ - ua_ + 1, vb_ - va_ + 1, lo_a)
+            if got is None:
+                room[ua_:ub_ + 1, va_:vb_ + 1] = False
+                continue
+            ad, aw = got
+            plot("court", area_t,
+                 rect(inner_u[0] + ua_, inner_u[0] + ua_ + ad - 1,
+                      inner_v[0] + va_, inner_v[0] + va_ + aw - 1),
+                 "a court between the ranges", name=f"{comp['name']}_court_{n_plot[0]}")
+            room[max(0, ua_ - 2):ua_ + ad + 2, max(0, va_ - 2):va_ + aw + 2] = False
+
+    great_row = next((p for p in parts if p["name"].endswith("_great_hall")), None)
+    if great_row is None:
+        return None, "the greatest hall did not fit"
+    biggest = max(((p["x1"] - p["x0"] + 1) * (p["z1"] - p["z0"] + 1))
+                  for p in parts if p["kind"] == "plot")
+    if (great_row["x1"] - great_row["x0"] + 1) \
+            * (great_row["z1"] - great_row["z0"] + 1) < biggest:
+        return None, "a flanking range is larger than the greatest hall"
+
+    # the wall round it, and the gate where the road arrives
+    wall_t = _axial_type(decls, "edge", part, spec)
+    gate_t = _axial_type(decls, "point", part, spec)
+    if made_of["walled"] and wall_t:
+        i = COMPOUND_WALL_INSET
+        wx0, wz0, wx1, wz1 = x0 + i, z0 + i, x1 - i, z1 - i
+        # a vertex at least every `max_run`: the edge type declares how long a single
+        # segment it stands, and a 188-square precinct's side is 182
+        max_run = int((decls.get(wall_t) or {}).get("needs", {})
+                      .get("footprint", (1, 4, 3, 128))[3])
+        path = _square_path((wx0 + wx1) // 2, (wz0 + wz1) // 2,
+                            (wx1 - wx0) // 2, max_run)
+        parts.append({"kind": "edge", "name": f"{comp['name']}_wall", "type": wall_t,
+                      "seed": 1, "params": {"height": 8, "width": 1}, "width": 1,
+                      "path": path, "notes": "the wall round the precinct"})
+        if made_of["gated"] and gate_t:
+            # **on the wall, at the middle of the side the road arrives on**: the gate
+            # is a point of the wall's own path and the validator reads it off that
+            mid_x, mid_z = (wx0 + wx1) // 2, (wz0 + wz1) // 2
+            want = {"north": (mid_x, wz0), "south": (mid_x, wz1),
+                    "west": (wx0, mid_z), "east": (wx1, mid_z)}[side]
+            on = min(_path_cells(path),
+                     key=lambda c: abs(c[0] - want[0]) + abs(c[1] - want[1]))
+            parts.append({"kind": "point", "name": f"{comp['name']}_gate",
+                          "type": gate_t, "seed": 2, "params": {},
+                          "at": [int(on[0]), int(on[1])], "facing": side, "size": 5,
+                          "notes": "the gate, where the road arrives"})
+    got = {"notes": (f"Laid as a sequence from the {side} gate: "
+                     + " -> ".join(order)), "axis": side, "parts": parts}
+    return got, {"compound": comp["name"], "axis": side, "bands": [b[0] for b in bands],
+                 "order": order, "plot_type": plot_t, "area_type": area_t,
+                 "great_hall": great_row["name"],
+                 "great": [great_row["x1"] - great_row["x0"] + 1,
+                           great_row["z1"] - great_row["z0"] + 1],
+                 "parts": len(parts)}
+
+
+def _path_cells(path: list) -> list:
+    """Every column a path passes through, in order."""
+    out = []
+    for a, b in zip(path, path[1:]):
+        n = max(abs(b[0] - a[0]), abs(b[1] - a[1]))
+        for i in range(n + 1):
+            out.append((a[0] + (b[0] - a[0]) * i // max(1, n),
+                        a[1] + (b[1] - a[1]) * i // max(1, n)))
+    return out or [tuple(p) for p in path]
+
+
+def _axis_failure(comp: dict, place: dict, halls: list, courts: list) -> str | None:
+    """Why this compound's parts are not a sequence from its gate, or None.
+
+        Two things, and both are what a person walking in would notice missing: the
+        **greatest hall** -- the largest plot inside the wall -- is the **last** thing on the
+        axis, and there is a **court** between the gate and it. The craft round, E5. The
+        fuller sequence -- forecourt, ranges, inner court, the greatest hall -- is what
+        `compound_axial` lays and what its own case holds it to; a compound a model drew is
+        held to the two a person sees.
+        
+    """
+    x0, z0 = min(comp["x0"], comp["x1"]), min(comp["z0"], comp["z1"])
+    x1, z1 = max(comp["x0"], comp["x1"]), max(comp["z0"], comp["z1"])
+    cells = ((place.get("arterials") or {}).get("joins") or {}).get(comp.get("name")) or []
+    side = _arrival_side(comp, cells) if cells else "north"
+
+    def along(p):
+        """How far this part's centre is from the gate, along the axis."""
+        r = pipeline.part_rect(p)
+        cx, cz = (r[0] + r[2]) / 2.0, (r[1] + r[3]) / 2.0
+        if side == "north":
+            return cz - z0
+        if side == "south":
+            return z1 - cz
+        if side == "west":
+            return cx - x0
+        return x1 - cx
+
+    def area(p):
+        r = pipeline.part_rect(p)
+        return (r[2] - r[0] + 1) * (r[3] - r[1] + 1)
+
+    great = max(halls, key=lambda p: (area(p), p["name"]))
+    d_great = along(great)
+    behind = [p for p in halls if p is not great and along(p) > d_great]
+    if behind:
+        return (f"the greatest hall is the last thing on the axis and "
+                f"{behind[0]['name']} stands beyond {great['name']}: this is a "
+                f"{comp.get('family') or 'compound'} and a compound of its family is an "
+                f"approach -- the gate, a forecourt, the ranges, an inner court, and the "
+                f"greatest hall at the far end")
+    if len(halls) > 1 and not [p for p in courts if along(p) < d_great]:
+        return ("there is no court between the gate and the greatest hall: an approach "
+                "is a sequence of pauses and this one is a wall of building")
+    return None
+
+
+def _axial_band(decl: dict | None, kind: str = "plot") -> tuple:
+    """(smallest, largest) **drawn** side this type admits, off its declared footprint.
+
+        A plot is drawn as a plot and built on the pad `site()`'s inset leaves of it, so its
+        band is the footprint plus the inset on both sides -- the same conversion
+        `district_compile._plot_range` makes and `Builder.pad_extent` is the one place of.
+        An edge, a point and an area are drawn as they are built. The craft round: without
+        it an axial compound on a 188-square podium divided its flanking strips into cells
+        of 32x3, which the footprint check then refused one by one.
+        
+    """
+    from .buildlib import Builder
+    if not decl:
+        return (3, 3)
+    a, b, c, d = (decl.get("needs") or {}).get("footprint", (3, 3, 3, 3))
+    i = 2 * Builder.SITE_INSET if kind == "plot" else 0
+    return (max(a, b) + i, min(c, d) + i)
+
+
+def _axial_type(decls: dict, kind: str, part: dict | None, spec: dict | None) -> str | None:
+    """The type an axial compound builds this kind of part out of: the largest-banded
+    one of the compound's own role first, so the greatest hall is as great as the
+    library can make it."""
+    best = None
+    for name, d in sorted((decls or {}).items()):
+        if d.get("kind", "plot") != kind:
+            continue
+        lo, hi = _axial_band(d)
+        want = (d.get("role") == ((part or {}).get("role") or "civic"), hi, name)
+        if best is None or want > best[0]:
+            best = (want, name)
+    return best[1] if best else None

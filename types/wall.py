@@ -33,10 +33,12 @@ FACES = ("framed", "plain")
 FACE_FROM = 12
 
 NEEDS = {
-    # Cut to the band `scripts/type_needs.py` measured -- measured (width 1..3, run
-    # 4..128) by the sweep. A3 asked for width to 5 and the sweep certifies 3; a ring
-    # wall of a 512-block city therefore takes a vertex at least every 128 columns.
-    "footprint": (1, 4, 3, 128),
+    # The band `scripts/type_needs.py` measured. **The width reaches a rampart's**, the
+    # craft round (E4): the sweep only ever tried 1, 2 and 3, and the re-sweep over the
+    # widths a place may declare as a wall's mass stands 2,520 instances of this type at
+    # 1, 2, 3, 5, 7, 9 and 12 with none failing. A ring wall of a 512-block city takes a
+    # vertex at least every 128 columns.
+    "footprint": (1, 4, 12, 128),
     "frontage": "any",
     "ground": "any",
     "clearance": 4,
@@ -444,8 +446,19 @@ def build(b, part, seed, **params):
             b.steps(kept, STEPMAT)
         return len(kept)
 
+    # **A plain face carries sparse ways down**, the craft round. The layout stamps
+    # `stairs` on the part beside its `face`; `sparse` puts a way down at each vertex
+    # and beside each gate, where a person actually climbs, and nowhere else.
+    sparse = str(part.get("stairs") or "") == "sparse"
     spacing = rnd.choice([14, 16, 18])
-    anchors = list(range(rnd.randrange(2, 8), n, spacing))
+    if sparse:
+        anchors = []
+        for si in range(len(seg_pts)):
+            a = segstart[si] + M + 2
+            if segstart[si] <= a <= segend[si]:
+                anchors.append(a)
+    else:
+        anchors = list(range(rnd.randrange(2, 8), n, spacing))
     if not anchors:
         anchors = [n // 2]
     # A way down never lands in a gate's pad: siting hands this wall the points standing

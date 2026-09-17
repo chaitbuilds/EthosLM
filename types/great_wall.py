@@ -13,32 +13,60 @@ DIAGONAL_RUNS = True
 PARAMS = {
     "height": ("int", 24, 48),
     # The body's width is the part's own `width` (the swept line siting hands this
-    # type); this parameter was declared to 5 and never read, and the sweep certifies
-    # the part at 3. Held to that one value so a stored plan that passes it still
-    # checks, and so the sweep across every parameter stays a size that can be run.
+    # type); this parameter is held to one value so the sweep across every parameter
+    # stays a size that can be run, and so a stored plan that passes it still checks.
+    # **The mass is the part's**, the craft round (E4): a place declares what its wall
+    # is -- a screen, a curtain, a rampart, a levee -- and `width` on the part is what
+    # that word means in columns.
     "width": ("int", 3, 3),
     "parapet": ("choice", ["crenellated", "plain"]),
     # The face: `framed` is the grid of frame posts and bands this wall has always
     # carried; `banded` is masonry with a string course every few courses and no posts;
     # `plain` is one unbroken outer face under its cornice, an earthen or monolithic
-    # wall; `unbroken` is that on **both** faces -- the inner face carries a switchback
-    # stair at each corner and beside each gate only, where every other face carries one
-    # every STAIR_EVERY columns and reads from the air as timber cross-bracing. One
-    # choice and not two, so the sweep stays a size that can be run. First is the
-    # default, so every stored program builds the bytes it built.
-    "face": ("choice", ["framed", "banded", "plain", "unbroken"]),
+    # wall; `masonry` is dressed stonework -- a plinth course at the foot, a string
+    # course at `STRING_EVERY`, buttress piers at `PIER_EVERY` and a batter that steps
+    # the face in as it rises, and the ways up at the corners and the gates only, where
+    # a framed or banded face carries one every `STAIR_EVERY` columns and reads from the
+    # air as timber cross-bracing. **`unbroken` is gone from the choices and is still
+    # accepted**, the craft round (E4): it meant the plain face on both sides with
+    # sparse stairs, and masonry is what an unbroken wall gets now, so the word says
+    # nothing masonry does not. A stored plan that passes it builds masonry. First is
+    # the default, so every stored program builds the bytes it built.
+    "face": ("choice", ["framed", "banded", "plain", "masonry"]),
 }
 NEEDS = {
-    # Cut to the band scripts/type_needs.py measured: the sweep stands an edge at part
-    # widths 1 to 3 and runs to 128, and every one of its 6,300 instances passed. The
-    # author declared width to 5 and a run of 1,024; a declaration is held to what was
-    # measured, as `wall`'s is. `clearance` is the author's: the stair blocks reach six
-    # lanes past the inner face.
-    "footprint": (1, 4, 3, 128),
+    # The band scripts/type_needs.py measured. **The width reaches a rampart's**, the
+    # craft round (E4): the sweep only ever tried 1, 2 and 3, so three was all that was
+    # ever certified and a city's outer wall was forty-eight high and three thick -- a
+    # screen. `clearance` is the author's: the stair blocks reach six lanes past the
+    # inner face where the wall is too thin to carry them inside itself.
+    "footprint": (1, 4, 12, 128),
     "frontage": "any",
     "ground": "any",
     "clearance": 8,
 }
+
+#: **A crown wide enough to be a road**, the craft round (E4). Below this the wall is a
+#: parapet and a ledge; at it and above, the walk is a road between two parapets -- one
+#: on each edge -- which is what a person on top of a great wall is walking along.
+CROWN_ROAD_MIN = 5
+
+#: **A mural stair stands in the wall's own thickness** where the wall has this much to
+#: spare over the lanes the flights need: a switchback of `nfl` lanes takes `nfl` of the
+#: inner columns and what is left is still a walk two wide. Below it the stair is a
+#: block against the inner face, as it has always been.
+STAIR_INSIDE_SPARE = 2
+
+#: The dressed face (`masonry`), the craft round (E4). Forty-eight blocks of one flat
+#: plane reads as a render and the grid before it read as lattice; between them is
+#: masonry. A plinth of `PLINTH_H` courses at the foot in the footing family, a string
+#: course of trim every `STRING_EVERY`, a buttress pier of the wall family every
+#: `PIER_EVERY` columns standing one course proud at the crown, and a batter that steps
+#: the outer lanes in by one every `BATTER_EVERY` courses of height.
+PLINTH_H = 3
+STRING_EVERY = 9
+PIER_EVERY = 11
+BATTER_EVERY = 14
 
 # Longest single flight of the way down; more flights are added past this.
 MAX_FLIGHT = 12
@@ -102,28 +130,51 @@ def _pick_side(b, frs):
     return -1 if minus < plus * 0.8 else 1
 
 
-def _rec(F, teff, par, face, t, o, seg, corner, post, corb):
+def _rec(F, teff, par, face, t, o, seg, corner, post, corb, lane=0, shoulder=False):
     return {"F": F, "teff": teff, "par": par, "face": face, "t": t, "o": o,
             "seg": seg, "tread": False, "corner": corner, "gate": False,
-            "jamb": False, "post": post, "corb": corb, "ramp": None}
+            "jamb": False, "post": post, "corb": corb, "ramp": None,
+            "lane": lane, "shoulder": shoulder}
 
 
-def _register_segments(frs, H, cells):
+def _batter_lanes(width, H, batter):
+    """How many of the outer lanes step in as the wall rises, and by how much.
+
+        The craft round, E4: a battered wall is a trapezoid, wide at the foot and narrow at
+        the crown, and in a lattice that is the outer lanes stopping short. Never more than
+        takes the crown below two columns, and never on a wall too low to show it.
+        
+    """
+    if not batter or width < 3 or H < 2 * BATTER_EVERY:
+        return 0
+    return max(0, min(width - 2, (H - 1) // BATTER_EVERY - 1))
+
+
+def _register_segments(frs, H, cells, road=False, batter=False):
     for i, fr in enumerate(frs):
         T = fr["F"] + H
+        offs = fr["offs"]
+        nb = _batter_lanes(len(offs), H, batter)
         for (x, z) in fr["cells"]:
             t, o = _to(fr, x, z)
+            lane = offs.index(o) if o in offs else 0
+            # a battered lane stops short of the crown, and the lane above it is what a
+            # person standing outside sees next
+            top = T - (nb - lane) * BATTER_EVERY if lane < nb else T
+            crown = lane >= nb
+            par = (lane == nb) or (road and o == fr["inner"])
             rec = cells.get((x, z))
             if rec is None:
                 corb = []
                 if o == fr["outer"]:
                     corb.append((x - fr["nx"], z - fr["nz"]))
-                cells[(x, z)] = _rec(fr["F"], T, o == fr["outer"],
-                                     o in (fr["outer"], fr["inner"]),
-                                     t, o, i, False, False, corb)
+                cells[(x, z)] = _rec(fr["F"], top, par,
+                                     o in (fr["outer"], fr["inner"]) or not crown,
+                                     t, o, i, False, False, corb,
+                                     lane=lane, shoulder=not crown)
             else:
                 rec["F"] = min(rec["F"], fr["F"])
-                rec["teff"] = max(rec["teff"], T)
+                rec["teff"] = max(rec["teff"], top)
 
 
 def _corner_square(frs, segs, i, j, H, cells):
@@ -193,8 +244,20 @@ def _flights_for(H, nfl):
     return [base + (1 if q < extra else 0) for q in range(nfl)]
 
 
+def _stair_offsets(fr, nfl, inside):
+    """The perpendicular offsets the `nfl` lanes of a switchback occupy, bottom flight
+    first. **Inside the wall's own thickness where the mass allows it** (the craft
+    round, E4): a great wall carries its ways up in its body, and only a thin one hangs
+    a block of stairs on its inner face."""
+    n = fr["nx"] * 0 + 1                            # direction of `inner` from `outer`
+    step = n if fr["inner"] > fr["outer"] else -n
+    if inside:
+        return [fr["inner"] - step * q for q in range(nfl)]
+    return [fr["inner"] + step * (nfl - q) for q in range(nfl)]
+
+
 def _stair_candidate(b, fr, i, nfl, run, p0, zones, wallset, occupied, desired,
-                     nfl0):
+                     nfl0, inside=False):
     L, F = fr["L"], fr["F"]
     t0, t1 = p0, p0 + run - 1
     if t0 < 0 or t1 > L - 1:
@@ -202,16 +265,18 @@ def _stair_candidate(b, fr, i, nfl, run, p0, zones, wallset, occupied, desired,
     for (zl, zh) in zones[i]:
         if t0 <= zh + 1 and t1 >= zl - 1:
             return None
-    o0 = fr["inner"]
+    offs = _stair_offsets(fr, nfl, inside)
     for t in range(t0 - 1, t1 + 2):
-        for q in range(1, nfl + 2):
-            x, z = _xz(fr, t, o0 + q)
-            if (x, z) in wallset or (x, z) in occupied:
+        for o in offs:
+            x, z = _xz(fr, t, o)
+            if (x, z) in occupied or (not inside and (x, z) in wallset):
+                return None
+            if inside and (x, z) not in wallset:
                 return None
     pen = 0.0
     for t in range(t0, t1 + 1, 3):
-        for q in (1, nfl):
-            x, z = _xz(fr, t, o0 + q)
+        for o in (offs[0], offs[-1]):
+            x, z = _xz(fr, t, o)
             g = b.get_height(x, z)
             if g > F:
                 pen += 6.0 * (g - F)
@@ -220,20 +285,25 @@ def _stair_candidate(b, fr, i, nfl, run, p0, zones, wallset, occupied, desired,
     return abs((t0 + t1) / 2.0 - desired) + pen + (nfl - nfl0) * 8.0
 
 
-def _lay_stair(fr, H, nfl, ns, run, p0, s_top, ramp, flights):
-    """A switchback stair block against the inner face: one flight per lane,
-    the bottom flight furthest out, the top flight landing beside the walk."""
+def _lay_stair(fr, H, nfl, ns, run, p0, s_top, ramp, flights, inside=False, cells=None):
+    """A switchback stair: one flight per lane, the bottom flight furthest from the
+    walk, the top flight landing beside it. Against the inner face where the wall is
+    thin, and **in the wall's own thickness** where the mass allows -- in which case the
+    lanes it takes come out of the body and the ramp lays them instead."""
     F = fr["F"]
     t0, t1 = p0, p0 + run - 1
+    offs = _stair_offsets(fr, nfl, inside)
     Ls = F
     for q in range(nfl):
         n = ns[q]
-        o = fr["inner"] + (nfl - q)
+        o = offs[q]
         s = s_top * (1 if (nfl - 1 - q) % 2 == 0 else -1)
         order = list(range(t0, t1 + 1)) if s > 0 else list(range(t1, t0 - 1, -1))
         fl = []
         for idx, t in enumerate(order):
             x, z = _xz(fr, t, o)
+            if inside and cells is not None:
+                cells.pop((x, z), None)
             if idx == 0:
                 ramp[(x, z)] = {"F": F, "solid": Ls, "tread": None}
             elif idx <= n:
@@ -278,7 +348,7 @@ CORNER_STAIR_AT = 10.0
 
 
 def _place_stairs(b, frs, H, zones, cells, rng, s_top, ramp, flights,
-                  stairs="every", closed=True, gates=None):
+                  stairs="every", closed=True, gates=None, width=3):
     wallset = set(cells.keys())
     occupied = set()
     ranges = [[] for _ in frs]
@@ -294,21 +364,26 @@ def _place_stairs(b, frs, H, zones, cells, rng, s_top, ramp, flights,
         for desired in _desired(fr, i, len(frs), closed, stairs, gate_ts, rng):
             best = None
             for nfl in range(nfl0, 7):
+                # **In the wall's own thickness where the mass allows**: a switchback of
+                # `nfl` lanes leaves a walk `STAIR_INSIDE_SPARE` wide. A thin wall hangs
+                # its stair on its inner face as it always has.
+                inside = width >= nfl + STAIR_INSIDE_SPARE
                 ns = _flights_for(H, nfl)
                 run = max(ns) + 2
                 c = int(round(desired - run / 2.0))
                 for p0 in range(c - 14, c + 15):
                     sc = _stair_candidate(b, fr, i, nfl, run, p0, zones, wallset,
-                                          occupied, desired, nfl0)
+                                          occupied, desired, nfl0, inside=inside)
                     if sc is not None and (best is None or sc < best[0]):
-                        best = (sc, nfl, ns, run, p0)
+                        best = (sc, nfl, ns, run, p0, inside)
             if best is None:
                 continue
-            sc, nfl, ns, run, p0 = best
-            _lay_stair(fr, H, nfl, ns, run, p0, s_top, ramp, flights)
+            sc, nfl, ns, run, p0, inside = best
+            _lay_stair(fr, H, nfl, ns, run, p0, s_top, ramp, flights,
+                       inside=inside, cells=cells)
             for t in range(p0 - 1, p0 + run + 1):
-                for q in range(1, nfl + 2):
-                    occupied.add(_xz(fr, t, fr["inner"] + q))
+                for o in _stair_offsets(fr, nfl + 1, inside):
+                    occupied.add(_xz(fr, t, o))
             ranges[i].append((p0, p0 + run - 1))
     return ranges
 
@@ -354,7 +429,7 @@ def build(b, part, seed, **params):
     # sentence calls unbroken, at every level, and a wall inside such a place is one of
     # them whether the call that drew it thought to say so.
     face = params.get("face") or part.get("face") or "framed"
-    if face not in ("framed", "banded", "plain", "unbroken"):
+    if face not in ("framed", "banded", "plain", "masonry", "unbroken"):
         face = "framed"
     # **A plain face carries sparse stairs.** The ground look's third finding: the inner
     # rings' walls took the default `every`, which at a house's scale reads as red
@@ -362,9 +437,12 @@ def build(b, part, seed, **params):
     # articulation on it has nothing for a switchback every 26 columns to belong to, so
     # the ways down stand at the corners and beside the gates, where a person actually
     # climbs.
-    stairs = "sparse" if face in ("unbroken", "plain") else "every"
+    stairs = "sparse" if face in ("unbroken", "plain", "masonry") else "every"
     if face == "unbroken":
-        face = "plain"
+        # **An unbroken wall is dressed masonry on both faces**, the craft round (E4):
+        # `plain` is forty-eight blocks of one flat plane and reads as a render, which
+        # is what every look since the first has said of it.
+        face = "masonry"
     rng = random.Random(seed)
     v = part["voice"]
     WALL = b.block(v["wall"], "full")
@@ -386,8 +464,17 @@ def build(b, part, seed, **params):
     mer_phase = rng.randrange(2)
     band = rng.choice([7, 8, 9])
 
+    # **The mass the place declared.** The swept line siting hands this type is the
+    # wall's own thickness, and what it buys is a crown wide enough to walk along with a
+    # parapet on both edges and a stair in the wall's own body.
+    width = max(1, int(part.get("width") or len(frs[0]["offs"]) if frs else 1))
+    if frs:
+        width = len(frs[0]["offs"])
+    road = width >= CROWN_ROAD_MIN
+    batter = face == "masonry"
+
     cells = {}
-    _register_segments(frs, H, cells)
+    _register_segments(frs, H, cells, road=road, batter=batter)
     zones = _corners(frs, segs, closed, H, cells)
     # A stair block never stands in a gate's pad: siting hands this wall the points on
     # it (`part["gates"]`), and a flight the gate's pad is then quarried through is
@@ -403,7 +490,8 @@ def build(b, part, seed, **params):
     ramp = {}
     flights = []
     ranges = _place_stairs(b, frs, H, zones, cells, rng, s_top, ramp, flights,
-                           stairs=stairs, closed=closed, gates=part.get("gates"))
+                           stairs=stairs, closed=closed, gates=part.get("gates"),
+                           width=width)
     # A closed loop cuts itself one way through -- unless a gate stands on it, in which
     # case the gate's own pad is the opening and this wall cuts no second one. Siting
     # says which: `part["gates"]` is the points standing on this edge.
@@ -438,6 +526,24 @@ def build(b, part, seed, **params):
                 while y <= te - 3:
                     b.place_block(x, y, z, TRIM)
                     y += band
+            elif face == "masonry":
+                # **dressed stonework**, the craft round (E4): a plinth at the foot in
+                # the footing family, a string course of trim every `STRING_EVERY`, and
+                # a buttress pier of the wall family standing proud of the face at
+                # `PIER_EVERY`. The batter is in the cell's own top, above.
+                b.place_cuboid(x, F + 1, z, x, min(F + PLINTH_H, te - 2), z, FOOT)
+                y = F + PLINTH_H + STRING_EVERY
+                while y <= te - 3:
+                    b.place_block(x, y, z, TRIM)
+                    y += STRING_EVERY
+                # a buttress belongs on a mass: on a wall too thin to carry a walk a
+                # pier standing proud of the face closes a pocket behind the parapet
+                # that nothing can walk into (E003 at width 2, found by the sweep)
+                if width >= CROWN_ROAD_MIN and not rec["corner"] \
+                        and (rec["t"] + phase) % PIER_EVERY == 0:
+                    for (px, pz) in rec["corb"]:
+                        if (px, pz) not in cells:
+                            b.place_cuboid(px, F + 1, pz, px, te - 2, pz, WALL)
             # plain: one unbroken face, the cornice alone
             b.place_block(x, te - 1, z, TRIM)
         if rec["par"]:

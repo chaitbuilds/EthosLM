@@ -902,7 +902,8 @@ def t_a1_a_pad_too_small_is_refused_before_the_ground_is_touched():
 
 # Forms, voices, parallel
 
-def _stand(name: str, voice: str, size: int, seed: int = 1, params=None) -> dict:
+def _stand(name: str, voice: str, size: int, seed: int = 1, params=None,
+           part_over: dict | None = None) -> dict:
     """One instance of one committed type, in one voice, on flat ground.
 
         Everything is fixed except the voice: the same pad, the same seed, the same
@@ -931,6 +932,10 @@ def _stand(name: str, voice: str, size: int, seed: int = 1, params=None) -> dict
         part = {"label": "t", "kind": "edge", "width": 1,
                 "path": [[20, 20], [19 + size, 20]]}
         span = size + 55
+    # `part_over` is what the **plan** would have written on the part rather than what
+    # the type is parameterised with -- an edge's own width, a point's wall. The craft
+    # round, E4: a wall's mass is the part's and never a parameter.
+    part.update(part_over or {})
     x0, z0, x1, z1 = pipeline.part_rect(part)
     vol = _flat_world(span)
     b = Builder(offline.OfflineSite(vol))
@@ -1365,6 +1370,74 @@ def t_dp2a_a_civic_type_stands_under_the_voice_civic_silhouette_and_a_house_does
             f"under the house roof, on the same {len(cols_c)} columns; cottage "
             f"byte-identical either way; a nine-tier civic roof refused by name")
 
+
+
+@case
+def t_craft_a_block_takes_an_axis_where_the_registry_says_so_and_every_type_stands_in_a_new_voice():
+    """**The craft round, E2**, and a defect the new voice found the day it existed.
+
+        Nine committed types carried a private `_axial` that decided by the block's **name**
+        -- `endswith(("_log", "_pillar", "_wood"))` -- and four of them composed `[axis=...]`
+        at other call sites without going through even that. A voice whose trim is `purpur`
+        lays `bare` as `purpur_block`, a cube with no axis, and `purpur_block[axis=z]` is a
+        block state the game does not have: `workshop`'s bay beam, `gate_tower`'s lintel and
+        `keep`'s two wrote it, and the block registry is what found it. `prims.axial` asks
+        the registry and every type asks `prims.axial`.
+
+        The sweep is the second half: every committed type at the bottom, the middle and the
+        top of its own band, in the new voice and in two of the axis's other rungs, at zero
+        unknown block states -- which is the check that caught this one.
+        
+    """
+    from ethoslm import placeread, prims, styles
+    assert prims.axial("purpur_block", "z") == "purpur_block"
+    assert prims.axial("purpur_pillar", "z") == "purpur_pillar[axis=z]"
+    assert prims.axial("oak_log[axis=y]", "x") == "oak_log[axis=x]"
+    assert prims.axial("diorite", "y") == "diorite"
+    for f in sorted(os.listdir(os.path.join(ROOT, "types"))):
+        if f.endswith(".py") and not f.startswith("_"):
+            src = open(os.path.join(ROOT, "types", f)).read()
+            assert "[axis=" not in src, f"{f} composes an axis by hand"
+            assert '_pillar", "_wood"' not in src, f"{f} decides an axis by name"
+    said = []
+    for voice in ("pale_quartz_and_gilt", "ochre_stone_green_tile",
+                  "packed_earth_and_dark_tile"):
+        fams = {x for x in (prims.family(m) for m in
+                            styles.VOICES[voice]["palette"].values()) if x}
+        n, bad = 0, []
+        for f in sorted(os.listdir(os.path.join(ROOT, "types"))):
+            if not f.endswith(".py") or f.startswith("_"):
+                continue
+            name = f[:-3]
+            decl = pipeline.load_type(os.path.join(ROOT, "types", f))
+            nd = decl.get("needs") or {}
+            a, b_, c, e = nd.get("footprint", (3, 3, 3, 3))
+            ex = set(nd.get("except") or ())
+            clean = [v for v in range(max(a, b_), min(c, e) + 1) if v not in ex]
+            sizes = [v for v in sorted({clean[0], clean[len(clean) // 2], clean[-1]})
+                     if v <= 20] if clean else []
+            for size in sizes:
+                got = _stand(name, voice, size)
+                n += 1
+                if not got["ok"] or got["bad"]:
+                    bad.append((name, size, got["ok"], sorted(got["bad"])[:2]))
+                    continue
+                # an `area` is the ground between the buildings and its planting is the
+                # setting's, not the voice's, so only a built thing is read against the
+                # palette the way `placeread.built_palette` reads one
+                if decl["kind"] == "area":
+                    continue
+                classed = {k: v for k, v in got["blocks"].items() if prims.family(k)}
+                share = (sum(v for k, v in classed.items() if prims.family(k) in fams)
+                         / max(1, sum(classed.values())))
+                if share < placeread.BUILT_SHARE:
+                    bad.append((name, size, round(share, 3)))
+        assert not bad, (voice, bad[:6])
+        said.append(f"{voice} {n}")
+    return ("purpur_block takes no axis and purpur_pillar does, off the registry; no "
+            "type under types/ composes one by hand or decides it by name; every "
+            "committed type stands at the bottom, middle and top of its band in three "
+            "voices at 0 unknown block states -- " + ", ".join(said) + " instances")
 
 
 def main():

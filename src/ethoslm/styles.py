@@ -160,6 +160,7 @@ def _view(voice: dict) -> dict:
            "roles": dict(voice["roles"]), "roof": dict(voice["roof"]),
            "roof_civic": (dict(voice["roof_civic"]) if voice.get("roof_civic") else None),
            "chimney": voice.get("chimney"),
+           "ceremonial": bool(voice.get("ceremonial")),
            "value": voice["value"]}
     out.update({k: v for k, v in voice["notes"].items()})
     for k in ("blurb", "construction", "roofs", "ground", "signature"):

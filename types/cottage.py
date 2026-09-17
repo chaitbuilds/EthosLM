@@ -563,7 +563,7 @@ def build(b, part, seed, **params):
     if isinstance(eave, int) and _pick(bits, 27, 2):
         top = min(eave, fy + 1 + 4 * max(1, plan["storeys"]))
         post = b.block(b.voice["trim"], "post")
-        upright = post + "[axis=y]" if post.endswith(("_log", "_pillar")) else post
+        upright = b.axial(post, "y")
         for (cx, cz) in ((main[0], main[1]), (main[2], main[1]),
                          (main[0], main[3]), (main[2], main[3])):
             for y in range(fy + 1, top):

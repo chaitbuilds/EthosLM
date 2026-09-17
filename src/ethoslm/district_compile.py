@@ -47,15 +47,19 @@ import random
 import numpy as np
 
 from . import pipeline, spec as spec_mod
-from .buildlib import Builder
+from .buildlib import Builder, WALL_ALT_SHARE, WALL_ALT_TOLERANCE
 
 #: **Registered before it was read** (v2, C1): the least of a compiled district's
 #: rectangle its **plots** cover, per density word. The validator's own floor --
 #: `placeplan.DISTRICT_MIN_FRACTION` of the density's plot share
 #: (`placeplan.occupancy_shares`) -- rounded to two places, written here as numbers so
 #: the compiler's proof reads against a bar and not against the arithmetic it is being
-#: tested with.
-PLOT_COVER = {"sparse": 0.15, "low": 0.21, "medium": 0.25, "dense": 0.25}
+#: tested with. **Re-registered by the craft round, E1**, before the numbers that test
+#: it were read, because the plot share it is three quarters of is no longer a square
+#: plot with a lane on four sides but the compiler's own fabric (`placeplan.fabric`):
+#: 0.32 / 0.39 / 0.45 / 0.43 against the 0.20 / 0.28 / 0.34 / 0.33 it was. What it was:
+#: sparse 0.15, low 0.21, medium 0.25, dense 0.25.
+PLOT_COVER = {"sparse": 0.24, "low": 0.29, "medium": 0.33, "dense": 0.32}
 
 #: What every column of a compiled district is, in the record. `undeveloped` is what no
 #: rule assigned, and the run's bar is on it.
@@ -83,8 +87,31 @@ BLOCK_LOTS_MAX = 8
 WIDEN_UP_TO = 0.5
 
 #: Every fourth lot takes another of the role's types rather than the house, where the
-#: role has more than one plot type that admits the lot.
+#: role has more than one plot type that admits the lot. **The floor and not the rule**
+#: since the craft round (E3): a lot draws its own type from everything the role admits
+#: at its size, and this is what guarantees a second type on a short street where the
+#: draw might not reach one.
 OTHER_EVERY = 4
+
+#: **How far a lot's width and depth may stray from the density's own**, as a fraction
+#: of the lot side, by what the street is. The craft round, E3: the compiler divided a
+#: street's frontage evenly, so every lot was one width and the building on it was one
+#: building -- twenty-one cottages on identical pads in a village, and a district that
+#: reads from the air as a comb. A terrace is *meant* to be regular, so an attached row
+#: varies least; a street of detached houses varies more; freestanding buildings a lane
+#: apart on open frontage vary most, because nothing lines them up.
+VARIETY = {"open": 0.35, "street": 0.3, "attached": 0.0}
+
+#: **Registered before the numbers that test them** (the craft round, E3), and read on
+#: every compiled district's own record: shapes_per_hundred distinct building shapes --
+#: the type, the width, the depth and the storeys, which is what a person sees of a
+#: house from outside -- per hundred houses in the district. identical_run the longest
+#: run of neighbours of one shape along one street face. A rhythm is not a comb. What
+#: the compiler read before the phase, on the compile fixture: **30.2 per hundred and a
+#: run of 3** for a medium detached district, **15.8 and 3** for a row of party walls.
+#: Both numbers are set above that, so neither is met by standing still.
+SHAPES_PER_HUNDRED = 35
+IDENTICAL_RUN_MAX = 2
 
 
 # ------------------------------------------------------------------- the character
@@ -439,7 +466,7 @@ def compile_district(district: dict, part: dict, place: dict, decls: dict, *,
     """
     from .placeplan import district_target
     ch0 = character_of(part)
-    t = district_target(district, part)
+    t = district_target(district, part, place, decls)
     tries = []
     ch = dict(ch0, _lead=True)
 
@@ -449,14 +476,20 @@ def compile_district(district: dict, part: dict, place: dict, decls: dict, *,
     # number.
     from .placeplan import RURAL_COVER
     want_ground = max(t["min_ground_columns"],
-                      int(math.ceil(RURAL_COVER * t["columns"]))
+                      int(math.ceil(RURAL_COVER * t["usable_columns"]))
                       if ch0.get("role") == "rural" else 0)
 
     def score(rec):
         plots = rec["plot_cover"] * rec["columns"]
         ground = rec["ground_cover"] * rec["columns"]
+        # **A district with houses beats one without**, the craft round, found by
+        # running it: a strip gave its lead street up, the single row of blocks that
+        # left landed on the arterial's band, every lot was dropped -- and that try was
+        # the one kept, because open ground covers more than nothing. Where the count
+        # floor is missed, the number of houses is what is being chosen between.
         return (rec["lots"] >= t["min_count"], plots >= t["min_plot_columns"],
-                ground >= want_ground, rec["ground_cover"], rec["plot_cover"])
+                ground >= want_ground, min(rec["lots"], t["min_count"]),
+                rec["ground_cover"], rec["plot_cover"])
 
     best = None
     seen = set()
@@ -503,15 +536,20 @@ def compile_district(district: dict, part: dict, place: dict, decls: dict, *,
         # the district is allowed to lay do not cover the ground its density asks to be
         # built on, those houses are bigger -- deeper as well as wider, which is why any
         # depth the loop gave away below is given back here.
-        if not ok_plots and not ch0.get("lot_depth") \
+        if not ok_plots and not ch0.get("lot_depth") and rec["lots"] > 0 \
                 and int(ch.get("_lot_grow") or 0) < LOT_GROW_MAX:
             ch["_lot_grow"] = int(ch.get("_lot_grow") or 0) + 1
             ch["lot_depth"] = None
             continue
         # 4. the lot, **down**: a shallower lot, a column at a time, down to
         # `DEPTH_GIVE` under the density's own, where a deep block's middle becomes two
-        # more rows and the district is still short of houses
-        if not ok_lots:
+        # more rows and the district is still short of houses. **A depth the character
+        # named is not the compiler's to give away** -- lever 3 has said so since it was
+        # written and this said nothing, so under the craft round's count a district
+        # that asked for lots seventeen deep got fourteen and the record called it a
+        # raise. A lever gives back what the density suggested, never what the character
+        # declared.
+        if not ok_lots and not ch0.get("lot_depth"):
             deep = _lot_side(ch["density"])
             have = int(ch.get("lot_depth") or rec["lot"][1])
             if have > deep - DEPTH_GIVE and have > 3:
@@ -547,7 +585,7 @@ def compile_district(district: dict, part: dict, place: dict, decls: dict, *,
 def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict, *,
                   spec: dict | None = None, seed: int = 1) -> tuple:
     from .placeplan import PLOT_LANE, district_target
-    target = district_target(district, part)
+    target = district_target(district, part, place, decls)
     density, role = ch["density"], ch.get("role")
     form = (spec or {}).get("form")
     houses = house_types(decls, role, form)
@@ -611,6 +649,22 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         ld = _clamp_side(int(ch.get("lot_depth") or side), house)
     gap = 0 if attached else (PLOT_LANE if open_front else LOT_GAP)
     row_gap = PLOT_LANE if open_front else LOT_GAP
+    # **How far one lot may differ from the next**, in columns: the character's own
+    # `variety` where it names one, and what the street is where it does not
+    # (`VARIETY`). A terrace is meant to be regular and varies least; freestanding
+    # buildings a lane apart vary most. The craft round, E3.
+    var = ch.get("variety")
+    if var is None:
+        var = VARIETY["attached" if attached else ("open" if open_front else "street")]
+    spread = int(round(float(var) * min(w, ld)))
+    if attached:
+        # **A row of party walls varies in what it can.** `_attached_lot` picks the one
+        # size every configuration of a lot's flanks admits, and for the library's one
+        # `ATTACHED` type that is a single width: widening a lot of it by a column is
+        # not a rhythm, it is a lot the type refuses. A terrace is meant to be regular
+        # anyway; what varies down a terrace is its height and, where the role has more
+        # than one attached type, its type.
+        spread = 0
     # **...or what the cover needs at the lot this fabric admits, whichever is more.**
     # The ask is `area x plot_share / columns_per_plot` at the density's *own* lot, and
     # a fabric whose lot is smaller than that covers less ground with the same number of
@@ -709,6 +763,13 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     counts = {"lots": 0, "courts": 0, "open": 0, "verges": 0, "landmarks": 0,
               "party_walls": 0}
     n_leaf = [0]
+    #: The shape of every house, street face by street face, in the order it was laid:
+    #: the type, the width, the depth and the storeys, which is what a person walking
+    #: down the street sees of it. The craft round, E3, and the two numbers the phase
+    #: registers are read off this.
+    faces: list = []
+    #: What the district still owes the voice's second wall material, in buildings.
+    alt_debt = [0.0]
 
     def leaf(kind, name, tname, decl, u0, u1, v0, v1, front=None, notes=""):
         x0, z0, x1, z1 = fr.rect(u0, u1, v0, v1)
@@ -720,7 +781,10 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
             if not isinstance(spec_p, (list, tuple)) or not spec_p:
                 continue
             if spec_p[0] == "int" and len(spec_p) >= 3:
-                params[pn] = rng.randint(int(spec_p[1]), int(spec_p[2]))
+                lo_p, hi_p = int(spec_p[1]), int(spec_p[2])
+                if pn == "storeys":
+                    lo_p, hi_p = _storeys_band(decl, ch)
+                params[pn] = rng.randint(lo_p, hi_p)
             elif spec_p[0] == "choice" and len(spec_p) >= 2 and spec_p[1]:
                 params[pn] = rng.choice(list(spec_p[1]))
         row = {"kind": kind, "name": name, "type": tname, "seed": 1 + (k % 89),
@@ -731,15 +795,27 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         return row
 
     def lots_along(u0, u1, v0, v1, front, i, j, r, plots, depth=None):
-        """A row of lots along one street face of a block, in [u0, u1] x [v0, v1]."""
+        """A row of lots along one street face of a block, in [u0, u1] x [v0, v1].
+
+                **A street is a rhythm and not a comb**, the craft round (E3). The run used to
+                be divided evenly, so every lot was one width, every building the same type and
+                every roof the same height -- twenty-one cottages on identical pads. Each lot
+                now draws its own width and its own depth inside the band the character sets
+                (`spread`), and its own type from everything the role admits at that size; the
+                widths still tile the run exactly, because the last lot takes what is left.
+                
+        """
         if counts["lots"] >= want_lots:
             return      # the district has the houses it was asked for, or asked none
-        dd = ld if depth is None else depth
+        dd0 = ld if depth is None else depth
         n = u1 - u0 + 1
         k = (n + gap) // (w + gap)
         if k < 1:
             return
         lo, hi, _ex = _plot_range(house)
+        # the street is at the low-v edge of this row where `front` is the low-v side; a
+        # lot shallower than the row keeps its face on the street and gives its back
+        at_low = (front == fr.front(True))
         widths = [w] * k
         left = n - (k * w + (k - 1) * gap)
         if 0 < left <= WIDEN_UP_TO * n and not attached:
@@ -749,31 +825,113 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 widths[q] = min(hi, w + per)
             for q in range(left - per * k):
                 widths[q] = min(hi, widths[q] + 1)
-            widths = [ww if _admits(house, ww, dd) else w for ww in widths]
+            widths = [ww if _admits(house, ww, dd0) else w for ww in widths]
+        # ...and then each lot is given or takes back a few columns of its own, the run
+        # coming out the same length: a rhythm, and the same houses.
+        if spread and k > 1:
+            room = sum(widths)
+            for q in range(k):
+                step = int(round((_seeded(seed, "wide", i, j, r, q) * 2 - 1) * spread))
+                widths[q] = max(lo, min(hi, widths[q] + step))
+            over = sum(widths) - room
+            q = 0
+            while over and q < 4 * k:              # give the drift back, evenly
+                idx = q % k
+                if over > 0 and widths[idx] > lo:
+                    widths[idx] -= 1
+                    over -= 1
+                elif over < 0 and widths[idx] < hi:
+                    widths[idx] += 1
+                    over += 1
+                q += 1
         at = u0
         row = []
+        face: list = []
+        faces.append(face)
         for q, ww in enumerate(widths):
             ua, ub = at, at + ww - 1
             at += ww + gap
-            if not free(ua, ub, v0, v1):
-                dropped["arterial" if band[ua:ub + 1, v0:v1 + 1].any()
+            dd = dd0
+            # **The depth varies where the ground behind a lot is open ground anyway.**
+            # On a street the lots stand back to back and what a shallow one gives up is
+            # the clearance between two rows -- ground no rule can assign, and a fifth
+            # of a district went undeveloped the first time this varied everywhere. On
+            # open frontage the leftover is verge ground the fill reaches.
+            if spread and open_front:
+                give = int(round(_seeded(seed, "deep", i, j, r, q) * spread))
+                dd = max(3, dd0 - give)
+            va, vb = (v0, v0 + dd - 1) if at_low else (v1 - dd + 1, v1)
+            if not free(ua, ub, va, vb):
+                dropped["arterial" if band[ua:ub + 1, va:vb + 1].any()
                         else "standing"] += 1
                 continue
-            tname, decl = house_name, house
+            # **the type is the lot's own**: everything the role admits at this size,
+            # the role's own house type weighted so a quarter still reads as its own,
+            # and `OTHER_EVERY` as the floor that puts a second type on a short street
+            admits = [(n2, d2) for n2, d2 in others if _admits(d2, ww, dd)]
+            # **Half the street is the role's own house type**, the rest is every other
+            # type that admits the lot, and a type of another role -- a hall in a
+            # residential quarter -- is worth half one of the district's own. A street
+            # of forty-five that came back with fifteen halls in it is a civic precinct,
+            # and a street of forty-five townhouses is one building forty-five times.
+            weight = [(n2, d2, 2 if d2.get("role") == role else 1)
+                      for n2, d2 in admits]
+            pool = [(house_name, house)] * max(1, sum(x[2] for x in weight))
+            for n2, d2, k2 in weight:
+                pool += [(n2, d2)] * k2
             if others and (counts["lots"] % OTHER_EVERY) == OTHER_EVERY - 1:
-                tname, decl = others[int(_seeded(seed, "other", i, j, r, q)
-                                         * len(others)) % len(others)]
-                if not _admits(decl, ww, dd):
-                    tname, decl = house_name, house
+                pool = [(n2, d2) for n2, d2 in others if _admits(d2, ww, dd)] \
+                    or [(house_name, house)]
+            tname, decl = pool[int(_seeded(seed, "type", i, j, r, q) * len(pool))
+                               % len(pool)]
+            if not _admits(decl, ww, dd):
+                tname, decl = house_name, house
+            if not _admits(decl, ww, dd):
+                dd = dd0
+                va, vb = (v0, v0 + dd - 1) if at_low else (v1 - dd + 1, v1)
+                if not _admits(decl, ww, dd) or not free(ua, ub, va, vb):
+                    continue
             if counts["lots"] >= want_lots:
                 break
             row.append((ua, ub, leaf("plot", f"b{i}_{j}_{r}{q}", tname, decl, ua, ub,
-                                     v0, v1, front=None if open_front else front,
+                                     va, vb, front=None if open_front else front,
                                      notes=f"a {tname} fronting the street on its "
                                            f"{front} side")))
-            plots.append(row[-1][2])
-            mark(ua, ub, v0, v1, "lot")
+            # **and no two neighbours are the same building.** Where the draw comes back
+            # with the shape the lot before it has, and the type is one that can be
+            # another height, it is stepped on: the one lever a terrace of a single
+            # attached type at a single width still has.
+            got_leaf = row[-1][2]
+            lo_s, hi_s = _storeys_band(decl, ch)
+            shape = (tname, ww, dd, int((got_leaf.get("params") or {})
+                                        .get("storeys", 1)))
+            if face and face[-1] == shape and hi_s > lo_s:
+                nxt = lo_s + ((shape[3] - lo_s + 1) % (hi_s - lo_s + 1))
+                got_leaf["params"]["storeys"] = nxt
+                shape = (tname, ww, dd, nxt)
+            plots.append(got_leaf)
+            face.append(shape)
+            mark(ua, ub, va, vb, "lot")
             counts["lots"] += 1
+        # **The second stone, at the share the library registers, by the street.** The
+        # craft round, E3: `TypeBuilder` decides one part at a time off a hash and a
+        # street is a distribution, so the compiler -- which can see the whole face --
+        # says which lots are faced in the voice's `wall_alt` and spreads them evenly,
+        # because a quarter of a street clumped at one end is not a quarter of a street.
+        if row:
+            # the share is the **district's** and not the face's: a face of three lots
+            # rounded on its own gives one, which is a third, and every face in the
+            # district does the same. The debt carries over.
+            alt_debt[0] += WALL_ALT_SHARE * len(row)
+            n_alt = int(alt_debt[0])
+            alt_debt[0] -= n_alt
+            if n_alt:
+                step = len(row) / float(n_alt)
+                phase = _seeded(seed, "alt", i, j, r) * step
+                for t_i in range(n_alt):
+                    row[min(len(row) - 1, int(phase + t_i * step))][2]["wall_alt"] = True
+            for _ua, _ub, p_leaf in row:
+                p_leaf.setdefault("wall_alt", False)
         if attached:
             # v2, C2: the sides a lot's neighbour actually stands against, after the
             # drops -- a party wall to each; the pad reaches the plot's edge there
@@ -971,5 +1129,70 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                          "min_plot_columns": target["min_plot_columns"],
                          "min_ground_columns": target["min_ground_columns"]},
               "registered_plot_cover": PLOT_COVER[density],
-              "meets_registered_cover": plot_cols / float(total) >= PLOT_COVER[density]}
+              "meets_registered_cover": plot_cols / float(total) >= PLOT_COVER[density],
+              "variety": _variety(faces),
+              "wall_alt": _wall_alt_record(leaves)}
     return got, record
+
+
+def _wall_alt_record(leaves: list) -> dict:
+    """The share of this district's houses faced in the voice's second wall material.
+
+        The craft round, E3. `Builder.WALL_ALT_SHARE` is the library's number and the
+        compiler is what makes it a **share** rather than a distribution, because it can see
+        the whole street; `WALL_ALT_TOLERANCE` is how far a district may sit from it.
+        
+    """
+    said = [p for p in leaves if isinstance(p.get("wall_alt"), bool)]
+    alt = sum(1 for p in said if p["wall_alt"])
+    share = (alt / len(said)) if said else None
+    return {"houses": len(said), "faced": alt,
+            "share": None if share is None else round(share, 4),
+            "registered": WALL_ALT_SHARE, "tolerance": WALL_ALT_TOLERANCE,
+            "holds": bool(share is None or len(said) < 20
+                          or abs(share - WALL_ALT_SHARE) <= WALL_ALT_TOLERANCE)}
+
+
+def _storeys_band(decl: dict, ch: dict) -> tuple:
+    """**A street has a skyline**, the craft round (E3): the height of a building is the
+    character's own band clamped into what the type declares, so a run of roofs steps
+    rather than lying flat and a district that wants to be low is low in every type on
+    it. Where the two bands do not meet, the type's own is what it can build.
+    """
+    spec_p = ((decl.get("params") or {}).get("storeys") or ())
+    if not (isinstance(spec_p, (list, tuple)) and len(spec_p) >= 3
+            and spec_p[0] == "int"):
+        return (1, 1)
+    lo, hi = int(spec_p[1]), int(spec_p[2])
+    want = ch.get("storeys")
+    if want and max(lo, int(want[0])) <= min(hi, int(want[1])):
+        lo, hi = max(lo, int(want[0])), min(hi, int(want[1]))
+    return (lo, hi)
+
+
+def _variety(faces: list) -> dict:
+    """**Is this street a rhythm or a comb?** The craft round, E3, read off the shapes
+        the compiler laid rather than off the built world, because it is the plan that
+        decides them and a plan is on disk in a fiftieth of a second.
+
+        Two numbers, both registered before they were read: how many distinct building
+        shapes there are per hundred houses (`SHAPES_PER_HUNDRED`), and the longest run of
+        neighbours of one shape along one street face (`IDENTICAL_RUN_MAX`).
+        
+    """
+    flat = [sh for face in faces for sh in face]
+    kinds = {sh for sh in flat}
+    longest = 0
+    for face in faces:
+        run = 1 if face else 0
+        longest = max(longest, run)
+        for a, b in zip(face, face[1:]):
+            run = run + 1 if a == b else 1
+            longest = max(longest, run)
+    per = 100.0 * len(kinds) / len(flat) if flat else 0.0
+    return {"lots": len(flat), "shapes": len(kinds), "faces": len(faces),
+            "per_hundred": round(per, 1), "longest_run": int(longest),
+            "registered": {"shapes_per_hundred": SHAPES_PER_HUNDRED,
+                           "identical_run": IDENTICAL_RUN_MAX},
+            "holds": bool(flat and per >= SHAPES_PER_HUNDRED
+                          and longest <= IDENTICAL_RUN_MAX)}

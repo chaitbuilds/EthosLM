@@ -29,10 +29,9 @@ NEEDS = {
 # is the settlement's, so each of these is now a question put to the voice the part
 # arrived with, and the same hall stands in any of them.
 
-def _axial(block, axis):
+def _axial(b, block, axis):
     """`block` turned along `axis`, where the block is one that has an axis."""
-    return (f"{block}[axis={axis}]"
-            if block.endswith(("_log", "_pillar", "_wood")) else block)
+    return b.axial(block, axis)
 
 
 def _wall_b(b):
@@ -48,11 +47,11 @@ def _floor_b(b):
 
 
 def _post_b(b):
-    return _axial(b.block(b.voice["frame"], "post"), "y")
+    return _axial(b, b.block(b.voice["frame"], "post"), "y")
 
 
 def _trim(b, axis):
-    return _axial(b.block(b.voice["trim"], "bare"), axis)
+    return _axial(b, b.block(b.voice["trim"], "bare"), axis)
 
 
 def _slab_top(b):

@@ -32,16 +32,16 @@ NEEDS = {
 
 def _post(b, axis="y"):
     """An upright of the frame, turned along `axis`. The block comes from the voice, and
-    only a log or a pillar takes an axis.
+    the registry says whether that block takes an axis (`b.axial`).
     """
     p = b.block(b.voice["frame"], "post")
-    return f"{p}[axis={axis}]" if p.endswith(("_log", "_pillar", "_wood")) else p
+    return b.axial(p, axis)
 
 
 def _band(b, axis):
     """The horizontal member at a floor line, laid along `axis`."""
     t = b.block(b.voice["trim"], "bare")
-    return f"{t}[axis={axis}]" if t.endswith(("_log", "_pillar", "_wood")) else t
+    return b.axial(t, axis)
 
 OPP = {"north": "south", "south": "north", "east": "west", "west": "east"}
 LEFT = {"north": "west", "west": "south", "south": "east", "east": "north"}

@@ -101,24 +101,32 @@ COMPOUND_FAMILIES = ("palace", "monument")
 #: a court. A monument does not scale -- it is one thing whatever the size of its
 #: setting. A wall drawn where none is asked for is still held to be closed and inset,
 #: and a gate drawn is held to stand on it. A family not in the table is the default
-#: row, which is the palace's.
+#: row, which is the palace's. ...and **`axis`**, the craft round (E5): whether a
+#: compound of this family is a **sequence** and not a set. A composition says what a
+#: great thing holds and said nothing about the order, so a palace precinct a quarter of
+#: a city wide came out as halls and courts arranged to fit rather than as an approach.
+#: Where a family declares an axis the library lays it as one -- the gate, a forecourt,
+#: a hall, an inner court and the greatest hall at the far end, the flanking ranges
+#: paired down it -- and where it does not, the compound is drawn as it always was. A
+#: palace, a shrine precinct and a castle are approaches; a monument is one thing and
+#: its setting, and has none.
 COMPOSITIONS = {
     "palace":   {"walled": True,  "gated": True,  "halls": 2, "courts": 1,
-                 "scales": True, "admits": ("defensive",)},
+                 "scales": True, "admits": ("defensive",), "axis": True},
     "monument": {"walled": False, "gated": False, "halls": 1, "courts": 1,
-                 "scales": False, "admits": ()},
+                 "scales": False, "admits": (), "axis": False},
     "temple":   {"walled": False, "gated": False, "halls": 1, "courts": 1,
-                 "scales": True, "admits": ()},
+                 "scales": True, "admits": (), "axis": True},
     "keep":     {"walled": True,  "gated": True,  "halls": 1, "courts": 1,
-                 "scales": True, "admits": ("defensive",)},
+                 "scales": True, "admits": ("defensive",), "axis": True},
     "tower":    {"walled": True,  "gated": True,  "halls": 1, "courts": 1,
-                 "scales": True, "admits": ("defensive",)},
+                 "scales": True, "admits": ("defensive",), "axis": False},
     "hall":     {"walled": False, "gated": False, "halls": 2, "courts": 1,
-                 "scales": True, "admits": ()},
+                 "scales": True, "admits": (), "axis": True},
     "house":    {"walled": False, "gated": False, "halls": 2, "courts": 1,
-                 "scales": True, "admits": ()},
+                 "scales": True, "admits": (), "axis": False},
     "workshop": {"walled": False, "gated": False, "halls": 2, "courts": 1,
-                 "scales": True, "admits": ()},
+                 "scales": True, "admits": (), "axis": False},
 }
 COMPOSITION_DEFAULT = COMPOSITIONS["palace"]
 
@@ -229,26 +237,36 @@ RING_FIELDS = ("ring", "share", "walled", "voice")
 #: the share of blocks left as open ground -- fields, gardens, groves, a plaza, by the
 #: role and the density -- 0 to 1. landmarks `[{"type": name, "notes": ...}]`: a fixed
 #: landmark, placed on the block nearest the district's middle with a plaza about it.
+#: variety how far a lot's width and depth may stray from the density's own, 0 to 1 of
+#: the lot side; omit it and the frontage decides (`district_compile.VARIETY`). storeys
+#: `[lo, hi]`: the band a lot's building takes its storeys from, clamped into what each
+#: type declares. Omit it and the density's own band is used. A run of roofs steps
+#: rather than lying flat.
 CHARACTER_FIELDS = ("frontage", "block", "lot_depth", "attached", "courtyard_share",
-                    "open_share", "landmarks")
+                    "open_share", "landmarks", "variety", "storeys")
 
 FRONTAGES = ("street", "open")
 
 #: What a district of each density word is like when the spec says only the word.
 #: `block` and `lot_depth` are None here because they are the density's own lot
 #: (`placeplan.occupancy_shares`: three lots a block, a lot deep) and the compiler fills
-#: them.
+#: them. `variety` is None here because the **frontage** decides it and a character may
+#: override the frontage; `storeys` is the band a quarter of that density is built to,
+#: clamped into what each type declares -- a farm belt is low and a dense quarter builds
+#: upward, and either way a street of one height is a wall and not a skyline.
 CHARACTER_DEFAULTS = {
     "sparse": {"frontage": "open", "block": None, "lot_depth": None, "attached": False,
-               "courtyard_share": 0.0, "open_share": 0.5, "landmarks": []},
+               "courtyard_share": 0.0, "open_share": 0.5, "landmarks": [],
+               "variety": None, "storeys": [1, 2]},
     "low":    {"frontage": "open", "block": None, "lot_depth": None, "attached": False,
-               "courtyard_share": 0.0, "open_share": 0.3, "landmarks": []},
+               "courtyard_share": 0.0, "open_share": 0.3, "landmarks": [],
+               "variety": None, "storeys": [1, 3]},
     "medium": {"frontage": "street", "block": None, "lot_depth": None,
                "attached": False, "courtyard_share": 0.15, "open_share": 0.15,
-               "landmarks": []},
+               "landmarks": [], "variety": None, "storeys": [2, 3]},
     "dense":  {"frontage": "street", "block": None, "lot_depth": None,
                "attached": False, "courtyard_share": 0.25, "open_share": 0.05,
-               "landmarks": []},
+               "landmarks": [], "variety": None, "storeys": [1, 3]},
 }
 
 #: The words `setting.relief` may be, and the **fall per block of footprint** each one
@@ -351,8 +369,18 @@ def footprint_ceiling(kind: str | None) -> int:
 
 
 def structures_ceiling(kind: str | None) -> int:
-    """The most things a place of this kind may stand up, **scaled by its ground**."""
-    return int(round(CEILING["structures"] * _ground_ratio(kind)))
+    """The most things a place of this kind may stand up, **scaled by its ground and by
+        the fabric it is built at**.
+
+        The craft round, E1, and the same argument a third time: the other half of that
+        statement is **how much ground one structure takes**, and 400 on 512 square is 655
+        columns a structure. The compiler lays a medium district at 323. A ceiling left at
+        the old fabric clips the count the new arithmetic gives -- a city of four rings on
+        768 asks for about a thousand structures against a ceiling of 900 -- and a ceiling
+        that clips an honest count is a ceiling deciding the answer.
+        
+    """
+    return int(round(CEILING["structures"] * _ground_ratio(kind) * fabric_ratio()))
 
 
 def _ground_ratio(kind: str | None) -> float:
@@ -361,15 +389,48 @@ def _ground_ratio(kind: str | None) -> float:
     return (f * f) / float(CEILING["footprint"] ** 2)
 
 
-def size_band_for(kind: str | None) -> tuple:
-    """How many structures this kind is, as a band, **on the ground it is given**.
+#: The density word the size bands and `CEILING["structures"]` are re-expressed at: the
+#: middle of the ladder, and the one `DENSITIES` is 1.0 at.
+FABRIC_REFERENCE_DENSITY = "medium"
 
-        A kind whose footprint ceiling is the registered one gets its band untouched, which
-        is every kind but `city`.
+
+def fabric_reference() -> float:
+    """The ground one structure takes in the fabric `CEILING` was registered at: 400
+    structures on 512 square, all in."""
+    return (CEILING["footprint"] ** 2) / float(CEILING["structures"])
+
+
+def fabric_ratio() -> float:
+    """How much denser the library's own fabric is than the one `SIZE_BANDS` and
+        `CEILING["structures"]` were registered at. The craft round, E1.
+
+        655 columns a structure is a freestanding house on a square plot with a lane on all
+        four sides, which is the village this project measured a district on and the model
+        every number here was written against. `placeplan.fabric` measures what the compiler
+        actually lays -- a
+        frontage, a depth and a share of the street -- and a medium district comes out at
+        323. Read off the files, so a type added or a band closed moves it.
+        
+    """
+    from .placeplan import fabric, DENSITY_ROLE
+    w = FABRIC_REFERENCE_DENSITY
+    per = float(fabric(w, DENSITY_ROLE.get(w))["columns_per_structure"])
+    return fabric_reference() / per if per > 0 else 1.0
+
+
+def size_band_for(kind: str | None) -> tuple:
+    """How many structures this kind is, as a band, **on the ground it is given and at
+        the fabric it is built at**.
+
+        The craft round adds the fourth number in the same statement -- the ground one
+        structure takes (`fabric_ratio`) -- for the same reason: a band written at 655
+        columns a house refuses at 900 a city whose own arithmetic, at the fabric the
+        compiler lays, asks for a thousand. Every kind's band moves under it, because the
+        fabric is the library's and not the kind's.
         
     """
     lo, hi = SIZE_BANDS[kind]
-    r = _ground_ratio(kind)
+    r = _ground_ratio(kind) * fabric_ratio()
     if r == 1.0:
         return (int(lo), int(hi))
     return (int(round(lo * r)), int(round(hi * r)))
@@ -860,6 +921,22 @@ def read_character(got, out: dict, where: str) -> None:
                 raise SpecError(f"{where}: {k} is a share, 0 to 1, not {v!r}",
                                 field="character", part=out["name"])
             v = float(v)
+        elif k == "variety":
+            if isinstance(v, bool) or not isinstance(v, (int, float)) \
+                    or not 0.0 <= float(v) <= 1.0:
+                raise SpecError(f"{where}: variety is a share of the lot's own side, "
+                                f"0 to 1, not {v!r}", field="character",
+                                part=out["name"])
+            v = float(v)
+        elif k == "storeys":
+            ok = (isinstance(v, (list, tuple)) and len(v) == 2
+                  and all(not isinstance(n, bool) and isinstance(n, int) and 1 <= n <= 8
+                          for n in v) and v[0] <= v[1])
+            if not ok:
+                raise SpecError(f"{where}: storeys is a band [lo, hi] of whole numbers "
+                                f"1 to 8 with lo <= hi, not {v!r}", field="character",
+                                part=out["name"])
+            v = [int(v[0]), int(v[1])]
         elif k == "landmarks":
             if not isinstance(v, list) or not all(
                     isinstance(m, dict) and isinstance(m.get("type"), str)
@@ -1000,24 +1077,40 @@ def read_density(got, where: str) -> str | None:
 
 
 def columns_per_plot(part: dict) -> int:
-    """The ground one structure of this defining part takes, its density applied. A1."""
-    from .placeplan import dense_plot
+    """The **lot** one structure of this defining part stands on, its density applied."""
+    from .placeplan import density_lot, DENSITY_ROLE
     d = part.get("density") or "medium"
-    if d == "dense":
-        return int(dense_plot()["columns"])
-    return int(round(COLUMNS_PER_PLOT * DENSITIES.get(d, 1.0)))
+    return int(density_lot(d, part.get("role") or DENSITY_ROLE.get(d))["columns"])
 
 
 def plot_share(part: dict) -> float:
-    """How much of this defining part's district ground is plots."""
-    from .placeplan import occupancy_shares
-    return float(occupancy_shares()[part.get("density") or "medium"]["plot_share"])
+    """How much of this defining part's district ground is plots.
+
+        The craft round: the lots' share of a block and its streets, off the compiler's own
+        fabric (`placeplan.fabric`), so `structures_for` below is `columns` over what one
+        house of that fabric actually costs.
+        
+    """
+    from .placeplan import fabric, DENSITY_ROLE
+    d = part.get("density") or "medium"
+    return float(fabric(d, part.get("role") or DENSITY_ROLE.get(d))["plot_share"])
 
 
-def structures_for(columns: float, part: dict) -> int:
+def structures_for(columns: float, part: dict, shape: tuple | None = None) -> int:
     """**The number of structures a piece of designed ground is asked for.**"""
+    from .placeplan import fabric_fit, DENSITY_ROLE
+    d = part.get("density") or "medium"
+    role = part.get("role") or DENSITY_ROLE.get(d)
     per = columns_per_plot(part)
-    return max(0, int(float(columns) * plot_share(part) // per))
+    by_ground = max(0, int(float(columns) * plot_share(part) // per))
+    if shape is None:
+        return by_ground
+    # **...and never more than the grid that ground assumes can be laid on it.** The
+    # craft round, E1: the divide above is right for a rectangle big enough to run a
+    # grid on and wrong for a strip, and a district asked for more houses than its own
+    # shape holds is a hand-back nobody can answer.
+    return min(by_ground, fabric_fit(int(shape[0]), int(shape[1]), d, role,
+                                     part.get("character")))
 
 
 def read_spec(doc: dict, sentence: str | None = None) -> dict:

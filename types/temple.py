@@ -50,7 +50,7 @@ NEEDS = {
 def _post(b):
     """The upright of the frame. From the voice, not from this file."""
     p = b.block(b.voice["frame"], "post")
-    return f"{p}[axis=y]" if p.endswith(("_log", "_pillar", "_wood")) else p
+    return b.axial(p, "y")
 OPPOSITE = {"north": "south", "south": "north", "east": "west", "west": "east"}
 
 

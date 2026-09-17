@@ -1603,6 +1603,24 @@ def _m_fabric(rnd, be, results, bar) -> dict:
     left = {r["district"]: r["undeveloped_share"] for r in recs}
     out["assigned"] = {"undeveloped_share": left, "max": most,
                        "over": sorted(n for n, v in left.items() if v > most)}
+    # 4b. **the rhythm**, the craft round (E3): distinct building shapes per hundred and
+    # the longest run of identical neighbours on one street face, both off the
+    # compiler's own record, and the second wall material's share of the street
+    from .. import district_compile as dc
+    rh = {r["district"]: r.get("variety") for r in recs if r.get("variety")}
+    alt = {r["district"]: r.get("wall_alt") for r in recs if r.get("wall_alt")}
+    out["rhythm"] = {
+        "registered": {"shapes_per_hundred": dc.SHAPES_PER_HUNDRED,
+                       "identical_run": dc.IDENTICAL_RUN_MAX},
+        "districts": {n: {k: v[k] for k in ("lots", "shapes", "per_hundred",
+                                            "longest_run")} for n, v in rh.items()},
+        "combed": sorted(n for n, v in rh.items()
+                         if v["longest_run"] > dc.IDENTICAL_RUN_MAX),
+        "under_shapes": sorted(n for n, v in rh.items()
+                               if v["per_hundred"] < dc.SHAPES_PER_HUNDRED)}
+    out["wall_alt"] = {"districts": {n: v["share"] for n, v in alt.items()},
+                       "registered": (list(alt.values()) or [{}])[0].get("registered"),
+                       "off": sorted(n for n, v in alt.items() if not v["holds"])}
     # 4. attached where the character said attached
     att = {r["district"]: {"party_walls": r.get("party_walls", 0), "lots": r["lots"],
                            "note": r.get("attached_note")}
@@ -1613,7 +1631,10 @@ def _m_fabric(rnd, be, results, bar) -> dict:
     failed = ([f"columns_per_house/{w}" for w, v in words.items() if not v["under_ceiling"]]
               + ([] if out["frontage"]["holds"] else ["frontage"])
               + [f"assigned/{n}" for n in out["assigned"]["over"]]
-              + [f"attached/{n}" for n in out["attached"]["without"]])
+              + [f"attached/{n}" for n in out["attached"]["without"]]
+              + [f"rhythm/{n}" for n in out["rhythm"]["combed"]]
+              + [f"shapes/{n}" for n in out["rhythm"]["under_shapes"]]
+              + [f"wall_alt/{n}" for n in out["wall_alt"]["off"]])
     out["failed"] = failed
     out["got"] = 0 if failed else 1
     return out
