@@ -14,9 +14,11 @@ the one demo it was built against.
 `invariants` paragraph first, stating what is at the centre, the rings outward with their
 shares, which are walled, how each is built and coloured, and the land it stands in, then
 to write the schema from that paragraph and nothing else. The paragraph is validated in
-`spec.py` by one `isinstance(str)` check. Its only machine consumers are keyword regexes
-in `placeplan.py`, which read it for roundness, wall mass and wall face. Everything else a
-paragraph about a city can say is discarded.
+`spec.py` by one `isinstance(str)` check. Three mechanical decisions are taken from it, by
+keyword regex in `placeplan.py`: roundness, wall mass and wall face. Beyond those it is
+appended verbatim to the plan's `intent` string, so downstream planner calls read it as
+prose. It is therefore carried, but nothing structural is derived from it: no ring, share,
+wall, voice or landmark in the built plan comes from the paragraph.
 
 **2. The paragraph and the structure are never reconciled.**
 The model writes the invariants, then restates them as defining parts, and the two can
@@ -25,12 +27,15 @@ disagree. This is already known: `rounds/concentric.json` preregisters a report 
 with the policy "reported, not patched". A contradiction between a spec's own two halves
 is currently an observation, not an error.
 
-**3. The centre share is measured and never enforced.**
-`placeplan.CENTRE_SHARE_MIN = 0.5` carries the note that the last build read 34% and "from
-the air it reads as a compound among compounds rather than as the thing four terraces rise
-to". The constant appears in exactly two places: its definition, and `stages_measure`,
-which reports whether it holds. No layout code reads it. A palace that fails to dominate
-its city is reported after the fact.
+**3. The centre's size is a residual, and its floor is a measure rather than a clamp.**
+`spec.centre_share` is `1.0 - sum(ring shares)`: the centre gets whatever the spec's rings
+did not take. `concentric_layout` sizes the centre square from it, so the mechanism is real
+and spec-driven. What is missing is a floor. `_check_rings` refuses shares that sum above
+1.0 and accepts shares that sum to 0.95, which leaves the palace five per cent of the place
+and is legal. `CENTRE_SHARE_MIN = 0.5` exists only in its definition and in
+`stages_measure`, which reports whether the compound cleared it once the city is standing.
+The note beside the constant records the last reading at 34% and "from the air it reads as
+a compound among compounds rather than as the thing four terraces rise to".
 
 **4. Round rings are blocked below the wall, not at it.**
 `great_wall` draws a diagonal run at any depth, so an octagon is buildable. The blocker is
@@ -51,8 +56,9 @@ The city is denser, not larger.
 **6. The type vocabulary has holes, and growth is capped at two.**
 A spec may declare fourteen families. Computed against `growth.type_gaps` at HEAD: with no
 form set, `house`, `tower` and `bridge` have no committed type. With `form: east_asian`,
-`workshop` joins them. With `form: european_vernacular`, `temple` does. `GROWTH_CAP = 2`,
-so a sentence implying three absent families stops the run by name.
+`workshop` joins them. With `form: european_vernacular`, `temple` does. `house` matters
+least, since the brief tells the spec call that houses are not defining parts. `GROWTH_CAP
+= 2`, so a sentence implying three absent families stops the run by name.
 
 **7. There is no transit.**
 `spec.RELATIONS` is eleven words, none of which describes a route between places. There is
@@ -63,8 +69,10 @@ feature is how you cross it cannot say so.
 `rounds/ground.json` registers `SEARCH_BOUND_S 7200`, `PARTS_BOUND_S 21600` and
 `RENDER_BOUND_S 14400`: twelve hours of bounds before planning, linting and measuring. The
 one call that decides what is being built is unpinned, so two runs of the same sentence can
-differ in ring count, shares and voices. A change in the build cannot be attributed to a
-change in the library. Every long run is a confounded experiment.
+differ in ring count, shares and voices. A round can reuse an earlier round's plan, as
+`rounds/demo.json` does, but that pins the plan and everything under it rather than pinning
+the spec and letting the plan regenerate. There is no way to hold the sentence's reading
+fixed while a library change is tested beneath it.
 
 ## Proposed system
 
@@ -93,10 +101,11 @@ takes its frontage, attachment and courtyard share from the generic density defa
 know nothing about the tradition. This is the smallest change on the list and it is what
 makes the general path as good as the named one.
 
-**E. The centre share is enforced at layout.**
-`CENTRE_SHARE_MIN` becomes a constraint the ring arithmetic solves for, by sizing the
-compound against the innermost ring and setting the districts back, rather than a number
-reported once the city is standing.
+**E. The centre's floor is a clamp, not a report.**
+`_check_rings` already refuses shares that sum above one. It should also refuse, or scale
+back, shares that leave the centre under `CENTRE_SHARE_MIN`, so a palace cannot be planned
+into insignificance. This is a validation change at spec time rather than new layout
+machinery, and it is the cheapest item on this list.
 
 **F. District tiling follows the ring's shape.**
 The districts tile the annulus the wall actually draws, chamfer included, so the chamfer is
