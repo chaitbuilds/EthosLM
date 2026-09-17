@@ -937,6 +937,9 @@ def _fixtures_for(rnd: Round, spec: dict) -> list:
     wall, gate or square in a settlement's plot registry. One list per kind, from the
     config, registered before the builder was called."""
     kind = spec.get("part", "plot")
+    # v2, C3: a type the plan found missing carries the fixtures its plan-time author
+    # was given (`growth.default_fixtures`), because the round registered none.
+    own = [dict(f) for f in (spec.get("fixtures") or [])]
     if kind == "plot":
         from ..slopefixture import descriptors
         path = spec.get("file") or os.path.join(_pipeline.ROOT, "types", spec["name"] + ".py")
@@ -945,7 +948,9 @@ def _fixtures_for(rnd: Round, spec: dict) -> list:
         # in this project had ever stood a large plot on a slope -- the terrain bank's
         # six sites have none and the needs sweep was a plane -- and a city found out
         # for it.
-        return _fixtures(rnd) + descriptors(decl)
+        return (own or _fixtures(rnd)) + descriptors(decl)
+    if own:
+        return [f for f in own if f.get("kind") == kind]
     t = rnd.types or {}
     return [dict(f) for f in (t.get("check_parts") or []) if f.get("kind") == kind]
 
@@ -973,7 +978,7 @@ def stage_type_check(rnd: Round, d: str, key: str, spec: dict) -> str:
                "fixtures": _fixtures_for(rnd, spec), "voice": spec.get("voice"),
                # B1: the two voices the checker stands the type in, decided here so the
                # record of what an author was checked against is on disk.
-               "voices": _pipeline.check_voices(spec.get("voice")),
+               "voices": _pipeline.check_voices(spec.get("voice"), rnd.voice_name()),
                # B1: an author's checker crosses every set of parameters the type
                # declares, unless the config pins one. A type is checked where the plan
                # may ask for it, not at the low end of its own ranges.
@@ -1086,7 +1091,7 @@ def check_type(rnd: Round, be, prog: str, labels: list, seeds: list,
     else:
         sets = [_pipeline.check_params(decl["params"], params, where=where)]
     kw = sets[0]
-    voices = list(voices or _pipeline.check_voices(voice))
+    voices = list(voices or _pipeline.check_voices(voice, rnd.voice_name()))
     # A6: one work item per (fixture round, seed, voice) -- which is what a composed
     # program already is -- run across processes and read back in the order a serial
     # loop produces them. The rows are the answer and the rows do not move; what moves

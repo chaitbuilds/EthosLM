@@ -1016,10 +1016,10 @@ def _drop_band(spec: dict) -> dict | None:
         place that was asked for. It is recorded as such and the readout reports it.
         
     """
-    order = ["monument", "keep", "hamlet", "village", "town", "city"]
-    if spec["kind"] not in order or order.index(spec["kind"]) == 0:
+    # v2, C0: the order is the spec's one table (`SIZE_BANDS`) and is not declared here.
+    lower = spec_mod.kind_below(spec["kind"])
+    if lower is None:
         return None
-    lower = order[order.index(spec["kind"]) - 1]
     lo, hi = spec_mod.size_band_for(lower)
     n = min(int(spec["structures"]), hi)
     out = json.loads(json.dumps(spec))

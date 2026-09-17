@@ -124,11 +124,18 @@ def _roughness(h: np.ndarray) -> np.ndarray:
     return stack.max(axis=0) - stack.min(axis=0)
 
 
-def _approach_candidates(h: np.ndarray, x0: int, z0: int, rect, per_site: int = 4):
+def _approach_candidates(h: np.ndarray, x0: int, z0: int, rect, per_site: int = 4,
+                         front: str | None = None):
     """Where a lane could meet this plot: the best cell just outside each side.
 
         One candidate per side, so the router can choose which face of a building the town
         arrives at rather than being told. That choice is the whole point of going first.
+
+        **...unless the plan says which face.** v2, C2: a leaf carrying `front` -- the side
+        its street is on, which the district compiler writes and a row of party walls
+        depends on, because its flanks have a neighbour against them -- offers that side
+        and no other; the way in is held on the street. Where that side has no cell in
+        the volume, every side, as before.
         
     """
     sx, sz = h.shape
@@ -142,6 +149,11 @@ def _approach_candidates(h: np.ndarray, x0: int, z0: int, rect, per_site: int = 
         "east": [(ax1 + 1, z) for z in range(az0, az1 + 1)],
     }
     into = {"north": "south", "south": "north", "west": "east", "east": "west"}
+    if front in sides:
+        only = [(x, z) for x, z in sides[front]
+                if 0 <= x - x0 < sx and 0 <= z - z0 < sz]
+        if only:
+            sides = {front: sides[front]}
     for side, cells in sides.items():
         # **The middle of the side on a tie.** The smoothest cell wins; where every cell
         # of the side is as smooth as the next -- which is every side of every site on a
@@ -372,9 +384,12 @@ def parts_to_routing(parts: list, passage=()) -> dict:
                 for i in (-1, 0, 1):
                     passable.add((ax + ah[0] * i, az + ah[1] * i))
             continue
-        sites.append({"id": name,
-                      "x0": min(p["x0"], p["x1"]), "z0": min(p["z0"], p["z1"]),
-                      "x1": max(p["x0"], p["x1"]), "z1": max(p["z0"], p["z1"])})
+        site = {"id": name,
+                "x0": min(p["x0"], p["x1"]), "z0": min(p["z0"], p["z1"]),
+                "x1": max(p["x0"], p["x1"]), "z1": max(p["z0"], p["z1"])}
+        if p.get("front"):
+            site["front"] = p["front"]           # v2, C2: the way in is on this side
+        sites.append(site)
     return {"sites": sites, "obstacles": obstacles - passable,
             "passable": passable}
 
@@ -447,7 +462,8 @@ def plan_network(heights: np.ndarray, x0: int, z0: int, sites: list, *,
                 avoid[i, j] = 0.0
     notes["arterial_cells"] = len(art_cells)
 
-    cand = {s["id"]: _approach_candidates(h, x0, z0, (s["x0"], s["z0"], s["x1"], s["z1"]))
+    cand = {s["id"]: _approach_candidates(h, x0, z0, (s["x0"], s["z0"], s["x1"], s["z1"]),
+                                          front=s.get("front"))
             for s in sites}
     ids = [s["id"] for s in sites if cand[s["id"]]]
     flat = [(sid, c) for sid in ids for c in cand[sid]]

@@ -393,7 +393,7 @@ def plan_map(plan: dict, network=None, site: dict | None = None,
 
 def instances(type_name: str, fixture: dict, seeds=(21, 22, 23, 24, 25),
               params: dict | None = None, voice: str | None = None,
-              scale: int = 2, gutter: int = 6) -> np.ndarray:
+              scale: int = 2, gutter: int = 6, rnd=None) -> np.ndarray:
     """`len(seeds)` instances of one type on one fixture plot, side by side.
 
         `fixture` is `{"round": name, "plot": label}` for a plot type, or one of the
@@ -406,7 +406,13 @@ def instances(type_name: str, fixture: dict, seeds=(21, 22, 23, 24, 25),
     """
     from . import stages
     from .pipeline import blind, stages_build
-    frnd, fbe = blind._fixture_round(fixture["round"])
+    if rnd is not None and fixture["round"] == rnd.name:
+        # v2, C4: a round's own plot, on its own ground -- the round need not be a
+        # config under `rounds/` to be drawn from
+        from .pipeline import OfflineBackend
+        frnd, fbe = rnd, OfflineBackend(rnd, dry_run=True)
+    else:
+        frnd, fbe = blind._fixture_round(fixture["round"])
     plots = {p["label"]: p for p in blind._plots_of(frnd)}
     plot = pipeline_fixture_part(fixture, plots)
     if plot is None:

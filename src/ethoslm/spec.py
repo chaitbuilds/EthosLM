@@ -38,6 +38,23 @@ SIZE_BANDS = {
     "monument": (1, 4),
 }
 
+
+def kind_order() -> list:
+    """The kinds of place from the smallest to the largest, read off `SIZE_BANDS` --
+    the one table -- and not declared again anywhere. v2, C0: the site search's last
+    escape drops a place one band down, and it kept its own list of the order."""
+    return sorted(SIZE_BANDS, key=lambda k: (SIZE_BANDS[k], k))
+
+
+def kind_below(kind: str) -> str | None:
+    """The kind one size band down from this one, or None at the bottom of the table
+    (and for a kind the table does not have)."""
+    order = kind_order()
+    if kind not in order or order.index(kind) == 0:
+        return None
+    return order[order.index(kind) - 1]
+
+
 #: What "about sixty" means, either side. The spec's own bar reads "about sixty: 48-72",
 #: which is this fraction, and it is written here rather than in a round file so that a
 #: sentence and the band it produces cannot drift apart.
@@ -67,6 +84,56 @@ DISTRICT_FAMILIES = ("district", "quarter")
 #: compound when the spec says `group` of its family -- a keep is a building unless the
 #: sentence makes it a castle. See `compound`.
 COMPOUND_FAMILIES = ("palace", "monument")
+
+#: **What a compound of each family is made of, at the least -- by the word.** v2, C0.
+#: Until this, every compound was palace-shaped: a closed wall of its own with a gate on
+#: it, two halls and a court were the validator, the brief, the place read's clause and
+#: the plateau arithmetic for any compound family, `monument` included, and every
+#: compound was granted the defensive types. A monument is one thing and its setting; a
+#: shrine precinct is a shrine and its court; a castle is a keep inside its own curtain
+#: wall with a gatehouse and a bailey. Each row says whether the compound has a closed
+#: wall of its own (`walled`), a gate on it (`gated`), the least enclosed parts
+#: (`halls`: plots) and open parts (`courts`: areas) it holds, and the roles it admits
+#: over its own (`admits`: a wall and a gate are defensive whatever the compound is for,
+#: so a walled compound admits them). The count of halls is a **floor** where the row
+#: `scales`: the compound's rectangle raises it at the compound's density
+#: (`placeplan.compound_target`), so a palace on two hundred square is not two halls and
+#: a court. A monument does not scale -- it is one thing whatever the size of its
+#: setting. A wall drawn where none is asked for is still held to be closed and inset,
+#: and a gate drawn is held to stand on it. A family not in the table is the default
+#: row, which is the palace's.
+COMPOSITIONS = {
+    "palace":   {"walled": True,  "gated": True,  "halls": 2, "courts": 1,
+                 "scales": True, "admits": ("defensive",)},
+    "monument": {"walled": False, "gated": False, "halls": 1, "courts": 1,
+                 "scales": False, "admits": ()},
+    "temple":   {"walled": False, "gated": False, "halls": 1, "courts": 1,
+                 "scales": True, "admits": ()},
+    "keep":     {"walled": True,  "gated": True,  "halls": 1, "courts": 1,
+                 "scales": True, "admits": ("defensive",)},
+    "tower":    {"walled": True,  "gated": True,  "halls": 1, "courts": 1,
+                 "scales": True, "admits": ("defensive",)},
+    "hall":     {"walled": False, "gated": False, "halls": 2, "courts": 1,
+                 "scales": True, "admits": ()},
+    "house":    {"walled": False, "gated": False, "halls": 2, "courts": 1,
+                 "scales": True, "admits": ()},
+    "workshop": {"walled": False, "gated": False, "halls": 2, "courts": 1,
+                 "scales": True, "admits": ()},
+}
+COMPOSITION_DEFAULT = COMPOSITIONS["palace"]
+
+
+def composition(part_or_family) -> dict:
+    """What a compound of this family is made of, at the least: one `COMPOSITIONS` row,
+    copied, with `family` on it. Takes a defining part or a family name; `None` and a
+    family not in the table are the default row."""
+    fam = part_or_family.get("family") if isinstance(part_or_family, dict) \
+        else part_or_family
+    row = COMPOSITIONS.get(fam) if fam else None
+    out = dict(row or COMPOSITION_DEFAULT)
+    out["admits"] = tuple(out["admits"])
+    out["family"] = fam or "compound"
+    return out
 
 #: The families of form a place is built in. A type declares one of these and the plan
 #: filters on it, so a place says which building tradition it is in and the palette is a
@@ -149,6 +216,41 @@ PART_NEEDS_DEFAULT = {"max_relief": None,      # over this part's own ground
 #: -- and an authored one is validated by the voice validator exactly as the place's is.
 RING_FIELDS = ("ring", "share", "walled", "voice")
 
+#: **A district's character**, v2, C1: what a district is like, in words and a few
+#: numbers, which the district compiler (`ethoslm.district_compile`) turns into streets,
+#: blocks, lots and buildings with no model asked. The model writes this in the district
+#: brief's place. Every field is optional; the density word's row of
+#: `CHARACTER_DEFAULTS` fills what is not said. frontage `street`: lots front the
+#: streets, doors on them, a clearance apart; `open`: freestanding buildings a lane
+#: apart, the way in wherever the lanes arrive. block the block's length along its
+#: street, in columns. lot_depth how deep a lot runs back from its street, in columns.
+#: attached true: lots in a row touch, party wall to party wall. courtyard_share the
+#: share of blocks whose back row is a court the front row shares, 0 to 1. open_share
+#: the share of blocks left as open ground -- fields, gardens, groves, a plaza, by the
+#: role and the density -- 0 to 1. landmarks `[{"type": name, "notes": ...}]`: a fixed
+#: landmark, placed on the block nearest the district's middle with a plaza about it.
+CHARACTER_FIELDS = ("frontage", "block", "lot_depth", "attached", "courtyard_share",
+                    "open_share", "landmarks")
+
+FRONTAGES = ("street", "open")
+
+#: What a district of each density word is like when the spec says only the word.
+#: `block` and `lot_depth` are None here because they are the density's own lot
+#: (`placeplan.occupancy_shares`: three lots a block, a lot deep) and the compiler fills
+#: them.
+CHARACTER_DEFAULTS = {
+    "sparse": {"frontage": "open", "block": None, "lot_depth": None, "attached": False,
+               "courtyard_share": 0.0, "open_share": 0.5, "landmarks": []},
+    "low":    {"frontage": "open", "block": None, "lot_depth": None, "attached": False,
+               "courtyard_share": 0.0, "open_share": 0.3, "landmarks": []},
+    "medium": {"frontage": "street", "block": None, "lot_depth": None,
+               "attached": False, "courtyard_share": 0.15, "open_share": 0.15,
+               "landmarks": []},
+    "dense":  {"frontage": "street", "block": None, "lot_depth": None,
+               "attached": False, "courtyard_share": 0.25, "open_share": 0.05,
+               "landmarks": []},
+}
+
 #: The words `setting.relief` may be, and the **fall per block of footprint** each one
 #: caps the whole footprint at. Registered from the record before any search ran on
 #: them, and from nothing else: flat 0.25. The demo city stood on 178 over 512 (0.35)
@@ -196,7 +298,8 @@ class SpecError(ValueError):
 
 #: The fields of a defining part a hand-back may replace one at a time.
 PART_FIELDS = ("kind", "family", "relation", "of", "count", "structures", "needs", "forms",
-               "density", "role", "ring", "share", "walled", "voice", "notes")
+               "density", "role", "ring", "share", "walled", "voice", "character",
+               "notes")
 
 
 def merge_hand_back(first: dict, answer: dict, fields: list) -> dict:
@@ -644,6 +747,7 @@ def read_part(d: dict, where: str) -> dict:
            "notes": str(d.get("notes") or "")}
     out["role"] = read_role(d.get("role"), out, f"{where} ({name})")
     read_ring_fields(d, out, f"{where} ({name})")
+    read_character(d.get("character"), out, f"{where} ({name})")
     of = d.get("of")
     if of is not None:
         if rel not in RELATIONS_OF:
@@ -710,6 +814,70 @@ def read_ring_fields(d: dict, out: dict, where: str) -> None:
         out["voice"] = name
         if authored:
             out["authored_voice"] = authored
+
+
+def read_character(got, out: dict, where: str) -> None:
+    """A district part's `character`, checked, onto `out["character"]`. v2, C1.
+
+        Absent means the district is planned as it always was; present -- even empty --
+        means the compiler plans it. Refused by name on a part that is not a district, on
+        a field that is not one of `CHARACTER_FIELDS`, and on a value out of its range.
+        
+    """
+    if got is None:
+        return
+    if not district(out):
+        raise SpecError(f"{where}: a character belongs to a district part -- a `group` "
+                        f"of family {list(DISTRICT_FAMILIES)} -- and this is a "
+                        f"{out['kind']} of family {out['family']}", field="character",
+                        part=out["name"])
+    if not isinstance(got, dict):
+        raise SpecError(f"{where}: character is an object of {list(CHARACTER_FIELDS)}, "
+                        f"not {type(got).__name__}", field="character", part=out["name"])
+    ch = {}
+    for k, v in got.items():
+        if k not in CHARACTER_FIELDS:
+            raise SpecError(f"{where}: character has no field {k!r}; it is one of "
+                            f"{list(CHARACTER_FIELDS)}", field="character",
+                            part=out["name"])
+        if v is None:
+            continue
+        if k == "frontage":
+            if v not in FRONTAGES:
+                raise SpecError(f"{where}: frontage is one of {list(FRONTAGES)}, not "
+                                f"{v!r}", field="character", part=out["name"])
+        elif k in ("block", "lot_depth"):
+            if isinstance(v, bool) or not isinstance(v, int) or not 3 <= v <= 256:
+                raise SpecError(f"{where}: {k} is a whole number of columns, 3 to 256, "
+                                f"not {v!r}", field="character", part=out["name"])
+        elif k == "attached":
+            if not isinstance(v, bool):
+                raise SpecError(f"{where}: attached is true or false, not {v!r}",
+                                field="character", part=out["name"])
+        elif k in ("courtyard_share", "open_share"):
+            if isinstance(v, bool) or not isinstance(v, (int, float)) \
+                    or not 0.0 <= float(v) <= 1.0:
+                raise SpecError(f"{where}: {k} is a share, 0 to 1, not {v!r}",
+                                field="character", part=out["name"])
+            v = float(v)
+        elif k == "landmarks":
+            if not isinstance(v, list) or not all(
+                    isinstance(m, dict) and isinstance(m.get("type"), str)
+                    and re.fullmatch(r"[a-z0-9_]{2,40}", m["type"]) for m in v):
+                raise SpecError(f"{where}: landmarks is a list of {{\"type\": a type "
+                                f"name}}, not {v!r}", field="character",
+                                part=out["name"])
+            v = [{"type": m["type"], "notes": str(m.get("notes") or "")} for m in v]
+        ch[k] = v
+    out["character"] = ch
+
+
+def character(part: dict) -> dict | None:
+    """The character a district part carries, or None where it carries none and the
+    district is a model's to plan."""
+    if not district(part):
+        return None
+    return part.get("character")
 
 
 def rings(spec: dict) -> list:

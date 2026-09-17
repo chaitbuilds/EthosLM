@@ -12,6 +12,7 @@ from .. import pipeline as _pipeline
 from .. import card as card_mod
 from .. import measure as measure_mod
 from .. import offline, settlement, verdicts
+from .. import spec as spec_mod
 from ..measure import record
 from .round import Round
 
@@ -211,16 +212,18 @@ def plan_failures(parts: list, decls: dict, ground: dict | None = None,
         # its district's role -- `placeplan.district_plots` and `placeplan.assemble`
         # stamp it from the defining part the district was drawn for -- so this is the
         # one place the two declarations are put side by side.
-        if not role_ok(decl.get("role"), p.get("role"), compound=bool(p.get("compound"))):
+        admits = (tuple(p["admits"]) if p.get("admits") is not None
+                  else (COMPOUND_ROLES if p.get("compound") else ()))
+        if not role_ok(decl.get("role"), p.get("role"), compound=bool(p.get("compound")),
+                       admits=admits):
             fail(p, "role", f"{p['name']}: type {t} is a {decl.get('role')} building "
                  f"and this is a {p.get('role')} "
                  f"{'compound' if p.get('compound') else 'district'}; it is built out "
                  f"of what it is for, plus the {' and '.join(UNIVERSAL_ROLES)} "
                  f"buildings any part of a place may hold"
-                 + (f" and the {' and '.join(COMPOUND_ROLES)} types every compound has"
-                    if p.get("compound") else ""),
-                 allowed=[p.get("role"), *UNIVERSAL_ROLES,
-                          *(COMPOUND_ROLES if p.get("compound") else ())],
+                 + (f" and the {' and '.join(admits)} types a walled compound has"
+                    if admits else ""),
+                 allowed=[p.get("role"), *UNIVERSAL_ROLES, *admits],
                  role=decl.get("role"))
         if decl.get("kind", "plot") != p.get("kind", "plot"):
             fail(p, "type", f"this leaf is a {p.get('kind', 'plot')!r} and "
@@ -288,6 +291,10 @@ def plan_failures(parts: list, decls: dict, ground: dict | None = None,
                           for q in (a, b))
             if crosses and "edge" in kinds:
                 continue
+            # v2, C2: ...and two **attached** leaves on a shared frontage, party wall to
+            # party wall: the one other touch a place is made of.
+            if party_wall(a, b, decls):
+                continue
             m = max(clear[i], clear[j])
             grown = [(r[0] - m, r[1] - m, r[2] + m, r[3] + m) for r in cells[j]]
             if not _rects_overlap(cells[i], grown):
@@ -301,6 +308,33 @@ def plan_failures(parts: list, decls: dict, ground: dict | None = None,
                                 f"{a['name']} and {b['name']} are closer than the "
                                 f"{m} block(s) of clearance one of them needs")})
     return out
+
+
+def party_wall(a: dict, b: dict, decls: dict) -> bool:
+    """Do these two leaves stand party wall to party wall? v2, C2.
+
+        Both plots of types that declare `ATTACHED`, both fronting the same side, and
+        flank against flank -- edge-adjacent across the axis their front runs along, with
+        their runs overlapping, and not overlapping each other. A touch, and only that.
+        
+    """
+    if a.get("kind", "plot") != "plot" or b.get("kind", "plot") != "plot":
+        return False
+    if not all((decls.get(q.get("type")) or {}).get("attached") for q in (a, b)):
+        return False
+    front = a.get("front")
+    if not front or front != b.get("front"):
+        return False
+    ra, rb = part_rect(a), part_rect(b)
+    if _rects_overlap([ra], [rb]):
+        return False
+    if front in ("north", "south"):
+        beside = ra[2] + 1 == rb[0] or rb[2] + 1 == ra[0]
+        along = ra[1] <= rb[3] and rb[1] <= ra[3]
+    else:
+        beside = ra[3] + 1 == rb[1] or rb[3] + 1 == ra[1]
+        along = ra[0] <= rb[2] and rb[0] <= ra[2]
+    return beside and along
 
 
 def _rects_overlap(a: list, b: list) -> bool:
@@ -477,25 +511,29 @@ def read_role(ns: dict, where: str = "a type") -> str | None:
     return str(got)
 
 
-#: The roles a **compound** admits over its own: a great thing has a wall and a gate
-#: whatever it is for. `placeplan.COMPOUND_ROLES` is the same tuple; it lives there for
-#: the brief and here for the refusal, and the two are one line.
-COMPOUND_ROLES = ("defensive",)
+#: The roles a **compound** of the default composition admits over its own: a walled
+#: great thing has a wall and a gate whatever it is for. `placeplan.COMPOUND_ROLES` is
+#: the same tuple; it lives there for the brief and here for the refusal, and both are
+#: `spec.COMPOSITION_DEFAULT`'s. v2, C0: a compound's leaves carry what their family
+#: admits (`admits`, stamped by `placeplan.compound_parts`), and a leaf that carries
+#: none -- a plan from before -- admits this.
+COMPOUND_ROLES = tuple(spec_mod.COMPOSITION_DEFAULT["admits"])
 
 
 def role_ok(role: str | None, district_role: str | None, *,
-            compound: bool = False) -> bool:
+            compound: bool = False, admits=None) -> bool:
     """May a type of this role stand in a district of that role?
 
         Yes when the district names no role, when the type declares none, when the two are
         the same, or when the type is one of `UNIVERSAL_ROLES` -- and, inside a compound,
-        when it is one of `COMPOUND_ROLES`.
+        when it is one of the roles the compound's family admits (`admits`; `COMPOUND_ROLES`
+        where the leaf says nothing).
         
     """
     if not district_role or not role:
         return True
-    return (role == district_role or role in UNIVERSAL_ROLES
-            or (compound and role in COMPOUND_ROLES))
+    extra = tuple(admits) if admits is not None else (COMPOUND_ROLES if compound else ())
+    return role == district_role or role in UNIVERSAL_ROLES or role in extra
 
 
 def form_ok(form: str | None, place_form: str | None) -> bool:
@@ -685,6 +723,9 @@ def load_type(path: str) -> dict:
             # it. Optional, and a plot where it is not said, because every type written
             # before A3 is a building on a plot and none of them says so.
             "kind": ns.get("KIND", "plot"), "passage": bool(ns.get("PASSAGE", False)),
+            # v2, C2: a plot type whose flanks are party walls says so, and may then
+            # stand touching the next such leaf on a shared frontage.
+            "attached": bool(ns.get("ATTACHED", False)),
             # a layout draws an octagon only for a type that does
             "diagonal": bool(ns.get("DIAGONAL_RUNS", False)),
             # What it needs from the ground. Optional here for the same reason. Every
@@ -914,6 +955,13 @@ that holds them is. Each one is:
       "voice":     with `ring`: the palette this ring is built in -- a voice name, null
                    for the place's own, or a voice you write (the same object as the
                    place's `voice` below),
+      "character": for a district: what it is like, as words and a few numbers --
+                   {{"frontage": {frontages}, "block": columns along a street,
+                   "lot_depth": columns back from it, "attached": true | false,
+                   "courtyard_share": 0..1, "open_share": 0..1,
+                   "landmarks": [{{"type": a type name, "notes": ...}}]}} -- every
+                   field optional (the density word fills the rest); omit the whole
+                   object and the district is planned plot by plot instead,
       "notes":     one sentence on what it is and why the sentence implies it}}
 
   - **Rings.** A concentric place -- rings of districts around one thing at the middle --
@@ -966,6 +1014,17 @@ that holds them is. Each one is:
     place's `form` applies, which is the right answer almost always.
   - **`density`** says how thickly a part that holds structures is built up. It is a
     word and not a number: the ground each structure takes is computed from it here.
+  - **`character`** is how a district is *made*, and it is what you write for a
+    district in place of any plan of it: a district with a character is compiled --
+    streets at the block size, blocks of lots at the frontage the types declare,
+    buildings fronting the streets, courtyards and open ground by the shares, the
+    landmark on the block nearest the middle -- and no call draws its plots. Say
+    `attached` where the sentence means terraces or a street of party walls,
+    `frontage: "open"` where the buildings stand apart in their own ground, a large
+    `open_share` for orchards, fields and commons, a `courtyard_share` where the
+    houses share yards behind them, and a `landmark` where one building is the
+    district's own -- a hall, a temple, a market. The numbers are approximate and the
+    compiler holds the result to the density's count and cover.
   - **`role`** is what the part is *for*, and it decides which types a later call may
     build in it: a `rural` district is farmhouses and fields, an `urban` one is street
     houses and shops, a `civic` one is what a place holds at its middle, a `defensive`
@@ -1123,6 +1182,7 @@ def spec_brief(sentence: str, out_path: str) -> str:
         densities=" | ".join(sorted(spec_mod.DENSITIES,
                                     key=lambda k: -spec_mod.DENSITIES[k])),
         roles=" | ".join(spec_mod.ROLES),
+        frontages=" | ".join(f'"{f}"' for f in spec_mod.FRONTAGES),
         surfaces=" | ".join(f'"{s}"' for s in groundread.SURFACES),
         biomes=" | ".join(f'"{b}"' for b in groundread.BIOMES if b != "any"),
         families_line="\n".join(f"        {ln}" for ln in lines),
@@ -2183,6 +2243,32 @@ def district_asks(rnd, spec: dict, site: dict, place: dict, types, voice) -> dic
     for d in (place.get("districts") or []):
         db = rnd.rel(f"district_{d['name']}_prompt.md")
         dp = rnd.rel(f"plan.district.{d['name']}.json")
+        # v2, C1: **a district with a character is compiled, and no model is asked.**
+        # The file the compiler writes is the one a model used to write, at the same
+        # seam, held to the same validator below; the record says what it laid.
+        part = placeplan._district_part(spec, d)
+        # ...and v2, C5: where the compiler's answer was refused and the character's
+        # author has written a new one, it is taken here, before anything is compiled.
+        if apply_character(rnd, spec, part):
+            for f in (dp, rnd.rel(f"district_{d['name']}_compiled.json")):
+                if os.path.exists(f):
+                    os.remove(f)
+        if not os.path.exists(dp) and spec_mod.character(part) is not None:
+            from .. import district_compile
+            os.makedirs(rnd.state, exist_ok=True)
+            role = spec_mod.district_role(spec, d)
+            _t, mine = placeplan.types_card(types, spec.get("form"), role)
+            got, rec = district_compile.compile_district(
+                d, part, place, mine, spec=spec,
+                seed=int(rnd.flags.get("seed") or 1))
+            json.dump(got, open(dp, "w"), indent=1)
+            json.dump(rec, open(rnd.rel(f"district_{d['name']}_compiled.json"), "w"),
+                      indent=1)
+            print(f"   district {d['name']}: compiled from its character -- "
+                  f"{rec['lots']} lots on {rec['blocks']} blocks, plot cover "
+                  f"{rec['plot_cover']:.0%}, {rec['undeveloped_share']:.0%} "
+                  f"undeveloped", flush=True)
+            continue
         if not os.path.exists(db):
             os.makedirs(rnd.state, exist_ok=True)
             open(db, "w").write(
@@ -2196,6 +2282,165 @@ def district_asks(rnd, spec: dict, site: dict, place: dict, types, voice) -> dic
     return asks
 
 
+CHARACTER_BRIEF = """# A district was compiled from your character and refused
+
+> {sentence}
+
+The district **{district}** of `{part}` was laid out from the character you wrote --
+no model drew its plots -- and what came out does not pass the validator every
+district is held to. Nothing has been built and nothing is in the world.
+
+## The district
+
+x {x0}..{x1}, z {z0}..{z1} -- {w} by {d} blocks, {columns} columns. It is a
+**{density}** district and it is **{role}**, and it was asked for **{structures}**
+structures.
+
+## The character you wrote
+
+{character}
+
+## What the compiler laid from it
+
+{laid}
+
+## What it is short of
+
+{failures}
+
+## What a character can change
+
+{fields}
+
+The defaults per density word, which fill any field you leave out:
+
+{defaults}
+
+**What is actually going on, in the compiler's own arithmetic.** A district's ground
+goes to three things: the lots, the open ground between them, and the lanes. Lots a
+**lane** apart (`frontage: "open"`) leave five blocks between neighbours that nothing
+can be planted in, because a piece of open ground has to keep three clear of a
+building -- so an open fabric spends a quarter of its ground on lanes and cannot be
+covered past about three fifths. Lots a **clearance** apart (`frontage: "street"`)
+pack tighter, and whole blocks given to open ground (`open_share`) or to a court
+behind each row (`courtyard_share`) are what the cover is actually made of, because a
+big piece of open ground tiles far better than the scraps between houses. A longer
+block (`block`) is fewer streets. The compiler already lengthens the block and raises
+the shares as far as it can on its own; what it cannot do is change what kind of
+fabric you asked for.
+
+## Output
+
+Write a single JSON file to {out}:
+
+{{"character": {{...the whole character for this part, every field you want...}},
+  "why": "one or two sentences on what you changed and why"}}
+
+Only this part's character changes; every other part of the spec, the site, the size
+and the voice stand. This is asked **once**: a second refusal stops the run.
+"""
+
+
+def apply_character(rnd, spec: dict, part: dict) -> bool:
+    """Take a character the author wrote after a refusal onto the spec on disk. v2, C5.
+
+        True where one was applied, so the caller drops what was compiled from the old
+        one. Refused by name into the record where it does not read.
+        
+    """
+    if not part or not spec_mod.district(part):
+        return False
+    p = rnd.rel(f"character.{part['name']}.json")
+    if not os.path.exists(p):
+        return False
+    try:
+        doc = json.load(open(p))
+    except ValueError:
+        return False
+    got = doc.get("character")
+    probe = dict(part)
+    try:
+        spec_mod.read_character(got, probe, f"the character for {part['name']}")
+    except spec_mod.SpecError as e:
+        doc["refused"] = str(e)
+        json.dump(doc, open(p, "w"), indent=1)
+        return False
+    if probe.get("character") == part.get("character"):
+        return False
+    # **Taken once.** The answer stays on disk as the record of what was asked and
+    # answered, and `applied` is what was taken from it; without this the file is
+    # applied again on every re-entry and undoes anything written over it later -- a
+    # hand-back from the plan stage silently put back the character the preview's
+    # revision had just replaced.
+    if doc.get("applied") == probe["character"]:
+        return False
+    raw_p = (rnd.rel("place.checked.json")
+             if os.path.exists(rnd.rel("place.checked.json")) else rnd.rel("place.json"))
+    raw = json.load(open(raw_p))
+    for rp in raw.get("defining_parts") or []:
+        if rp.get("name") == part["name"]:
+            rp["character"] = probe["character"]
+    json.dump(raw, open(raw_p, "w"), indent=1)
+    part["character"] = probe["character"]
+    for q in spec.get("defining_parts") or []:
+        if q.get("name") == part["name"]:
+            q["character"] = probe["character"]
+    doc["applied"] = probe["character"]
+    json.dump(doc, open(p, "w"), indent=1)
+    print(f"   character: {part['name']} taken from its author's second answer -- "
+          f"{json.dumps(probe['character'])}", flush=True)
+    return True
+
+
+def character_hand_back(rnd, spec: dict, d: dict, part: dict, fails: list,
+                        n: int) -> dict:
+    """Hand one compiled district's refusal back to the character's author. v2, C5."""
+    from .. import placeplan
+    x0, x1 = min(d["x0"], d["x1"]), max(d["x0"], d["x1"])
+    z0, z1 = min(d["z0"], d["z1"]), max(d["z0"], d["z1"])
+    rec_p = rnd.rel(f"district_{d['name']}_compiled.json")
+    rec = json.load(open(rec_p)) if os.path.exists(rec_p) else {}
+    laid = "  (the compiler wrote no record)"
+    if rec:
+        laid = "\n".join([
+            f"  - **{rec['lots']} lots** of {rec['lot'][0]}x{rec['lot'][1]} "
+            f"({rec['house']}) on {rec['blocks']} block(s) of {rec['block']}, "
+            f"{rec['block_kinds']}",
+            f"  - the plots cover **{rec['plot_cover']:.0%}** of the district and the "
+            f"plots and the open ground together **{rec['ground_cover']:.0%}**; "
+            f"**{rec['undeveloped_share']:.0%}** is assigned to nothing",
+            f"  - every column: {rec['assigned']}",
+            f"  - it already tried: " + ", ".join(
+                f"open {t['open_share']:g}/court {t['courtyard_share']:g}"
+                f"/block {t['block']} -> {t['lots']} lots, ground "
+                f"{t['ground_cover']:.0%}" for t in (rec.get("tries") or [])[:8]),
+        ])
+    fields = "\n".join(f"  - `{k}`" for k in spec_mod.CHARACTER_FIELDS)
+    fields += ("\n\n`frontage` is one of " + ", ".join(f"`{f}`" for f in spec_mod.FRONTAGES)
+               + "; `block` and `lot_depth` are whole numbers of columns; `attached` is "
+                 "true or false; the two shares are 0 to 1; `landmarks` is a list of "
+                 "{\"type\": a type name}.")
+    out_p = rnd.rel(f"character.{part['name']}.json")
+    brief_p = rnd.rel(f"character_{d['name']}_prompt.md")
+    open(brief_p, "w").write(CHARACTER_BRIEF.format(
+        sentence=(spec.get("sentence") or rnd.sentence or ""), district=d["name"],
+        part=part["name"], x0=x0, x1=x1, z0=z0, z1=z1, w=x1 - x0 + 1, d=z1 - z0 + 1,
+        columns=(x1 - x0 + 1) * (z1 - z0 + 1),
+        density=part.get("density") or "medium", role=part.get("role") or "urban",
+        structures=d.get("structures"),
+        character=json.dumps(part.get("character"), indent=1),
+        laid=laid,
+        failures="\n".join(f"  - **{f.get('check')}** -- {f['why']}" for f in fails),
+        fields=fields,
+        defaults=json.dumps(spec_mod.CHARACTER_DEFAULTS, indent=1), out=out_p))
+    return {"plan": {"status": "needs_model", "role": "spec", "request": brief_p,
+                     "write": out_p, "level": f"district/{d['name']}", "attempt": n,
+                     "failures": fails, "compiled": True,
+                     "note": f"the district compiled from {part['name']}'s character "
+                             f"fails its validator; the character's author is asked "
+                             f"once for one that does not"}}
+
+
 def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     """Plan the place, then plan each district. A5."""
     from .. import pipeline, placeplan, spec as spec_mod
@@ -2205,6 +2450,15 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
                          "error": "no site.json: a place is planned against ground and "
                                   "no site has been prepared"}}
     types = rnd.flags.get("types")
+    # v2, C3: **the library grows when the spec asks for a form it lacks.** A defining
+    # part no committed type builds is a type authored blind, checked and adopted here,
+    # before the place is planned -- a run's worth of them and no more.
+    from .. import growth
+    gaps = growth.type_gaps(spec, types)
+    if gaps:
+        grown = growth.stage(rnd, be, spec, gaps, types=types, site=site)
+        if grown is not None:
+            return grown
     voice = place_voice(rnd, spec, site)
     _table, decls = placeplan.types_card(types, spec.get("form"))
     if not decls:
@@ -2364,6 +2618,23 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
             n = _record_level(rnd, f"district/{d['name']}", dfails,
                               ["district", "count", "cover", "ground_cover",
                                "type", "role", "footprint", "ground", "overlap"])
+            # v2, C1 and C5: a **compiled** district is not the district planner's to
+            # hand back -- no model drew it -- but the **character** it was compiled
+            # from is a model's, and that is who is answerable for a fabric the
+            # validator refuses. So the refusal goes back to the character's author,
+            # once, with what the compiler laid and what it was short of; refused twice,
+            # the run stops by name.
+            part = placeplan._district_part(spec, d)
+            if spec_mod.character(part) is not None:
+                if n >= 2:
+                    return {"plan": {"status": "error", "stop": True,
+                                     "level": f"district/{d['name']}", "attempt": n,
+                                     "failures": dfails, "compiled": True,
+                                     "error": f"the compiled district {d['name']} fails "
+                                              f"its validator twice: " + "; ".join(
+                                                  f"{f.get('part')}: {f['why']}"
+                                                  for f in dfails[:6])}}
+                return character_hand_back(rnd, spec, d, part, dfails, n)
             if n >= 2:
                 return {"plan": {"status": "error", "stop": True,
                                  "level": f"district/{d['name']}", "attempt": n,
@@ -2450,8 +2721,11 @@ def place_voice(rnd, spec: dict | None, site: dict | None) -> str:
     return got
 
 
-def _choose_voice(spec: dict, site: dict) -> str:
+def _choose_voice(spec: dict, site: dict, check_types: bool = True) -> str:
     """The voice, chosen against the ground. Deterministic, and no model call.
+
+        `check_types` false skips the refusal below: the library's growth (v2, C3) needs
+        the voice for a brief before the missing type exists.
 
         **Every voice covers every defining part now**, which is A1 in one function. This
         used to ask, of each of seven voices, whether the committed types declaring *that
@@ -2472,7 +2746,7 @@ def _choose_voice(spec: dict, site: dict) -> str:
                if p["kind"] != "group" and not any(
                    t["kind"] == p["kind"] and (t["type"] == p["family"]
                      or t["type"].startswith(p["family"] + "_")) for t in typed)]
-    if missing:
+    if missing and check_types:
         raise ValueError(f"no committed type of the form family "
                          f"{spec.get('form') or 'any'} builds "
                          f"{', '.join(missing)}: the place cannot be planned until one "

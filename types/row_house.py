@@ -14,6 +14,11 @@ import random
 KIND = "plot"
 FORM = "east_asian"
 ROLE = "urban"
+#: v2, C2: the two long flanks are party walls, so this type may stand **attached** --
+#: the next house against it, the pad reaching the plot's edge on that side, the way in
+#: on the street. The plan says which sides (`part["attached"]`); the type builds its
+#: flanks blank whatever the plan says, as it always has.
+ATTACHED = True
 
 PARAMS = {
     "storeys": ("int", 1, 3),

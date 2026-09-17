@@ -3,9 +3,10 @@
     $PY scripts/check_types.py [name ...] [--out DIR] [--jobs N]
 
 Voice contract, B1. `pipeline.check_type` stands a type on its registered fixtures at
-both seeds in the voice its author was given **and** in the member of
-`pipeline.SILHOUETTE_PAIR` whose silhouette is least like it, and says whether the two
-read the same. This runs that over `types/*.py`.
+both seeds in the voice its author was given **and** in the round's place's own voice
+(or, where that is the author's, the voice on disk whose silhouette is least like it;
+`pipeline.check_voices`), and says whether the two read the same. This runs that over
+`types/*.py`.
 
 A type's authoring voice is read from the round configs that authored it; a reference
 type is checked in the pair itself.
@@ -61,7 +62,7 @@ def check_one(name: str, out_dir: str, voices_by: dict, sweep: bool = True) -> d
     decl = pipeline.load_type(path)
     spec = {"name": name, "part": decl["kind"], "file": path}
     voice = voices_by.get(name)
-    voices = pipeline.check_voices(voice)
+    voices = pipeline.check_voices(voice, rnd.voice_name())
     fixtures = pipeline._fixtures_for(rnd, spec)
     seeds = pipeline._seeds_for(rnd, spec)
     t0 = time.perf_counter()

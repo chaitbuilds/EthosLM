@@ -1177,3 +1177,468 @@ def _write_selection(rnd: Round, out: dict) -> dict:
     os.makedirs(_pipeline._cand_dir(rnd), exist_ok=True)
     json.dump(out, open(p, "w"), indent=1)
     return {**out, "written": p}
+
+
+# ------------------------------------------------------------ the loop before the city
+# v2, C4. A city was judged after four hundred copies of a design nobody had looked at:
+# the map, the landmark and five buildings are drawn the moment the plan exists --
+# offline, deterministic, seconds -- written to disk, handed to the judge for a reading
+# and to the principal for one bounded revision of the characters or the voice, and then
+# the build.
+
+#: How many representative buildings the preview draws: the plot types the plan names
+#: most, one instance each on the round's own largest plot of that type.
+PREVIEW_BUILDINGS = 5
+
+#: How many revisions the loop admits before the build. One: the point is to look once
+#: before four hundred copies, not to iterate a design by model call.
+PREVIEW_REVISIONS = 1
+
+READING_BRIEF = """# Read a plan before it is built
+
+> {sentence}
+
+{intent}
+
+Three pictures are attached, drawn from the plan of this place before a block is laid:
+
+1. **The map** -- the whole plan at one pixel a column: districts, rings, lanes, plots
+   (brown), areas (green), walls (dark), gates and doors.
+2. **The landmark** -- {landmark}, the greatest single thing the plan holds, built
+   once on its own plot.
+3. **Five buildings** -- one each of the plot types the plan names most, left to
+   right: {buildings}.
+
+{voice}
+
+## How the districts are made
+
+{characters}
+
+## What is asked
+
+Write a page, as a person who will walk this place: **what would they see wrong that
+no check reports?** The fabric first -- do the streets, blocks and frontages read as
+a place built on purpose, or as a grid; is the ground between the houses somebody's
+or nobody's; is the density what the sentence means -- then the landmark, then the
+buildings and the voice. Name each finding with the picture it is in and the
+district or type it is about. Say what is right too, in a line. No score, no
+numbers: what a person sees.
+"""
+
+REVISION_BRIEF = """# One revision before the build
+
+> {sentence}
+
+{intent}
+
+The plan of this place has been drawn and read once. The three pictures are attached
+again -- the map, the landmark ({landmark}) and five buildings ({buildings}) -- and
+this is the reading:
+
+---
+
+{reading}
+
+---
+
+## What you may change, once
+
+**The characters of the districts** -- how each district is made, in words and a few
+numbers -- and **the voice** the place is built in. Nothing else: the place's parts,
+its site and its size stand. The compiler lays every district out again from what you
+write, deterministically, and the build follows; there is no second look.
+
+The characters as they stand:
+
+{characters}
+
+A character is an object of these fields, every one optional; a field you leave out
+keeps the density word's default:
+
+{fields}
+
+The voice as it stands is `{voice_name}`. The voices on disk:
+
+{voices}
+
+## Output
+
+Reply with one JSON document:
+
+{{"characters": {{"<district part name>": {{...a character, whole...}}}},
+  "voice": "<a voice name>" or null,
+  "why": "one or two sentences"}}
+
+`characters` holds only the districts you change, each with its whole character;
+`{{}}` changes none. `voice` null keeps the voice. If the reading finds nothing worth
+a change, say so in `why` and change nothing.
+"""
+
+
+def _preview_landmark(parts: list) -> dict | None:
+    """The plan's greatest single thing: the largest plot leaf inside a compound,
+    else the largest civic plot, else the largest plot."""
+    from . import load_type
+    plots = [p for p in parts if p.get("kind", "plot") == "plot" and p.get("type")]
+    if not plots:
+        return None
+
+    def area(p):
+        r = _pipeline.part_rect(p)
+        return (r[2] - r[0] + 1) * (r[3] - r[1] + 1)
+
+    def role(p):
+        try:
+            return load_type(os.path.join(_pipeline.ROOT, "types",
+                                          f"{p['type']}.py")).get("role")
+        except Exception:                        # noqa: BLE001 -- not a landmark then
+            return None
+
+    pool = [p for p in plots if p.get("compound")] or plots
+    civic = [p for p in pool if role(p) == "civic"]
+    pool = civic or pool
+    return max(pool, key=lambda p: (area(p), p["name"]))
+
+
+def _preview_buildings(parts: list, n: int = PREVIEW_BUILDINGS) -> list:
+    """The `n` plot types the plan names most, each with the leaf it is drawn from:
+    the largest plot of that type."""
+    plots = [p for p in parts if p.get("kind", "plot") == "plot" and p.get("type")]
+    by: dict = {}
+    for p in plots:
+        by.setdefault(p["type"], []).append(p)
+
+    def area(p):
+        r = _pipeline.part_rect(p)
+        return (r[2] - r[0] + 1) * (r[3] - r[1] + 1)
+
+    order = sorted(by, key=lambda t: (-len(by[t]), t))[:n]
+    return [(t, len(by[t]), max(by[t], key=lambda p: (area(p), p["name"])))
+            for t in order]
+
+
+def _preview_characters(rnd: Round, spec: dict | None) -> list:
+    """Every district part's character as the spec wrote it, with what the compiler
+    laid from it where it did."""
+    from .. import spec as spec_mod
+    out = []
+    for p in (spec or {}).get("defining_parts") or []:
+        if not spec_mod.district(p):
+            continue
+        row = {"part": p["name"], "density": p.get("density"), "role": p.get("role"),
+               "character": p.get("character")}
+        laid = []
+        for f in sorted(os.listdir(rnd.state)) if os.path.isdir(rnd.state) else []:
+            if f.startswith("district_") and f.endswith("_compiled.json"):
+                rec = json.load(open(rnd.rel(f)))
+                if rec.get("part") == p["name"]:
+                    laid.append({k: rec.get(k) for k in
+                                 ("district", "house", "lot", "block", "lots",
+                                  "party_walls", "courts", "open", "verges",
+                                  "plot_cover", "ground_cover", "undeveloped_share",
+                                  "block_kinds", "raised")})
+        row["compiled"] = laid
+        out.append(row)
+    return out
+
+
+def _draw_preview(rnd: Round, plan: dict, parts: list, site, voice: str | None,
+                  tag: str) -> dict:
+    """The map, the landmark and the buildings, to `<state>/preview/`."""
+    import cv2
+    from .. import preview as preview_mod
+    d = rnd.rel("preview")
+    os.makedirs(d, exist_ok=True)
+    t0 = time.perf_counter()
+    out: dict = {"images": {}, "seconds": {}}
+    img = preview_mod.plan_map(plan, rnd.network(), site)
+    p = os.path.join(d, f"map{tag}.png")
+    cv2.imwrite(p, img[:, :, ::-1])
+    out["images"]["map"] = p
+    out["seconds"]["map"] = round(time.perf_counter() - t0, 2)
+    lm = _preview_landmark(parts)
+    if lm is not None:
+        t1 = time.perf_counter()
+        img = preview_mod.instances(lm["type"], {"round": rnd.name, "plot": lm["name"]},
+                                    seeds=(int(lm.get("seed") or 1),),
+                                    params=dict(lm.get("params") or {}),
+                                    voice=lm.get("voice") or voice, rnd=rnd)
+        p = os.path.join(d, f"landmark{tag}.png")
+        cv2.imwrite(p, img[:, :, ::-1])
+        out["images"]["landmark"] = p
+        out["landmark"] = {"name": lm["name"], "type": lm["type"],
+                           "compound": lm.get("compound"),
+                           "rect": list(_pipeline.part_rect(lm))}
+        out["seconds"]["landmark"] = round(time.perf_counter() - t1, 2)
+    reps = _preview_buildings(parts)
+    if reps:
+        import numpy as np
+        t2 = time.perf_counter()
+        strips = []
+        for t, n, leaf in reps:
+            strips.append(preview_mod.instances(
+                t, {"round": rnd.name, "plot": leaf["name"]},
+                seeds=(int(leaf.get("seed") or 1),),
+                params=dict(leaf.get("params") or {}),
+                voice=leaf.get("voice") or voice, scale=1, rnd=rnd))
+        gutter = 6
+        H = max(s.shape[0] for s in strips)
+        W = sum(s.shape[1] for s in strips) + gutter * (len(strips) - 1)
+        sheet = np.full((H, W, 3), preview_mod.BG, np.uint8)
+        at = 0
+        for s in strips:
+            sheet[H - s.shape[0]:H, at:at + s.shape[1]] = s
+            at += s.shape[1] + gutter
+        sheet = np.repeat(np.repeat(sheet, 2, 0), 2, 1)
+        p = os.path.join(d, f"buildings{tag}.png")
+        cv2.imwrite(p, sheet[:, :, ::-1])
+        out["images"]["buildings"] = p
+        out["buildings"] = [{"type": t, "leaves": n, "drawn_from": leaf["name"]}
+                            for t, n, leaf in reps]
+        out["seconds"]["buildings"] = round(time.perf_counter() - t2, 2)
+    out["seconds"]["all"] = round(time.perf_counter() - t0, 2)
+    return out
+
+
+#: What a revision may touch, and therefore what is put back where one is refused.
+REVISION_FILES = ("plan.", "district_", "place.json", "place.checked.json",
+                  "plots.json", "network.json", "circulation.json", "voice.json",
+                  "character.")
+
+
+def _snapshot(rnd: Round) -> dict:
+    return {f: open(rnd.rel(f), "rb").read() for f in sorted(os.listdir(rnd.state))
+            if f.startswith(REVISION_FILES) and os.path.isfile(rnd.rel(f))}
+
+
+def _restore(rnd: Round, snap: dict) -> None:
+    for f in sorted(os.listdir(rnd.state)):
+        if f.startswith(REVISION_FILES) and os.path.isfile(rnd.rel(f)) and f not in snap:
+            os.remove(rnd.rel(f))
+    for f, blob in snap.items():
+        with open(rnd.rel(f), "wb") as fh:
+            fh.write(blob)
+
+
+def _apply_revision(rnd: Round, be, spec: dict, doc: dict) -> dict:
+    """The principal's one revision: the characters it names replace the spec's, the
+    voice it names replaces the place's, and the plan is laid out again from them --
+    the districts recompiled, the place level and the compounds standing."""
+    from .. import spec as spec_mod, styles
+    from . import stages_plan
+    applied: dict = {"characters": {}, "voice": None, "refused": []}
+    # **A revision that cannot be planned is not applied.** The plan on disk is what the
+    # build stands on, and the first cut of this stage deleted it before laying the
+    # place out again from the new characters -- so a revision the validator refused
+    # left the round with no plan at all and nothing to fall back to. What the revision
+    # may touch is snapshotted and put back.
+    snap = _snapshot(rnd)
+    chars = doc.get("characters") or {}
+    if not isinstance(chars, dict):
+        applied["refused"].append("`characters` is not an object")
+        chars = {}
+    raw_p = rnd.rel("place.checked.json") if os.path.exists(
+        rnd.rel("place.checked.json")) else rnd.rel("place.json")
+    raw = json.load(open(raw_p))
+    parts = {p["name"]: p for p in spec["defining_parts"]}
+    for name, ch in chars.items():
+        p = parts.get(name)
+        if p is None or not spec_mod.district(p):
+            applied["refused"].append(f"{name}: not a district part of this place")
+            continue
+        try:
+            probe = dict(p)
+            spec_mod.read_character(ch, probe, f"revision ({name})")
+        except spec_mod.SpecError as e:
+            applied["refused"].append(f"{name}: {e}")
+            continue
+        for rp in raw.get("defining_parts") or []:
+            if rp.get("name") == name:
+                rp["character"] = probe["character"]
+        applied["characters"][name] = probe["character"]
+        for f in (rnd.rel(f"plan.district.{name}.json"),
+                  rnd.rel(f"district_{name}_compiled.json")):
+            if os.path.exists(f):
+                os.remove(f)
+        # a district drawn for this part under another name
+        pp = rnd.rel("plan.place.json")
+        if os.path.exists(pp):
+            for dd in json.load(open(pp)).get("districts") or []:
+                if dd.get("defines") == name:
+                    for f in (rnd.rel(f"plan.district.{dd['name']}.json"),
+                              rnd.rel(f"district_{dd['name']}_compiled.json")):
+                        if os.path.exists(f):
+                            os.remove(f)
+    if applied["characters"]:
+        json.dump(raw, open(raw_p, "w"), indent=1)
+    v = doc.get("voice")
+    if v:
+        if v not in styles.VOICES:
+            applied["refused"].append(f"voice {v!r} is not on disk")
+        else:
+            os.makedirs(rnd.state, exist_ok=True)
+            json.dump({"voice": v, "chosen_by": "the principal's revision at the preview",
+                       "why": str(doc.get("why") or "")},
+                      open(rnd.rel("voice.json"), "w"), indent=1)
+            pp = rnd.rel("plan.place.json")
+            if os.path.exists(pp):
+                place = json.load(open(pp))
+                place["voice"] = v
+                json.dump(place, open(pp, "w"), indent=1)
+            applied["voice"] = v
+    if applied["characters"] or applied["voice"]:
+        # **The lanes go first.** The assembled plan is checked against the network, and
+        # a network routed to the plots as they were refuses every plot the revision
+        # moved -- "the circulation pass reserved no doorstep for this part" for every
+        # house in the district. The snapshot puts them back if the revision is refused
+        # for a reason of its own.
+        for f in ("plan.json", "plots.json", "network.json", "circulation.json"):
+            if os.path.exists(rnd.rel(f)):
+                os.remove(rnd.rel(f))
+        applied["plan"] = stages_plan.stage_plan(rnd, be, {})
+        # **The lanes are the plan's, so a revision re-routes them.** The preview stands
+        # after the circulation pass, because a building with no way in is an empty pad;
+        # a revision that moves the plots leaves a network routed to plots that are not
+        # there, and the stage that caused that is the stage that fixes it, before the
+        # parts are built against either.
+        p = (applied["plan"].get("plan") or {}) if isinstance(applied["plan"], dict) else {}
+        ok = (not p.get("stop") and p.get("status") not in ("error", "needs_model")
+              and os.path.exists(rnd.rel("plan.json")))
+        if not ok:
+            _restore(rnd, snap)      # the plan, the plots and the lanes as they were
+            applied["refused"].append(
+                "the revision was not applied and the plan stands as it was: the place "
+                "laid out again from it " + (
+                    f"fails at {p.get('level')} -- {p.get('error')}" if p.get("error")
+                    else f"did not come back planned ({p.get('status')})"))
+            applied["characters"], applied["voice"] = {}, None
+            applied["rolled_back"] = True
+            return applied
+        applied["circulation"] = _pipeline.stage_circulation(rnd, be, {})
+    return applied
+
+
+def stage_preview(rnd: Round, be, results: dict) -> dict:
+    """The loop before the city. v2, C4.
+
+        After the plan and before the parts: the map, the landmark and five representative
+        buildings are drawn to `<state>/preview/`, handed to the **judge** for a reading
+        (what a person would see wrong that no check reports) and, with the reading, to
+        the **principal** for one bounded revision of the districts' characters or the
+        voice -- applied, the plan laid out again and redrawn -- and then the build. Each
+        ask is a `needs_model` the driver answers as it answers the spec's; a round with
+        no place spec (a recorded plan) is drawn and read, and has nothing to revise.
+        
+    """
+    from .. import spec as spec_mod, styles
+    plan = rnd.plan()
+    if not plan:
+        return {"error": "no plan.json: there is nothing to preview"}
+    d = rnd.rel("preview")
+    os.makedirs(d, exist_ok=True)
+    rec_p = os.path.join(d, "preview.json")
+    rec = json.load(open(rec_p)) if os.path.exists(rec_p) else {"revisions": 0,
+                                                               "drawn": {}}
+    if rec.get("done"):
+        # the loop is bounded: looked at once, revised at most once, and then built
+        return {"preview": rec}
+    spec = rnd.place_spec()
+    site = rnd.site or (json.load(open(rnd.rel("site.json")))
+                        if os.path.exists(rnd.rel("site.json")) else None)
+    site = {"origin": site["origin"], "size": site["size"]} if site else None
+    voice = rnd.voice_name() or None
+    parts = _pipeline.plan_parts(plan)
+    tag = "" if rec["revisions"] == 0 else f"_{rec['revisions']}"
+    if tag not in rec["drawn"]:
+        rec["drawn"][tag] = _draw_preview(rnd, plan, parts, site, voice, tag)
+        json.dump(rec, open(rec_p, "w"), indent=1)
+    drawn = rec["drawn"][tag]
+    images = [drawn["images"][k] for k in ("map", "landmark", "buildings")
+              if k in drawn["images"]]
+    lm = drawn.get("landmark") or {}
+    landmark_says = (f"`{lm['name']}`, a `{lm['type']}`" + (f" in the compound "
+                     f"`{lm['compound']}`" if lm.get("compound") else "")
+                     if lm else "none: the plan holds no building")
+    buildings_says = ", ".join(f"`{b['type']}` ({b['leaves']} in the plan)"
+                               for b in drawn.get("buildings") or []) or "none"
+    chars = _preview_characters(rnd, spec)
+    chars_says = "\n".join(
+        f"- **{c['part']}** ({c['density'] or 'medium'}, {c['role'] or 'urban'}): "
+        + (f"character `{json.dumps(c['character'])}`" if c["character"] is not None
+           else "planned plot by plot, no character")
+        + ("".join(f"\n    - compiled as `{l['district']}`: {l['lots']} lots of "
+                   f"{l['lot']} on blocks of {l['block']} ({l['house']}), "
+                   f"{l['party_walls']} party walls, {l['courts']} courts, {l['open']} "
+                   f"open tiles, {l['verges']} verges; plots {l['plot_cover']:.0%}, "
+                   f"ground {l['ground_cover']:.0%}, undeveloped "
+                   f"{l['undeveloped_share']:.0%}"
+                   + (f"; raised {l['raised']}" if l.get("raised") else "")
+                   for l in c["compiled"]))
+        for c in chars) or "(this plan was recorded, not planned from a spec)"
+    sentence = (spec or {}).get("sentence") or rnd.sentence or plan.get("intent", "")
+    intent = plan.get("intent", "")
+    # 1. the reading
+    reading_p = os.path.join(d, f"reading{tag}.md")
+    if not os.path.exists(reading_p):
+        brief_p = os.path.join(d, f"reading_prompt{tag}.md")
+        open(brief_p, "w").write(READING_BRIEF.format(
+            sentence=sentence, intent=intent, landmark=landmark_says,
+            buildings=buildings_says,
+            voice=styles.voice_card(voice) if voice in styles.VOICES else "",
+            characters=chars_says))
+        rec["reading"] = {"request": brief_p, "write": reading_p}
+        json.dump(rec, open(rec_p, "w"), indent=1)
+        return {"preview": rec,
+                "reading": {"status": "needs_model", "role": "judge", "request": brief_p,
+                            "write": reading_p, "images": images,
+                            "note": "the preview's reading: what a person would see "
+                                    "wrong, from the map, the landmark and five "
+                                    "buildings; no score"}}
+    # 2. the revision, once, and only where there is a spec to revise
+    if rec["revisions"] >= PREVIEW_REVISIONS or spec is None:
+        rec["done"] = True
+        json.dump(rec, open(rec_p, "w"), indent=1)
+        return {"preview": rec}
+    revision_p = os.path.join(d, "revision.json")
+    if not os.path.exists(revision_p):
+        prompt_p = os.path.join(d, "revision_prompt.md")
+        fields = "\n".join(f"- `{k}`" for k in spec_mod.CHARACTER_FIELDS)
+        fields += ("\n\nfrontage is one of " + ", ".join(f"`{f}`" for f in spec_mod.FRONTAGES)
+                   + "; block and lot_depth are whole numbers of columns; attached is "
+                     "true or false; the shares are 0 to 1; landmarks is a list of "
+                     "{\"type\": a type name}.\n\nThe defaults per density word: "
+                   + json.dumps(spec_mod.CHARACTER_DEFAULTS))
+        voices = "\n".join(f"- `{k}` -- {v['blurb'].splitlines()[0][:110]}"
+                            for k, v in styles.VOICES.items())
+        open(prompt_p, "w").write(REVISION_BRIEF.format(
+            sentence=sentence, intent=intent, landmark=landmark_says,
+            buildings=buildings_says, reading=open(reading_p).read().strip(),
+            characters=chars_says, fields=fields, voice_name=voice or "(none)",
+            voices=voices))
+        rec["revision"] = {"request": prompt_p, "write": revision_p}
+        json.dump(rec, open(rec_p, "w"), indent=1)
+        return {"preview": rec,
+                "revision": {"status": "needs_model", "role": "spec", "request": prompt_p,
+                             "write": revision_p, "images": images,
+                             "note": "one bounded revision of the districts' "
+                                     "characters or the voice, before the build"}}
+    # 3. apply it, lay the plan out again, draw again
+    doc = json.load(open(revision_p))
+    applied = _apply_revision(rnd, be, spec, doc)
+    rec["revisions"] += 1
+    rec["applied"] = {k: v for k, v in applied.items() if k != "plan"}
+    rec["applied"]["why"] = str(doc.get("why") or "")
+    if applied.get("plan") is not None:
+        rec["applied"]["plan"] = {k: v for k, v in (applied["plan"].get("plan") or {}).items()
+                                  if k in ("status", "error", "level")} \
+            if isinstance(applied["plan"], dict) else None
+    plan = rnd.plan()
+    parts = _pipeline.plan_parts(plan)
+    voice = rnd.voice_name() or None
+    tag = f"_{rec['revisions']}"
+    if plan:
+        rec["drawn"][tag] = _draw_preview(rnd, plan, parts, site, voice, tag)
+    rec["done"] = True
+    json.dump(rec, open(rec_p, "w"), indent=1)
+    return {"preview": rec}

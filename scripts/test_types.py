@@ -234,9 +234,12 @@ def t_a2_a_type_with_no_door_reports_eight_instances_worst_first():
     assert len(rows) == 16, f"{len(rows)} instances, not 4 plots x 2 seeds x 2 voices"
     assert {r["plot"] for r in rows} == set(FIXTURE_PLOTS), rows
     assert {r["seed"] for r in rows} == {1, 2}, rows
-    # B1: every instance stood in two voices, and a sealed shed is sealed in both
-    assert {r["voice"] for r in rows} == set(pipeline.SILHOUETTE_PAIR), rows
-    assert set(res["voices"]) == set(pipeline.SILHOUETTE_PAIR), res["voices"]
+    # B1: every instance stood in two voices, and a sealed shed is sealed in both; v2,
+    # C0: the pair is the place's own and its derived partner, not a constant
+    pair = set(pipeline.check_voices(None, rnd.voice_name()))
+    assert rnd.voice_name() in pair and len(pair) == 2, pair
+    assert {r["voice"] for r in rows} == pair, rows
+    assert set(res["voices"]) == pair, res["voices"]
     assert all(d["entry_lines"] >= 8 and d["clean"] == 0 for d in res["voices"].values()), \
         res["voices"]
     no_entry = [f"{r['plot']}/{r['seed']}" for r in rows if not r["entry_lines"]]
@@ -780,6 +783,69 @@ def t_r2a1_every_type_declares_what_it_is_for():
         by.setdefault(role, []).append(name)
     return (f"{len(files)} types declare ROLE: "
             + "; ".join(f"{r} {sorted(v)}" for r, v in sorted(by.items())))
+
+
+@case
+def t_c0_the_checkers_partner_voice_is_the_places_own_and_never_a_named_constant():
+    """v2, C0. The second voice a type's checker stands it in is the voice of the place
+    the round is in; where the author's voice is the place's, or there is no place, it
+    is the voice on disk whose silhouette is least like the first's -- derived from
+    the directory, so a voice added to it changes the answer and no file names one."""
+    from ethoslm import styles
+    names = sorted(styles.VOICES)
+    # the place's voice is the partner, whatever the author was given
+    for author in names:
+        for place in names:
+            if author == place:
+                continue
+            got = pipeline.check_voices(author, place)
+            assert got == [author, place], (author, place, got)
+    # the author's voice is the place's: the partner is derived, explicit, and unlike
+    for v in names:
+        got = pipeline.check_voices(v, v)
+        assert got[0] == v and got[1] != v, got
+        assert styles.explicit_silhouette(got[1]), got
+        if styles.explicit_silhouette(v):
+            assert styles.silhouette_distance(v, got[1]) >= 1, got
+        assert got == pipeline.check_voices(v, None), (v, got)
+    # no voice at all: the plainest voice on disk and its partner
+    first, second = pipeline.check_voices(None, None)
+    assert first == styles.silent_voice() and not styles.explicit_silhouette(first)
+    assert styles.explicit_silhouette(second)
+    # no voice, a place: the place's and its partner
+    assert pipeline.check_voices(None, names[0]) == [names[0],
+                                                     styles.partner_voice(names[0])]
+    # the answer moves with the directory: a voice added with a silhouette unlike every
+    # other becomes the partner of the ones it is least like
+    import shutil
+    import tempfile
+    d = tempfile.mkdtemp(prefix="voices-")
+    try:
+        for n in names:
+            shutil.copy(os.path.join(ROOT, "voices", f"{n}.json"), d)
+        src = json.load(open(os.path.join(ROOT, "voices", "japanese_temple.json")))
+        src["name"] = "zz_pagoda"
+        src["roof"] = {"ends": "gable", "eave": "straight", "profile": [[2, 1]],
+                       "tiers": 3}
+        json.dump(src, open(os.path.join(d, "zz_pagoda.json"), "w"))
+        table = styles._VoiceTable(d)
+        old = styles.VOICES
+        styles.VOICES = table
+        try:
+            got = styles.partner_voice("japanese_temple")
+            assert got == "zz_pagoda", got
+        finally:
+            styles.VOICES = old
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    # ...and nothing in the pipeline names a voice as the partner
+    assert not hasattr(pipeline, "SILHOUETTE_PAIR") and \
+        not hasattr(pipeline, "SILHOUETTE_ALT")
+    return (f"{len(names)} voices: the place's is the partner of any other; "
+            f"the derived partners are "
+            + ", ".join(f"{v}->{styles.partner_voice(v)}" for v in names
+                        if styles.explicit_silhouette(v))
+            + f"; no voice at all is {first} and {second}")
 
 
 @case

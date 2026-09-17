@@ -170,6 +170,59 @@ def _view(voice: dict) -> dict:
 VOICES = _VoiceTable()
 
 
+#: The fields of a voice's silhouette, as `roof()` takes them. What `partner_voice`
+#: counts differences over.
+SILHOUETTE_FIELDS = ("ends", "eave", "tiers", "profile")
+
+
+def explicit_silhouette(name: str) -> bool:
+    """Does this voice declare a silhouette of its own -- a roof style (`ends`) or a
+    profile -- rather than leaving `roof()` to its default?"""
+    r = VOICES[name]["roof"] or {}
+    return bool(r.get("ends") or r.get("profile"))
+
+
+def silhouette_distance(a: str, b: str) -> int:
+    """How unlike two voices' silhouettes are: the fields of `SILHOUETTE_FIELDS` on
+    which they differ, plus one where one declares a silhouette and the other none.
+    A silent voice against an explicit one differs on everything."""
+    ra, rb = dict(VOICES[a]["roof"] or {}), dict(VOICES[b]["roof"] or {})
+    if explicit_silhouette(a) != explicit_silhouette(b):
+        return len(SILHOUETTE_FIELDS) + 1
+    return sum(1 for f in SILHOUETTE_FIELDS if ra.get(f) != rb.get(f))
+
+
+def partner_voice(name: str) -> str:
+    """The voice on disk whose silhouette is least like this one's -- **derived from
+        the directory, never named**. v2, C0.
+
+        Among the voices that declare a silhouette, the one at the greatest
+        `silhouette_distance` from `name`, ties by name; a partner with an explicit
+        silhouette and not a silent one, because a type whose own default silhouette is
+        its author's stands in a silent voice exactly as it stands in that one. Where no
+        other explicit voice is on disk, the voice at the greatest distance of any, and
+        where `name` is the only voice, `name` itself.
+        
+    """
+    others = [v for v in sorted(VOICES) if v != name]
+    if not others:
+        return name
+    explicit = [v for v in others if explicit_silhouette(v)]
+    pool = explicit or others
+    return max(pool, key=lambda v: (silhouette_distance(name, v), [-ord(c) for c in v]))
+
+
+def silent_voice() -> str:
+    """The first voice on disk, by name, that declares no silhouette -- what a checker
+    stands a type in when nobody said a voice and there is no place: the type's own
+    `roof()` default, under the plainest palette the directory has. The first by name
+    of all where every voice is explicit."""
+    names = sorted(VOICES)
+    if not names:
+        raise ValueError("there are no voices under voices/")
+    return next((v for v in names if not explicit_silhouette(v)), names[0])
+
+
 
 #: How a building's *purpose* changes its form inside a fixed voice. This is the
 #: variation that does not cost coherence: same materials, different register. Keyed by

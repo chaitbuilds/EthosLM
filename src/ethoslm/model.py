@@ -457,16 +457,22 @@ class Router:
              "with the complete contents of the file described above -- `{name}` -- and "
              "nothing else: no fence, no preamble, no commentary after it.")
 
-    def answer(self, role: str, request: str, write: str) -> dict:
+    def answer(self, role: str, request: str, write: str, images=None) -> dict:
         """One text role: the brief in, the file out. A JSON answer is parsed before it
-        is written, and a reply that is not JSON is sent back once with the error."""
+        is written, and a reply that is not JSON is sent back once with the error.
+        `images` (v2, C4: the preview's map, landmark and buildings) go in with the
+        brief, and a route that cannot see is refused by name."""
         r = self.route(role)
         if r is None:
             raise RuntimeError(f"role {role!r} is not routed")
+        if images and not r.vision:
+            raise RuntimeError(f"role {role!r} carries {len(images)} image(s) and "
+                               f"{r.name} is declared unable to see")
         brief = Path(request).read_text()
         want_json = write.endswith(".json")
-        content = [{"type": "text", "text": brief.rstrip("\n")
-                    + self.REPLY.format(name=os.path.basename(write))}]
+        content = [image_block(p) for p in (images or [])]
+        content.append({"type": "text", "text": brief.rstrip("\n")
+                        + self.REPLY.format(name=os.path.basename(write))})
         messages = [{"role": "user", "content": content}]
         send = r.transport()
         usage = {"input_tokens": 0, "output_tokens": 0}
@@ -554,7 +560,10 @@ class Router:
             if bl.get("api_usage"):
                 n += 1
                 continue
-            if role in ("spec", "plan") and self.route(role) is not None:
+            # ...and a judge asked for a *reading* rather than a judgement -- the
+            # preview's (v2, C4), with images and a file to write -- is a text ask.
+            if (role in ("spec", "plan") or (role == "judge" and rec.get("write"))) \
+                    and self.route(role) is not None:
                 # **Independent calls go together.** v2, A3. A place's thirteen
                 # districts arrive here as one batch of `needs_model` records -- that is
                 # what `district_asks` is for -- and they were answered one after the
@@ -600,12 +609,14 @@ class Router:
         if not asks:
             return 0
         if len(asks) == 1:
-            got = self.answer(asks[0]["role"], asks[0]["request"], asks[0]["write"])
+            got = self.answer(asks[0]["role"], asks[0]["request"], asks[0]["write"],
+                              asks[0].get("images"))
             self._say_answer(asks[0]["role"], got)
             return 1
         from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(min(len(asks), ROUTED_WORKERS)) as pool:
-            futures = [pool.submit(self.answer, a["role"], a["request"], a["write"])
+            futures = [pool.submit(self.answer, a["role"], a["request"], a["write"],
+                                   a.get("images"))
                        for a in asks]
             done = [(a, f) for a, f in zip(asks, futures)]
         first_error, n = None, 0

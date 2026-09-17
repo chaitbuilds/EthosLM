@@ -2220,7 +2220,9 @@ class Builder(Primitives):
         elif kind in ("plot", None):
             px0, px1 = int(min(part["x0"], part["x1"])), int(max(part["x0"], part["x1"]))
             pz0, pz1 = int(min(part["z0"], part["z1"])), int(max(part["z0"], part["z1"]))
-            dec = self._decide_rect(part, self._site_pad(px0, pz0, px1, pz1), kind="plot")
+            dec = self._decide_rect(part, self._site_pad(px0, pz0, px1, pz1,
+                                                         part.get("attached")),
+                                    kind="plot")
         else:
             dec = {"ok": False, "kind": kind,
                    "reason": f"site() prepares the ground for a "
@@ -2332,7 +2334,8 @@ class Builder(Primitives):
                                         f"know what a {kind!r} is"}}
         px0, px1 = int(min(part["x0"], part["x1"])), int(max(part["x0"], part["x1"]))
         pz0, pz1 = int(min(part["z0"], part["z1"])), int(max(part["z0"], part["z1"]))
-        dec = decision or self._decide_rect(part, self._site_pad(px0, pz0, px1, pz1),
+        dec = decision or self._decide_rect(part, self._site_pad(px0, pz0, px1, pz1,
+                                                                 part.get("attached")),
                                             kind="plot")
         rect = tuple(int(v) for v in dec["rect"])
         x0, z0, x1, z1 = rect
@@ -2449,20 +2452,31 @@ class Builder(Primitives):
         if kind == "area":
             return (w, d)
         # A plot, and `_site_pad`'s own two cases: inset by `SITE_INSET` on every side,
-        # and by one where two would leave less than five columns across.
-        i = cls.SITE_INSET
-        if (w - 1 - 2 * i) < 4 or (d - 1 - 2 * i) < 4:
-            i = 1
-        return (max(0, w - 2 * i), max(0, d - 2 * i))
+        # and by one where two would leave less than five columns across -- and, v2 C2,
+        # by nothing on a side the plan says is **attached**.
+        ix0, iz0, ix1, iz1 = cls._insets(w, d, part.get("attached"))
+        return (max(0, w - ix0 - ix1), max(0, d - iz0 - iz1))
 
-    def _site_pad(self, px0: int, pz0: int, px1: int, pz1: int) -> tuple:
+    @classmethod
+    def _insets(cls, w: int, d: int, attached=None) -> tuple:
+        """(west, north, east, south): how far a plot's pad is inset on each side.
+        `SITE_INSET` on a free side, one where two would leave less than five columns
+        across, and **nothing on an attached side** (v2, C2): the next house stands
+        against it and the party wall is on the plot's edge."""
+        a = set(attached or ())
+        i = cls.SITE_INSET
+        ins = [0 if s in a else i for s in ("west", "north", "east", "south")]
+        if (w - 1 - ins[0] - ins[2]) < 4 or (d - 1 - ins[1] - ins[3]) < 4:
+            ins = [min(v, 1) for v in ins]
+        return tuple(ins)
+
+    def _site_pad(self, px0: int, pz0: int, px1: int, pz1: int, attached=None) -> tuple:
         """The rectangle inside a plot that gets prepared: inset, and flattest if broken."""
-        x0, z0 = px0 + self.SITE_INSET, pz0 + self.SITE_INSET
-        x1, z1 = px1 - self.SITE_INSET, pz1 - self.SITE_INSET
-        if x1 - x0 < 4 or z1 - z0 < 4:
-            # Too small to inset by two, but **never inset by none**.
-            x0, z0 = px0 + 1, pz0 + 1
-            x1, z1 = px1 - 1, pz1 - 1
+        w, d = px1 - px0 + 1, pz1 - pz0 + 1
+        ix0, iz0, ix1, iz1 = self._insets(w, d, attached)
+        # Too small to inset by two, but **never inset by none** on a free side.
+        x0, z0 = px0 + ix0, pz0 + iz0
+        x1, z1 = px1 - ix1, pz1 - iz1
         full = (x1 - x0 + 1, z1 - z0 + 1)
         sizes: list = []
         for cap in self._SITE_SIZES:

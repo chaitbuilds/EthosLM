@@ -52,6 +52,12 @@ from .placeplan import (_FACING, _SIDES, _answers, _edge_cells, _gate_at, _gate_
                         RING_COVERAGE, RING_EDGE_INSET, SECTOR_MAX)
 from .placeread import inside
 
+#: **The least a sector may be asked for to be a district at all.** A division of a
+#: place that holds houses holds more than one: a sliver asked for a single house is
+#: left-over ground, and holding it to a district's count and cover refuses a whole
+#: place for a corner of it.
+DISTRICT_MIN_STRUCTURES = 2
+
 #: The hard vetoes, heaviest first. When a part has no feasible candidate they are
 #: dropped from the lightest up; `site` is never dropped. Registered.
 VETOES = (("site", 100), ("overlap", 90), ("footprint", 80), ("inside", 70),
@@ -209,6 +215,7 @@ class Solver:
         self.placed: list = []            # leaves, in order
         self.by_name: dict = {}
         self.compounds: list = []
+        self.left_over: list = []
         self.districts: list = []
         self.wall: dict | None = None     # the perimeter wall's record
         self.record: list = []
@@ -404,7 +411,8 @@ class Solver:
             if self.plateau_rect:
                 rect = self.plateau_rect
             else:
-                side = int(compound_ground(spec=self.spec, site_side=self.S)["side"])
+                side = int(compound_ground(spec=self.spec, site_side=self.S,
+                                           part=d)["side"])
                 side = max(COMPOUND_MIN, side)
                 rect = (cx - side // 2, cz - side // 2,
                         cx - side // 2 + side - 1, cz - side // 2 + side - 1)
@@ -814,6 +822,15 @@ class Solver:
             cx0, cz0, cx1, cz1 = self.cx, self.cz, self.cx, self.cz
         strips = {"north": (bx0, bz0, bx1, cz0 - 1), "south": (bx0, cz1 + 1, bx1, bz1),
                   "west": (bx0, cz0, cx0 - 1, cz1), "east": (cx1 + 1, cz0, bx1, cz1)}
+        # **Clamped to the place's own bounds.** v2, C5: the strips are cut from the
+        # core's box, and a core part at the *edge* of the site -- a village's hard on
+        # the water, anything placed `edge` where no part is at the centre -- puts the
+        # box's margin outside the site, so the strips beside it reached two columns
+        # past the ground the place stands on and the place level refused its own layout
+        # by name. A strip is what is left of the site, never more than it.
+        strips = {k: (max(bx0, r[0]), max(bz0, r[1]), min(bx1, r[2]), min(bz1, r[3]))
+                  for k, r in strips.items()}
+        strips = {k: r for k, r in strips.items() if r[0] <= r[2] and r[1] <= r[3]}
         # ...less every other placed part, trimmed on the axis that loses least
         others = [pipeline.part_rect({**leaf, "name": leaf.get("name")})
                   for leaf in self.placed
@@ -823,7 +840,9 @@ class Solver:
                   and not (self.decls.get(leaf.get("type")) or {}).get("passage")]
         sectors = []
         for sname in _SIDES:
-            rect = strips[sname]
+            rect = strips.get(sname)
+            if rect is None:
+                continue
             for o in others:
                 rect = _trim(rect, _grow(o, g))
                 if rect is None:
@@ -891,6 +910,25 @@ class Solver:
         want = declared or sum(row["from_ground"] for row in rows)
         counts = _largest_remainder([row["area"] for row in rows], want,
                                     caps=[row["cap"] for row in rows])
+        # **A sector the place cannot ask for `DISTRICT_MIN_STRUCTURES` in is not a
+        # district.** v2, C5: a district is a division of the place that holds houses,
+        # and the strips cut round a centre leave slivers -- a 35x46 corner beside a
+        # village's hard, asked for one house -- which are then held to the same count
+        # and cover as a quarter of a city and can meet neither: a sliver is lanes and
+        # clearances almost all the way through. Left-over ground is what it is, and
+        # nothing has ever asked for every column of a place to be in a district.
+        if len(rows) > 1 and any(n >= DISTRICT_MIN_STRUCTURES for n in counts):
+            small = [(row, n) for row, n in zip(rows, counts)
+                     if n < DISTRICT_MIN_STRUCTURES]
+            if small:
+                self.left_over = [{"label": row["label"], "rect": list(row["rect"]),
+                                   "area": row["area"], "structures": int(n),
+                                   "why": f"under {DISTRICT_MIN_STRUCTURES} structures"}
+                                  for row, n in small]
+                rows = [row for row, n in zip(rows, counts)
+                        if n >= DISTRICT_MIN_STRUCTURES]
+                counts = _largest_remainder([row["area"] for row in rows], want,
+                                            caps=[row["cap"] for row in rows])
         role_of = {}
         for row, n in zip(rows, counts):
             p = row["part"]
@@ -916,7 +954,8 @@ class Solver:
             "structures": {"declared": declared, "laid": sum(int(d["structures"])
                                                             for d in self.districts),
                            "caps": [row["cap"] for row in rows]},
-            "coverage": round(covered / float(inside_cols), 4) if inside_cols else 0.0}
+            "coverage": round(covered / float(inside_cols), 4) if inside_cols else 0.0,
+            "left_over": self.left_over}
 
     # --- the document ----------------------------------------------------------------
 

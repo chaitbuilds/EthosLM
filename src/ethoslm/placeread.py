@@ -394,9 +394,11 @@ def compound_clauses(spec: dict, plan: dict, parts: list, decls: dict, stood: di
 
         Silent where the spec has no compound. Three clauses per compound:
 
-          present/<name>   the composition stands: a closed wall of its own with a standing
-                           gate on it, at least `placeplan.COMPOUND_MIN_HALLS` standing
-                           plots and one standing area inside the wall;
+          present/<name>   the composition stands -- **its family's** (v2, C0;
+                           `placeplan.compound_composition`): a closed wall of its own with
+                           a standing gate on it where the family is walled and gated, and
+                           at least the family's standing plots and areas inside the wall
+                           (inside the rectangle, where there is none);
           compound/<name>/scale
                            it is materially larger than any single building outside it,
                            by the registered margins on footprint and on blocks laid;
@@ -405,7 +407,7 @@ def compound_clauses(spec: dict, plan: dict, parts: list, decls: dict, stood: di
                            the site search levelled ground for it, on that ground.
         
     """
-    from .placeplan import (COMPOUND_MIN_HALLS, COMPOUND_PLATEAU_SHARE, _edge_cells,
+    from .placeplan import (COMPOUND_PLATEAU_SHARE, _edge_cells, compound_composition,
                             compound_rects)
     out = []
 
@@ -453,24 +455,37 @@ def compound_clauses(spec: dict, plan: dict, parts: list, decls: dict, stood: di
         gate_on = [g["name"] for g in gates
                    if any((int(g["at"][0]), int(g["at"][-1])) in set(_edge_cells(w))
                           for w, _ in closed)]
+        made_of = compound_composition(d, spec=spec)
+        mine_rects = [rects[n] for n in names if n in rects]
+
+        def within(p):
+            # inside a standing closed wall where the family is walled (or one is
+            # drawn); inside the compound's own rectangle where none is
+            if closed:
+                return any(all(inside(path, c) for c in _corners(p)) for _w, path in closed)
+            return any(all(r[0] <= c[0] <= r[2] and r[1] <= c[1] <= r[3]
+                           for c in _corners(p)) for r in mine_rects)
+
         halls = [p for p in mine if p.get("kind", "plot") == "plot"
-                 and stood.get(p["name"], False)
-                 and any(all(inside(path, c) for c in _corners(p)) for _w, path in closed)]
+                 and stood.get(p["name"], False) and within(p)]
         courts = [p for p in mine if p.get("kind") == "area"
-                  and stood.get(p["name"], False)
-                  and any(all(inside(path, c) for c in _corners(p)) for _w, path in closed)]
+                  and stood.get(p["name"], False) and within(p)]
         up = [p["name"] for p in mine if stood.get(p["name"], False)]
-        ok = bool(closed) and bool(gate_on) and len(halls) >= COMPOUND_MIN_HALLS \
-            and bool(courts)
+        ok = (bool(closed) or not made_of["walled"]) \
+            and (bool(gate_on) or not made_of["gated"]) \
+            and len(halls) >= made_of["halls"] and len(courts) >= made_of["courts"]
         clause(f"present/{d['name']}", ok,
                f"the spec asks for {d['count']} x {d['family']} as a compound "
                f"({d['relation']}); {'/'.join(names)} is {len(mine)} part(s) of which "
                f"{len(up)} stand: "
                + (f"{len(closed)} closed wall(s) standing" if closed
-                  else "NO closed wall stands")
-               + (f", gate(s) {gate_on} on it" if gate_on else ", NO standing gate on it")
-               + f", {len(halls)} hall(s) and {len(courts)} court(s) standing inside it "
-                 f"against {COMPOUND_MIN_HALLS} and 1",
+                  else ("NO closed wall stands" if made_of["walled"]
+                        else "no wall, and a " + d["family"] + " asks none"))
+               + (f", gate(s) {gate_on} on it" if gate_on
+                  else (", NO standing gate on it" if made_of["gated"] else ""))
+               + f", {len(halls)} hall(s) and {len(courts)} court(s) standing inside "
+                 f"{'it' if closed else 'its rectangle'} against {made_of['halls']} "
+                 f"and {made_of['courts']}",
                wanted=d["count"], planned=[p["name"] for p in mine], stood=up,
                walls=[w["name"] for w, _ in closed], gates=gate_on,
                halls=[p["name"] for p in halls], courts=[p["name"] for p in courts])

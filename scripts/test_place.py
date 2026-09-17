@@ -469,6 +469,23 @@ def t_a3_meeting_the_needs_beats_any_score_and_the_escapes_fire_in_order():
     assert lower["needs"]["footprint"] < s["needs"]["footprint"], lower["needs"]
     assert fs._drop_band(spec_mod.read_spec(dict(SENTENCES["hamlet"]["spec"]),
                                             "Build a hamlet.")) is not None
+    # v2, C0: the order the band drops through is the spec's one table, `SIZE_BANDS`
+    # from the smallest band up, and the search declares no list of its own
+    order = spec_mod.kind_order()
+    assert set(order) == set(spec_mod.SIZE_BANDS) == set(spec_mod.KINDS), order
+    assert all(spec_mod.SIZE_BANDS[a] <= spec_mod.SIZE_BANDS[b]
+               for a, b in zip(order, order[1:])), order
+    assert spec_mod.kind_below(order[0]) is None
+    for a, b in zip(order, order[1:]):
+        assert spec_mod.kind_below(b) == a, (a, b)
+        s2 = spec_mod.read_spec(dict(SENTENCES["walled_town"]["spec"]),
+                                SENTENCES["walled_town"]["sentence"])
+        s2["kind"] = b
+        assert fs._drop_band(s2)["kind"] == a, (b, fs._drop_band(s2)["kind"])
+    import inspect
+    src = inspect.getsource(fs._drop_band)
+    assert "[" not in src.split("kind_below")[0].split('"""')[-1] \
+        and "hamlet" not in src, "the search keeps its own list of the kinds"
     return (f"meeting the needs at (4096,4096) outranks missing them at (0,0); a "
             f"plateau relief of {fs.PLATEAU_RELIEF} makes the 4-relief centre meet; "
             f"a town drops to a village at "

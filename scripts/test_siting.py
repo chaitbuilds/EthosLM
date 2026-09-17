@@ -413,7 +413,7 @@ def build(b, part, seed, storeys=1):
     # the author's and the one whose silhouette is least like it.
     assert len(res["rows"]) == 12, [(r["plot"], r["voice"]) for r in res["rows"]]
     assert {r["voice"] for r in res["rows"]} == set(pipeline.check_voices(
-        "white_render_dark_frame")), res["rows"]
+        "white_render_dark_frame", rnd.voice_name())), res["rows"]
     assert {r["plot"] for r in res["rows"]} == {f["plot"] for f in fx}, res["rows"]
     assert {r["round"] for r in res["rows"]} == {f["round"] for f in fx}, res["rows"]
     assert all(r["rooms"] for r in res["rows"]), \

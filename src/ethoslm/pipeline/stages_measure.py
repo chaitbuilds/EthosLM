@@ -1522,7 +1522,105 @@ def _m_search_cost(rnd, be, results, bar) -> dict:
             "seconds": secs, "concentric_run_seconds": 4 * 3600 + 12 * 60}
 
 
+#: **Registered before it was read** (v2, C5): the fabric of the compiled districts. The
+#: least share of a compiled district's houses whose way in is on the front the compiler
+#: named; the most of a compiled district's rectangle no rule assigned.
+FRONTAGE_FLOOR = 0.9
+UNDEVELOPED_MAX = 0.15
+
+
+def _m_fabric(rnd, be, results, bar) -> dict:
+    """**The fabric of the compiled districts.** v2, C5. Four clauses, each with its
+        registered number and the miss named where it misses:
+
+          columns_per_house  the columns of ground per house in the compiled districts of
+                             each density word, under the ceiling the word registers
+                             (`placeplan.columns_per_structure_ceiling`);
+          frontage           the share of compiled houses whose reserved threshold is on
+                             the side their leaf names as its front, over `FRONTAGE_FLOOR`;
+          assigned           every compiled district's undeveloped share under
+                             `UNDEVELOPED_MAX`: the leftover ground is assigned;
+          attached           every compiled district whose character said `attached` has
+                             party walls.
+
+        Read off the compiler's own records (`district_<name>_compiled.json`), the plan's
+        leaves and the network's thresholds, all of them on disk.
+        
+    """
+    from .. import placeplan
+    reg = bar or {}
+    ceilings = dict(reg.get("columns_per_house") or placeplan.columns_per_structure_ceiling())
+    floor = float(reg.get("frontage_floor", FRONTAGE_FLOOR))
+    most = float(reg.get("undeveloped_max", UNDEVELOPED_MAX))
+    recs = []
+    if os.path.isdir(rnd.state):
+        for f in sorted(os.listdir(rnd.state)):
+            if f.startswith("district_") and f.endswith("_compiled.json"):
+                recs.append(json.load(open(rnd.rel(f))))
+    out = {"read": bool(recs), "registered": {"columns_per_house": ceilings,
+                                              "frontage_floor": floor,
+                                              "undeveloped_max": most},
+           "districts": len(recs)}
+    if not recs:
+        out.update(got=None, why="no compiled district in this round")
+        return out
+    # 1. columns per house, per density word, over the districts of that word
+    by: dict = {}
+    for r in recs:
+        word = (r.get("character") or {}).get("density") or "medium"
+        b = by.setdefault(word, {"columns": 0, "houses": 0, "districts": 0})
+        b["columns"] += int(r["columns"])
+        b["houses"] += int(r["lots"])
+        b["districts"] += 1
+    words = {}
+    for word, b in sorted(by.items()):
+        per = (b["columns"] / b["houses"]) if b["houses"] else None
+        cap = float(ceilings.get(word, ceilings.get("medium", 1e9)))
+        words[word] = {**b, "columns_per_house": None if per is None else round(per, 1),
+                       "ceiling": cap, "under_ceiling": bool(per is not None and per <= cap)}
+    out["columns_per_house"] = words
+    # 2. the frontage: every compiled house with a front, against its threshold
+    net = rnd.network()
+    into = {"north": "south", "south": "north", "east": "west", "west": "east"}
+    fronted = on_front = 0
+    off = []
+    for p in rnd.parts():
+        # only a compiled leaf carries a front: the side its street is on
+        if p.get("kind", "plot") != "plot" or not p.get("front"):
+            continue
+        fronted += 1
+        th = net.threshold(p["name"]) if net is not None else None
+        if th is not None and th.facing == into[p["front"]]:
+            on_front += 1
+        else:
+            off.append(p["name"])
+    share = (on_front / fronted) if fronted else None
+    out["frontage"] = {"houses": fronted, "on_front": on_front,
+                       "share": None if share is None else round(share, 4),
+                       "floor": floor, "holds": bool(share is not None and share >= floor),
+                       "off": off[:12]}
+    # 3. the leftover assigned
+    left = {r["district"]: r["undeveloped_share"] for r in recs}
+    out["assigned"] = {"undeveloped_share": left, "max": most,
+                       "over": sorted(n for n, v in left.items() if v > most)}
+    # 4. attached where the character said attached
+    att = {r["district"]: {"party_walls": r.get("party_walls", 0), "lots": r["lots"],
+                           "note": r.get("attached_note")}
+           for r in recs if (r.get("character") or {}).get("attached")}
+    out["attached"] = {"districts": att,
+                       "without": sorted(n for n, v in att.items()
+                                         if v["lots"] >= 2 and not v["party_walls"])}
+    failed = ([f"columns_per_house/{w}" for w, v in words.items() if not v["under_ceiling"]]
+              + ([] if out["frontage"]["holds"] else ["frontage"])
+              + [f"assigned/{n}" for n in out["assigned"]["over"]]
+              + [f"attached/{n}" for n in out["attached"]["without"]])
+    out["failed"] = failed
+    out["got"] = 0 if failed else 1
+    return out
+
+
 MEASURES = {
+    "fabric": _m_fabric,
     "ground": _m_ground,
     "occupancy": _m_occupancy,
     "levels": _m_levels,

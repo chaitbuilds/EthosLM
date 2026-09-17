@@ -177,6 +177,12 @@ def stage_circulation(rnd: Round, be, results: dict) -> dict:
     return out
 
 
+#: How far outside the site a cached volume reaches: the lanes, the terraces and the
+#: gate approaches all read ground outside the footprint, and the server path has always
+#: taken this much.
+CACHE_PAD = 48
+
+
 def stage_cache(rnd: Round, be, results: dict) -> dict:
     p = rnd.rel(rnd.base_volume)
     if os.path.exists(p):
@@ -184,15 +190,60 @@ def stage_cache(rnd: Round, be, results: dict) -> dict:
         return {"skipped": "already cached -- the base volume is a fixture, not a "
                            "running state", "path": p, "shape": list(vol.shape)}
     if not be.live and getattr(be, "dry_run", False):
+        # **A dry run caches its own ground, off the save's region files, with no
+        # server.** v2, C5, and the gap a fresh site found: the search reads region
+        # files directly (`find_site.field_from_region_files`) and chose this square
+        # without a server, and then the run refused to go on until a server session
+        # wrote the same ground into `world.npz` -- so "one sentence in, a finished
+        # place out, offline" was true only for a site somebody had already cached.
+        # `savedworld.SavedWorld.volume` is the same read at the same fidelity, a chunk
+        # at a time; the vertical range is trimmed to the ground it holds, as the server
+        # path trims it.
         s = rnd.site or rnd.chosen_site() or {}
         o = s.get("origin", ["?", "?"])
-        return {"status": "error", "stop": True,
-                "error": f"a dry run is scored against a cached volume and there is "
-                         f"none at {os.path.relpath(p, _pipeline.ROOT)}: the ground "
-                         f"under ({o[0]},{o[1]}) {s.get('size')}x{s.get('size')} has to "
-                         f"be read once, by a session that writes nothing --\n"
-                         f"      bash scripts/mcrun.sh src/ethoslm/pipeline/_commands/"
-                         f"cache_world.py   (ETHOSLM_SETTLEMENT={rnd.name})"}
+        if not s:
+            return {"status": "error", "stop": True,
+                    "error": "this round's config names no site and no site search has "
+                             "chosen one"}
+        from .. import observe, savedworld
+        world_dir = os.path.join(_pipeline.ROOT, "run", "server", "world")
+        if not os.path.isdir(os.path.join(world_dir, "region")):
+            return {"status": "error", "stop": True,
+                    "error": f"a dry run is scored against a cached volume and there is "
+                             f"none at {os.path.relpath(p, _pipeline.ROOT)}, and this "
+                             f"checkout has no region files under "
+                             f"{os.path.relpath(world_dir, _pipeline.ROOT)} to read one "
+                             f"from: the ground under ({o[0]},{o[1]}) "
+                             f"{s.get('size')}x{s.get('size')} has to be read once, by a "
+                             f"session that writes nothing --\n"
+                             f"      bash scripts/mcrun.sh src/ethoslm/pipeline/_commands/"
+                             f"cache_world.py   (ETHOSLM_SETTLEMENT={rnd.name})"}
+        X, Z, S = int(o[0]), int(o[1]), int(s["size"])
+        pad = int(rnd.flags.get("cache_pad", CACHE_PAD))
+        t0 = time.perf_counter()
+        try:
+            vol = savedworld.SavedWorld(world_dir).volume(X - pad, Z - pad,
+                                                          S + 2 * pad, S + 2 * pad)
+        except Exception as e:                   # noqa: BLE001 -- reported by name
+            return {"status": "error", "stop": True,
+                    "error": f"the ground under ({X},{Z}) {S}x{S} cannot be read off "
+                             f"this save's region files: {type(e).__name__}: {e}"}
+        h, _wet = observe.ground_heights(vol)
+        inner = h[pad:pad + S, pad:pad + S]
+        y0 = max(vol.y0, int(inner.min()) - 8)
+        y1 = min(vol.y0 + vol.codes.shape[1] - 1, int(h.max()) + 48)
+        vol = observe.Volume(vol.x0, y0, vol.z0,
+                             vol.codes[:, y0 - vol.y0:y1 - vol.y0 + 1, :], vol.palette)
+        offline.save_volume(vol, p)
+        be.refresh()
+        secs = round(time.perf_counter() - t0, 1)
+        mb = round(os.path.getsize(p) / 1e6, 1)
+        record("cache_world", name=rnd.name, shape=list(vol.shape),
+               states=len(vol.palette), mb=mb, seconds=secs, read="region files")
+        print(f"   cache: {vol.shape} y {y0}..{y1} read off the region files with no "
+              f"server, {mb} MB in {secs}s", flush=True)
+        return {"path": p, "mb": mb, "shape": list(vol.shape), "y": [y0, y1],
+                "pad": pad, "seconds": secs, "read": "region files, no server"}
     if not be.live:
         return {"error": "caching the world reads the server; run this stage --live"}
     import subprocess
@@ -606,23 +657,27 @@ def voice_roof(voice: str | None) -> dict | None:
     return out
 
 
-#: Voice contract, B1: the two voices a type is checked in when its author was given
-#: none. `white_render_dark_frame` declares no silhouette at all, so a type stands in it
-#: under whatever `roof()` does when nobody says. A type clean in both is a form.
-SILHOUETTE_PAIR = ("white_render_dark_frame", "ochre_stone_green_tile")
-
-#: The partner of a type authored in ochre itself: the other explicit silhouette on
-#: disk, two tiers of irimoya over the profile ochre's reverses.
-SILHOUETTE_ALT = "japanese_temple"
-
-
-def check_voices(voice: str | None) -> list:
+def check_voices(voice: str | None, place: str | None = None) -> list:
     """The two voices a type's checker stands it in: the one its author was given and
-        **the city's**, `ochre_stone_green_tile` -- or, for a type authored in ochre, the
-        temple voice, whose silhouette is the other explicit one on disk.
+        **the place's own** -- the voice the round's place is in -- and never a voice
+        named in this file. v2, C0.
+
+        Two and not one, because a checker that saw one voice validated six of the eight
+        types a city authored in a silhouette the city was never going to use. Until this
+        the partner was the demo's authored voice, a library constant, so every future
+        type of every other place was checked against one city's roof. The partner is the
+        place's: where the author's voice **is** the place's, or there is no place, it is
+        the voice on disk whose silhouette is least like the first's
+        (`styles.partner_voice`) -- a voice with a **different explicit silhouette** and
+        not a silent one, because a type whose own default silhouette is its author's
+        stands in a silent voice exactly as it stands in that one, and a silent partner
+        tests nothing of a type that carries its own roof. With no voice and no place the
+        first is the plainest voice on disk (`styles.silent_voice`).
+        
     """
-    first = voice or SILHOUETTE_PAIR[0]
-    second = SILHOUETTE_PAIR[1] if first != SILHOUETTE_PAIR[1] else SILHOUETTE_ALT
+    from .. import styles
+    first = voice or place or styles.silent_voice()
+    second = place if place and place != first else styles.partner_voice(first)
     return [first, second]
 
 
@@ -975,8 +1030,6 @@ def stage_type_briefs(rnd: Round, be, results: dict) -> dict:
         anything will be compared -- the rule every builder call in this project is staged
         under. Never overwrites: a brief on disk is what a builder was actually shown.
     """
-    from .. import styles
-    from ..buildlib import API_DOC
     if not rnd.types:
         return {"note": "this round has no types"}
     out_dir = os.path.join(_type_out(rnd), "briefs")
@@ -988,37 +1041,8 @@ def stage_type_briefs(rnd: Round, be, results: dict) -> dict:
             out[spec["name"]] = {"brief": p, "note": "already written",
                                  "words": len(open(p).read().split())}
             continue
-        # A3: a type is checked on the ground of its own kind, and told about that
-        # ground and no other.
         fixtures = _pipeline._fixtures_for(rnd, spec)
-        census: dict = {}
-        blocks = []
-        for f in fixtures:
-            frnd, _fbe = ((rnd, None) if f["round"] == rnd.name
-                          else _pipeline._fixture_round(f["round"]))
-            fvol = frnd.volume()
-            if f.get("kind") in ("edge", "point", "area"):
-                q = _pipeline.fixture_part(f, {})
-                r = _pipeline.part_rect(q)
-                for k, v in _surface_census(
-                        fvol, {"x0": r[0], "z0": r[1], "x1": r[2], "z1": r[3]}).items():
-                    census[k] = census.get(k, 0) + v
-                blocks.append(f"### {q['label']}\n\n"
-                              + _sited_block(frnd, fvol, q,
-                                             voice_palette(spec.get("voice"))))
-                continue
-            q = {r["label"]: r for r in
-                 json.load(open(frnd.rel("plots.json")))}[f["plot"]]
-            for k, v in _surface_census(fvol, q).items():
-                census[k] = census.get(k, 0) + v
-            blocks.append(f"### {q['label']}\n\n"
-                          + _sited_block(frnd, fvol, q,
-                                         voice_palette(spec.get("voice"))))
-        text = (API_DOC + "\n" + styles.voice_card(spec["voice"], census) + "\n"
-                + type_contract(spec.get("part", "plot"))
-                + "\n## The pieces of ground your function will be called on\n\n"
-                + "\n\n".join(blocks)
-                + f"\n## What to build\n\n{spec['request']}\n")
+        text = type_brief(rnd, spec, fixtures)
         open(p, "w").write(text)
         out[spec["name"]] = {"brief": p, "words": len(text.split()),
                              "voice": spec["voice"], "part": spec.get("part", "plot"),
@@ -1026,6 +1050,48 @@ def stage_type_briefs(rnd: Round, be, results: dict) -> dict:
                                           f"{f.get('plot') or f.get('part')}"
                                           for f in fixtures]}
     return out
+
+
+def type_brief(rnd: Round, spec: dict, fixtures: list | None = None) -> str:
+    """One type's brief: the API, the voice, the contract for its kind, the ground it
+    will be checked on as sited, and the request. What `stage_type_briefs` writes for
+    a round's own types and what the library's growth (v2, C3) writes for a type the
+    plan found missing -- one composition, so an author at plan time is shown exactly
+    what an author in a types round is."""
+    from .. import styles
+    from ..buildlib import API_DOC
+    # A3: a type is checked on the ground of its own kind, and told about that ground
+    # and no other.
+    if fixtures is None:
+        fixtures = _pipeline._fixtures_for(rnd, spec)
+    census: dict = {}
+    blocks = []
+    for f in fixtures:
+        frnd, _fbe = ((rnd, None) if f["round"] == rnd.name
+                      else _pipeline._fixture_round(f["round"]))
+        fvol = frnd.volume()
+        if f.get("kind") in ("edge", "point", "area"):
+            q = _pipeline.fixture_part(f, {})
+            r = _pipeline.part_rect(q)
+            for k, v in _surface_census(
+                    fvol, {"x0": r[0], "z0": r[1], "x1": r[2], "z1": r[3]}).items():
+                census[k] = census.get(k, 0) + v
+            blocks.append(f"### {q['label']}\n\n"
+                          + _sited_block(frnd, fvol, q,
+                                         voice_palette(spec.get("voice"))))
+            continue
+        q = {r["label"]: r for r in
+             json.load(open(frnd.rel("plots.json")))}[f["plot"]]
+        for k, v in _surface_census(fvol, q).items():
+            census[k] = census.get(k, 0) + v
+        blocks.append(f"### {q['label']}\n\n"
+                      + _sited_block(frnd, fvol, q,
+                                     voice_palette(spec.get("voice"))))
+    return (API_DOC + "\n" + styles.voice_card(spec["voice"], census) + "\n"
+            + type_contract(spec.get("part", "plot"))
+            + "\n## The pieces of ground your function will be called on\n\n"
+            + "\n\n".join(blocks)
+            + f"\n## What to build\n\n{spec['request']}\n")
 
 
 def _sited_block(rnd: Round, vol, p: dict, mat) -> str:

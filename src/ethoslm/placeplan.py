@@ -137,11 +137,13 @@ COMPOUND_MIN = 24
 #: for nothing.
 COMPOUND_PLATEAU_SHARE = 0.75
 
-#: **Registered.** What a compound is made of, at the least: a closed wall of its own
-#: with a gate on it, this many enclosed parts (plots) inside the wall, and a court (an
-#: area) inside it. A great thing is a composition; one hall inside a fence is a house
-#: with a garden.
-COMPOUND_MIN_HALLS = 2
+#: **Registered.** The least halls (plots) a compound of the **default** composition
+#: holds -- two, with a closed wall of its own, a gate on it and a court. A great thing
+#: is a composition; one hall inside a fence is a house with a garden. v2, C0: what a
+#: compound is made of is its **family's** row of `spec.COMPOSITIONS` -- a monument is
+#: one thing and its setting, a castle a keep inside its wall -- and this is the floor
+#: of the row a family not in that table gets, which is the palace's.
+COMPOUND_MIN_HALLS = spec_mod.COMPOSITION_DEFAULT["halls"]
 
 #: **How thickly a compound is built up**, as a density word, so its composition is the
 #: same arithmetic a district's is. `COMPOUND_MIN_HALLS` is a *floor* -- two halls and a
@@ -161,10 +163,37 @@ COMPOUND_WALL_INSET = 3
 #: where the place comes in.
 COMPOUND_GATE_REACH = 8
 
-#: The roles a compound admits over its own part's role. A compound has a wall and a
-#: gate whatever it is for, so the `defensive` types stand in it;
-#: `pipeline.UNIVERSAL_ROLES` still applies.
-COMPOUND_ROLES = ("defensive",)
+#: The roles a compound of the **default** composition admits over its own part's role:
+#: a walled compound has a wall and a gate whatever it is for, so the `defensive` types
+#: stand in it; `pipeline.UNIVERSAL_ROLES` still applies. v2, C0: each family's row of
+#: `spec.COMPOSITIONS` says what it admits (`compound_composition`), and an unwalled
+#: precinct admits nothing over its own role.
+COMPOUND_ROLES = spec_mod.COMPOSITION_DEFAULT["admits"]
+
+
+def compound_composition(part: dict | None = None, *, spec: dict | None = None,
+                         comp: dict | None = None) -> dict:
+    """What this compound is made of, at the least: its family's row of
+        `spec.COMPOSITIONS`. v2, C0.
+
+        Found from the defining part where the caller has it, else from the plan's compound
+        rectangle (`comp`, by `_answers`), else from the spec's compound at the centre, else
+        the default row. `margin` is how far inside its rectangle the composition stands:
+        the wall's inset and its clearance where the compound is walled, one plot clearance
+        where it is not.
+        
+    """
+    if part is None and comp is not None and spec:
+        part = next((d for d in spec_mod.compounds(spec) if _answers(comp, d)), None)
+    if part is None and spec:
+        cs = spec_mod.compounds(spec)
+        part = next((d for d in cs if d.get("relation") == "centre"), None) \
+            or (cs[0] if cs else None)
+    out = spec_mod.composition(part)
+    plot_clear, wall_clear = _clearances()
+    out["margin"] = (COMPOUND_WALL_INSET + wall_clear + 1) if out["walled"] \
+        else plot_clear + 1
+    return out
 
 
 # ------------------------------------------------- how much ground a compound needs
@@ -308,18 +337,20 @@ def centre_side(spec: dict | None, site_side: int | None) -> int:
 
 
 def compound_ground(types: list | None = None, *, spec: dict | None = None,
-                    site_side: int | None = None) -> dict:
+                    site_side: int | None = None, part: dict | None = None) -> dict:
     """How big the level square a **compound** stands on has to be, and why.
 
         So the number is the library's, and it is arithmetic over what a compound is
         registered to hold and what the committed types are measured to need -- never a
         model's guess and never a place's name:
 
-          * the composition (`COMPOUND_MIN_HALLS` halls and one court) laid out as squarely
-            as it goes, every one of them at the largest plot the types admit, with the
-            clearance the plan validator holds two plots to between them;
+          * the composition (its family's halls and courts, `spec.COMPOSITIONS`; v2, C0)
+            laid out as squarely as it goes, every one of them at the largest plot the
+            types admit, with the clearance the plan validator holds two plots to between
+            them;
           * the wall's own inset (`COMPOUND_WALL_INSET`) and the clearance a wall asks of
-            anything standing inside it, on all four sides;
+            anything standing inside it, on all four sides -- or, where the family is not
+            walled, one plot clearance;
           * and never below `COMPOUND_MIN`, nor below the square that satisfies the place
             read's own registered footprint margin over that same largest plot -- because a
             compound that cannot be monumental on the ground it is given is a compound the
@@ -331,10 +362,12 @@ def compound_ground(types: list | None = None, *, spec: dict | None = None,
     from .placeread import MONUMENT_FOOTPRINT_MARGIN
     side, biggest = largest_plot(types)
     plot_clear, wall_clear = _clearances(types)
-    n = COMPOUND_MIN_HALLS + 1                     # the halls and the court
+    made_of = compound_composition(part, spec=spec)
+    n = made_of["halls"] + made_of["courts"]      # the halls and the courts
     g = math.ceil(math.sqrt(n))
     grid = g * side + (g - 1) * (plot_clear + 1)
-    margin = COMPOUND_WALL_INSET + wall_clear + 1
+    margin = (COMPOUND_WALL_INSET + wall_clear + 1) if made_of["walled"] \
+        else plot_clear + 1
     holds = grid + 2 * margin
     monumental = math.ceil(math.sqrt(MONUMENT_FOOTPRINT_MARGIN * side * side))
     # What a place's rings leave over is the centre's, and the thing four terraces rise
@@ -349,10 +382,15 @@ def compound_ground(types: list | None = None, *, spec: dict | None = None,
             "largest_plot": [int(side), biggest], "grid": [g, int(grid)],
             "holds": int(holds), "monumental": int(monumental),
             "parts": n, "plot_clearance": plot_clear, "wall_clearance": wall_clear,
+            "family": made_of["family"], "walled": bool(made_of["walled"]),
             "why": (f"{n} parts of {side}x{side} ({biggest}) in a {g}x{g} grid with "
-                    f"{plot_clear + 1} between them is {grid}; a wall inset "
-                    f"{COMPOUND_WALL_INSET} keeping {wall_clear} clear adds {margin} a "
-                    f"side; the place read's {MONUMENT_FOOTPRINT_MARGIN:g}x footprint "
+                    f"{plot_clear + 1} between them is {grid}"
+                    f" (a {made_of['family']}: {made_of['halls']} hall(s) and "
+                    f"{made_of['courts']} court(s))"
+                    + (f"; a wall inset {COMPOUND_WALL_INSET} keeping {wall_clear} clear "
+                       f"adds {margin} a side" if made_of["walled"] else
+                       f"; unwalled, one plot clearance adds {margin} a side")
+                    + f"; the place read's {MONUMENT_FOOTPRINT_MARGIN:g}x footprint "
                     f"margin over {side}x{side} wants {monumental}"
                     + (f"; the spec's centre share wants {declared}" if declared else "")
                     + f"; the bound on this site is {cap}")}
@@ -1761,29 +1799,14 @@ The place level has already been planned. **Centre:** {centre}. **Lanes:**
 ## What you are deciding
 
 **The parts inside this rectangle, and nothing else.** A great thing is a place inside
-the place, not one building: what you are drawing is its inner wall, its gates, its
-halls and its courts, every one an instance of a committed type from the table below,
-built by instantiating that type. There is no builder in this run and no building is
-written by hand.
+the place, not one building: what you are drawing is {made_of}, every one an instance
+of a committed type from the table below, built by instantiating that type. There is
+no builder in this run and no building is written by hand.
 
 - **Everything lies inside your rectangle** and nowhere else.
-- **One closed wall of its own** -- an `edge` whose path's last vertex is its first,
-  every segment along x or along z, a corner at every vertex -- runs round the compound
-  **at least {wall_inset} blocks inside the rectangle on every side**, because a gate's
-  pad straddles the wall and has to stay inside. Nothing stands on or outside it except
-  its gates.
-- **A gate on that wall where the road arrives.** A gate is a `point` of a type the
-  table marks `passage`, standing **on** a cell of the wall's path, within
-  {gate_reach} blocks of the arrival named above. A second gate elsewhere is yours to
-  choose.
-- **{min_halls} halls inside the wall** -- `plot` leaves -- and **the courts and gardens
-  between them** -- `area` leaves -- on an axis: the road comes in at the gate, crosses
-  a court, and arrives at the greatest hall at the far end. Side halls flank the axis.
-  That number is your rectangle's: {inner_w}x{inner_d} of ground inside the wall's
-  margin, at this compound's density, is {min_halls} plots, and fewer than
-  {floor_halls} is handed back. At least one court whatever the size.
+{composition}
 - **And it is filled.** Your halls and your areas together cover at least
-  **{cover_columns} of the {inner_columns} columns inside the wall** -- gardens,
+  **{cover_columns} of the {inner_columns} columns inside {inside_what}** -- gardens,
   secondary courts, a paved precinct, about {area_size} columns each ({area_side} on a
   side), five apart for the lanes. A great thing is a composition and not five buildings
   on a plaza.
@@ -1849,8 +1872,60 @@ def compound_types(types, spec: dict, part: dict) -> tuple:
         
     """
     forms = sorted({f for f in [spec.get("form"), *(part.get("forms") or [])] if f})
-    roles = sorted({r for r in [part.get("role"), *COMPOUND_ROLES] if r})
+    admits = compound_composition(part, spec=spec)["admits"]
+    roles = sorted({r for r in [part.get("role"), *admits] if r})
     return types_card(types, forms=forms or [None], roles=roles or [None])
+
+
+def _composition_bullets(t: dict) -> tuple:
+    """The brief's lines for what this compound is made of -- its family's composition
+    (v2, C0): (what it is drawing, the bullets, what "inside" is)."""
+    walled, gated = t["walled"], t["gated"]
+    halls, floor, courts = t["count"], t["min_count"], t["courts"]
+    inside = "the wall" if walled else "the rectangle's margin"
+    drawing = ", ".join([*(["its inner wall"] if walled else []),
+                         *(["its gates"] if gated else []),
+                         "its hall" if halls == 1 else "its halls",
+                         "its court" if courts == 1 else "its courts"])
+    lines = []
+    if walled:
+        lines.append(
+            f"- **One closed wall of its own** -- an `edge` whose path's last vertex is "
+            f"its first,\n  every segment along x or along z, a corner at every vertex "
+            f"-- runs round the compound\n  **at least {COMPOUND_WALL_INSET} blocks "
+            f"inside the rectangle on every side**, because a gate's\n  pad straddles "
+            f"the wall and has to stay inside. Nothing stands on or outside it except\n"
+            f"  its gates.")
+    else:
+        lines.append(
+            f"- **No wall is asked of a {t['family']}.** Keep {t['margin']} blocks "
+            f"inside the rectangle on every\n  side, for the clearance from what "
+            f"stands outside; the ground between is the setting.")
+    if gated:
+        lines.append(
+            f"- **A gate on that wall where the road arrives.** A gate is a `point` of a "
+            f"type the\n  table marks `passage`, standing **on** a cell of the wall's "
+            f"path, within\n  {COMPOUND_GATE_REACH} blocks of the arrival named above. "
+            f"A second gate elsewhere is yours to\n  choose.")
+    axis = (("the road comes in at the gate, crosses\n  a court, and arrives at the "
+             "greatest hall at the far end. Side halls flank the axis.") if halls > 1
+            else ("the road arrives at the court and the\n  one hall stands at the far "
+                  "end of it, facing the way in."))
+    number = ((f"That number is your rectangle's: {t['inner'][0]}x{t['inner'][1]} of "
+               f"ground inside {inside},\n  at this compound's density, is {halls} "
+               f"plot{'s' if halls != 1 else ''}, and fewer than\n  {floor} is handed "
+               f"back.") if t.get("scales", True) else
+              (f"A {t['family']} is one thing whatever the size of its setting: "
+               f"{halls} plot{'s' if halls != 1 else ''}, and the\n  rest of the "
+               f"{t['inner'][0]}x{t['inner'][1]} inside {inside} is the ground that "
+               f"sets it."))
+    lines.append(
+        f"- **{halls} hall{'s' if halls != 1 else ''} inside {inside}** -- `plot` "
+        f"leaves -- and **the court{'s' if courts != 1 else ''} and gardens\n  "
+        f"{'between them' if halls > 1 else 'before it'}** -- `area` leaves -- on an "
+        f"axis: {axis}\n  {number} At least {courts} court{'s' if courts != 1 else ''} "
+        f"whatever the size.")
+    return drawing, "\n".join(lines), inside
 
 
 def compound_brief(spec: dict, site: dict, comp: dict, place: dict, out_path: str,
@@ -1874,7 +1949,10 @@ def compound_brief(spec: dict, site: dict, comp: dict, place: dict, out_path: st
                    f"called: it is flat, and it was cut for this." if on else
                    "The library prepares the ground under each part you draw.")
     t = compound_target(comp, spec)
+    made_of, composition, inside_what = _composition_bullets(t)
+    admits = compound_composition(part, spec=spec)["admits"]
     return COMPOUND_LEVEL.format(
+        made_of=made_of, composition=composition, inside_what=inside_what,
         sentence=spec["sentence"], intent=place.get("intent", ""),
         centre=place.get("centre", "not stated"),
         lane_material=place.get("circulation_material", "stone"),
@@ -1885,18 +1963,16 @@ def compound_brief(spec: dict, site: dict, comp: dict, place: dict, out_path: st
         what=(f"**What it is.** A {part.get('family')}"
               + (f": {part['notes']}" if part.get("notes") else ".")),
         notes=comp.get("notes", ""), arrival=_arrival_note(place, comp),
-        gate_reach=COMPOUND_GATE_REACH, min_halls=t["count"],
-        floor_halls=t["min_count"], inner_w=t["inner"][0], inner_d=t["inner"][1],
         inner_columns=t["columns"], cover_columns=t["min_ground_columns"],
         area_size=t["area_size"], area_side=t["area_side"],
-        wall_inset=COMPOUND_WALL_INSET,
         largest_side=_monumental_columns()["side"],
         margin=f"{_monumental_columns()['margin']:g}",
         role_note=(f"**This compound is {part.get('role') or 'civic'}**, and the table "
                    f"below is the types that belong in one -- what is for a "
-                   f"{part.get('role') or 'civic'} part of a place, the "
-                   f"{' and '.join(COMPOUND_ROLES)} types every compound has, and the "
-                   f"{' and '.join(pipeline.UNIVERSAL_ROLES)} buildings that stand "
+                   f"{part.get('role') or 'civic'} part of a place, "
+                   + (f"the {' and '.join(admits)} types a walled compound has, and "
+                      if admits else "and ")
+                   + f"the {' and '.join(pipeline.UNIVERSAL_ROLES)} buildings that stand "
                    f"anywhere. There is no other table."),
         types=table, needs=pipeline.needs_table(decls), out=out_path)
 
@@ -1958,6 +2034,7 @@ def compound_parts(got: dict, part: dict | None, name: str,
         
     """
     out = []
+    admits = compound_composition(part, spec=spec)["admits"] if part else None
     for p in (got.get("parts") or []):
         row = {**p, "kind": leaf_kind(p), "name": p.get("name"),
                "compound": name, "in": []}
@@ -1965,6 +2042,9 @@ def compound_parts(got: dict, part: dict | None, name: str,
             row["defines"] = part["name"]
             if part.get("role"):
                 row["role"] = part["role"]
+            # v2, C0: what this compound admits over its own role is its family's
+            # (`spec.COMPOSITIONS`), and the validator reads it off the leaf.
+            row["admits"] = list(admits)
         out.append(row)
     return _stamp_edges(out, spec)
 
@@ -1973,8 +2053,10 @@ def compound_target(comp: dict, spec: dict | None = None) -> dict:
     """What one compound is asked to hold: halls, courts and gardens, from its rectangle."""
     x0, x1 = min(comp["x0"], comp["x1"]), max(comp["x0"], comp["x1"])
     z0, z1 = min(comp["z0"], comp["z1"]), max(comp["z0"], comp["z1"])
-    _plot_clear, wall_clear = _clearances()
-    margin = COMPOUND_WALL_INSET + wall_clear + 1
+    # v2, C0: the floor, the wall and the margin are the family's.
+    made_of = compound_composition(spec=spec, comp=comp)
+    floor = int(made_of["halls"])
+    margin = int(made_of["margin"])
     w = max(1, (x1 - x0 + 1) - 2 * margin)
     d = max(1, (z1 - z0 + 1) - 2 * margin)
     inner = {"name": comp.get("name"), "x0": 0, "z0": 0, "x1": w - 1, "z1": d - 1,
@@ -1982,10 +2064,14 @@ def compound_target(comp: dict, spec: dict | None = None) -> dict:
     part = {"density": COMPOUND_DENSITY}
     inner["structures"] = spec_mod.structures_for(w * d, part)
     t = district_target(inner, part)
-    halls = max(COMPOUND_MIN_HALLS, t["count"])
-    return {**t, "count": halls, "min_count": max(COMPOUND_MIN_HALLS, t["min_count"]),
-            "inner": [w, d], "margin": margin, "floor": COMPOUND_MIN_HALLS,
-            "rect": [x0, z0, x1, z1]}
+    scales = bool(made_of.get("scales", True))
+    halls = max(floor, t["count"]) if scales else floor
+    return {**t, "count": halls,
+            "min_count": max(floor, t["min_count"]) if scales else floor,
+            "scales": scales, "inner": [w, d], "margin": margin, "floor": floor,
+            "courts": int(made_of["courts"]), "walled": bool(made_of["walled"]),
+            "gated": bool(made_of["gated"]), "admits": list(made_of["admits"]),
+            "family": made_of["family"], "rect": [x0, z0, x1, z1]}
 
 
 def compound_failures(comp: dict, got: dict, place: dict, decls: dict,
@@ -1995,7 +2081,11 @@ def compound_failures(comp: dict, got: dict, place: dict, decls: dict,
         `pipeline.plan_failures` over its parts -- type, form, role, footprint, ground,
         overlap -- plus what only this level knows: a part outside its own rectangle, no
         closed wall of its own, no gate on it, a gate away from where the road arrives, a
-        hall outside the wall, and too few parts to be a compound at all.
+        hall outside the wall, and too few parts to be a compound at all. v2, C0: which of
+        those apply is the **family's composition** (`compound_composition`): a monument
+        asks no wall and no gate of itself, a castle one keep inside its wall, a palace two
+        halls; a wall drawn where none is asked is still held closed and inset, and a gate
+        drawn is held to stand on a wall.
         
     """
     from .placeread import inside
@@ -2039,7 +2129,8 @@ def compound_failures(comp: dict, got: dict, place: dict, decls: dict,
     # that does not exist.
     every = {**pipeline.type_declarations(parts + standing), **decls}
     out += pipeline.plan_failures(parts + standing, every, ground=ground)
-    # The wall, the gate, the halls and the court: what a compound is.
+    # The wall, the gate, the halls and the court: what a compound is -- by its family.
+    t = compound_target(comp, spec)
     walls = [p for p in parts if p.get("kind") == "edge"]
     closed = []
     for w in walls:
@@ -2058,8 +2149,8 @@ def compound_failures(comp: dict, got: dict, place: dict, decls: dict,
                              f"{len(out_of)} of this wall's vertices are nearer the edge "
                              f"than that, the first at {list(out_of[0])} against "
                              f"x {x0}..{x1}, z {z0}..{z1}")
-    if not closed:
-        fail(name, "wall", f"a compound has a closed wall of its own round it, and "
+    if not closed and t["walled"]:
+        fail(name, "wall", f"a {t['family']} has a closed wall of its own round it, and "
                            f"{name} draws none: an edge whose path ends where it began")
     gates = [p for p in parts if p.get("kind") == "point"
              and (decls.get(p.get("type")) or {}).get("passage")]
@@ -2072,9 +2163,9 @@ def compound_failures(comp: dict, got: dict, place: dict, decls: dict,
         else:
             fail(g, "gate", f"a gate stands on the compound's wall: this one is at "
                             f"{list(at)} and no closed wall's path passes through it")
-    if closed and not on_wall:
-        fail(name, "gate", "no gate stands on the compound's wall: a point of a "
-                           "passage type, on a cell of its path")
+    if closed and not on_wall and t["gated"]:
+        fail(name, "gate", f"no gate stands on the {t['family']}'s wall: a point of a "
+                           f"passage type, on a cell of its path")
     arrive = [(int(c[0]), int(c[1])) for c in
               ((place.get("arterials") or {}).get("joins") or {}).get(name) or []]
     if arrive and on_wall and not any(
@@ -2093,20 +2184,20 @@ def compound_failures(comp: dict, got: dict, place: dict, decls: dict,
                               for _w, path in closed):
             fail(p, "inside", f"{p['name']} is not wholly inside the compound's wall: "
                               f"the halls and the courts stand within it")
-    # The floor is `COMPOUND_MIN_HALLS` and a great thing on two hundred square is not
-    # two halls and a court. The count and the cover are `district_target`'s arithmetic
-    # over the ground inside the wall at `COMPOUND_DENSITY`.
-    t = compound_target(comp, spec)
-    if len(halls) < t["min_count"] or not courts:
+    # The floor is its family's and a great thing on two hundred square is not two halls
+    # and a court. The count and the cover are `district_target`'s arithmetic over the
+    # ground inside the wall at `COMPOUND_DENSITY`.
+    if len(halls) < t["min_count"] or len(courts) < t["courts"]:
         fail(name, "composed",
-             f"a compound of {t['rect'][2] - t['rect'][0] + 1} blocks square holds "
+             f"a {t['family']} of {t['rect'][2] - t['rect'][0] + 1} blocks square holds "
              f"{t['count']} halls (plots) and the courts and gardens between them, and "
              f"{name} draws {len(halls)} plot(s) and {len(courts)} area(s): a great "
-             f"thing is a composition, and at this size {t['min_count']} plots is the "
-             f"least it can be (the floor for any compound is {t['floor']} and a court)")
+             f"thing is a composition, and at this size {t['min_count']} plot(s) is the "
+             f"least it can be (the floor for a {t['family']} is {t['floor']} and "
+             f"{t['courts']} court(s))")
     # ...and the cover is asked **where the arithmetic asks for more than the floor**.
-    # `COMPOUND_MIN_HALLS` is binding on a small rectangle -- two halls and a court is
-    # all a 64-square precinct holds at the sizes the types admit -- and asking that
+    # the family's floor is binding on a small rectangle -- two halls and a court is all
+    # a 64-square precinct holds at the sizes the types admit -- and asking that
     # rectangle for a density's share of cover as well is the same inconsistency
     # `occupancy_shares` exists to stop: two numbers about one piece of ground that
     # cannot both be met.
@@ -2114,7 +2205,7 @@ def compound_failures(comp: dict, got: dict, place: dict, decls: dict,
     for p in halls + courts:
         r = pipeline.part_rect(p)
         covered += (r[2] - r[0] + 1) * (r[3] - r[1] + 1)
-    if t["count"] > COMPOUND_MIN_HALLS and covered < t["min_ground_columns"]:
+    if t["count"] > t["floor"] and covered < t["min_ground_columns"]:
         fail(name, "cover",
              f"this compound's halls, courts and gardens cover {covered} of the "
              f"{t['columns']} columns inside its wall "

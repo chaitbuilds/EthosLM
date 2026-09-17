@@ -32,6 +32,15 @@
       build family reports no error on it, every door is reachable from the lane, the
       interior floor is walkable, and it is larger than the house beside it by the
       registered margin.
+  M9. **The composition is the family's and the rectangle's, not a palace's** (v2,
+      C0). A monument -- one hall and its precinct, no wall, no gate -- a shrine
+      precinct -- a temple and its garden -- and a castle -- a keep, a curtain wall, a
+      gatehouse and a bailey -- each pass the compound validator, assemble, and hold
+      the place read's `present/` clause; a castle without its wall, a monument with an
+      open wall drawn, and a gate or a keep in a shrine (an unwalled precinct admits
+      no defensive type) are each refused by name; the ground a monument needs is less than a palace's; a
+      monument does not scale with its rectangle and a palace does; the brief says what
+      each is made of.
 
 M8 needs `types/` and the library and nothing under `out/` but a scratch directory of
 its own; nothing here needs a cached world.
@@ -638,6 +647,184 @@ def t_m8_a_compound_on_its_plateau_is_built_walkable_and_lint_clean_and_larger_t
 
 
 # ----------------------------------------------------------------- the runner
+
+# ------------------------------------ M9. the composition is the family's (v2, C0)
+
+def _spec_with(part: dict):
+    doc = json.loads(json.dumps(TOWN_SPEC))
+    doc["defining_parts"][0] = part
+    spec = spec_mod.read_spec(doc, SENTENCE)
+    spec["structures"], spec["size_band"] = 4, [4, 12]
+    return spec
+
+
+def _place_for(name: str):
+    place = _place()
+    place["centre"] = name
+    place["compounds"][0].update({"name": name, "defines": name,
+                                  "notes": f"the {name} on its plateau"})
+    vol = _ground()
+    net, nodes = placeplan.plan_arterials(place, _decls(), _heights(vol), 0, 0)
+    place["arterials"] = placeplan.arterial_record(net, nodes, place)
+    return place
+
+
+def _wall_gate():
+    return [
+        {"kind": "edge", "name": "curtain_wall", "type": "wall", "seed": 1,
+         "params": {"height": 6, "width": 1, "crown": "solid"}, "width": 1,
+         "path": [[67, 67], [124, 67], [124, 124], [67, 124], [67, 67]],
+         "notes": "the wall"},
+        {"kind": "point", "name": "gatehouse", "type": "ring_gate", "seed": 2,
+         "params": {"storeys": 2, "crown": "hip"}, "at": [96, 67],
+         "facing": "north", "size": 5, "notes": "the gate, where the road arrives"}]
+
+
+COMPOSITIONS_FIXTURE = {
+    # a monument: one thing and its setting -- no wall, no gate
+    "monument": ({"name": "monument", "kind": "plot", "family": "monument",
+                  "relation": "centre", "count": 1, "structures": 1,
+                  "needs": {"plateau": 64}, "notes": "the monument and its precinct"},
+                 [{"kind": "area", "name": "precinct", "type": "square", "seed": 3,
+                   "params": {"paving": "banded", "canopy": "hip"},
+                   "x0": 76, "z0": 70, "x1": 115, "z1": 95, "notes": "the precinct"},
+                  {"kind": "plot", "name": "the_monument", "type": "hall", "seed": 4,
+                   "params": {"dormers": 2, "use": "moot"},
+                   "x0": 88, "z0": 102, "x1": 105, "z1": 117, "notes": "the thing"}]),
+    # a shrine precinct: a group of the temple family -- the shrine and its garden
+    "shrine": ({"name": "shrine", "kind": "group", "family": "temple",
+                "relation": "centre", "count": 1, "structures": 2,
+                "needs": {"plateau": 64}, "notes": "a shrine precinct"},
+               [{"kind": "area", "name": "shrine_garden", "type": "garden", "seed": 3,
+                 "params": {}, "x0": 72, "z0": 70, "x1": 119, "z1": 99,
+                 "notes": "the garden before it"},
+                {"kind": "plot", "name": "main_shrine", "type": "temple", "seed": 4,
+                 "params": {}, "x0": 78, "z0": 104, "x1": 93, "z1": 119,
+                 "notes": "the shrine"},
+                {"kind": "plot", "name": "lesser_shrine", "type": "temple", "seed": 5,
+                 "params": {}, "x0": 100, "z0": 104, "x1": 115, "z1": 119,
+                 "notes": "a lesser shrine"}]),
+    # a castle: a group of the keep family -- the keep inside its curtain wall, a
+    # gatehouse on it, and the bailey
+    "castle": ({"name": "castle", "kind": "group", "family": "keep",
+                "relation": "centre", "count": 1, "structures": 3,
+                "needs": {"plateau": 64}, "notes": "a castle"},
+               [*_wall_gate(),
+                {"kind": "area", "name": "bailey", "type": "square", "seed": 3,
+                 "params": {"paving": "banded", "canopy": "hip"},
+                 "x0": 84, "z0": 72, "x1": 107, "z1": 90, "notes": "the bailey"},
+                {"kind": "plot", "name": "the_keep", "type": "keep", "seed": 4,
+                 "params": {}, "x0": 84, "z0": 94, "x1": 107, "z1": 117,
+                 "notes": "the keep"}]),
+}
+
+
+@case
+def t_m9_a_monument_a_shrine_precinct_and_a_castle_are_each_their_own_composition():
+    said = []
+    for label, (part, parts) in COMPOSITIONS_FIXTURE.items():
+        spec = _spec_with(part)
+        d = spec_mod.compounds(spec)[0]
+        assert d["name"] == part["name"], d
+        made_of = placeplan.compound_composition(d, spec=spec)
+        place = _place_for(part["name"])
+        comp = place["compounds"][0]
+        _t, cdecls = placeplan.compound_types(None, spec, d)
+        got = {"notes": label, "axis": "north", "parts": parts}
+        fails = placeplan.compound_failures(comp, got, place, cdecls, spec=spec)
+        assert not fails, (label, [(f["part"], f["check"], f["why"]) for f in fails])
+        # ...assembled and read: `present/<name>` holds
+        plan = placeplan.assemble(place, {"houses": _district()}, spec,
+                                  {part["name"]: got})
+        leaves = pipeline.plan_parts(plan)
+        mine = [p for p in leaves if p.get("compound") == part["name"]]
+        assert all(p.get("admits") == list(made_of["admits"]) for p in mine), \
+            [(p["name"], p.get("admits")) for p in mine]
+        whole = pipeline.plan_failures(
+            leaves, pipeline.type_declarations(leaves),
+            ground={p["name"]: {"relief": 2, "water_pct": 0.0, "class": "dry",
+                                "columns": 1} for p in leaves})
+        assert not whole, (label, whole)
+        read = placeread.read(spec, plan, _stood(plan), voice=VOICE, site=SITE,
+                              plateau=dict(PLATEAU, part=part["name"]))
+        c = {x["clause"]: x for x in read["clauses"]}
+        assert c[f"present/{part['name']}"]["holds"], c[f"present/{part['name']}"]["says"]
+        # ...and the brief says what this one is made of
+        brief = placeplan.compound_brief(spec, SITE, comp, place, "/tmp/x.json", None,
+                                         VOICE)
+        t = placeplan.compound_target(comp, spec)
+        if made_of["walled"]:
+            assert "One closed wall of its own" in brief, label
+        else:
+            assert f"No wall is asked of a {d['family']}" in brief, label
+            assert "closed wall of its own" not in brief, label
+        said.append(f"{label} ({d['family']}): {t['count']} hall(s), {t['courts']} "
+                    f"court(s), {'walled' if t['walled'] else 'unwalled'}, "
+                    f"{'gated' if t['gated'] else 'ungated'}, admits "
+                    f"{list(made_of['admits']) or 'nothing'}: passes, assembles, "
+                    f"present/ holds")
+
+    def why(label, parts, **place_over):
+        part = COMPOSITIONS_FIXTURE[label][0]
+        spec = _spec_with(part)
+        d = spec_mod.compounds(spec)[0]
+        place = _place_for(part["name"])
+        _t, cdecls = placeplan.compound_types(None, spec, d)
+        got = {"notes": label, "axis": "north", "parts": parts}
+        return [(f["part"], f["check"]) for f in
+                placeplan.compound_failures(place["compounds"][0], got, place, cdecls,
+                                            spec=spec)]
+
+    # a castle without its wall is refused by name; without its gate too
+    castle = COMPOSITIONS_FIXTURE["castle"][1]
+    got = why("castle", [p for p in castle if p["kind"] not in ("edge", "point")])
+    assert ("castle", "wall") in got, got
+    got = why("castle", [p for p in castle if p["kind"] != "point"])
+    assert ("castle", "gate") in got, got
+    # a monument with an open wall drawn is refused for the wall it drew, and with a
+    # closed one it is not asked for a gate
+    monument = COMPOSITIONS_FIXTURE["monument"][1]
+    open_wall = dict(_wall_gate()[0], path=[[67, 67], [124, 67], [124, 124], [67, 124]])
+    got = why("monument", [open_wall, *monument])
+    assert ("curtain_wall", "wall") in got, got
+    got = why("monument", [_wall_gate()[0], *monument])
+    assert not any(c in ("wall", "gate") for _n, c in got), got
+    # a gate in a shrine, and a keep in one, are refused by role, because an unwalled
+    # precinct admits nothing over its own: the defensive types are a walled compound's
+    shrine = COMPOSITIONS_FIXTURE["shrine"][1]
+    got = why("shrine", [_wall_gate()[1], *shrine])
+    assert ("gatehouse", "role") in got, got
+    keep = {"kind": "plot", "name": "a_keep", "type": "keep", "seed": 9, "params": {},
+            "x0": 100, "z0": 104, "x1": 115, "z1": 119, "notes": ""}
+    got = why("shrine", [*shrine[:2], keep])
+    assert ("a_keep", "role") in got, got
+    # ...and the keep in the castle is admitted, as is the wall
+    assert not why("castle", castle)
+    # the ground: a monument needs less than a palace, a castle as much
+    pal = placeplan.compound_ground(spec=_spec(), site_side=SIZE)
+    mon = placeplan.compound_ground(spec=_spec_with(COMPOSITIONS_FIXTURE["monument"][0]),
+                                    site_side=SIZE)
+    cas = placeplan.compound_ground(spec=_spec_with(COMPOSITIONS_FIXTURE["castle"][0]),
+                                    site_side=SIZE)
+    assert mon["side"] < pal["side"] and not mon["walled"] and pal["walled"], (mon, pal)
+    assert cas["side"] == pal["side"] and cas["walled"], (cas, pal)
+    # a monument does not scale with its rectangle; a palace does
+    big = {"name": "b", "x0": 0, "z0": 0, "x1": 199, "z1": 199}
+    m_t = placeplan.compound_target(dict(big, defines="monument"),
+                                    _spec_with(COMPOSITIONS_FIXTURE["monument"][0]))
+    p_t = placeplan.compound_target(dict(big, defines="palace"), _spec())
+    assert m_t["count"] == 1 and not m_t["scales"], m_t
+    assert p_t["count"] > placeplan.COMPOUND_MIN_HALLS and p_t["scales"], p_t
+    # the composition table is the spec's and a family not in it is the palace's
+    assert spec_mod.composition("bridge") == dict(spec_mod.COMPOSITION_DEFAULT,
+                                                   family="bridge")
+    return "; ".join(said) + (f"; a castle without its wall or gate, a monument with an "
+                              f"open wall, and a gate or a keep in a shrine are refused "
+                              f"by name; a monument's ground "
+                              f"{mon['side']} against a palace's {pal['side']}; a "
+                              f"monument on 200 square is still 1 hall, a palace "
+                              f"{p_t['count']}")
+
 
 def main():
     ok = bad = skipped = 0

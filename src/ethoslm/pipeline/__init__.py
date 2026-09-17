@@ -41,6 +41,7 @@ from .stages_plan import (
     PLAN_CHECKS,
     plan_failures,
     _rects_overlap,
+    party_wall,
     needs_table,
     part_registry_row,
     fixture_part,
@@ -68,7 +69,7 @@ from .stages_plan import (
     SWEEP_MAX,
 )
 
-_owners.update({n: _stages_plan for n in ('PART_GEOMETRY', 'PART_LEAF_KINDS', 'PART_GROUP_KINDS', 'plan_parts', 'plan_plots', 'part_rect', 'part_rects', 'plan_ground', 'PLAN_CHECKS', 'plan_failures', '_rects_overlap', 'needs_table', 'part_registry_row', 'fixture_part', '_type_forbidden', 'TYPE_FORBIDDEN', 'TYPE_DECLARATIONS', 'FORMS', 'UNIVERSAL_FORMS', 'read_form', 'form_ok', 'ROLES', 'UNIVERSAL_ROLES', 'COMPOUND_ROLES', 'read_role', 'role_ok', 'NEEDS_DEFAULT', 'GROUND_CLASSES', 'GROUND_OF_SITING', 'read_needs', 'needs_footprint_failure', 'ground_class', 'load_type', 'check_params', 'param_combinations', 'SWEEP_MAX')})
+_owners.update({n: _stages_plan for n in ('PART_GEOMETRY', 'PART_LEAF_KINDS', 'PART_GROUP_KINDS', 'plan_parts', 'plan_plots', 'part_rect', 'part_rects', 'plan_ground', 'PLAN_CHECKS', 'plan_failures', '_rects_overlap', 'party_wall', 'needs_table', 'part_registry_row', 'fixture_part', '_type_forbidden', 'TYPE_FORBIDDEN', 'TYPE_DECLARATIONS', 'FORMS', 'UNIVERSAL_FORMS', 'read_form', 'form_ok', 'ROLES', 'UNIVERSAL_ROLES', 'COMPOUND_ROLES', 'read_role', 'role_ok', 'NEEDS_DEFAULT', 'GROUND_CLASSES', 'GROUND_OF_SITING', 'read_needs', 'needs_footprint_failure', 'ground_class', 'load_type', 'check_params', 'param_combinations', 'SWEEP_MAX')})
 
 from . import stages_build as _stages_build
 
@@ -94,7 +95,6 @@ from .stages_build import (
     instantiated_source,
     voice_palette,
     voice_roof,
-    SILHOUETTE_PAIR,
     check_voices,
     instantiate,
     _type_instances,
@@ -137,7 +137,7 @@ from .stages_build import (
     stage_arms,
 )
 
-_owners.update({n: _stages_build for n in ('stage_programs', '_gate_threshold', 'stage_circulation', 'stage_cache', 'stage_briefs', 'stage_finish', '_wave_brief', '_wave_check_runs', 'LINT_MARGIN', 'wave_scope', 'stage_waves', '_cand', '_cand_ids', '_cand_arm', '_cand_program', '_cand_dir', '_cand_plots', '_TYPE_HEADER', 'instantiated_source', 'voice_palette', 'voice_roof', 'SILHOUETTE_PAIR', 'check_voices', 'instantiate', '_type_instances', '_types', '_type_out', '_type_file', '_type_sub', '_type_rows', '_instance_program', 'TYPE_CONTRACT', 'TYPE_CONTRACT_KINDS', 'type_contract', '_plot_block', '_surface_census', 'stage_type_briefs', '_sited_block', '_sited_part_block', 'stage_types', '_measure_instance', '_REFUSING_CALLS', '_watching_refusals', '_instance_form', 'stage_candidates', '_type_candidate', '_revise', '_revise_subjects', '_revise_dir', 'REVISE_CARRY', '_revise_brief', '_draft_row', '_record_call', '_check_recorded', 'stage_revise', '_arms', '_arm_list', '_arm_sub', '_arm_ids', '_arm_dir', '_arm_program', 'stage_arms')})
+_owners.update({n: _stages_build for n in ('stage_programs', '_gate_threshold', 'stage_circulation', 'stage_cache', 'stage_briefs', 'stage_finish', '_wave_brief', '_wave_check_runs', 'LINT_MARGIN', 'wave_scope', 'stage_waves', '_cand', '_cand_ids', '_cand_arm', '_cand_program', '_cand_dir', '_cand_plots', '_TYPE_HEADER', 'instantiated_source', 'voice_palette', 'voice_roof', 'check_voices', 'instantiate', '_type_instances', '_types', '_type_out', '_type_file', '_type_sub', '_type_rows', '_instance_program', 'TYPE_CONTRACT', 'TYPE_CONTRACT_KINDS', 'type_contract', '_plot_block', '_surface_census', 'stage_type_briefs', '_sited_block', '_sited_part_block', 'stage_types', '_measure_instance', '_REFUSING_CALLS', '_watching_refusals', '_instance_form', 'stage_candidates', '_type_candidate', '_revise', '_revise_subjects', '_revise_dir', 'REVISE_CARRY', '_revise_brief', '_draft_row', '_record_call', '_check_recorded', 'stage_revise', '_arms', '_arm_list', '_arm_sub', '_arm_ids', '_arm_dir', '_arm_program', 'stage_arms')})
 
 from . import stages_measure as _stages_measure
 
@@ -198,6 +198,7 @@ from .stages_media import (
     stage_write,
     stage_map,
     stage_sheet,
+    stage_preview,
     stage_render,
     stage_candidate_render,
     stage_type_render,
@@ -208,7 +209,7 @@ from .stages_media import (
     _write_selection,
 )
 
-_owners.update({n: _stages_media for n in ('stage_cards', '_resolve', 'stage_judge', 'stage_write', 'stage_map', 'stage_sheet', 'stage_render', 'stage_candidate_render', 'stage_type_render', '_avg_ranks', '_pair', 'stage_selection', '_stage_human_look', '_write_selection')})
+_owners.update({n: _stages_media for n in ('stage_cards', '_resolve', 'stage_judge', 'stage_write', 'stage_map', 'stage_sheet', 'stage_preview', 'stage_render', 'stage_candidate_render', 'stage_type_render', '_avg_ranks', '_pair', 'stage_selection', '_stage_human_look', '_write_selection')})
 
 from . import blind as _blind
 
@@ -307,6 +308,7 @@ STAGES = {
     "terraces": _place_stage("terraces"),
     "site": _place_stage("site"),
     "plan": _place_stage("plan"),
+    "preview": stage_preview,
     "parts": _place_stage("parts"),
     "place_check": _place_stage("place_check"),
     "circulation": stage_circulation,

@@ -416,7 +416,7 @@ DETERMINISTIC = ("programs", "cards", "judge")
 
 
 PLACE = ("place_spec", "site_search", "site", "plateau", "plan", "terraces",
-         "circulation", "cache", "parts", "finish", "lint", "render", "cards",
+         "circulation", "cache", "preview", "parts", "finish", "lint", "render", "cards",
          "place_check", "judge", "readout")
 
 #: The same place, offline, with the world in a volume. Two differences from `PLACE` and
@@ -424,10 +424,15 @@ PLACE = ("place_spec", "site_search", "site", "plateau", "plan", "terraces",
 #: cut applied to the volume the run is scored against and there is no volume until the
 #: ground has been read; - `render`, `cards` and `judge` are absent. Chunky needs the
 #: world on disk and a dry run has not written one; the frames are the live run's and A4
-#: is what bounds them when it gets there.
-PLACE_DRY = ("place_spec", "site_search", "site", "cache", "plateau", "plan",
-             "terraces", "circulation", "parts", "finish", "lint", "place_check",
-             "readout")
+#: is what bounds them when it gets there. ...and `cache` runs **before** `site` as well
+#: (v2, C5): offline the site briefing is measured off the cached volume, so the ground
+#: has to be in hand before it is read. ...and `preview` runs **after** `circulation`
+#: (v2, C4, found by looking at one): a building drawn before the lanes are routed has
+#: no way in, so `site()` refuses it and the preview's five buildings are five empty
+#: pads. The stage re-routes the lanes itself where its revision changes the plan.
+PLACE_DRY = ("place_spec", "site_search", "cache", "site", "plateau", "plan",
+             "terraces", "circulation", "preview", "parts", "finish", "lint",
+             "place_check", "readout")
 
 
 def default_stages(rnd: Round) -> tuple:
