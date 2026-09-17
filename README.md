@@ -10,8 +10,6 @@ of blocks to use, and lays every block itself.
 What this project delivers is the **architecture** behind that. It is general. The towns it
 builds are tests of the architecture, not the product.
 
-![A city built from one sentence](docs/city.jpg)
-
 ## Why Minecraft
 
 Minecraft is predictable and built from whole units: a fixed set of blocks, a grid of round
