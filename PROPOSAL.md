@@ -178,3 +178,42 @@ system.
 **Judgment does not compound.** Types accumulate, readings and verdicts do not. A system
 that keeps its verdicts has a record of what has worked; one that discards them starts over
 each time.
+
+## Other roots worth checking
+
+Noticed while reading, not chased down. Each is a guess at a root rather than a finding.
+
+**Irregularity has no mechanism.** `VARIETY` varies a lot's width and depth. Street
+geometry is always rectilinear and blocks are always two rows of lots back to back. Nothing
+in the compiler can produce a lane that bends or a block that is not a rectangle, so a
+quarter that grew rather than being planned cannot be built at any spec richness. This is
+the widest gap between a generated city and a place, and unlike the rest of this document
+it has no obvious scoped fix.
+
+**The spec call does too many jobs.** One call identifies the referent, writes the
+invariants, chooses the kind, writes every defining part, picks the form and picks the
+voice. Six decisions of different kinds with one gate over all of them. Splitting the
+reading from the conversion is the first cut; there may be more.
+
+**The invariants and the parts are never reconciled.** `rounds/concentric.json`
+preregisters a report on "whether the fresh spec call wrote fewer walled rings than the
+invariants it listed", with the policy "reported, not patched". A spec that contradicts its
+own paragraph is an observation rather than an error. Deriving the parts from the reading
+would remove the class.
+
+**Roundness never fires from a name.** `wall_round_for` matches shape words in the spec's
+invariants or a wall part's notes, and refuses to read a place's name. A sentence naming a
+round city gets square rings unless the spec call happens to write roundness into prose.
+
+**The preview may not be in the loop.** `preview.py` renders in about a tenth of a second
+and states that in seven rounds no settlement builder had ever been shown a picture of
+anything it built. Whether anything now iterates against it, rather than rendering it once
+at the end, is not visible from the tree.
+
+**Interiors are unverified.** Types build interiors and the walk model checks that floors
+are reachable. Whether a room reads as a room, furnished and lit and worth entering, is
+measured nowhere.
+
+**A ring layout with no compound leaves a hole.** `centre_share` is the residual of the
+ring shares. Where a place has rings and nothing at the middle, that residual is open
+ground at the centre of the city and no check asks what is in it.
