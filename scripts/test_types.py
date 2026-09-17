@@ -593,6 +593,11 @@ def t_a7_a_bar_names_a_measure_and_a_number_and_both_are_read():
         # -- read off the layout, the parts record and the built volume, reported and
         # not barred.
         "concentric",
+        # v2, C5: the fabric of the compiled districts -- columns of ground per house
+        # per density word, the share of houses whose way in is on the front their leaf
+        # names, the leftover ground assigned, and party walls where the character said
+        # attached.
+        "fabric",
         # ground per structure under the density word's ceiling, plots and areas over
         # the registered cover, the open ground the setting's rather than the footing's,
         # and the centre over its share of the innermost ring.
