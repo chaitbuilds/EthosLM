@@ -313,6 +313,34 @@ def _landings(y: dict, adj: dict, rounds: int = 60) -> tuple[dict, int]:
 
 # ------------------------------------------------------------------- the planner
 
+#: The columns beside a wall's declared width that its construction may take: a battered
+#: base and a walkway step. Registered from the expression city's middle ring wall
+#: (built six wide on a declared three).
+EDGE_CLEARANCE = 2
+
+
+def stamp_occupation(parts: list, decls: dict | None = None) -> list:
+    """Put each part's **occupied envelope** on it, in place, and return the list.
+
+        The one seam between `ground.occupied_envelope` and the router. A type that knows
+        it stands outside the band the layout drew for it says so
+        (`types/great_wall.occupied`); routing against the declared width is what built
+        over 134 lane cells of the expression city. Stamped rather than looked up inside
+        the router because the router is given parts and not the type table, and a part
+        stamped once is a part four consumers can read.
+        
+    """
+    from . import ground as _ground
+    for p in parts or []:
+        if not isinstance(p, dict) or p.get("occupied"):
+            continue
+        try:
+            p["occupied"] = _ground.occupied_envelope(p, decls)
+        except Exception:                        # noqa: BLE001 -- the band stands
+            continue
+    return parts
+
+
 def parts_to_routing(parts: list, passage=()) -> dict:
     """Until A4 a plan was a list of building footprints and the router's whole job was to
     join them up. A place has three more kinds of part in it and each means something
@@ -336,11 +364,41 @@ def parts_to_routing(parts: list, passage=()) -> dict:
     Returns {"sites", "obstacles", "passable"}: the footprints to route between, the
     columns to keep off, and the columns to cross anyway."""
     sites, obstacles, passable = [], set(), set()
+    # the clearance each wall's construction takes beside its line: the part's own
+    # (stamped from its type's NEEDS by the caller) or the registered default, **plus
+    # whatever the type says stands outside the band the layout drew for it**. The
+    # design round's third contract: one occupied envelope, four consumers. The great
+    # wall's corbel course, its buttress piers and its hanging switchback are solid
+    # outside its declared width, and routing against the declared width is how the
+    # expression city got 134 lane cells built over. `stamp_occupation` puts
+    # `ground.occupied_envelope` on each part and this reads it; a part with none
+    # behaves exactly as it did.
+    def _extra(p) -> int:
+        try:
+            base = max(0, int(p.get("clearance") if p.get("clearance") is not None
+                              else EDGE_CLEARANCE))
+        except (TypeError, ValueError):
+            base = EDGE_CLEARANCE
+        occ = p.get("occupied")
+        if isinstance(occ, dict):
+            try:
+                return max(base, int(occ.get("clearance") or 0)) \
+                    + max(0, int(occ.get("projects") or 0))
+            except (TypeError, ValueError):
+                return base
+        return base
+    max_extra = max([_extra(p) for p in parts if p.get("kind") == "edge"] or [EDGE_CLEARANCE])
     for p in parts:
         kind = p.get("kind", "plot")
         name = p.get("name") or p.get("id") or p.get("label")
         if kind == "edge":
-            half = max(1, int(p.get("width", 1))) // 2
+            # **A wall's base is wider than its line.** The expression round's city: the
+            # middle ring's wall stood as a great-wall type twenty-seven high with a
+            # battered base and a walkway step two columns outside its declared width,
+            # and the lanes routed against the declared width were built over (134 lane
+            # cells that cannot be stood on). The obstacle band carries the clearance a
+            # wall's construction takes beside its line.
+            half = max(1, int(p.get("width", 1))) // 2 + _extra(p)
             path = [(int(a[0]), int(a[1])) for a in p["path"]]
             for a, b in zip(path, path[1:]):
                 # **A 45-degree run is an obstacle too.** v2, A5. it is how a ring is
@@ -381,7 +439,9 @@ def parts_to_routing(parts: list, passage=()) -> dict:
                 # through it, which is a gate with a gap beside it.
                 ah = {"north": (0, -1), "south": (0, 1),
                       "east": (1, 0), "west": (-1, 0)}[p.get("facing", "north")]
-                for i in (-1, 0, 1):
+                # ...long enough to cross the wall's whole obstacle band, clearance
+                # included, else a thicker band seals the gate it was cut for
+                for i in range(-(1 + max_extra), 2 + max_extra):
                     passable.add((ax + ah[0] * i, az + ah[1] * i))
             continue
         site = {"id": name,

@@ -80,9 +80,18 @@ OPTIONAL = ("ground", "wall_alt")
 OPTIONAL_SHAPED = ("wall_alt",)
 
 #: What a voice may say about its roof, and the default of each. These are `roof()`'s
-#: own keyword arguments; `None` for `profile` and `ends` is the roof style's own, which
-#: is what keeps every stored program byte-identical.
-ROOF_KEYS = {"profile": None, "ends": None, "eave": "straight", "tiers": 1}
+#: own keyword arguments; `None` for `profile`, `ends` and `overhang` is the roof
+#: style's own, which is what keeps every stored program byte-identical. **`overhang`
+#: joined them in the composition round.** How far a roof oversails the wall is one of
+#: the three things a reader actually sees about a roof -- with the pitch and what the
+#: ends do -- and it is the one a voice could not say. S202 (`sources/INDEX.md`):
+#: "Overhang the roof 1-2 blocks past the wall for a shadow line". A crowded ring of
+#: party-walled houses under dark tile and a prosperous ring of courtyard houses under
+#: green tile are not the same building at two palettes, and the eave is where the
+#: difference is cheapest to state. `None` means `roof()`'s own default of one block, so
+#: a voice that says nothing builds byte-identically.
+ROOF_KEYS = {"profile": None, "ends": None, "eave": "straight", "tiers": 1,
+             "overhang": None}
 
 #: **A second silhouette, for what a place holds at its middle.** Demo-polish, 2a. A
 #: voice carried one silhouette, so a capital's throne hall stood under the same roof as
@@ -96,6 +105,30 @@ ROOF_CIVIC = "roof_civic"
 #: The prose a brief reads. Optional, every one of them: a voice with no notes is a
 #: palette, which is a legitimate thing for a model to author in one line.
 NOTE_KEYS = ("blurb", "construction", "roofs", "ground", "signature")
+
+#: **The material recipe, optional.** The expression round. `variants` is `{role:
+#: [{"family", "weight", "when"}, ...]}`: compatible families a material pass may lay in
+#: a role's place, the share of that role's surface each may take, and the condition it
+#: answers to (`ethoslm.material.WHEN`). A voice with none is a voice of one material per
+#: role and the pass leaves it alone. Validated by `material.recipe_for`, and the pass
+#: is off in production until the controlled comparison says otherwise. **What a
+#: restrained recipe is, and why the two city voices were cut back to one.** The
+#: composition round. The design round's comparison judged `leave_off` on a recipe that
+#: reached six roles and used `patch` on four of them, and its criterion 5 named three
+#: specific harms: the palace courts' laid paving and both market floors' chequers
+#: became grey noise (`footing` and `floor` variants on `when: damp`, which is true of
+#: every cell of a paved floor), and vertical stains cut through the great wall's purpur
+#: string course (a `cherry` wall variant on `when: patch`, whose field is stretched in
+#: y). So `pale_quartz_and_gilt` and `ochre_stone_green_tile` now carry only the
+#: variants that are **flow**: `wall` and `footing`, `when` in (`damp`, `runoff`) --
+#: masonry wicking at its foot and streaking under an opening, which is the one thing
+#: the source this pass cites is about (Dorsey, Pedersen and Hanrahan on weathering as
+#: flow, `sources/INDEX.md`). Every `patch` variant, every `roof` variant and every
+#: `trim` variant is gone: a laid tile roof is replaced rather than stained, and a
+#: scatter over a whole roof plane at a per-cell hash is not flow but noise. The three
+#: voices of the other candidates (`drystone_and_thatch`, `japanese_minka`,
+#: `japanese_temple`) are deliberately left as they were.
+VARIANTS = "variants"
 
 #: `hall` is `civic` and civic is admitted into every tradition, so the great hall of an
 #: east Asian capital carried two red masonry stacks to its ridge; nothing anywhere tied
@@ -143,11 +176,19 @@ def validate(voice: dict, where: str = "a voice") -> dict:
     # `stage_place_spec` -> `author` -> validate and was refused on the second pass,
     # naming a field the model had never written. the case is kept.
     unknown = sorted(set(voice) - {"name", "roles", "roof", ROOF_CIVIC, "notes", "value",
-                                   "chimney", "ceremonial"})
+                                   "chimney", "ceremonial", VARIANTS})
     if unknown:
         raise VoiceError(f"{where}: no such field as {unknown[0]!r}; a voice has "
                          f"'roles', 'roof', 'notes' and, if it wants them, "
-                         f"'{ROOF_CIVIC}' and 'chimney'")
+                         f"'{ROOF_CIVIC}', 'chimney' and '{VARIANTS}'")
+    if voice.get(VARIANTS) is not None:
+        # **A recipe is validated where the voice is**, by the pass that reads it, so a
+        # voice cannot carry a variant the pass would then refuse or invent.
+        from .material import RecipeError, recipe_for
+        try:
+            recipe_for({"roles": voice.get("roles") or {}, VARIANTS: voice[VARIANTS]})
+        except RecipeError as e:
+            raise VoiceError(f"{where}: {e}") from e
     chimney = voice.get("chimney")
     if chimney is not None and not isinstance(chimney, bool):
         raise VoiceError(f"{where}: 'chimney' is true, false, or absent for the place's "
@@ -241,6 +282,8 @@ def validate(voice: dict, where: str = "a voice") -> dict:
            "ceremonial": bool(ceremonial),
            "notes": {k: str(v) for k, v in notes.items() if v}}
     out["value"] = value_range(out["roles"])
+    if voice.get(VARIANTS) is not None:
+        out[VARIANTS] = voice[VARIANTS]
     return out
 
 
@@ -264,6 +307,13 @@ def _check_roof(roof: dict, where: str) -> None:
     if not isinstance(tiers, int) or isinstance(tiers, bool) or not 1 <= tiers <= 4:
         raise VoiceError(f"{where}: 'roof.tiers' is a whole number of stacked roofs "
                          f"from 1 to 4, not {tiers!r}")
+    over = roof.get("overhang")
+    if over is not None and (not isinstance(over, int) or isinstance(over, bool)
+                             or not 0 <= over <= 3):
+        raise VoiceError(f"{where}: 'roof.overhang' is how many blocks the roof "
+                         f"oversails the wall, 0 to 3, not {over!r}. Three is already "
+                         f"a very wide eave and past it the roof stops standing on the "
+                         f"building")
     prof = roof.get("profile")
     if prof is None:
         return
@@ -358,6 +408,8 @@ def author(name: str, voice: dict, directory: str | None = None) -> dict:
            "notes": got["notes"]}
     if got.get(ROOF_CIVIC):
         out[ROOF_CIVIC] = got[ROOF_CIVIC]
+    if got.get(VARIANTS):
+        out[VARIANTS] = got[VARIANTS]
     with open(os.path.join(d, f"{name}.json"), "w") as fh:
         json.dump(out, fh, indent=1, sort_keys=True)
         fh.write("\n")

@@ -15,5 +15,60 @@
   "trim": "stripped_spruce_log",
   "wall": "cobblestone"
  },
- "roof": {}
+ "roof": {},
+ "variants": {
+  "footing": [
+   {
+    "family": "cobblestone",
+    "weight": 0.35,
+    "when": "sheltered"
+   },
+   {
+    "family": "cobblestone",
+    "weight": 0.2,
+    "when": "patch"
+   }
+  ],
+  "roof": [
+   {
+    "family": "spruce",
+    "weight": 0.22,
+    "when": "patch"
+   },
+   {
+    "family": "spruce",
+    "weight": 0.15,
+    "when": "exposed"
+   }
+  ],
+  "trim": [
+   {
+    "family": "spruce",
+    "weight": 0.3,
+    "when": "patch"
+   }
+  ],
+  "wall": [
+   {
+    "family": "mossy_cobblestone",
+    "weight": 0.55,
+    "when": "damp"
+   },
+   {
+    "family": "mossy_cobblestone",
+    "weight": 0.25,
+    "when": "exposed"
+   },
+   {
+    "family": "mossy_cobblestone",
+    "weight": 0.3,
+    "when": "runoff"
+   },
+   {
+    "family": "andesite",
+    "weight": 0.18,
+    "when": "patch"
+   }
+  ]
+ }
 }

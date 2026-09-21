@@ -1,0 +1,30 @@
+{
+ "name": "dark_timber_and_tile",
+ "notes": {
+  "blurb": "The townhouse ring: dark timber frames between pale boards under grey tile, close-set and low; the plain end of the axis, one step above the farm ring.",
+  "construction": "exposed dark posts and lintels, boarded infill, latticed fronts to the street, tile over a shallow gable",
+  "ground": "the natural ground; a stone footing course under the boards",
+  "roofs": "gabled kirizuma tile roofs, shallow, eaves upturned, one tier",
+  "signature": "the latticed street front under a low tiled gable"
+ },
+ "roles": {
+  "floor": "spruce_planks",
+  "footing": "stone_brick",
+  "frame": "dark_oak",
+  "roof": "deepslate_tile",
+  "trim": "dark_oak",
+  "wall": "spruce",
+  "wall_alt": "birch"
+ },
+ "roof": {
+  "eave": "upturned",
+  "ends": "gable",
+  "profile": [
+   [
+    1,
+    1
+   ]
+  ],
+  "tiers": 1
+ }
+}

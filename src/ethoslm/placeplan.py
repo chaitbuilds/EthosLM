@@ -11,13 +11,29 @@ its own error message. These take their paths."""
 from __future__ import annotations
 
 import json
+import contextlib
 import math
 import os
 
-from . import circulate, pipeline, spec as spec_mod, styles
+from . import circulate, pipeline, placeregion as regions, spec as spec_mod, styles
 from .buildlib import Builder
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+#: **The least a sector may be asked for to be a district at all.** The same number
+#: `placesolve.DISTRICT_MIN_STRUCTURES` has had since v2, C5, and for the same reason: a
+#: division of a place that holds houses holds more than one, and a sliver asked for a
+#: single house is held to a district's count and cover and can meet neither.
+DISTRICT_MIN_STRUCTURES = 2
+
+#: **The least depth any district may have, whatever its fabric.** The compiler's own
+#: least block, by its own arithmetic: two edge margins
+#: (`district_compile.EDGE_MARGIN`), the street its lots front on (`PLOT_LANE`), the
+#: shallowest pad any committed plot type admits, and the clearance behind it
+#: (`district_compile.LOT_GAP`) -- 2x2 + 5 + 3 + 3. Below this there is no arrangement
+#: at all, negotiated or otherwise, so a `least_side` under it is not honoured.
+#: Registered before the ring widths that test it were read.
+DISTRICT_MIN_DEPTH = 15
 
 #: How much of a district's ground the plots in it may take, before the lanes between
 #: them have nowhere to go. The circulation pass needs five blocks between footprints
@@ -160,6 +176,117 @@ def fabric_fit(w: int, d: int, density: str, role: str | None = None,
     return max(0, int(sum(per)))
 
 
+#: **What a density word means, as one band of lot cover.** The closure round, and the
+#: review's third finding in numbers: the compiler asked the rings town's upper quarter
+#: for at least 19.4% of its columns in lots (`DISTRICT_MIN_FRACTION` of the fabric's
+#: own plot share) while the checker called `sparse` at most 12% of a slightly different
+#: area. Two objectives about one word, and no number of retries reconciles them. So
+#: there is one statement. A density word is a **band** `[lo, hi]` of the metric
+#: `lot_cover` -- the columns of a district's plot leaves over the columns it can
+#: develop (`developable_columns`) -- and both ends govern: the compiler's search lays
+#: no fewer lots than the floor asks and no more than the ceiling admits, and the
+#: checker measures the same metric over the same denominator. `intent.density_target`
+#: is the one place this is stated where the meaning worker has written it; this table
+#: is what `density_target` below answers with until then, and the two must agree. The
+#: bands were chosen so that every word is reachable by the compiler's own levers (the
+#: fabric's natural lot cover is 0.32 sparse / 0.39 low / 0.45 medium / 0.43 dense
+#: before its open and courtyard blocks are taken out) and so that each word's band
+#: meets its neighbours without a gap a district could fall through. The same numbers
+#: `intent.DENSITY_TARGETS` registers; a fallback and never a second opinion. `dense`
+#: has no ceiling there and none here.
+DENSITY_TARGETS = {
+    "sparse": {"lo": 0.03, "hi": 0.12},
+    "low": {"lo": 0.08, "hi": 0.22},
+    "medium": {"lo": 0.15, "hi": 0.34},
+    "dense": {"lo": 0.30, "hi": None},
+}
+DENSITY_METRIC = "lot_cover"
+DENSITY_DENOMINATOR = "developable_columns"
+
+
+def density_target(value: str | None, role: str | None = None) -> dict:
+    """`{"metric", "lo", "hi", "denominator", ...}`: the one meaning of a density word.
+
+        Prefers `intent.density_target` where the meaning module states it, so that the
+        checker and the generator read one table; answers from `DENSITY_TARGETS` otherwise.
+        
+    """
+    value = value or "medium"
+    try:
+        from . import intent as intent_mod
+        fn = getattr(intent_mod, "density_target", None)
+        if fn is not None:
+            got = fn(value, role)
+            if isinstance(got, dict) and got.get("hi") is not None:
+                return dict(got, source=got.get("source") or "intent.density_target")
+    except Exception:                        # noqa: BLE001 -- the table below answers
+        pass
+    band = DENSITY_TARGETS.get(value, DENSITY_TARGETS["medium"])
+    return {"metric": DENSITY_METRIC, "lo": float(band["lo"]),
+            "hi": None if band["hi"] is None else float(band["hi"]),
+            "denominator": DENSITY_DENOMINATOR, "value": value, "role": role,
+            "source": "placeplan.DENSITY_TARGETS"}
+
+
+def density_bounds_from(target: dict, usable: int) -> tuple:
+    """`(floor_columns, ceiling_columns)` of plot cover over `usable` developable
+    columns, from a density target. The floor is what a district must at least lay in
+    lots and the ceiling what it may at most; both are absolute columns, which is the
+    unit `occupancy_failures` refuses in and `district_compile` scores in."""
+    lo, hi = target.get("lo"), target.get("hi")
+    floor = int(math.ceil(float(lo) * usable)) if lo is not None else 0
+    ceil = int(math.floor(float(hi) * usable)) if hi is not None else int(usable)
+    return max(0, floor), max(floor, ceil)
+
+
+def count_band(district: dict, part: dict, place: dict | None = None,
+               decls: dict | None = None) -> dict:
+    """How many houses a rectangle holds at this part's density word: `lo`, `mid`,
+    `hi`, from the density band over the rectangle's developable columns and the
+    fabric's own lot. **A proposal, never a certificate**: `arrange.capacity` is what
+    lays the ground and certifies. This is what the layouts distribute an ask with, so
+    that a sparse quarter is asked for a sparse number of houses and a count the
+    sentence stated is spread over districts that can each hold their share."""
+    usable = developable_columns(district, place, decls)
+    ch = {k: v for k, v in (part.get("character") or {}).items()
+          if k in ("lot_width", "lot_depth", "attached", "frontage")}
+    d = part.get("density") or "medium"
+    f = fabric(d, part.get("role") or DENSITY_ROLE.get(d), ch or None)
+    lot = max(9, int(f["lot_columns"]))
+    band = density_target(d, part.get("role"))
+    floor, ceil = density_bounds_from(band, usable)
+    if band.get("hi") is None:
+        # a word with no ceiling (`dense`) is proposed at the fabric's own natural
+        # cover, never at every column of the ground
+        ceil = max(floor, int(math.floor(float(f["plot_share"]) * usable)))
+    mid = (floor + ceil) / 2.0
+    # **The ceiling is counted at the smallest lot the fabric may shrink to**, because
+    # that is what the compiler does when a count would put the density's own lot over
+    # the ceiling (`district_compile._compile_once`): a sparse quarter asked for more
+    # houses than its 20x20 lots allow lays them 9x9 and is still sparse. Never under
+    # 9x9 -- a 3x3 cottage is a lot the types admit and nobody wants.
+    small = 81
+    if ch.get("lot_width") or ch.get("lot_depth"):
+        small = lot
+    else:
+        try:
+            from . import district_compile as _dc
+            _t, every = types_card()
+            role = part.get("role") or DENSITY_ROLE.get(d)
+            sides = [_dc._plot_range(decl)[0]
+                     for _n, decl in _dc.house_types(every, role, None)]
+            if sides:
+                small = max(81, min(sides) ** 2)
+        except Exception:                        # noqa: BLE001 -- the floor of 9x9
+            small = 81
+    small = min(small, lot)
+    return {"usable": int(usable), "lot_columns": int(lot), "small_lot_columns": int(small),
+            "lo": int(math.ceil(floor / float(lot))) if floor else 0,
+            "mid": max(1, int(round(mid / float(lot)))),
+            "hi": max(1, int(ceil // small)) if band.get("hi") is not None
+            else max(1, int(usable * DISTRICT_FILL // small)), "target": band}
+
+
 def ground_cover(density: str | None) -> float:
     """How much of a district of this density is plots and areas together."""
     return float(occupancy_shares()[density or "medium"]["ground_cover"])
@@ -171,10 +298,176 @@ def ground_cover(density: str | None) -> float:
 #: districts may cover. A ring laid out by `concentric_layout` and filled to its brief
 #: comes in under it by however much better than the floor its coverage is.
 def columns_per_structure_ceiling() -> dict:
-    """The ceiling per density word, derived. See `COLUMNS_PER_STRUCTURE_CEILING`."""
-    return {w: int(round(fabric(w, DENSITY_ROLE.get(w))["columns_per_structure"]
-                         / RING_COVERAGE))
-            for w in spec_mod.PLOT_CELLS}
+    """The ceiling per density word, derived. See `COLUMNS_PER_STRUCTURE_CEILING`.
+
+        **From the density band's floor** (the closure round): the loosest a district of a
+        word may be is its fabric's lot over the band's `lo` -- a medium house on a 144
+        column lot at 15% cover is 960 columns of ground -- over `RING_COVERAGE`, the least
+        of an annulus its districts may cover. It was the fabric's own natural density over
+        the coverage, a number the band's definition of the word no longer targets.
+        
+    """
+    out = {}
+    for w in spec_mod.PLOT_CELLS:
+        f = fabric(w, DENSITY_ROLE.get(w))
+        band = density_target(w, DENSITY_ROLE.get(w))
+        lo = band.get("lo")
+        per = (f["lot_columns"] / float(lo)) if lo else f["columns_per_structure"]
+        out[w] = int(round(per / RING_COVERAGE))
+    return out
+
+
+def wanted_footprint(spec: dict, decls: dict | None = None) -> int | None:
+    """The site side the spec's rings **want**: `least_footprint` and, for a place of
+    the sentence's own count, the ground each ring needs at its density word (the
+    expression round). What the site search should ask for; the layout refuses below
+    `least_footprint` and lays what it is given above it."""
+    return least_footprint(spec, decls, wanted=True)
+
+
+def least_footprint(spec: dict, decls: dict | None = None, *,
+                    wanted: bool = False) -> int | None:
+    """The least site side the spec's defining parts need together, or None.
+
+        The closure round's transfer case: a town of twenty-four houses in two rings about a
+        temple compound was sized by its count at 240 columns, and the concentric arithmetic
+        refused the site -- the rings' least widths and the compound's plateau want more
+        ground than the count implies. The count sizes the houses; the parts size the place.
+        This is the concentric layout's own arithmetic (`concentric_layout`, steps 1 and 2)
+        asked before a site is chosen: the centre square the compound needs, every ring's
+        least width from its insets and `RING_COVERAGE`, the outer wall's edge inset, and
+        the room a district needs on a side. None where the spec declares no rings.
+        
+    """
+    from .buildlib import Builder
+    rings = spec_mod.rings(spec)
+    if not rings:
+        return None
+    if decls is None:
+        try:
+            _t, decls = types_card(None, spec.get("form"))
+        except Exception:                        # noqa: BLE001 -- no types on disk
+            decls = {}
+    decls = decls or {}
+    dmin = int(2 * Builder.SITE_INSET + 24)
+    _wall_part = next((p for p in spec.get("defining_parts") or []
+                       if p.get("family") == "wall"), None)
+    edge_inset = ring_edge_inset(_wall_part, spec,
+                                 decls.get("great_wall")
+                                 or next((d for n, d in sorted(decls.items())
+                                          if d.get("kind") == "edge"), None))
+    core = spec_mod.core(spec)
+    ceiling_side = int(spec_mod.footprint_ceiling(spec.get("kind")))
+    want = 0
+    if core is not None:
+        # the centre's declared share scales with the site; the compound's own need does
+        # not, and is the number this is about
+        want = COMPOUND_MIN
+        if spec_mod.compound(core):
+            with contextlib.suppress(Exception):
+                # without the rings, so the centre's *declared* share -- which scales
+                # with whatever site this is asked for -- does not stand in for the
+                # compound's own need
+                want = max(want, int(compound_ground(spec={**spec, "defining_parts": [
+                    p for p in spec["defining_parts"] if p.get("ring") is None]},
+                    site_side=ceiling_side, part=core)["wanted"]))
+    hc = want // 2
+    walls = _wall_types(decls)
+    heights: dict = {}
+    if walls:
+        outer_h = walls[0][3]
+        step = 0
+        for r in reversed(rings):
+            if r.get("walled"):
+                heights[r["name"]] = _wall_for(int(round(outer_h * WALL_STEP ** step)),
+                                               walls)
+                step += 1
+    wall_part = next((p for p in spec["defining_parts"]
+                      if p["family"] == "wall" and p["relation"] == "concentric"),
+                     _wall_part)
+    masses: dict = {}
+    for r in rings:
+        if r.get("walled") and r["name"] in heights:
+            _n, d, _h = heights[r["name"]]
+            masses[r["name"]] = (wall_width_for(wall_part, spec, d)
+                                 if wall_part is not None else WALL_MASSES["screen"])
+    mins, ring_insets = [], []
+    for k, r in enumerate(rings):
+        inner_ring = rings[k - 1] if k else None
+        if k == 0:
+            inset_in = LANE_GAP
+        elif inner_ring.get("walled") and inner_ring["name"] in heights:
+            _n, d, _h = heights[inner_ring["name"]]
+            inset_in = _wall_inset(d, masses[inner_ring["name"]])
+        else:
+            inset_in = LANE_GAP // 2
+        if r.get("walled") and r["name"] in heights:
+            _n, d, _h = heights[r["name"]]
+            inset_out = _wall_inset(d, masses[r["name"]])
+        else:
+            inset_out = LANE_GAP // 2
+        total_i = inset_in + inset_out
+        ring_insets.append((inset_in, inset_out))
+        # **The same least district depth the layout will negotiate**, so the side this
+        # refuses below and the side the layout refuses below are one number. A ring of
+        # one row of houses is a district; sizing a site for two rows and then laying
+        # one is the two-derived-numbers defect this function exists to have closed.
+        depth = dmin
+        if not wanted:
+            with contextlib.suppress(Exception):
+                from . import arrange as _arrange
+                alts = [a for a in _arrange.arrangements(r, decls, spec=spec)
+                        if not a.get("refused")]
+                if alts:
+                    depth = min(dmin, min(int(a["depth"]) for a in alts))
+        mins.append(max(total_i + depth,
+                        int(math.ceil(total_i / (1.0 - RING_COVERAGE))) + LANE_GAP))
+    # **The ring check's own arithmetic, solved for the side.** `concentric_layout`
+    # draws the centre square at the larger of the spec's centre share of the site and
+    # the compound's own need, clamped inside the site with a district's worth of ground
+    # on every side, and refuses where `S // 2 - edge_inset - hc < sum(mins)`. The
+    # centre share scales with the site, so the least side is the first that satisfies
+    # the same inequality with the same clamps -- and not a closed form that forgets the
+    # share, which answered 238 for a site the check refuses at 240.
+    fixed = int(want)
+    most = int(spec_mod.footprint_ceiling(spec.get("kind")))
+    need = int(sum(mins))
+    explicit = bool(spec.get("explicit_count"))
+    if wanted:
+        # **...and the width each ring of the sentence's count needs at its density
+        # word** (the expression round), the same rule `concentric_layout` draws it by:
+        # a sparse ring of nine farmhouses wants more ground than its share of a count-
+        # sized site gave it, and the site is what can give it. The least ground the
+        # word admits (the top of its band), not the band's middle; bounded by the
+        # kind's footprint ceiling. Asked through `wanted_footprint`, so `least` stays
+        # the side the layout refuses below.
+        with contextlib.suppress(Exception):
+            from .placesolve import land_need
+            hh = int((spec.get("explicit_count") or {}).get("n")
+                     or spec.get("structures") or 0)
+            a_run, widths_need = float(hc), []
+            for k, r in enumerate(rings):
+                n_r = int(r.get("structures") or 0)
+                w_k = float(mins[k])
+                if explicit and n_r:
+                    rec = land_need(r, n_r, decls, spec, households=hh)
+                    i_in, i_out = ring_insets[k]
+                    w_k = max(w_k, rec["columns_least"] / max(8.0 * (a_run + i_in), 1.0)
+                              + i_in + i_out)
+                widths_need.append(w_k)
+                a_run += w_k
+            need = int(max(need, math.ceil(sum(widths_need))))
+    for S in range(max(COMPOUND_MIN + 2 * edge_inset + 2 * dmin, 2 * need), most + 2):
+        declared = int(round(S * math.sqrt(spec_mod.centre_share(spec)))) \
+            if spec_mod.centre_share(spec) else 0
+        side = fixed if explicit else max(fixed, declared)
+        side = max(COMPOUND_MIN, min(side, S - 2 * edge_inset - 2 * dmin))
+        hc = side // 2
+        if S - 2 * edge_inset - 2 * dmin < COMPOUND_MIN:
+            continue
+        if S // 2 - edge_inset - hc >= need:
+            return int(S)
+    return int(most)
 
 
 #: phase 4 is what makes it true and this is where it is written down. 34% -- and from
@@ -271,7 +564,10 @@ def largest_plot(types: list | None = None) -> tuple:
         if not f.endswith(".py") or name.startswith("_") \
                 or (types is not None and name not in types):
             continue
-        decl = pipeline.load_type(os.path.join(d, f))
+        try:
+            decl = pipeline.load_type(os.path.join(d, f))
+        except Exception:                      # noqa: BLE001 -- see `dense_plot`
+            continue
         if decl["kind"] != "plot":
             continue
         needs = decl.get("needs") or {}
@@ -311,7 +607,16 @@ def dense_plot(types: list | None = None) -> dict:
         if not f.endswith(".py") or name.startswith("_") \
                 or (types is not None and name not in types):
             continue
-        decl = pipeline.load_type(os.path.join(d, f))
+        try:
+            decl = pipeline.load_type(os.path.join(d, f))
+        except Exception:                      # noqa: BLE001 -- absent is not an answer
+            # **A type that will not load contributes nothing.** `growth` authors a
+            # candidate type into this directory, checks it and withdraws it if it does
+            # not pass, so a listing taken a moment earlier can name a file that is no
+            # longer there -- and the whole run died on the `open`. The same rule
+            # `intent._plan_decls` already states: a missing declaration must never turn
+            # into a confident answer about what the library can build.
+            continue
         if decl["kind"] != "plot" or decl.get("role") != DENSE_ROLE:
             continue
         needs = decl.get("needs") or {}
@@ -354,7 +659,10 @@ def largest_area(types: list | None = None) -> tuple:
         if not f.endswith(".py") or name.startswith("_") \
                 or (types is not None and name not in types):
             continue
-        decl = pipeline.load_type(os.path.join(d, f))
+        try:
+            decl = pipeline.load_type(os.path.join(d, f))
+        except Exception:                      # noqa: BLE001 -- see `dense_plot`
+            continue
         if decl["kind"] != "area":
             continue
         needs = decl.get("needs") or {}
@@ -384,7 +692,10 @@ def admitted_plot_sides(role: str | None = None) -> list:
         name = f[:-3]
         if not f.endswith(".py") or name.startswith("_"):
             continue
-        decl = pipeline.load_type(os.path.join(d, f))
+        try:
+            decl = pipeline.load_type(os.path.join(d, f))
+        except Exception:                      # noqa: BLE001 -- see `dense_plot`
+            continue
         if decl["kind"] != "plot":
             continue
         if role is not None and decl.get("role") != role:
@@ -476,6 +787,16 @@ def fabric(density: str, role: str | None = None, character: dict | None = None)
                 house, (w, ld) = n, got
                 break
         attached = house is not None
+    # **A lot the character declared is the lot this fabric is made of.** The compiler
+    # honours `lot_width` and `lot_depth` (`district_compile._compile_once`) and this
+    # arithmetic did not, so the cover a district was *held to* was computed from the
+    # density's default lot while the ground was laid with the declared one. A twelve
+    # column frontage covering 30% was refused against a 38% floor derived from a
+    # twenty-four column frontage it had been told not to build.
+    if ch.get("lot_width"):
+        w = int(ch["lot_width"])
+    if ch.get("lot_depth"):
+        ld = int(ch["lot_depth"])
     gap = 0 if attached else (PLOT_LANE if open_front else dc.LOT_GAP)
     row_gap = PLOT_LANE if open_front else dc.LOT_GAP
     per_block = int(ch.get("block_lots") or dc.BLOCK_LOTS.get(density, 3))
@@ -515,7 +836,10 @@ def _clearances(types: list | None = None) -> tuple:
         if not f.endswith(".py") or name.startswith("_") \
                 or (types is not None and name not in types):
             continue
-        decl = pipeline.load_type(os.path.join(d, f))
+        try:
+            decl = pipeline.load_type(os.path.join(d, f))
+        except Exception:                      # noqa: BLE001 -- see `dense_plot`
+            continue
         c = int((decl.get("needs") or {}).get("clearance", 0))
         if decl["kind"] == "plot":
             plot = max(plot, c)
@@ -570,9 +894,18 @@ def compound_ground(types: list | None = None, *, spec: dict | None = None,
     # What a place's rings leave over is the centre's, and the thing four terraces rise
     # to should be that square and not the smallest one the committed types fit in.
     declared = centre_side(spec, site_side)
-    want = max(holds, monumental, COMPOUND_MIN, declared)
+    # **A place sized by its count is not sized by its shares** (the expression round).
+    # The centre share is what the rings' inferred shares leave over, and on a site
+    # chosen for twenty-four houses it made a temple compound of 103 columns a side -- a
+    # hundred houses' ground -- so the ring of fifteen dense houses about it was four
+    # times too long for its count. Where the sentence states the count, the compound
+    # stands at what its own composition, its wall and the place read's monumental
+    # margin need, and the share is recorded as asked and not taken.
+    explicit = bool((spec or {}).get("explicit_count"))
+    want = max(holds, monumental, COMPOUND_MIN, 0 if explicit else declared)
     cap = Builder.plateau_max(site_side)
     return {"side": int(min(want, cap)),
+            "share_taken": not explicit,
             "monumental_columns": int(math.ceil(MONUMENT_FOOTPRINT_MARGIN * side * side)),
             "wanted": int(want), "capped": want > cap, "cap": int(cap),
             "declared": int(declared),
@@ -663,7 +996,10 @@ def types_card(names=None, form=None, role=None, *, forms=None, roles=None) -> t
         if not f.endswith(".py") or (names is not None and name not in names) \
                 or (names is None and name.startswith("_")):
             continue
-        decl = pipeline.load_type(os.path.join(d, f))
+        try:
+            decl = pipeline.load_type(os.path.join(d, f))
+        except Exception:                      # noqa: BLE001 -- see `dense_plot`
+            continue
         if forms is not None:
             if not any(pipeline.form_ok(decl["form"], f_) for f_ in (forms or [None])):
                 continue
@@ -1102,6 +1438,298 @@ def developable_columns(district: dict, place: dict | None,
     return max(1, area - len(gone))
 
 
+def region_columns(district: dict, place: dict | None = None,
+                   decls: dict | None = None, *, record: dict | None = None,
+                   leaves: list | None = None, parts_record: dict | None = None) -> dict:
+    """**The four columns of one district**, complete as far as the run has got.
+
+        One call, so a stage does not have to know which of the four comes from where:
+
+          `scope_columns`        the layout's, fixed when the region was resolved and
+                                 carried on the district record itself
+          `developable_columns`  `developable_columns` over the place as it stands
+          `allocated_columns`    the lots the compiler drew (`record.allocated_columns`,
+                                 or measured off the leaves)
+          `built_columns`        the footprint that stands -- the emitted extent where
+                                 construction has reported one, else the mass the plan's
+                                 pads admit, and `built_from` says which was read
+
+        A figure improved only by enlarging empty lots moves `allocated_columns` and leaves
+        `built_columns` where it was, which is the whole reason they are two fields.
+        
+    """
+    from . import district_compile as dc, placeregion as _regions
+    rect = (min(district["x0"], district["x1"]), min(district["z0"], district["z1"]),
+            max(district["x0"], district["x1"]), max(district["z0"], district["z1"]))
+    out = {k: district[k] for k in _regions.COLUMN_FIELDS if k in district}
+    if "scope_columns" not in out:
+        out.update(_regions.column_record(
+            rect, why=["no region record: the rectangle is the scope"]))
+    with contextlib.suppress(Exception):
+        out["developable_columns"] = int(developable_columns(district, place, decls))
+    if record is not None and record.get("allocated_columns") is not None:
+        out["allocated_columns"] = int(record["allocated_columns"])
+    elif leaves is not None:
+        out["allocated_columns"] = int(sum(
+            (p["x1"] - p["x0"] + 1) * (p["z1"] - p["z0"] + 1) for p in leaves
+            if p.get("kind", "plot") == "plot"))
+    built, how = None, None
+    if parts_record is not None and leaves is not None:
+        rows = emitted_columns(parts_record)
+        built, missing = 0, 0
+        for p in leaves:
+            ext = emitted_for(rows, district.get("name"), p.get("name"))
+            if ext is None:
+                missing += 1
+                continue
+            built += int(ext)
+        # **A part construction did not report is not zero columns of building.** Where
+        # nothing was reported for any leaf there is no emitted reading at all and the
+        # plan's own pads answer below; where some were, the figure is what stood and
+        # `built_from` says how many leaves it is over.
+        if missing >= len(leaves):
+            built, how = None, None
+        else:
+            how = ("emitted" if not missing else
+                   f"emitted ({len(leaves) - missing} of {len(leaves)} leaves reported)")
+    if built is None:
+        if record is not None and record.get("footprint_columns") is not None:
+            built, how = int(record["footprint_columns"]), "planned pads"
+        elif leaves is not None:
+            built, how = int(dc.footprint_columns(leaves)), "planned pads"
+    out["built_columns"] = None if built is None else int(built)
+    out["built_from"] = how
+    return out
+
+
+def emitted_for(rows: dict, district_name, leaf_name):
+    """One leaf's emitted record, under either name the assembler may have given it.
+
+        `assemble` renames a district's leaf to `<district>_<leaf>` **only where the name
+        clashes** with another district's (`placeplan:3463`), which for the compiler's own
+        `b0_1_00` naming is almost always -- so a lookup on the plan's name alone misses every
+        built leaf in a multi-district place and a lookup on the prefixed name alone misses
+        every one in a single-district place. Both are tried, in that order.
+        
+    """
+    name = str(leaf_name or "")
+    if name in rows:
+        return rows[name]
+    return rows.get(f"{district_name}_{name}")
+
+
+def emitted_columns(parts_record: dict | None) -> dict:
+    """`{part name: columns the world actually holds}`, off `parts.json`.
+
+        **Read at the shape the record really has.** `region_columns` looked for
+        `occupied_columns` or `footprint_columns` on `parts_record["parts"][name]`, and
+        `parts.json` is `{"waves": [{"parts": [ ... ]}]}` with the rectangle under
+        `emitted.footprint` -- so the emitted branch never fired on a real record and every
+        built figure in the project has silently been the plan's own pads. Found by reading
+        `out/des-city/parts.json`: 922 built leaves, none of them matched.
+
+        A part that reported no rectangle is **absent from this dict**, never zero: zero
+        columns of building is a measurement and an unreported part is not one.
+        
+    """
+    out: dict = {}
+    rec = parts_record or {}
+    rows: list = []
+    for w in (rec.get("waves") or []):
+        rows += list(w.get("parts") or [])
+    rows += [r for r in (rec.get("parts") or []) if isinstance(r, dict)]
+    if isinstance(rec.get("parts"), dict):
+        rows += [{"part": k, **v} for k, v in rec["parts"].items() if isinstance(v, dict)]
+    for r in rows:
+        name = str(r.get("part") or r.get("name") or "")
+        if not name:
+            continue
+        got = r.get("occupied_columns")
+        if got is None:
+            got = r.get("footprint_columns")
+        if got is None:
+            fp = ((r.get("emitted") or {}).get("footprint")
+                  or r.get("footprint"))
+            if fp and len(fp) == 4:
+                got = ((int(fp[2]) - int(fp[0]) + 1) * (int(fp[3]) - int(fp[1]) + 1))
+        if got is None:
+            continue
+        out[name] = int(got)
+    return out
+
+
+def built_occupation(district: dict, parts_record: dict | None, *,
+                     leaves: list | None = None) -> dict:
+    """**What this district's ground actually holds**, against what was allocated to it.
+
+        The composition round's fourth change, and the review's words for why: "Density remains
+        primarily lot occupation... Enlarging empty lots or excluding unused ground cannot
+        establish density." `allocated_columns` is the lots the compiler drew;
+        `built_columns` is the extent construction reported standing on them
+        (`emitted.footprint`). `from` names which record was read, and where there is no
+        record it says `unavailable` and every figure is None -- an unmeasured district reports
+        that it is unmeasured rather than returning zeros a reader would take for a
+        measurement.
+
+        `region_columns` does the four-column arithmetic and this reuses it rather than
+        writing a second one; what this adds is the two covers and the honest `from`.
+        
+    """
+    if leaves is None or parts_record is None:
+        return {"built_columns": None, "allocated_columns": None,
+                "scope_columns": None, "developable_columns": None,
+                "built_cover": None, "allocated_cover": None,
+                "from": "unavailable"}
+    cols = region_columns(district, None, None, leaves=leaves,
+                          parts_record=parts_record)
+    scope = int(cols.get("scope_columns") or 0)
+    dev = cols.get("developable_columns")
+    dev = int(dev) if dev else scope
+    built = cols.get("built_columns")
+    alloc = cols.get("allocated_columns")
+    over = float(dev or scope or 0)
+    return {"built_columns": None if built is None else int(built),
+            "allocated_columns": None if alloc is None else int(alloc),
+            "scope_columns": int(scope), "developable_columns": int(dev),
+            "built_cover": (None if built is None or not over
+                            else round(int(built) / over, 4)),
+            "allocated_cover": (None if alloc is None or not over
+                                else round(int(alloc) / over, 4)),
+            "from": str(cols.get("built_from") or "unavailable")}
+
+
+def street_enclosure(district: dict, place: dict | None, leaves: list | None, *,
+                     parts_record: dict | None = None) -> dict:
+    """**How much of this district's street length has a building on it.**
+
+        The other half of "judge the urban form actually produced". A district can meet every
+        cover figure it is held to and still read as buildings scattered in a field, because
+        nothing measured the *street*: the thing a person walking down it sees is frontage, and
+        frontage is a length and not an area.
+
+        Measured, not scored. The streets are the lanes of the compiled grid -- the ground
+        inside the district that no leaf stands on and no arterial is -- and a column of street
+        is **enclosed** where some leaf's own front edge lies within a lot's gap
+        (`district_compile.LOT_GAP`) of it, on the side the leaf declares as its `front`.
+        Returns the length in columns and the ratio; `mean_setback` is how far, on average, an
+        enclosing front stands off its street, and `faces` how many leaves declared a front at
+        all. Cheap: two integer sweeps over the district's own rectangle, no world volume.
+
+        `from` says what was read. Where there are no leaves this reports `unavailable` and
+        Nones, because a district with nothing in it has no enclosure to measure and zero
+        would read as "measured, and empty".
+        
+    """
+    from . import district_compile as dc
+    if not leaves:
+        return {"street_columns": None, "frontage_length": None,
+                "enclosed_length": None, "enclosure": None, "mean_setback": None,
+                "faces": None, "from": "unavailable"}
+    import numpy as np
+    x0, x1 = min(district["x0"], district["x1"]), max(district["x0"], district["x1"])
+    z0, z1 = min(district["z0"], district["z1"]), max(district["z0"], district["z1"])
+    W, D = x1 - x0 + 1, z1 - z0 + 1
+    solid = np.zeros((W, D), dtype=bool)
+    rects = emitted_rects(parts_record)
+    used_emitted = 0
+    for p in leaves:
+        r = emitted_for(rects, district.get("name"), p.get("name")) \
+            or pipeline.part_rect(p)
+        if emitted_for(rects, district.get("name"), p.get("name")):
+            used_emitted += 1
+        a, b = max(x0, int(r[0])), max(z0, int(r[1]))
+        c, e = min(x1, int(r[2])), min(z1, int(r[3]))
+        if c >= a and e >= b:
+            solid[a - x0:c - x0 + 1, b - z0:e - z0 + 1] = True
+    road = np.zeros((W, D), dtype=bool)
+    for c in (((place or {}).get("arterials") or {}).get("cells") or []):
+        xx, zz = int(c[0]), int(c[1])
+        if x0 <= xx <= x1 and z0 <= zz <= z1:
+            road[xx - x0, zz - z0] = True
+    # the street is the district's own free ground: neither a leaf nor the arterial
+    street = ~solid & ~road
+    gap = dc.LOT_GAP
+    #: which way each side of a rectangle looks, so a `front` on a leaf can be checked
+    SIDES = {"north": (0, -1), "south": (0, 1), "west": (-1, 0), "east": (1, 0)}
+    enclosed = np.zeros((W, D), dtype=bool)
+    setbacks: list = []
+    faces = 0
+    for p in leaves:
+        side = str(p.get("front") or "").lower()
+        if side not in SIDES:
+            continue
+        faces += 1
+        r = emitted_for(rects, district.get("name"), p.get("name")) \
+            or pipeline.part_rect(p)
+        dx, dz = SIDES[side]
+        # the leaf's own front edge, and the strip of street in front of it
+        if dz:
+            u0, u1 = max(x0, int(r[0])), min(x1, int(r[2]))
+            edge = int(r[1]) if dz < 0 else int(r[3])
+            run = [(u, edge + dz * k) for u in range(u0, u1 + 1)
+                   for k in range(1, gap + 1)]
+        else:
+            v0, v1 = max(z0, int(r[1])), min(z1, int(r[3]))
+            edge = int(r[0]) if dx < 0 else int(r[2])
+            run = [(edge + dx * k, v) for v in range(v0, v1 + 1)
+                   for k in range(1, gap + 1)]
+        hit = 0
+        near = None
+        for (xx, zz) in run:
+            if not (x0 <= xx <= x1 and z0 <= zz <= z1):
+                continue
+            if street[xx - x0, zz - z0]:
+                enclosed[xx - x0, zz - z0] = True
+                hit += 1
+                step = abs(xx - edge) if dx else abs(zz - edge)
+                near = step if near is None else min(near, step)
+        if near is not None:
+            setbacks.append(near)
+    frontage = 0
+    for p in leaves:
+        side = str(p.get("front") or "").lower()
+        if side not in SIDES:
+            continue
+        r = emitted_for(rects, district.get("name"), p.get("name")) \
+            or pipeline.part_rect(p)
+        frontage += (max(0, min(x1, int(r[2])) - max(x0, int(r[0])) + 1)
+                     if side in ("north", "south") else
+                     max(0, min(z1, int(r[3])) - max(z0, int(r[1])) + 1))
+    n_street = int(street.sum())
+    n_enc = int(enclosed.sum())
+    return {"street_columns": n_street, "frontage_length": frontage,
+            "enclosed_length": n_enc,
+            "enclosure": round(n_enc / float(n_street), 4) if n_street else None,
+            "mean_setback": (round(sum(setbacks) / float(len(setbacks)), 2)
+                             if setbacks else None),
+            "faces": int(faces),
+            "from": ("emitted footprints" if used_emitted >= len(leaves) else
+                     (f"emitted footprints for {used_emitted} of {len(leaves)} leaves, "
+                      f"the plan's own rectangles for the rest") if used_emitted else
+                     "the plan's own rectangles")}
+
+
+def emitted_rects(parts_record: dict | None) -> dict:
+    """`{part name: [x0, z0, x1, z1]}` -- the rectangle each part actually occupied.
+
+        The same read as `emitted_columns` and for the same reason: `emitted.footprint` is
+        what stood, and a part that reported none is absent rather than empty.
+        
+    """
+    out: dict = {}
+    rec = parts_record or {}
+    rows: list = []
+    for w in (rec.get("waves") or []):
+        rows += list(w.get("parts") or [])
+    rows += [r for r in (rec.get("parts") or []) if isinstance(r, dict)]
+    for r in rows:
+        name = str(r.get("part") or r.get("name") or "")
+        fp = (r.get("emitted") or {}).get("footprint") or r.get("footprint")
+        if name and fp and len(fp) == 4:
+            out[name] = [int(v) for v in fp]
+    return out
+
+
 def district_target(district: dict, part: dict, place: dict | None = None,
                     decls: dict | None = None) -> dict:
     """What one district is asked for: a count **and** a cover, with the floors.
@@ -1125,12 +1753,21 @@ def district_target(district: dict, part: dict, place: dict | None = None,
     plot_columns = int(math.ceil(share * usable))
     area_columns = max(0, ground_columns - plot_columns)
     area_size = int(occupancy_shares()[density]["area_columns"])
+    # **The floor and the ceiling of the lot cover come from the one definition of the
+    # density word** (`density_target`), and not from `DISTRICT_MIN_FRACTION` of the
+    # fabric's plot share: that fraction asked a sparse quarter for a quarter of its
+    # ground in lots while the checker called sparse an eighth. `plot_share` survives as
+    # the fabric's own share, which is what an ask is *estimated* from.
+    band = density_target(density, part.get("role"))
+    floor_cols, ceil_cols = density_bounds_from(band, usable)
     return {"columns": area, "usable_columns": int(usable), "density": density,
             "plot_share": share, "count": count,
             "plot_columns": plot_columns,
             "columns_per_plot": per,
             "min_count": int(math.ceil(DISTRICT_MIN_FRACTION * count)),
-            "min_plot_columns": int(math.ceil(DISTRICT_MIN_FRACTION * share * usable)),
+            "min_plot_columns": int(floor_cols),
+            "max_plot_columns": int(ceil_cols),
+            "density_target": band,
             "ground_cover": cover, "ground_columns": ground_columns,
             "min_ground_columns": int(math.ceil(DISTRICT_MIN_FRACTION * cover * usable)),
             "area_columns": area_columns, "area_size": area_size,
@@ -1182,7 +1819,9 @@ def _cover_note(district: dict, role: str | None, part: dict | None = None,
                 f"about **{t['areas']}** of them fills the "
                 f"{t['area_columns']} columns your plots leave. Fewer and larger, or more "
                 f"and smaller, is yours; the cover is not.\n\n")
-    if role != "rural":
+    # the same rule the validator refuses on, and keyed the same way: what lies between
+    # the buildings is the district's land use and not the role of the buildings
+    if spec_mod.land_use(part) != "farmland":
         return out
     return out + (f"**This district is farmland, and farmland is covered.** The ground "
                   f"between the farmsteads is fields, not forest: draw `area` leaves of "
@@ -1473,9 +2112,34 @@ def place_failures(place: dict, spec: dict, site: dict, decls: dict,
         if not (X <= x0 and x1 < X + S and Z <= z0 and z1 < Z + S):
             fail(n, "site", f"this district reaches x {x0}..{x1}, z {z0}..{z1} and the "
                             f"site is x {X}..{X + S - 1}, z {Z}..{Z + S - 1}")
-        if (x1 - x0 + 1) < dmin or (z1 - z0 + 1) < dmin:
-            fail(n, "district", f"a district is at least {dmin} blocks on a side and "
-                                f"this one is {x1 - x0 + 1}x{z1 - z0 + 1}")
+        # **How small a district may be is a question about its fabric, and the tiler
+        # and this check have to read one number.** `dmin` is `2 * SITE_INSET + 24`, and
+        # the 24 is two rows of lots back to back with a street in front of them --
+        # which is what every district in the record was until a ring negotiated one row
+        # (`arrange.arrangements`). A band of one row is a district: it has its edge
+        # margins, a street to front on, a row of lots and a clearance behind them, and
+        # the compiler lays houses on it. The one number is `least_side`, the depth the
+        # layout negotiated (`district_compile.district_depth`), which is what
+        # `regions.ring_sectors` was given when this ground was cut; holding the cut
+        # ground to a different floor afterwards is two derived numbers about one thing,
+        # disagreeing, which is the defect this project keeps meeting. A district that
+        # negotiated nothing carries no `least_side` and is held to `dmin`, exactly as
+        # it was. And `least_side` is never honoured below `DISTRICT_MIN_DEPTH`, the
+        # compiler's own least block. **What stops a sliver is not this clause.** A
+        # division of a place that holds houses holds `DISTRICT_MIN_STRUCTURES` of them,
+        # and the count and cover checks below are what refuse a piece of ground that
+        # cannot; those read the density word and the fabric rather than a constant,
+        # which is the right instrument for it.
+        w_d, d_d = x1 - x0 + 1, z1 - z0 + 1
+        least = d.get("least_side")
+        floor = (max(DISTRICT_MIN_DEPTH, int(least)) if least is not None else dmin)
+        if min(w_d, d_d) < floor:
+            fail(n, "district",
+                 f"a district is at least {floor} blocks on a side"
+                 + (f" -- the band one block of the arrangement `{n}` was negotiated "
+                    f"to needs, which is what its ground was cut to" if least is not None
+                    else "")
+                 + f" -- and this one is {w_d}x{d_d}")
         want = int(d.get("structures") or 0)
         room = (x1 - x0 + 1) * (z1 - z0 + 1) * DISTRICT_FILL
         # **The density the spec gave this district, and not one number for all of
@@ -1483,6 +2147,26 @@ def place_failures(place: dict, spec: dict, site: dict, decls: dict,
         # ring, 818 for the farmland -- and this check quoted the flat 225. Two derived
         # numbers about the same thing, disagreeing.
         per = spec_mod.columns_per_plot(_district_part(spec, d))
+        # **The estimate proposes and the compiler certifies** (the closure round). This
+        # area rule refused a district the arrangement had just laid twenty houses in
+        # (3,920 columns wanted by the estimate, 3,870 offered), because the two were
+        # different rules about one rectangle. Before a refusal on the estimate, the
+        # construction logic is asked: a district whose own character compiles to the
+        # count is not refused for an arithmetic it has already beaten.
+        if want and want * per > room:
+            part_d = _district_part(spec, d)
+            held = 0
+            if part_d is not None and spec_mod.character(part_d) is not None:
+                try:
+                    from . import arrange as _arrange
+                    role_d = spec_mod.district_role(spec, d)
+                    _t, mine = types_card(None, spec.get("form"), role_d)
+                    held = int(_arrange.capacity(d, part_d, place, mine or decls,
+                                                 spec=spec, ceiling=want))
+                except Exception:                # noqa: BLE001 -- the estimate stands
+                    held = 0
+            if held >= want:
+                want = 0          # certified by the compiler; the estimate is overruled
         if want and want * per > room:
             fail(n, "district",
                  f"this district is asked to hold {want} structures, which needs about "
@@ -1670,8 +2354,14 @@ def plan_arterials(place: dict, decls: dict, heights, x0: int, z0: int,
     nodes = arterial_nodes(place, decls)
     if len(nodes) < 2:
         return None, nodes
+    def _with_clearance(p):
+        if p.get("kind") != "edge":
+            return p
+        need = ((decls.get(p.get("type")) or {}).get("needs") or {}).get("clearance")
+        return {**p, "clearance": need} if need is not None else p
     routing = circulate.parts_to_routing(
-        [p for p in (place.get("parts") or []) if p.get("kind") in ("edge", "point")],
+        [_with_clearance(p) for p in (place.get("parts") or [])
+         if p.get("kind") in ("edge", "point")],
         passage={n for n, d in decls.items() if d.get("passage")})
     import numpy as np
     avoid = (np.array(extra_cost, dtype=float, copy=True) if extra_cost is not None
@@ -1853,7 +2543,15 @@ def occupancy_failures(district: dict, plots: list, part: dict,
                            f"actually admit",
                     "wanted": t["count"], "got": len(houses),
                     "floor": t["min_count"]})
-    if cols < t["min_plot_columns"]:
+    # **A district at the capacity of its own rectangle is not refused for cover.** See
+    # `stages_plan._arrange_districts`, which measures that and writes it down: this
+    # clause's own message is "spread the plots over the whole rectangle rather than
+    # into one corner of it", and a district holding every house its ground fits,
+    # evenly, is not in one corner. It is short of cover because the fabric it was given
+    # does not fill it, which is a capacity finding for the layout owner and is raised
+    # as one. A refusal here would stop the round with a reason that is not the reason.
+    limited = district.get("cover_limited")
+    if cols < t["min_plot_columns"] and not limited:
         out.append({"part": district["name"], "type": None, "kind": "district",
                     "check": "cover",
                     "why": f"this district's plots cover {cols} of its {t['columns']} "
@@ -1863,6 +2561,22 @@ def occupancy_failures(district: dict, plots: list, part: dict,
                            f"over the whole rectangle rather than into one corner of it",
                     "covered": cols, "columns": t["columns"],
                     "floor": t["min_plot_columns"]})
+    # **And the ceiling.** A density word is a band, and a sparse quarter laid as
+    # densely as a town's is refused for it by name -- the review's rings case, where
+    # the upper quarter came out at 22% against the 12% its word allows and nothing at
+    # the district refused it. Over the ceiling is never a capacity fact, so
+    # `cover_limited` does not excuse it.
+    if cols > t.get("max_plot_columns", cols):
+        out.append({"part": district["name"], "type": None, "kind": "district",
+                    "check": "cover_over",
+                    "why": f"this district's plots cover {cols} of its {t['columns']} "
+                           f"columns and a {t['density']} district is at most "
+                           f"{t['max_plot_columns']} columns of lots over the "
+                           f"{t['usable_columns']} it can develop "
+                           f"({t['density_target']['hi']:.0%}): fewer or smaller lots, "
+                           f"and the ground between them open",
+                    "covered": cols, "columns": t["columns"],
+                    "ceiling": t["max_plot_columns"]})
     # **What the plots do not cover, the areas do.** A rural district has its own rule
     # for this and it is `RURAL_COVER`, registered a round earlier and unmoved; this is
     # every other district, where until now there was nothing to fill the ground with.
@@ -1890,6 +2604,87 @@ def occupancy_failures(district: dict, plots: list, part: dict,
                                f"({t['area_side']} on a side), five apart for the lanes",
                         "covered": ground, "columns": t["columns"],
                         "floor": t["min_ground_columns"]})
+    return out
+
+
+def reservation_failures(district: dict, got: dict, plots: list,
+                         decls: dict | None = None,
+                         part: dict | None = None) -> list:
+    """**A district that lost a reservation the request requires is refused**, by name.
+
+        The composition round's first change, at the level that makes it binding. "Markets,
+        courts, streets and working land made necessary by the programme must reserve usable
+        space before ordinary housing consumes it" -- and until now nothing refused a district
+        that had done the opposite. Two readings, because a plan reaches here two ways:
+
+          * the plan's **own statement**: `district_compile` writes `demand_short` into the
+            file when a reservation it sized could not claim its ground. A required row is a
+            refusal; a row the character merely preferred is not.
+          * the **measurement**, for a plan this library did not write (a model's district
+            file) or a compiler that dropped one without saying: where the district's resolved
+            demand requires a subject its character names as a landmark, some leaf of the plan
+            has to be of a type that answers that requirement.
+
+        The second is what keeps the first honest: a plan cannot pass by omitting the field.
+        
+    """
+    from . import district_compile as dc
+    out = []
+    said = set()
+    for row in ((got or {}).get("demand_short") or []):
+        if not row.get("required"):
+            continue
+        said.add(str(row.get("subject")))
+        alts = row.get("alternatives") or []
+        out.append({"part": district["name"], "type": row.get("subject"),
+                    "kind": "district", "check": "reservation",
+                    "why": (f"`{row.get('requirement')}` requires a "
+                            f"{row.get('subject')} of this district and the plan does not "
+                            f"hold one: {row.get('why')}. "
+                            + ("What would make it fit: "
+                               + "; ".join(f"{a.get('what')} -> {a.get('why')}"
+                                           for a in alts)
+                               if alts else
+                               "no alternative was offered with the shortfall")),
+                    "requirement": row.get("requirement"),
+                    "subject": row.get("subject"),
+                    "needed": row.get("needed"), "available": row.get("available"),
+                    "alternatives": alts})
+    # ...and the measurement. The character's landmarks are the candidate subjects; the
+    # demand says which of them the request requires.
+    want = [r for r in ((got or {}).get("reservations") or []) if r.get("required")]
+    if not want:
+        # no compiled reservation record -- a district file a model wrote, or one
+        # written before this contract. The candidate subjects are the landmarks the
+        # **defining part's** character names (the district record does not carry one;
+        # `character_of` is what joins them), and the district's own resolved demand
+        # says which of those the request requires.
+        ch = (district.get("character") or (part or {}).get("character") or {})
+        every = decls
+        if every is None:
+            with contextlib.suppress(Exception):
+                _t, every = types_card()
+        for lm in (ch.get("landmarks") or []):
+            rid = dc.requirement_for(lm.get("type"), (every or {}).get(lm.get("type")),
+                                     district)
+            if rid:
+                want.append({"subject": lm.get("type"), "requirement": rid,
+                             "required": True})
+    for r in want:
+        subj = str(r.get("subject") or "")
+        if not subj or subj in said:
+            continue
+        if any(str(p.get("type")) == subj for p in plots):
+            continue
+        out.append({"part": district["name"], "type": subj, "kind": "district",
+                    "check": "reservation",
+                    "why": (f"`{r.get('requirement')}` requires a {subj} of this district "
+                            f"and no leaf of its {len(plots)}-leaf plan is one. A "
+                            f"requirement scoped to this district is not answered by "
+                            f"another district's copy of the same thing"),
+                    "requirement": r.get("requirement"), "subject": subj,
+                    "needed": r.get("least"), "available": None,
+                    "alternatives": []})
     return out
 
 
@@ -1931,8 +2726,12 @@ def district_failures(district: dict, got: dict, place: dict, decls: dict,
     # Its farms and fields together cover at least `RURAL_COVER` of its rectangle, said
     # in the brief in the same columns and refused here by name. Counted as the leaves'
     # own rectangles, clipped to the district, so a field drawn over the edge is not
-    # credit.
-    if role == "rural" and plots:
+    # credit. **Keyed on the land use and not on `role`.** The review's fourth finding:
+    # this read `role == "rural"`, so a fishing village -- rural, and not a farm -- was
+    # refused for not covering 60% of its ground in fields it was never asked for. A
+    # role says what the buildings are for; what lies between them is `spec.land_use`,
+    # which a spec may declare and which is derived from the part's own prose otherwise.
+    if spec_mod.land_use(part) == "farmland" and plots:
         area = float(developable_columns(district, place, decls))
         covered = 0
         for p in plots:
@@ -1943,8 +2742,8 @@ def district_failures(district: dict, got: dict, place: dict, decls: dict,
         share = covered / area if area else 0.0
         if share < RURAL_COVER:
             out.append({"part": district["name"], "type": None, "kind": "district",
-                        "check": "cover",
-                        "why": f"this is a rural district and its farms and fields cover "
+                        "check": "farmland_cover",
+                        "why": f"this district is farmland and its farms and fields cover "
                                f"{share:.0%} of it ({covered} of {int(area)} columns) "
                                f"against {RURAL_COVER:.0%}: a belt of farmland is fields "
                                f"with farms in them, so draw `area` leaves of a field type "
@@ -1953,7 +2752,13 @@ def district_failures(district: dict, got: dict, place: dict, decls: dict,
                                f"{int(math.ceil(RURAL_COVER * area))} columns are drawn",
                         "covered": covered, "columns": int(area),
                         "share": round(share, 3)})
-    if part is not None and plots:
+    out += reservation_failures(district, got, plots, decls, part)
+    # ...for a district that holds houses. An open remainder sector of a ring (the
+    # expression round: `surface: open`, no structures) is the ring's gardens and groves
+    # beside its rows; holding it to the dense word's cover refused the lower ring's own
+    # revision for the ground its word had already put beside the houses.
+    if part is not None and plots and int(district.get("structures") or 0) > 0 \
+            and str(district.get("surface") or "built") != "open":
         out += occupancy_failures(district, plots, part, role, place, decls)
     standing = [{**p, "name": p.get("name"), "in": []}
                 for p in (place.get("parts") or [])]
@@ -2501,6 +3306,19 @@ def assemble(place: dict, districts: dict, spec: dict,
     """
     children = []
     defining = [dict(p) for p in (place.get("parts") or [])]
+    # **A leaf carries the family of the defining part it answers.** The expression
+    # round's orchard hamlet: the chapel was built as the adopted `worship` type and the
+    # leaf carried no family, so `intent.select(parts, "hall")` found no hall and the
+    # `around` relation could not be measured on the plan it held.
+    by_name = {d.get("name"): d for d in (spec.get("defining_parts") or [])}
+    for p in defining:
+        d = by_name.get(p.get("defines") or p.get("name"))
+        if d and d.get("family") and not p.get("family"):
+            p["family"] = d["family"]
+        if d and d.get("kind") in ("area", "group") and not p.get("land_use"):
+            use = spec_mod.land_use_of(d) if hasattr(spec_mod, "land_use_of") else None
+            if use:
+                p["land_use"] = use
     if defining:
         children.append({"kind": "quarter", "name": "defining",
                          "notes": "the parts the sentence named: what makes this place "
@@ -2574,6 +3392,10 @@ def assemble(place: dict, districts: dict, spec: dict,
                 continue
             children.append({"kind": "quarter",
                              "name": f"{d['name']}_{q.get('name', 'q')}",
+                             # the defining part this quarter's ground answers, so a
+                             # presence clause can count **this** district's standing
+                             # plots and not the place's (`placeread.group_links`)
+                             **({"defines": d["defines"]} if d.get("defines") else {}),
                              "notes": q.get("notes", d.get("purpose", "")),
                              "children": plots})
     return {"intent": place.get("intent", ""),
@@ -2653,16 +3475,102 @@ WALL_STEP = 0.75
 TERRACE_STEP = 4
 
 
-def terrace_levels(median: int, n: int, step: int = TERRACE_STEP) -> dict:
+def terrace_levels(median: int, n: int, step: int = TERRACE_STEP,
+                   ranks: list | None = None) -> dict:
     """The level of each of `n` rings and the podium, from the site's median ground.
 
         Ring 0 is the innermost. `{"rings": [level of ring 0, ...], "podium": y,
-        "median": median, "step": step}`; the outermost ring's level is the median.
+        "median": median, "step": step}`; the lowest ring's level is the median.
+
+        `ranks[k]` is the **elevation** rank of ring k, 0 for the lowest. Without one the
+        rings step down from the centre, which is what they have always done and what a
+        podium at the middle of a place means. The podium stands one step over the highest
+        ring, which for the default order is the same number it has always been.
         
     """
-    rings = [int(median) + (n - 1 - k) * int(step) for k in range(n)]
-    return {"rings": rings, "podium": int(median) + n * int(step),
-            "median": int(median), "step": int(step)}
+    if ranks is None:
+        ranks = [n - 1 - k for k in range(n)]
+    levels = [int(median) + int(ranks[k]) * int(step) for k in range(n)]
+    return {"rings": levels, "podium": (max(levels) if levels else int(median))
+            + int(step),
+            "median": int(median), "step": int(step), "ranks": [int(v) for v in ranks]}
+
+
+def terrace_ranks(rings: list) -> tuple:
+    """**Radial order, social rank and terrain elevation are three things.**
+
+        The expression round's hill town: the programme read `lower`/`upper` as names for
+        ring 0 and ring 1, terraced the rings down from the centre as every concentric place
+        is terraced, and stood the *dense lower ring* four blocks **above** the sparse upper
+        ring. `lower` and `upper` are not names. They are statements about height, and where
+        a place's ring parts carry them the terraces are ordered by the words rather than by
+        the radius.
+
+        Returns `(ranks, why)` -- the elevation rank of each ring, 0 for the lowest, and the
+        sentence that says where the order came from. `(None, why)` where no ring carries an
+        elevation word, which leaves every existing place exactly as it was.
+        
+    """
+    from .placeread import RING_WORDS
+    n = len(rings)
+    if n < 2:
+        return None, "one ring: there is no order to decide"
+    ends = {}
+    for k, r in enumerate(rings):
+        parts = str(r.get("name") or "").lower().split("_")
+        word = next((w for w in RING_WORDS if w in parts), None)
+        if word is None:
+            continue
+        means, end = RING_WORDS[word]
+        if means == "elevation":
+            ends[k] = (word, end)
+    if not ends:
+        return None, ("no ring of this place is named by an elevation word: the "
+                      "terraces step down from the centre, as a podium at the middle "
+                      "of a place means")
+    # the words order what they name; anything unnamed keeps its radial place among them
+    named = sorted(ends, key=lambda k: (ends[k][1], -k))
+    ranks = [None] * n
+    for rank, k in enumerate(named):
+        ranks[k] = rank
+    free = [k for k in range(n) if ranks[k] is None]
+    spare = list(range(len(named), n))
+    for k, v in zip(sorted(free, key=lambda k: -k), spare):
+        ranks[k] = v
+    said = ", ".join(f"`{ends[k][0]}` ({rings[k].get('name')})" for k in named)
+    return ranks, (f"the ring parts are named by elevation -- {said} -- so the terraces "
+                   f"are ordered by the words and not by the radius: "
+                   + ", ".join(f"{rings[k].get('name')} at rank {ranks[k]}"
+                               for k in range(n)))
+
+
+def order_terrace(terrace: dict | None, rings: list) -> tuple:
+    """A terrace record whose ring levels are ordered by the rings' own elevation words.
+
+        The levels themselves are not moved -- the podium was cut to the set of levels the
+        ground stage chose and this is not the owner of that number -- they are **permuted**,
+        so the ring the sentence calls `upper` is the one standing on the higher terrace.
+        `(terrace, why)`; `why` is None where nothing changed.
+        
+    """
+    if not terrace or not terrace.get("rings") or len(terrace["rings"]) != len(rings):
+        return terrace, None
+    ranks, why = terrace_ranks(rings)
+    if ranks is None:
+        return terrace, None
+    levels = sorted(int(v) for v in terrace["rings"])
+    want = [levels[int(ranks[k])] for k in range(len(rings))]
+    if want == [int(v) for v in terrace["rings"]]:
+        return dict(terrace, ranks=[int(v) for v in ranks]), None
+    out = dict(terrace, rings=want, ranks=[int(v) for v in ranks])
+    # **The podium is not moved down.** It is the level the ground was actually cut to
+    # and this is not its owner; it stands over the highest ring, which is what a place
+    # gathered about a raised centre means, and never under one.
+    out["podium"] = max(int(terrace.get("podium") or 0),
+                        max(want) + int(terrace.get("step") or TERRACE_STEP))
+    return out, (why + f"; the levels {levels} were re-ordered to "
+                 f"{want} and the podium stands over the highest of them at "
+                 f"{out['podium']}")
 
 
 #: The wall's swept half-width and one column more, so the wall stands on the terrace
@@ -3211,8 +4119,409 @@ def wall_stairs_for(part: dict, spec: dict | None = None) -> str:
 WALL_STAIR_WORDS = ("unbroken", "sheer", "seamless", "smooth")
 
 
+def _label_sectors(rects: list, cx: int, cz: int) -> list:
+    """Name the rectangles a region was tiled into by where they lie about the centre.
+
+        A label is a name a person reads on a map and a district file is written under, so
+        it has to be stable and it has to mean something: the compass point of the
+        rectangle's own middle, and an index where two share one. Deterministic -- the
+        tiler is, and this sorts.
+        
+    """
+    out = []
+    for (x0, z0, x1, z1) in rects:
+        mx, mz = (x0 + x1) // 2, (z0 + z1) // 2
+        dx, dz = mx - cx, mz - cz
+        if abs(dz) >= abs(dx) * 2:
+            side = "north" if dz < 0 else "south"
+        elif abs(dx) >= abs(dz) * 2:
+            side = "west" if dx < 0 else "east"
+        else:
+            side = ("north" if dz < 0 else "south") + ("_west" if dx < 0 else "_east")
+        out.append((side, (x0, z0, x1, z1)))
+    seen: dict = {}
+    named = []
+    for side, rect in sorted(out, key=lambda r: (r[0], r[1])):
+        seen[side] = seen.get(side, 0) + 1
+        named.append((side if seen[side] == 1 else f"{side}_{seen[side]}", rect))
+    return named
+
+
+#: **What a ring's negotiation is allowed to cost**, in compiler calls. Every
+#: alternative is certified by `district_compile` on the sectors the ring would actually
+#: have, which is the only honest way to know what it holds -- and a compile is a tenth
+#: of a second, so the list has to be bounded or a layout becomes a build. Registered:
+#: six alternatives over at most four sectors each.
+RING_PROBE_SECTORS = 4
+RING_PROBE_MAX = 6
+
+#: How many times a kept sector may take a block of its own fabric from the remainder it
+#: was cut from before the strip is accepted as its limit. Registered: three, which is
+#: three more compiles for a sector the arithmetic got wrong and none for one it got
+#: right.
+RING_FIT_TRIES = 3
+
+
+def _digest(value) -> str:
+    """A deterministic print of any JSON-shaped value: dicts by sorted key, lists in
+    order, everything else by `repr`. Used for cache identity, so it has to be stable
+    across processes and has to change when anything inside it does."""
+    import hashlib
+
+    def walk(v) -> str:
+        if isinstance(v, dict):
+            return "{" + ",".join(f"{k!r}:{walk(v[k])}" for k in sorted(v, key=str)) + "}"
+        if isinstance(v, (list, tuple)):
+            return "[" + ",".join(walk(x) for x in v) + "]"
+        if isinstance(v, set):
+            return "<" + ",".join(sorted(walk(x) for x in v)) + ">"
+        return repr(v)
+    return hashlib.sha256(walk(value).encode()).hexdigest()[:16]
+
+
+def probe_key(r: dict, rect, count: int, arrangement: dict, spec: dict | None, *,
+              seed: int = 1, ceiling=None, exact: bool = True,
+              certified: bool = True) -> tuple:
+    """**Everything the probe body reads, in the key that answers for it.**
+
+        The review's named omission, and the composition round's third change. The key was
+        `(width, depth, count, arrangement items, region name)` and the probe body also reads
+        the ring's resolved **demand** (`r["demand"]` -- the approved type pool, the required
+        features and the requirement ids), its approved **fabric types**, its form, role and
+        density, the **seed** it is laid under, the **ceiling** the compiler is asked with and
+        the **exact** flag. Two rings differing in nothing but their resolved demand shared one
+        answer, so a capability revision could not move a capacity figure, and a stale
+        certificate was indistinguishable from a fresh one.
+
+        Every one of them is in the key now, digested deterministically (`_digest`) so that a
+        nested structure is identity and not a `repr` that happens to sort.
+
+        `certified` is in the key for the same reason as the rest: two callers ask this cache
+        the same width question and only one of them wants the validator's verdict with it
+        (`_arrange_capacity` asks for a count, `negotiate_ring` offers an alternative for
+        selection). Sharing one entry would let an uncertified probe answer a certified
+        question -- an alternative with no verdict reads as an alternative with no failures,
+        which is the whole false pass A4 is about.
+        
+    """
+    return (int(rect[2]) - int(rect[0]) + 1, int(rect[3]) - int(rect[1]) + 1,
+            int(count), _digest(arrangement or {}), str(r.get("name") or ""),
+            _digest(r.get("demand")), _digest(list(r.get("fabric_types") or ())),
+            str((spec or {}).get("form") or ""),
+            str(r.get("role") or DENSITY_ROLE.get(r.get("density") or "medium")),
+            str(r.get("density") or ""),
+            _digest(r.get("character")), _digest(r.get("land_use")),
+            int(seed), (None if ceiling is None else int(ceiling)), bool(exact),
+            bool(certified))
+
+
+def _arrange_capacity(r: dict, rect, count: int, arrangement: dict, spec: dict,
+                      decls: dict, seed: int = 1) -> int:
+    """How many houses **the actual district compiler** lays in this rectangle under
+    this arrangement, on ground that carries the ring's own road (`_trial_place`)."""
+    from . import arrange as _arrange
+    key = probe_key(r, rect, count, arrangement, spec, seed=seed, ceiling=int(count),
+                    certified=False)
+    got = _RING_PROBE_CACHE.get(key)
+    if got is None:
+        role = r.get("role") or DENSITY_ROLE.get(r.get("density") or "medium")
+        _t, mine = types_card(None, spec.get("form"), role)
+        d = {"name": f"{r.get('name')}_fit", "x0": rect[0], "z0": rect[1],
+             "x1": rect[2], "z1": rect[3], "structures": int(count), "exact": True,
+             "defines": r.get("name"),
+             **({"fabric_types": list(r["fabric_types"])} if r.get("fabric_types") else {}),
+             **({"demand": r["demand"]} if r.get("demand") else {})}
+        bare = {"arterials": {}, "parts": [], "districts": [], "layout": {}}
+        res = _arrange.capacity_of(d, r, _trial_place(bare, rect), mine or decls,
+                                   arrangement, spec=spec, seed=seed, ceiling=int(count),
+                                   certify=False)
+        got = (int(res.get("lots") or 0), int(res.get("allocated_columns") or 0),
+               int(res.get("footprint_columns") or 0))
+        _RING_PROBE_CACHE[key] = got
+    return int(got[0])
+
+#: The probes of one process, keyed by `probe_key` -- the rectangle, the count, the
+#: arrangement **and** the demand, the fabric pool, the form, role and density, the
+#: seed, the ceiling and the exact flag. A ring is laid out again for every reallocation
+#: and the same rectangle answers the same question only where all of those are the
+#: same.
+_RING_PROBE_CACHE: dict = {}
+
+
+def _ring_sector_plan(cx: int, cz: int, inner: int, outer: int, i_in: int, i_out: int,
+                      dmin: int, n: int, r: dict, decls: dict) -> tuple:
+    """`(sectors, counts)` for a ring of this width: the strips the ring is tiled into
+    and the share of `n` each takes, by the same two rules the layout itself uses
+    (`regions.ring_sectors` and `count_band` under `_largest_remainder`)."""
+    lo, hi = inner + i_in + 1, outer - i_out
+    sectors = regions.ring_sectors(cx, cz, inner, outer, lo, hi, chamfer=0,
+                                   gap=LANE_GAP, dmin=dmin, sector_max=SECTOR_MAX)
+    if not sectors:
+        return [], []
+    per = spec_mod.columns_per_plot(r)
+    areas = [(rc[2] - rc[0] + 1) * (rc[3] - rc[1] + 1) for _l, rc in sectors]
+    caps = [int(ar * DISTRICT_FILL // per) for ar in areas]
+    bands = [count_band({"name": lab, "x0": rc[0], "z0": rc[1], "x1": rc[2],
+                         "z1": rc[3]}, r, None, decls) for lab, rc in sectors]
+    counts = _largest_remainder([b["mid"] for b in bands], int(n),
+                                caps=[min(c, b["hi"]) for c, b in zip(caps, bands)],
+                                floor=0)
+    return sectors, counts
+
+
+def _trial_place(bare: dict, rect) -> dict:
+    """`bare` with a ring road laid along the middle of this sector's long axis.
+
+        What a district's ground actually looks like once the place is routed. The band is
+        `ARTERIAL_WIDTH` wide and the compiler dilates it by a column either side, exactly
+        as it does a real arterial's cells -- so a band the road leaves too thin for a row
+        of lots is one the probe reports as holding nothing, which is what it holds.
+        
+    """
+    x0, z0, x1, z1 = (int(v) for v in rect)
+    along_x = (x1 - x0) >= (z1 - z0)
+    half = ARTERIAL_WIDTH // 2
+    if along_x:
+        mid = (z0 + z1) // 2
+        cells = [[x, z] for x in range(x0, x1 + 1)
+                 for z in range(mid - half, mid - half + ARTERIAL_WIDTH)]
+    else:
+        mid = (x0 + x1) // 2
+        cells = [[x, z] for z in range(z0, z1 + 1)
+                 for x in range(mid - half, mid - half + ARTERIAL_WIDTH)]
+    return {**bare, "arterials": {"cells": cells}}
+
+
+def negotiate_ring(r: dict, *, cx: int, cz: int, inner: float, i_in: int, i_out: int,
+                   least: int, n: int, spec: dict, decls: dict, most: int | None = None,
+                   allocation: dict | None = None, seed: int = 1) -> dict:
+    """**A ring's width and its fabric's arrangement, settled together.**
+
+        So the alternatives (`arrange.arrangements`) are enumerated, each is given the ring
+        width *it* needs, and the **actual district compiler** is asked what each one holds
+        on the sectors that width produces. Returns the chosen alternative, the width, and
+        every alternative with the capacity and the cover the compiler reported for it --
+        which is what `resolution.json`'s `target.from` carries.
+
+        Invariants: the count `n` is the count (an alternative that cannot hold it is
+        recorded and not chosen), and the ring is still the whole annulus -- the cover below
+        is measured over every sector's whole rectangle, remainder and all.
+        
+    """
+    from . import arrange as _arrange
+    out = {"considered": [], "chosen": None, "width": None, "from": []}
+    if n <= 0:
+        return out
+    total_i = i_in + i_out
+    floor_w = int(math.ceil(total_i / (1.0 - RING_COVERAGE))) + LANE_GAP
+    alts = _arrange.arrangements(r, decls, spec=spec, allocation=allocation)
+    if not alts:
+        return out
+    # **The probe is run on ground that has a road in it.** The ring is laid out before
+    # the arterials are routed, so the first version of this asked the compiler about a
+    # bare rectangle -- and the compiler said fifteen of fifteen. The run then routed a
+    # road along the middle of the ring, the band the road left either side of itself
+    # was five columns where a lot is eight, and the same compiler laid *none*: the
+    # certificate was about ground that does not exist. A ring road along the band is
+    # the case that binds (a radial road across a band splits its length, which a long
+    # sector survives), so the trial ground carries one: `ARTERIAL_WIDTH` down the
+    # middle of the sector's long axis, dilated as `_compile_once` dilates it.
+    bare = {"arterials": {}, "parts": [], "districts": [], "layout": {}}
+    place_of = _trial_place  # named so the reason above is findable from the callsite
+    role = r.get("role") or DENSITY_ROLE.get(r.get("density") or "medium")
+    from .district_compile import EDGE_MARGIN as dc_edge
+    _t, mine = types_card(None, spec.get("form"), role)
+    kept = [a for a in alts if not a.get("refused")][:RING_PROBE_MAX]
+    for a in alts:
+        if a.get("refused"):
+            out["considered"].append({"action": a["action"], "refused": a["refused"],
+                                      "why": a["why"], "capacity": None})
+            continue
+        if a not in kept:
+            continue
+        # **A ring band carries the ring's road, and it runs down the middle of it.**
+        # The probe below is on ground with that road in it; this is the same fact as
+        # arithmetic, so an alternative is sized for it rather than discovering it. A
+        # road of `ARTERIAL_WIDTH` dilated a column either side sits in the middle of
+        # the band and leaves half of what is left to each side, so a row of lots needs
+        # `EDGE_MARGIN + lot_depth` on its own side: the band is at least `2 *
+        # (EDGE_MARGIN + lot_depth) + the road`. Measured by running it: a 20-deep band
+        # with a 6-column road down it leaves five columns either side, a lot is eight,
+        # and the compiler laid none of the seven that sector was promised.
+        road = ARTERIAL_WIDTH + 2
+        beside_road = 2 * (dc_edge + int(a["lot"][1])) + road
+        depth = max(int(a["depth"]), beside_road)
+        width = max(total_i + depth, floor_w, int(least))
+        row = {"action": a["action"], "arrangement": a["arrangement"],
+               "lot": a["lot"], "rows": a["rows"], "district_depth": int(depth),
+               "band_for_road": int(beside_road),
+               "width": int(width), "revises": a.get("revises") or [],
+               "why": a["why"], "sectors": 0}
+        if most is not None and width > int(most):
+            row.update(capacity=None,
+                       refused=f"a ring {width} wide does not fit: this site leaves "
+                               f"{int(most)} between the centre and the outer wall once "
+                               f"every other ring has its own least width")
+            out["considered"].append(row)
+            continue
+        sectors, counts = _ring_sector_plan(cx, cz, int(inner), int(inner) + width,
+                                            i_in, i_out, depth, n, r, decls)
+        row["sectors"] = len(sectors)
+        if not sectors:
+            row.update(capacity=0, refused=f"a ring {width} wide tiles into no sector "
+                                           f"{depth} deep about this centre")
+            out["considered"].append(row)
+            continue
+        held, allocated, built, scope, probed = 0, 0, 0, 0, []
+        failures: list = []
+        said: list = []
+        verdicts: set = set()
+        n_kept, n_required = 0, 0
+        for (lab, rc), cnt in list(zip(sectors, counts))[:RING_PROBE_SECTORS]:
+            scope += (rc[2] - rc[0] + 1) * (rc[3] - rc[1] + 1)
+            if cnt <= 0:
+                continue
+            d = {"name": f"{r['name']}_{lab}", "x0": rc[0], "z0": rc[1], "x1": rc[2],
+                 "z1": rc[3], "structures": int(cnt), "exact": True,
+                 "defines": r["name"],
+                 # the pool the capability record approved, where one reached the
+                 # layout; an **empty** list is not a pool and would admit no type
+                 **({"fabric_types": list(r["fabric_types"])}
+                    if r.get("fabric_types") else {}),
+                 **({"demand": r["demand"]} if r.get("demand") else {})}
+            key = probe_key(r, rc, cnt, a["arrangement"], spec, seed=seed,
+                            ceiling=int(cnt), certified=True)
+            got = _RING_PROBE_CACHE.get(key)
+            if got is None:
+                # **The alternative is certified by the validator that will judge it.**
+                # A4, and the review's words: "a compiler return need not pass the
+                # district validator". `capacity_of` now runs `district_failures` on the
+                # result it compiled and carries the verdict, so an alternative offered
+                # for selection is one the validator would accept -- and one it would
+                # refuse is recorded with the refusal and taken out of the running.
+                res = _arrange.capacity_of(d, r, place_of(bare, rc), mine or decls,
+                                           a["arrangement"], spec=spec, seed=seed,
+                                           ceiling=int(cnt), certify=True)
+                cert = res.get("certificate") or {}
+                got = (int(res.get("lots") or 0), int(res.get("allocated_columns") or 0),
+                       int(res.get("footprint_columns") or 0),
+                       [dict(f) for f in (cert.get("refuses") or [])],
+                       int((res.get("record") or {}).get("reservations_kept") or 0),
+                       int((res.get("record") or {}).get("reservations_required") or 0),
+                       str(cert.get("verdict") or "unasked"),
+                       sorted({str(f.get("check")) for f in (cert.get("failures") or [])}))
+                _RING_PROBE_CACHE[key] = got
+            held += got[0]
+            allocated += got[1]
+            built += got[2]
+            failures += [{**f, "sector": lab} for f in (got[3] if len(got) > 3 else [])]
+            n_kept += (got[4] if len(got) > 4 else 0)
+            n_required += (got[5] if len(got) > 5 else 0)
+            said += (got[7] if len(got) > 7 else [])
+            if len(got) > 6 and got[6] != "ok":
+                verdicts.add(got[6])
+            probed.append({"sector": lab, "asked": int(cnt), "laid": got[0],
+                           "allocated_columns": got[1], "built_columns": got[2],
+                           "reservations_kept": (got[4] if len(got) > 4 else None),
+                           "reservations_required": (got[5] if len(got) > 5 else None),
+                           "validator": (got[6] if len(got) > 6 else "unasked"),
+                           "refuses": [f.get("check")
+                                       for f in (got[3] if len(got) > 3 else [])],
+                           "failures": (got[7] if len(got) > 7 else [])})
+        row.update(capacity=int(held), allocated_columns=int(allocated),
+                   # **the lots drawn and the mass they admit, side by side.** A5: a
+                   # cover figure improved only by enlarging empty lots moves the first
+                   # and leaves the second where it was, so selection is recorded
+                   # against both and the reader can see which moved.
+                   built_columns=int(built), scope_columns=int(scope),
+                   cover=round(allocated / float(scope), 4) if scope else None,
+                   built_cover=round(built / float(scope), 4) if scope else None,
+                   reservations_kept=int(n_kept),
+                   reservations_required=int(n_required),
+                   certificate={"from": "placeplan.district_failures",
+                                # the validator's own verdict over every clause...
+                                "verdict": ("refused" if (failures or verdicts)
+                                            else "ok"),
+                                "checks": sorted(set(said)),
+                                # ...and the subset that makes this alternative
+                                # ineligible rather than short of the band it is being
+                                # chosen against (`arrange.NEGOTIABLE_CHECKS`)
+                                "refuses": failures[:6],
+                                "short_of": sorted(set(said) & set(
+                                    _arrange.NEGOTIABLE_CHECKS))},
+                   holds_count=bool(held >= n), probed=probed)
+        if failures:
+            # **An alternative the validator would refuse is not offered for
+            # selection.** It stays on `considered` with the refusal on it -- the record
+            # of what was tried is the point -- and it is out of `real` below.
+            row["refused"] = (
+                f"the district validator refuses this arrangement on "
+                f"{len(failures)} count(s) "
+                f"({', '.join(sorted({str(f.get('check')) for f in failures}))}): "
+                + "; ".join(str(f.get("why"))[:140] for f in failures[:2]))
+        out["considered"].append(row)
+    lines = [f"{len(out['considered'])} arrangement(s) considered for `{r['name']}`, "
+             f"each sized to the ring width it needs, laid by `district_compile` and "
+             f"certified by `district_failures`",
+             *[(f"{a['action']}: refused -- {a['refused']}" if a.get("refused") else
+                f"{a['action']}: lots {a['lot'][0]}x{a['lot'][1]}, {a['rows']} row(s), a "
+                f"district {a['district_depth']} deep, ring {a['width']} wide -> the "
+                f"compiler laid {a['capacity']} of {n} house(s) on "
+                f"{a.get('allocated_columns')} columns of lot "
+                f"({(a.get('cover') or 0):.1%} of the ring's "
+                f"{a.get('scope_columns')}), {a.get('built_columns')} of them built "
+                f"({(a.get('built_cover') or 0):.1%}), "
+                f"{a.get('reservations_kept')} of {a.get('reservations_required')} "
+                f"required reservation(s) kept, validator "
+                f"{(a.get('certificate') or {}).get('verdict', 'unasked')}"
+                + (f" (short of "
+                   f"{', '.join((a.get('certificate') or {}).get('short_of') or ())})"
+                   if (a.get("certificate") or {}).get("short_of") else ""))
+               for a in out["considered"]]]
+    real = [a for a in out["considered"] if a.get("capacity") is not None
+            and not a.get("refused")]
+    if not real:
+        out["from"] = lines + ["no alternative fits this ring on this site that its own "
+                               "district validator accepts: its width is what the count's "
+                               "ground need and the site leave it, and the fabric's "
+                               "arrangement cannot change that"]
+        return out
+    # **the exact count first, then the reservations, then the densest, then the
+    # narrowest ring.** A count the sentence stated is not a thing to trade for cover;
+    # among the alternatives that hold it, one that keeps the reservations the request
+    # requires beats one that does not, and then the one whose lots cover most of the
+    # ring the requirement is about wins, with a tie to the ring that takes least
+    # ground. Every alternative in `real` is already certified: the validator's verdict
+    # is not a tie-break, it is the gate above.
+    best = max(real, key=lambda a: (bool(a.get("holds_count")),
+                                    int(a.get("reservations_kept") or 0)
+                                    >= int(a.get("reservations_required") or 0),
+                                    (a.get("certificate") or {}).get("verdict") == "ok",
+                                    a.get("cover") or 0.0, -int(a["width"])))
+    out["chosen"] = best
+    out["width"] = int(best["width"])
+    out["from"] = [
+        *lines,
+        f"chosen: {best['action']} -- it "
+        + ("holds the count" if best.get("holds_count") else
+           f"holds {best['capacity']} of {n}, the most any alternative held")
+        + f", covers {(best.get('cover') or 0):.1%} of the ring in lots and "
+          f"{(best.get('built_cover') or 0):.1%} in building, keeps "
+          f"{best.get('reservations_kept')} of "
+          f"{best.get('reservations_required')} required reservation(s), and its own "
+          f"district validator "
+        + ("accepts it"
+           if (best.get("certificate") or {}).get("verdict") == "ok" else
+           f"finds it short of "
+           f"{', '.join((best.get('certificate') or {}).get('short_of') or ())} -- which "
+           f"no alternative of this fabric reached on this site, so it is the layout "
+           f"owner's finding and not a refusal of this arrangement")]
+    return out
+
+
 def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
-                      voice: str, vol=None) -> tuple:
+                      voice: str, vol=None, caps: dict | None = None,
+                      allocation: dict | None = None) -> tuple:
     """The place level of a concentric place, by arithmetic. Returns `(place, fails)`.
 
         `place` is in the shape the place planner's answer takes -- `parts`, `districts`,
@@ -3290,10 +4599,13 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         comp_rect = (px0, pz0, px1, pz1)
         cx, cz = int(math.floor(pcx)), int(math.floor(pcz))
     centre_side = int(round(S * math.sqrt(spec_mod.centre_share(spec))))
+    explicit_count = bool(spec.get("explicit_count"))
     if comp_rect is None and core is not None:
         # No plateau: the centre square is the centre's share, at least what a compound
-        # needs where the centre is one, at most the site.
-        want = centre_side
+        # needs where the centre is one, at most the site. **A place sized by its count
+        # takes the compound's own need and not the share** (the expression round; see
+        # `compound_ground`).
+        want = 0 if explicit_count else centre_side
         if spec_mod.compound(core):
             want = max(want, int(compound_ground(spec=spec, site_side=S)["side"]))
         want = max(COMPOUND_MIN, min(want, S - 2 * edge_inset - 2 * dmin))
@@ -3310,22 +4622,95 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
 
     # 2. the boundaries
     walls = _wall_types(decls)
+    # **The capability record's approved wall goes first.** The ring wall is chosen by
+    # the height the ring needs (`_wall_for`), and matching chooses by kind, form, role,
+    # envelope and -- where the rings are round -- whether the type draws a diagonal
+    # run. Two rules, and the round's own report recorded them disagreeing. Putting the
+    # approved type at the head of the list makes matching's answer win wherever it can
+    # build the height, and leaves the height rule as the thing that overrides it, with
+    # the disagreement visible to `capability.agreements` rather than silent.
+    _approved_wall = (caps or {}).get((_wall_part or {}).get("name"))
+    if _approved_wall:
+        walls.sort(key=lambda r: (r[0] != _approved_wall, -r[3], r[0]))
     if not walls and spec_mod.walled_rings(spec):
         fail("ring_walls", "type", "no committed edge type of this place's form has a "
                                    "height parameter to build a ring wall with")
         return None, fails
     h_last = S // 2 - edge_inset
     n = len(rings)
-    # the wall at each walled boundary, outermost first, so heights step down inward
+    # **The wall at each walled boundary, by what kind of wall the request makes it**
+    # (the expression round). The outermost is `great` only where the spec's words of it
+    # or the sourced claims say so, and then it stands `GREAT_OVER` times the tallest
+    # other ring wall out of the tallest type; every other walled ring is a town wall
+    # over the storeys of its fabric, stepping down inward by `WALL_STEP` from the
+    # outermost town wall. Recorded per wall as `hierarchy`, which the reader's clause
+    # reads instead of a constant.
     heights: dict = {}
+    hierarchy: dict = {}
     if walls:
-        outer_h = walls[0][3]
-        step = 0
-        for r in reversed(rings):
-            if r.get("walled"):
-                heights[r["name"]] = _wall_for(int(round(outer_h * WALL_STEP ** step)),
-                                               walls)
-                step += 1
+        from .placesolve import wall_kind_for, wall_height_for, _fabric_storeys
+        walled = [r for r in reversed(rings) if r.get("walled")]
+        _wp = next((p for p in spec["defining_parts"]
+                    if p["family"] == "wall" and p["relation"] == "concentric"),
+                   _wall_part)
+        kind0, ksrc = wall_kind_for(_wp, spec, outermost=True)
+        # **Nested ring walls make an outermost great wall; one wall round a town is the
+        # town's wall.** The hierarchy is the resolved design's: where two or more rings
+        # are walled the outermost is the place's great wall -- the tallest type the
+        # library has at the top of its band, whatever the record approved for the
+        # family, and every wall inside it steps down by `WALL_STEP` -- and where the
+        # request's own words call it great it is great on its own. A single walled ring
+        # is a town wall over the storeys of its fabric.
+        nested = len(walled) >= 2
+        if walled and (nested or kind0 == "great"):
+            tallest = max(walls, key=lambda w: (w[3], w[0]))
+            by_height = sorted(walls, key=lambda w: (-w[3], w[0]))
+            outer_h = int(tallest[3])
+            src0 = ksrc if kind0 == "great" else [
+                f"{len(walled)} walled rings: the outermost is the place's great wall "
+                f"by the design's own hierarchy"]
+            if _approved_wall and _approved_wall != tallest[0]:
+                src0 = src0 + [f"the record approved `{_approved_wall}` for the family "
+                               f"and the great wall is `{tallest[0]}`, the tallest type"]
+            for step, r in enumerate(walled):
+                if step == 0:
+                    got = (tallest[0], tallest[1], outer_h)
+                    kind = "great"
+                    src = src0 + [f"the top of `{tallest[0]}`'s band, {outer_h}"]
+                else:
+                    got = _wall_for(int(round(outer_h * WALL_STEP ** step)), by_height)
+                    kind = "ring"
+                    src = [f"a ring wall inside the great wall: {outer_h} stepped down "
+                           f"by WALL_STEP {WALL_STEP} x{step}"]
+                heights[r["name"]] = got
+                hierarchy[r["name"]] = {"kind": kind, "height": int(got[2]), "from": src}
+        elif walled:
+            town_walls = [w for w in walls if w[0] != "great_wall"] or walls
+            town_h, town_src = wall_height_for("town", spec, town_walls[0][1],
+                                               storeys=_fabric_storeys(spec))
+            r = walled[0]
+            got = _wall_for(int(town_h), town_walls)
+            heights[r["name"]] = got
+            hierarchy[r["name"]] = {"kind": "town", "height": int(got[2]),
+                                    "from": ksrc + town_src}
+    # **The mass each ring wall actually carries, before the ground is budgeted.** The
+    # architecture audit's capacity finding, and the craft run's: the layout budgeted
+    # every wall at width 3 (`_wall_inset(d, 3)`) and then drew ramparts of nine, so
+    # four columns either side of every ring wall were promised to a district and taken
+    # by the wall. A capacity the compiler cannot realise is not a capacity, and the one
+    # number both sides have to read is this one.
+    wall_part = next((p for p in spec["defining_parts"]
+                      if p["family"] == "wall" and p["relation"] == "concentric"),
+                     _wall_part)
+    gate_part = next((p for p in spec["defining_parts"]
+                      if p["family"] == "gate" and p["relation"] == "gateway"), None)
+    masses: dict = {}
+    for r in rings:
+        if not r.get("walled"):
+            continue
+        _n, d, _h = heights[r["name"]]
+        masses[r["name"]] = (wall_width_for(wall_part, spec, d)
+                             if wall_part is not None else WALL_MASSES["screen"])
     insets = []
     for k, r in enumerate(rings):
         inner_ring = rings[k - 1] if k else None
@@ -3333,18 +4718,20 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
             inset_in = LANE_GAP
         elif inner_ring.get("walled"):
             _n, d, _h = heights[inner_ring["name"]]
-            inset_in = _wall_inset(d, 3)
+            inset_in = _wall_inset(d, masses[inner_ring["name"]])
         else:
             inset_in = LANE_GAP // 2
         if r.get("walled"):
             _n, d, _h = heights[r["name"]]
-            inset_out = _wall_inset(d, 3)
+            inset_out = _wall_inset(d, masses[r["name"]])
         else:
             inset_out = LANE_GAP // 2
         insets.append((inset_in, inset_out))
     mins = []
+    total_insets = []
     for (i_in, i_out) in insets:
         total_i = i_in + i_out
+        total_insets.append(total_i)
         mins.append(max(total_i + dmin,
                         int(math.ceil(total_i / (1.0 - RING_COVERAGE))) + LANE_GAP))
     cum = spec_mod.centre_share(spec)
@@ -3361,6 +4748,95 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         prev = max(prev, t)
         widths.append(w)
     widths = [max(w, float(m)) for w, m in zip(widths, mins)]
+    # **A ring's width from its count at its density word** (the expression round). The
+    # shares are the spec's inference about the whole; a ring whose count the sentence
+    # states (or the spec declares) is sized by the one rule the relation solver sizes a
+    # strip by (`placesolve.land_need`): the columns `n` houses need at the middle of
+    # the word's band, over the developable perimeter of the ring at its inner edge --
+    # in both directions, never under the ring's least width, and the record says what
+    # was asked and what the ground gave. A ring whose count is the ground's own (the
+    # city's) keeps its share.
+    from .placesolve import land_need, lot_raised
+    hh = int((spec.get("explicit_count") or {}).get("n") or spec.get("structures") or 0)
+    ring_needs: dict = {}
+    a_run = float(hc)
+    for k, r in enumerate(rings):
+        n_r = int(r.get("structures") or 0)
+        # the sentence's own count and nothing weaker: a spec's declared ring numbers
+        # without one are its inference about the ground, and the shares stand
+        counted = bool(explicit_count and n_r)
+        rec = land_need(r, n_r, decls, spec, households=hh, allocation=allocation,
+                        demand=r.get("demand"))
+        rec["counted"] = counted
+        rec["share_width"] = round(widths[k], 1)
+        i_in, i_out = insets[k]
+        if counted and n_r:
+            a = a_run + i_in
+            w_need = rec["columns"] / max(8.0 * a, 1.0) + i_in + i_out
+            over = ((allocation or {}).get("rings") or {}).get(r["name"]) or {}
+            arr_over = ((allocation or {}).get("arrangement") or {}).get(r["name"])
+            rec["width_need"] = round(w_need, 1)
+            # **The ring's width and its fabric's arrangement are one decision.** The
+            # least width was `dmin` -- a constant district depth of 28 -- plus the
+            # insets, whatever the houses standing in the ring were; that is what made a
+            # ring whose count needed 22 stand at 37, with the difference laid as open
+            # ground and then dropped from the density it was measured by. The
+            # alternatives are enumerated and the **actual compiler** is asked what each
+            # holds (`negotiate_ring`); the exact count is invariant under it.
+            neg = None
+            # the widest this ring could be and still leave every other ring its own
+            # least width on this site: an alternative that does not fit is recorded and
+            # not chosen
+            most_k = int(h_last - hc - sum(m for j, m in enumerate(mins) if j != k))
+            if arr_over:
+                rec["arrangement"] = dict(arr_over)
+                rec["from"] = list(rec["from"]) + [
+                    f"allocation.arrangement {r['name']}: {arr_over}"]
+            else:
+                neg = negotiate_ring(r, cx=cx, cz=cz, inner=a_run, i_in=i_in,
+                                     i_out=i_out, least=math.ceil(w_need), n=n_r,
+                                     most=most_k, spec=spec, decls=decls,
+                                     allocation=allocation)
+                if neg.get("considered"):
+                    rec["negotiated"] = neg["considered"]
+                    rec["from"] = list(rec["from"]) + list(neg["from"])
+                if neg.get("chosen"):
+                    rec["arrangement"] = dict(neg["chosen"]["arrangement"] or {})
+            depth = int(((neg or {}).get("chosen") or {}).get("district_depth")
+                        or rec.get("district_depth") or dmin)
+            rec["district_depth"] = int(depth)
+            # **The negotiation may make a ring narrower and never wider.** Its least
+            # width is what the shares check holds every ring to together, and an
+            # arrangement that wants a deeper band asks for it through `w_need` (where
+            # there is room) rather than by raising the floor every other ring is
+            # squeezed against.
+            mins[k] = max(total_insets[k] + min(depth, dmin),
+                          int(math.ceil(total_insets[k] / (1.0 - RING_COVERAGE)))
+                          + LANE_GAP)
+            if over.get("width"):
+                w_need = float(over["width"])
+                rec["from"] = list(rec["from"]) + [f"allocation.rings {r['name']}: "
+                                                   f"width {over['width']}"]
+            # the band the chosen arrangement itself needs, where the site leaves room
+            # for it: a district shallower than one block of its own fabric is not a
+            # district, and this is the only way that number raises a ring's width
+            want = max(w_need, float(min(total_insets[k] + depth, most_k)))
+            widths[k] = max(float(mins[k]), want)
+            if w_need < widths[k]:
+                rec["from"] = list(rec["from"]) + [
+                    f"the count needs a ring {w_need:.0f} wide and the ring's least "
+                    f"width is {mins[k]}: its insets {i_in}+{i_out} and a district "
+                    f"{depth} deep under the chosen arrangement, so the width is "
+                    f"{int(widths[k])} and the sectors are shortened to the count "
+                    f"instead -- the ground that shortening leaves is still the "
+                    f"ring's and is still inside what its density is measured over"]
+        a_run += widths[k]
+        ring_needs[r["name"]] = rec
+    # **An allocation that narrows the outermost ring moves the outer wall in**: the
+    # wall's line is the place's edge and not the site's, where the design says so
+    last = rings[-1]["name"]
+    if ((allocation or {}).get("rings") or {}).get(last, {}).get("width"):
+        h_last = int(min(h_last, round(hc + sum(widths))))
     room = float(h_last - hc)
     if sum(mins) > room:
         fail("rings", "shares",
@@ -3400,19 +4876,35 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
     else:
         med = site_median(vol, site)
         if med is not None:
-            terrace = terrace_levels(med, n)
+            ranks, _why = terrace_ranks(rings)
+            terrace = terrace_levels(med, n, ranks=ranks)
+    # **The ring the sentence calls `upper` stands on the higher terrace.** Radial order
+    # (`ring`), social rank and terrain elevation (`level`) are three fields and this is
+    # the one that decides the third. The levels are the ground stage's; the order they
+    # are given to the rings in is the design's.
+    terrace, terrace_why = order_terrace(terrace, rings)
     levels = ([int(v) for v in terrace["rings"]] if terrace else [None] * n)
 
-    # 3. the walls, 4. the gates
-    wall_part = next((p for p in spec["defining_parts"]
-                      if p["family"] == "wall" and p["relation"] == "concentric"), None)
-    gate_part = next((p for p in spec["defining_parts"]
-                      if p["family"] == "gate" and p["relation"] == "gateway"), None)
+    # 3. the walls, 4. the gates (`wall_part` and `gate_part` are read above, because
+    # the districts' budget depends on the wall's mass and cannot wait for it)
     walled_hs = [hs[k] for k, r in enumerate(rings) if r.get("walled")]
-    gate_decl = _gate_type(decls, (gate_part or {}).get("family", "gate"))
+    _approved_gate = (caps or {}).get((gate_part or {}).get("name"))
+    gate_decl = ((_approved_gate, decls[_approved_gate])
+                 if _approved_gate and decls.get(_approved_gate) is not None
+                 else _gate_type(decls, (gate_part or {}).get("family", "gate")))
     pad = Builder.point_pad(walls[0][3] if walls else None,
                             gate_decl[1]["needs"]["footprint"] if gate_decl else None)
-    side = _axis_side(vol, cx, cz, walled_hs, pad)
+    # **The gate axis, measured -- or asked for.** `_axis_side` chooses the side whose
+    # ground under every gate is driest and flattest, which is right and is also decided
+    # by a few columns: the composition round's section was registered on the north axis
+    # and a fabric change that moved the ring widths by a handful of columns flipped the
+    # whole city's gates to the south, so a before/after pair of the same ground became
+    # a pair of different ground. An allocation may pin it -- the same seam that pins a
+    # ring's width or a district's arrangement -- and the record says which answer this
+    # is and what the measurement would have said.
+    asked = str((allocation or {}).get("axis_side") or "").lower() or None
+    measured = _axis_side(vol, cx, cz, walled_hs, pad)
+    side = asked if asked in ("north", "south", "east", "west") else measured
     parts = []
     seed = 1
     # for a wall type that declares it draws a diagonal run, and a square for one that
@@ -3436,8 +4928,9 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         # `width` *parameter* stays at the one value the sweep runs every combination
         # at.
         mass_word = wall_mass_for(wall_part, spec) if wall_part is not None else "screen"
-        mass = (wall_width_for(wall_part, spec, tdecl) if wall_part is not None
-                else WALL_MASSES["screen"])
+        # the same number the districts were budgeted against, above: one wall width per
+        # ring, read once and used by both sides
+        mass = masses.get(r["name"], WALL_MASSES["screen"])
         params = {"height": int(height)}
         if "width" in (tdecl.get("params") or {}):
             params["width"] = int((tdecl["params"]["width"] or ("int", 3, 3))[1])
@@ -3464,10 +4957,23 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                       # **A ring's wall is in its ring's palette**, the craft round: a
                       # place whose rings differ in colour differs in colour at its
                       # walls too, and a wall left in the place's own voice is the one
-                      # thing in a ring that is not the ring's.
-                      "voice": r.get("voice") or place_voice,
+                      # thing in a ring that is not the ring's. ...unless the spec's
+                      # wall part names a voice outright: an explicit override, recorded
+                      # as one
+                      "voice": ((wall_part or {}).get("voice") if isinstance(
+                          (wall_part or {}).get("voice"), str) else None)
+                      or r.get("voice") or place_voice,
+                      "voice_from": ("override" if isinstance((wall_part or {}).get("voice"), str)
+                                     else "ring" if r.get("voice") else "place"),
+                      **({"voice_override": True}
+                         if isinstance((wall_part or {}).get("voice"), str) else {}),
                       "defines": (wall_part or {}).get("name"),
                       "ring": int(r["ring"]),
+                      # **what kind of wall this is, and why** (the expression round)
+                      "hierarchy": {**(hierarchy.get(r["name"]) or {}),
+                                    "rank": len([x for x in rings[k + 1:]
+                                                 if x.get("walled")]),
+                                    "of": len(walled_hs)},
                       # the ring's terrace level: the wall stands on the terrace edge at
                       # one level, and `_site_edge` reads it
                       **({"level": levels[k]} if levels[k] is not None else {}),
@@ -3496,6 +5002,11 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                       "params": _top_params(gate_decl[1]), "at": [gx, gz],
                       "facing": _FACING[side], "defines": (gate_part or {}).get("name"),
                       "ring": int(r["ring"]),
+                      # **A gate stands in its wall's voice** (the expression round):
+                      # the closure town's gate fell back to the place's temple voice
+                      # inside a ring that was not, because nothing wrote one on it.
+                      "voice": r.get("voice") or place_voice,
+                      "voice_from": "ring" if r.get("voice") else "place",
                       "notes": f"the one way through {wname}, on the {side} side, on "
                                f"the axis every ring's gate stands on"})
         seed += 1
@@ -3512,44 +5023,53 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         g = LANE_GAP
         # under an octagonal wall the strips stop short of the chamfered corners
         cc = chamfers.get(k, 0)
-        strips = {
-            "north": (cx - hi + cc, cz - hi, cx + hi - cc, cz - lo),
-            "south": (cx - hi + cc, cz + lo, cx + hi - cc, cz + hi),
-            "west": (cx - hi, cz - lo + g, cx - lo, cz + lo - g),
-            "east": (cx + lo, cz - lo + g, cx + hi, cz + lo - g),
-        }
-        sectors = []
-        for sname in _SIDES:
-            x0, z0, x1, z1 = strips[sname]
-            if x1 - x0 + 1 < dmin or z1 - z0 + 1 < dmin:
-                continue
-            along_x = (x1 - x0) >= (z1 - z0)
-            length = (x1 - x0 + 1) if along_x else (z1 - z0 + 1)
-            pieces = max(1, int(math.ceil(length / float(SECTOR_MAX))))
-            while pieces > 1 and (length - g * (pieces - 1)) // pieces < dmin:
-                pieces -= 1
-            plen = (length - g * (pieces - 1)) // pieces
-            for i in range(pieces):
-                start = (x0 if along_x else z0) + i * (plen + g)
-                end = start + plen - 1 if i < pieces - 1 else (x1 if along_x else z1)
-                rect = ((start, z0, end, z1) if along_x else (x0, start, x1, end))
-                if pieces == 1:
-                    label = sname
-                elif pieces == 2:
-                    label = sname + ("_west" if along_x else "_north") if i == 0 \
-                        else sname + ("_east" if along_x else "_south")
-                else:
-                    label = f"{sname}_{i + 1}"
-                sectors.append((label, rect))
+        # **The least side this ring's districts have is the one its arrangement
+        # needs**, not the library's constant: a band one row of houses deep is a
+        # district, and holding it to two rows is what the negotiation above settled.
+        rec = ring_needs.get(r["name"]) or {}
+        rdmin = int(rec.get("district_depth") or dmin)
+        arrangement = dict(rec.get("arrangement") or {})
+        # **The ring's ground is a region, and the districts are how it is tiled.** The
+        # architecture audit: an octagonal place had round walls and square districts,
+        # so the ground between the chamfer and the strips belonged to nobody and the
+        # lower ring covered 54.5% of its own annulus against a 60% bar. A square ring
+        # is still cut into the four strips it has always been cut into -- every
+        # registered number about a square place is unmoved, by construction, because
+        # that is literally the same arithmetic moved into `regions.ring_sectors` -- and
+        # a **round** ring is tiled against its actual mask, corners and all.
+        if cc:
+            rmask = regions.annulus_mask(X, Z, S, cx, cz, a + i_in, hs[k] - i_out,
+                                         chamfer_in=chamfers.get(k - 1, 0) if k else 0,
+                                         chamfer_out=cc)
+            reg = regions.region(r["name"], rmask, X, Z, policy="concentric",
+                                 role=r.get("role"), defines=r["name"])
+            sectors = _label_sectors(regions.tile(reg, minimum=rdmin, gap=g,
+                                                  most=regions.TILE_MAX), cx, cz)
+        else:
+            sectors = regions.ring_sectors(cx, cz, a, hs[k], lo, hi, chamfer=0,
+                                           gap=g, dmin=rdmin, sector_max=SECTOR_MAX)
         # `area x plot_share / columns_per_plot` -- capped by the room `DISTRICT_FILL`
         # leaves, and never nothing. What the spec's rings declared is kept beside it as
         # a declaration the readout reports against and nothing reads.
         per = spec_mod.columns_per_plot(r)
         areas = [(rc[2] - rc[0] + 1) * (rc[3] - rc[1] + 1) for _l, rc in sectors]
-        shapes = [(rc[2] - rc[0] + 1, rc[3] - rc[1] + 1) for _l, rc in sectors]
         caps = [int(ar * DISTRICT_FILL // per) for ar in areas]
-        counts = [min(cap, spec_mod.structures_for(ar, r, sh))
-                  for ar, cap, sh in zip(areas, caps, shapes)] if sectors else []
+        # **...at the ring's word, from the one density definition** (the closure
+        # round). `structures_for` asked at the fabric's block share, which for a
+        # `sparse` ring is a quarter of the ground in lots -- the 19.4% the review found
+        # the upper quarter's compiler targets summing to, against the 12% the word
+        # allows. `count_band` proposes at the middle of the band and never above its
+        # ceiling; the compiler lays the ask and the validator holds it to both ends.
+        bands = [count_band({"name": lab, "x0": rc[0], "z0": rc[1], "x1": rc[2],
+                             "z1": rc[3]}, r, None, decls) for lab, rc in sectors]
+        counts = [min(cap, b["mid"]) for cap, b in zip(caps, bands)] if sectors else []
+        # an explicit count is spread over the ring's sectors by their bands, capped at
+        # their ceilings, so the sentence's number is laid and never quietly densified
+        if spec.get("explicit_count") and int(r.get("structures") or 0) and sectors:
+            counts = _largest_remainder([b["mid"] for b in bands],
+                                        int(r["structures"]),
+                                        caps=[min(cap, b["hi"]) for cap, b in
+                                              zip(caps, bands)], floor=0)
         # **A sector the fabric fits no house in is asked for none**, the craft round,
         # found by running it: the count used to be floored at one, so a sliver of 4,257
         # columns in the corner of a ring was asked for a house its own shape cannot
@@ -3560,15 +5080,200 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                           "why": "its own shape fits no house of this density, so it is "
                                  "asked for none and lays open ground"}
                          for (lab, rc), n in zip(sectors, counts) if n < 1)
+        # **A sector asked for nothing stays a district**, and that is deliberate. Tried
+        # and reverted inside the architecture round: dropping the four 126x30
+        # rectangles of the city's upper ring that hold no house at their ring's density
+        # saves the compiler four calls that draw nothing -- and takes the ring's
+        # coverage from 60% to 27%, because `RING_COVERAGE` is about the ring's *ground*
+        # being somebody's and not about its houses. A district asked for no structures
+        # is open ground with an owner, which is exactly what a ring's thinnest band
+        # should be; a piece of ring nobody owns is the defect the coverage bar exists
+        # to catch. The cost is a compiler call per empty sector and it buys the clause
+        # its meaning.
         declared = int(r.get("structures") or 0)
         capped = ({"asked": declared, "room": sum(caps)}
                   if declared > sum(caps) else None)
         rvoice = r.get("voice") or place_voice
         role = r.get("role") or spec_mod.read_role(None, r, r["name"])
-        for (label, rc), cnt in zip(sectors, counts):
+        exact_ring = bool(spec.get("explicit_count")
+                          and not (spec.get("explicit_count") or {}).get("about"))
+        # **A ring's sectors are drawn to what their count needs at the ring's word**
+        # (the expression round), the way the relation solver's strips hug the square.
+        # The closure round's town: fifteen dense houses spread over sixteen thousand
+        # columns of annulus covered five per cent of it. Each sector keeps a centred
+        # piece as long as its share of the count needs at the density's target cover
+        # (`placesolve.land_need`); what is left of the strip stays the ring's, as open
+        # ground with an owner asked for no house (`surface: open`), so the ring's
+        # coverage stands and the density is measured over the ground the houses stand
+        # on, **and the remainder stays inside that measurement**: the design round's
+        # second contract. Naming a remainder open is an allocation decision and is not
+        # independent justification for removing it from the ring the requirement is
+        # about, so every piece below carries `scope_of` and its own `scope_columns`.
+        counts = list(counts)
+        merged: dict = {}
+        if rec.get("counted") and sectors:
+            # **A sector asked for fewer houses than a block of its word holds is not a
+            # district of that word** (the coordinator's finding on the live run): two
+            # row houses on a strip of the dense ring covered 5% of it and no character
+            # could answer for it. Their count goes to the sector of the ring with the
+            # most room, and the strip stays the ring's open ground.
+            from .district_compile import BLOCK_LOTS
+            least_block = int(BLOCK_LOTS.get(r.get("density") or "medium", 3))
+            for i, cnt in enumerate(counts):
+                if 0 < cnt < least_block and len(counts) > 1:
+                    room = [(bands[j]["hi"] - counts[j], j) for j in range(len(counts))
+                            if j != i and counts[j] >= least_block]
+                    if not room:
+                        continue
+                    _r, j = max(room)
+                    merged[sectors[i][0]] = {"houses": int(cnt), "to": sectors[j][0]}
+                    counts[j] += cnt
+                    counts[i] = 0
+        pieces = []
+        for (label, rc), cnt, band in zip(sectors, counts, bands):
+            x0, z0, x1, z1 = rc
+            along_x = (x1 - x0) >= (z1 - z0)
+            length = (x1 - x0 + 1) if along_x else (z1 - z0 + 1)
+            dep = (z1 - z0 + 1) if along_x else (x1 - x0 + 1)
+            if not rec.get("counted"):
+                pieces.append((label, rc, cnt, band, None, False, None))
+                continue
+            if cnt <= 0:
+                # a sector of a counted ring asked for nothing is the ring's open
+                # ground, said so, and laid as such -- and it is **the ring's** ground,
+                # so it stays inside what the ring's density is measured over
+                pieces.append((label, rc, 0, band, None, "open", r["name"]))
+                continue
+            here = land_need(r, int(cnt), decls, spec, households=hh,
+                             allocation=allocation, arrangement=arrangement,
+                             demand=r.get("demand"))
+            ln = max(rdmin, int(here["min_len"]),
+                     int(math.ceil(here["columns"] / float(dep))))
+            lo_e, hi_e = (x0 if along_x else z0), (x1 if along_x else z1)
+
+            def _lay(want_ln, _lo=lo_e, _hi=hi_e, _len=length, _x0=x0, _z0=z0,
+                     _x1=x1, _z1=z1, _ax=along_x):
+                """`(start, end, rect)` of a kept piece `want_ln` long, centred on the
+                strip, or at the end toward the gate where a centred piece would leave
+                a remainder too small to be a district.
+
+                **Never longer than the strip.** A kept piece is cut *from* the strip;
+                asking for more than there is put a ring's sector outside the site and
+                through the wall beside it.
+                """
+                want_ln = max(1, min(int(want_ln), _len))
+                st = _lo + (_len - want_ln) // 2
+                en = st + want_ln - 1
+                if st - _lo < rdmin or _hi - en < rdmin:
+                    toward = ((side == "south" and not _ax) or (side == "east" and _ax))
+                    st, en = ((_hi - want_ln + 1, _hi) if toward
+                              else (_lo, _lo + want_ln - 1))
+                return st, en, ((st, _z0, en, _z1) if _ax else (_x0, st, _x1, en))
+
+            # **The kept piece is as long as the compiler certifies, not as long as the
+            # arithmetic hoped.** The design round, found by running the hill town: the
+            # south sector was cut to what four houses need, the compiler laid three in
+            # it, and the two remainders **beside** it -- 48 columns each, cut from the
+            # same strip -- held nothing and nothing offered them. A sector short of its
+            # count takes from the ground it was cut from, by a block of its own fabric
+            # at a time, until the compiler says it holds the count or the strip runs
+            # out; the remainder keeps whatever is left and stays inside
+            # `scope_columns`, so the density is still measured over the whole ring.
+            if cnt > 0 and arrangement:
+                step = max(int(here["lot"][0]) + 1, LANE_GAP)
+                for _try in range(RING_FIT_TRIES):
+                    _st, _en, _rc = _lay(min(ln, length))
+                    held = _arrange_capacity(r, _rc, int(cnt), arrangement, spec,
+                                             decls, seed=1)
+                    if held >= int(cnt) or ln >= length:
+                        if held < int(cnt):
+                            rec.setdefault("short_sectors", []).append(
+                                {"sector": label, "asked": int(cnt), "holds": held,
+                                 "length": int(min(ln, length)),
+                                 "why": f"the whole {label} strip is {length} long and "
+                                        f"the compiler lays {held} of {cnt} in it"})
+                        break
+                    ln = min(length, ln + step)
+            ln = min(ln, length)
+            if ln >= length - rdmin:
+                # no remainder a district could own: the strip is kept whole and the
+                # record says the strip, not the count, set its ground
+                here["from"] = list(here["from"]) + [
+                    f"the {label} strip is {length} long and {ln} is what the count "
+                    f"needs: too little is left for an open sector of {rdmin}, so the "
+                    f"strip is kept whole"]
+                pieces.append((label, rc, cnt, band, here, False, None))
+                continue
+            # centred on the strip where both remainders can be open sectors; where they
+            # cannot, at the end toward the gate's side -- the sourced rule of a temple
+            # town: its houses line the approach to the gate -- or at the far end where
+            # the gate is not on this strip's axis
+            start, end, kept = _lay(ln)
+            pieces.append((label, kept, cnt, band, here, True, None))
+            for tag, a0, a1 in (("a", lo_e, start - 1), ("b", end + 1, hi_e)):
+                if a1 - a0 + 1 < rdmin:
+                    continue
+                rem = (a0, z0, a1, z1) if along_x else (x0, a0, x1, a1)
+                # an **inferred** remainder: nothing asked for this ground to be open,
+                # the allocation left it over, and `scope_of` says which sector of the
+                # ring it was cut from so no consumer can read it as ground outside
+                pieces.append((f"{label}_open_{tag}", rem, 0, band, None, "open",
+                               f"{r['name']}_{label}"))
+        if merged:
+            rec["merged"] = merged
+        if any(p[5] for p in pieces):
+            areas = [(p[1][2] - p[1][0] + 1) * (p[1][3] - p[1][1] + 1) for p in pieces]
+        for (label, rc, cnt, band, here, moved, cut_from) in pieces:
+            if moved:
+                band = count_band({"name": label, "x0": rc[0], "z0": rc[1], "x1": rc[2],
+                                   "z1": rc[3]}, r, None, decls)
+            target = None
+            if here is not None:
+                target = {"what": "ring", "value": {
+                    "columns": here["columns"], "lot": here["lot"],
+                    "cover": here["target_cover"], "houses": int(cnt),
+                    "got_columns": (rc[2] - rc[0] + 1) * (rc[3] - rc[1] + 1),
+                    "width": int(hs[k] - a), "width_need": rec.get("width_need"),
+                    "share_width": rec.get("share_width"),
+                    # the arrangement this sector's fabric was negotiated to, and the
+                    # depth it needs: the parent's width and the child's arrangement are
+                    # one decision and the record says so on both of them
+                    "arrangement": dict(arrangement) or None,
+                    "district_depth": rec.get("district_depth")},
+                    # every alternative considered, the capacity the **actual district
+                    # compiler** reported for it, and why the chosen one was chosen
+                    "from": list(here["from"]) + [f"ring {r['name']} inner half-side {a}"],
+                    "alternatives": rec.get("negotiated") or None}
             districts.append({
                 "name": f"{r['name']}_{label}", "x0": rc[0], "z0": rc[1],
                 "x1": rc[2], "z1": rc[3], "structures": int(cnt),
+                **({"exact": True} if exact_ring and cnt else {}),
+                **({"target": target} if target else {}),
+                **({"lot_min": list(here["lot"])}
+                   if here is not None and lot_raised(here.get("from") or []) else {}),
+                # "which areas a district may draw is its role's own table, read off the
+                # files, and not a list of type names in a constant" -- and this broke
+                # it: the expression round named two area types here by hand, one per
+                # role, which is the layout deciding a type for a district. It was also
+                # a no-op for the rural half (`district_compile._open_type` has no
+                # branch for the word it wrote, so it fell to the same default either
+                # way) and for the urban half wherever the named type is in the role's
+                # table, which is every urban role in the library. So there was nothing
+                # to keep and a rule to restore. Dropped: `_open_type(areas, role,
+                # density, spec.land_use(part))` chooses from the role's own area types,
+                # which is the one rule for this question.
+                **({"surface": "open"} if moved == "open" else {}),
+                # the four columns of this region, fixed here and not revised by any
+                # later allocation (`placeregion.column_record`). No requirement of this
+                # sentence asks a ring's remainder to be open, so none of these carries
+                # `open_requested` and all of them are inside the ring's scope.
+                **regions.column_record(
+                    rc, scope_of=cut_from,
+                    why=[f"the {label.replace('_', ' ')} sector of ring {r['ring']} "
+                         f"(`{r['name']}`), fixed when the ring was resolved"]),
+                **({"arrangement": dict(arrangement)} if arrangement and cnt else {}),
+                **({"least_side": int(rdmin)} if rdmin != dmin else {}),
+                "count_band": {k2: band[k2] for k2 in ("lo", "mid", "hi", "usable")},
                 "defines": r["name"], "ring": int(r["ring"]), "voice": rvoice,
                 "purpose": (f"{r.get('notes') or r['name']} Ring {r['ring']} of "
                             f"{n}, counting from the centre: a {r.get('density') or 'medium'}"
@@ -3611,7 +5316,36 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                                            "columns_per_plot": per,
                                            "district_columns": int(sum(areas))}},
             "annulus_columns": int(annulus), "district_columns": int(covered),
-            "coverage": round(cov, 4), "voice": rvoice, "level": levels[k]})
+            "coverage": round(cov, 4), "voice": rvoice, "level": levels[k],
+            # what this ring was sized from (the expression round)
+            "target": ({k2: rec.get(k2) for k2 in ("what", "columns", "target_cover",
+                                                    "lot", "houses", "counted",
+                                                    "share_width", "width_need",
+                                                    # the design round: the arrangement
+                                                    # chosen for this ring, every
+                                                    # alternative considered and the
+                                                    # capacity the compiler reported
+                                                    "arrangement", "district_depth",
+                                                    "negotiated", "from")}
+                       if rec else None),
+            "hierarchy": hierarchy.get(r["name"]),
+            # **Three things, three fields, and none of them stands in for another.**
+            # The expression round read `lower`/`upper` as names for ring 0 and ring 1
+            # and stood a *dense lower ring* on the terrace four blocks above the sparse
+            # upper one. Radial order is where a ring is from the centre; elevation is
+            # what terrace it stands on (`terrace_ranks`, from the words the parts carry
+            # and from context, not from the radius); social rank is what the design
+            # gives the ring -- its density word and its voice -- and is neither of the
+            # other two. `placeread.ring_words` reads this record.
+            "order": {"radial": int(r["ring"]),
+                      "elevation": levels[k],
+                      "elevation_rank": (terrace.get("ranks") or [None] * n)[k]
+                      if terrace else None,
+                      "social": {"density": r.get("density"), "role": role,
+                                 "voice": rvoice},
+                      "why": terrace_why or "the terraces step down from the centre"},
+            "open_sectors": [p[0] for p in pieces if p[5] == "open"],
+            "merged": rec.get("merged") or None})
 
     # 5b. **the ceiling, over the whole place.** The counts above are derived from each
     # sector's own ground and nothing in them knows how much ground there is in total,
@@ -3684,13 +5418,25 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         "voice": voice, "palette": pal,
         "circulation_material": (pal or {}).get("floor") or "stone",
         "parts": parts, "districts": districts, "compounds": compounds,
-        "layout": {"by": "placeplan.concentric_layout", "site_centre": [X + S // 2, Z + S // 2],
+        "layout": {"by": "placeplan.concentric_layout", "policy": "concentric",
+                   "site_centre": [X + S // 2, Z + S // 2],
                    "centre": [cx, cz], "centre_square_half": int(hc),
                    "centre_share_got": round(((2 * hc + 1) ** 2) / float(S * S), 4),
                    "compound_rect": list(comp_rect) if comp_rect else None,
                    "centre_share": round(spec_mod.centre_share(spec), 4),
-                   "outer_half": int(h_last), "axis_side": side, "gate_pad": int(pad),
+                   "outer_half": int(h_last), "axis_side": side,
+                   "axis_side_from": ("the allocation asked for it"
+                                      if asked else "measured: the driest, flattest "
+                                                    "ground under every gate"),
+                   "axis_side_measured": measured, "gate_pad": int(pad),
                    "squeezed": squeezed, "rings": layout_rings,
+                   "allocation": dict(allocation or {}),
+                   "targets": [{"what": "ring", "part": r["name"],
+                                **{k2: v for k2, v in (ring_needs.get(r["name"]) or {}).items()
+                                   if k2 in ("columns", "target_cover", "lot", "houses",
+                                             "counted", "share_width", "width_need",
+                                             "from")}}
+                               for r in rings],
                    "structures": {**ceiling_rec, "laid": sum(int(d["structures"])
                                                              for d in districts),
                                   "declared": int(spec.get("structures") or 0),
@@ -3698,6 +5444,13 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                                   "dense_plot": dense_plot(),
                                   "shares": occupancy_shares()},
                    "terrace": terrace,
+                   # radial order, social rank and terrain elevation, kept apart: which
+                   # ring stands highest, and where that order came from
+                   "terrace_order": ({"ranks": terrace.get("ranks"), "why": terrace_why}
+                                     if terrace and terrace_why else
+                                     ({"ranks": terrace.get("ranks"),
+                                       "why": "the terraces step down from the centre"}
+                                      if terrace else None)),
                    "round": ({"asked": True, "rings": round_rings,
                               "chamfer": RING_CHAMFER} if round_asked else None),
                    "registered": {"PLOT_CELLS": dict(spec_mod.PLOT_CELLS),
@@ -3757,7 +5510,8 @@ COMPOUND_GREAT_SHARE = 0.28
 
 
 def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
-                   spec: dict | None = None, seed: int = 1) -> tuple:
+                   spec: dict | None = None, seed: int = 1,
+                   caps: dict | None = None) -> tuple:
     """**A compound of a family that declares an axis, laid as a sequence.** The craft
         round, E5, and the same seam the district compiler writes at.
 
@@ -3803,8 +5557,19 @@ def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
     # wall's inset and the clearance it keeps, and no more -- a margin of thirteen on a
     # sixty-four-square precinct leaves 1,444 columns of 2,304 and no composition can
     # cover that.
+    approved = approved_compound_types(caps, comp["name"])
+    chosen_by = {}
+
+    def _pick(kind):
+        t = _axial_type(decls, kind, part, spec, approved=approved)
+        fam = _AXIAL_FAMILY.get(kind)
+        chosen_by[kind] = {"type": t, "family": fam,
+                           "by": ("capability record" if t and approved.get(fam) == t
+                                  else "form (largest-banded of the compound's role)"),
+                           "approved": approved.get(fam)}
+        return t
     if made_of["walled"]:
-        clear = int(((decls.get(_axial_type(decls, "edge", part, spec)) or {})
+        clear = int(((decls.get(_pick("edge")) or {})
                      .get("needs") or {}).get("clearance", 4))
         margin = max(margin, COMPOUND_WALL_INSET + 2 + clear)
     inner_u = (margin, U - 1 - margin)
@@ -3815,8 +5580,8 @@ def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
         return None, (f"a {U}x{V} compound leaves {run}x{span} inside its wall, which is "
                       f"too little to lay a sequence in")
 
-    plot_t = _axial_type(decls, "plot", part, spec)
-    area_t = _axial_type(decls, "area", part, spec)
+    plot_t = _pick("plot")
+    area_t = _pick("area")
     if not plot_t or not area_t:
         return None, "this compound admits no plot type or no area type"
     gap = 3                                  # a plot keeps two clear and an area one
@@ -4049,8 +5814,8 @@ def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
         return None, "a flanking range is larger than the greatest hall"
 
     # the wall round it, and the gate where the road arrives
-    wall_t = _axial_type(decls, "edge", part, spec)
-    gate_t = _axial_type(decls, "point", part, spec)
+    wall_t = _pick("edge")
+    gate_t = _pick("point")
     if made_of["walled"] and wall_t:
         i = COMPOUND_WALL_INSET
         wx0, wz0, wx1, wz1 = x0 + i, z0 + i, x1 - i, z1 - i
@@ -4079,6 +5844,9 @@ def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
                      + " -> ".join(order)), "axis": side, "parts": parts}
     return got, {"compound": comp["name"], "axis": side, "bands": [b[0] for b in bands],
                  "order": order, "plot_type": plot_t, "area_type": area_t,
+                 # **which chooser decided each type**: the capability record where it
+                 # approved one the table builds, the form pick otherwise
+                 "chosen_by": chosen_by, "approved": approved,
                  "great_hall": great_row["name"],
                  "great": [great_row["x1"] - great_row["x0"] + 1,
                            great_row["z1"] - great_row["z0"] + 1],
@@ -4162,10 +5930,41 @@ def _axial_band(decl: dict | None, kind: str = "plot") -> tuple:
     return (max(a, b) + i, min(c, d) + i)
 
 
-def _axial_type(decls: dict, kind: str, part: dict | None, spec: dict | None) -> str | None:
-    """The type an axial compound builds this kind of part out of: the largest-banded
-    one of the compound's own role first, so the greatest hall is as great as the
-    library can make it."""
+#: The descendant want of a compound each kind of axial part answers, by family.
+_AXIAL_FAMILY = {"plot": "hall", "area": "square", "edge": "wall", "point": "gate"}
+
+
+def approved_compound_types(caps: dict | None, compound: str) -> dict:
+    """`{family: type}` the capability record approved for one compound's descendants
+    (wants keyed `cap/<compound>/<family>`, `of: compound`), matched entries only."""
+    out = {}
+    for e in (caps or {}).get("entries") or []:
+        w = e.get("wants") or {}
+        if w.get("of") == "compound" and w.get("part") == compound and e.get("matched") \
+                and e.get("type") and w.get("family"):
+            out[str(w["family"])] = str(e["type"])
+    return out
+
+
+def _axial_type(decls: dict, kind: str, part: dict | None, spec: dict | None,
+                approved: dict | None = None) -> tuple | str | None:
+    """The type an axial compound builds this kind of part out of.
+
+        **The capability record's approved type first** (the closure round's city run): the
+        record approved `hall` for `cap/royal_palace/hall` and `square` for its court, this
+        chose `temple` and `plaza` by form, and `capability.agreements` recorded the two
+        choosers disagreeing and the plan blocked. Where the record names a type for the
+        family this kind answers and the compound's table can build it, that is the type;
+        the largest-banded type of the compound's own role is the fallback, so the greatest
+        hall is as great as the library can make it. Returns the name, and `chosen_by` is
+        recorded by the caller.
+        
+    """
+    fam = _AXIAL_FAMILY.get(kind)
+    got = (approved or {}).get(fam) if fam else None
+    if got and (decls or {}).get(got) is not None \
+            and (decls[got].get("kind", "plot") == kind):
+        return got
     best = None
     for name, d in sorted((decls or {}).items()):
         if d.get("kind", "plot") != kind:

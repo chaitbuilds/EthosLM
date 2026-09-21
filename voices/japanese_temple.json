@@ -29,5 +29,48 @@
    ]
   ],
   "tiers": 2
+ },
+ "variants": {
+  "footing": [
+   {
+    "family": "mossy_stone_brick",
+    "weight": 0.5,
+    "when": "damp"
+   },
+   {
+    "family": "mossy_stone_brick",
+    "weight": 0.2,
+    "when": "patch"
+   }
+  ],
+  "roof": [
+   {
+    "family": "polished_blackstone_brick",
+    "weight": 0.2,
+    "when": "patch"
+   },
+   {
+    "family": "dark_prismarine",
+    "weight": 0.12,
+    "when": "sheltered"
+   }
+  ],
+  "wall": [
+   {
+    "family": "diorite",
+    "weight": 0.5,
+    "when": "damp"
+   },
+   {
+    "family": "diorite",
+    "weight": 0.2,
+    "when": "runoff"
+   },
+   {
+    "family": "diorite",
+    "weight": 0.12,
+    "when": "exposed"
+   }
+  ]
  }
 }

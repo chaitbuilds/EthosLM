@@ -4,6 +4,14 @@ import random
 KIND = "edge"
 FORM = "fortification"
 ROLE = "defensive"
+#: **What family of part this builds**, said outright rather than left to be read off
+#: the filename. `capability._named_for` reads a family off the committed name, and
+#: `great_wall` neither is `wall` nor starts with `wall_` -- so the capability record
+#: matched a place's wall to `wall.py` while the ring layout, which needs a boundary
+#: that can draw a diagonal run, built this one. The record and the layout disagreed
+#: about what the place was made of, which is the integration round's third finding in
+#: one line. A type that is a wall says so.
+FAMILY = "wall"
 #: Its frame is a unit direction and a unit normal, and on a diagonal the direction is
 #: (1,1) and the normal (-1,1), so the same arithmetic lays the body, the parapet and
 #: the corner squares along a staircase of the wall's width. A diagonal run carries no
@@ -72,6 +80,85 @@ BATTER_EVERY = 14
 MAX_FLIGHT = 12
 # A way down at least this often along the walk (the brief asks for 32).
 STAIR_EVERY = 26.0
+# The widest switchback `_place_stairs` will search for: `range(nfl0, 7)`.
+MAX_LANES = 6
+# Courses of parapet and merlon above `height`, which is the walk's level.
+PARAPET_COURSES = 2
+
+
+def occupied(part=None, **params):
+    """**What this wall actually fills**, beyond the band the layout drew for it.
+
+        The expression review's second finding, in one line: "The great wall's piers and
+        batter extend beyond its nominal width. Increasing road clearance avoids one
+        collision but does not establish a common occupied envelope for planning, terrain,
+        circulation, ownership and checking." This is that envelope, published by the type
+        that knows it, so planning, ground, routing, emission and the checks read one
+        number instead of four guesses.
+
+        Measured (worker B, the design round) by building this type on flat ground at widths
+        2, 3, 4, 5, 6 and 8 and heights 24, 36 and 48 and comparing the emitted columns with
+        the swept band:
+
+            width 2, H 24/36/48   2 / 3 / 4 columns past one face, 1 past the other
+            width 3, H 24/36/48   1 past the outer face, 2 / 3 / 4 past the inner
+            width 5, H 24/36/48   1 / 1 / 4 past the inner face
+            width 8, H 48         1 either side
+
+        Three things reach past the band and this is all three:
+
+          * **the parapet's corbel course** -- one column outside the outer face at the
+            walk's level, on every face style, and one inside the inner face as well where
+            the crown is a road (`CROWN_ROAD_MIN`) and carries two parapets;
+          * **the buttress piers** (`face="masonry"`, `PIER_EVERY`) -- the same one column,
+            full height, so they add nothing the corbel does not already ask for;
+          * **the switchback stair**, where the wall is too thin to carry it inside its own
+            thickness (`STAIR_INSIDE_SPARE`). That block hangs past **one** face and which
+            one is a fact about the ground (`_pick_side`) that this function has not seen,
+            so it is published as `either` and reserved on both sides by a caller that
+            cannot wait for the siting.
+
+        The **batter** (`BATTER_EVERY`) steps the outer lanes *in* as the wall rises, so it
+        never projects; it is named here because the review named it and because "the batter
+        projects" is the wrong half of the true statement.
+
+            {"band": the width the layout drew,
+             "outer": columns of solid beyond the outer face, certain,
+             "inner": columns of solid beyond the inner face, certain,
+             "either": columns that hang past ONE of the two faces, side not yet decided,
+             "above": courses of solid above `height`,
+             "clearance": the free ground this type needs beside the band,
+             "total": the columns a planner must reserve across the line,
+             "why": str}
+        
+    """
+    part = part or {}
+    width = int(part.get("width") or params.get("width") or 3)
+    lo, hi = PARAMS["height"][1], PARAMS["height"][2]
+    H = int(params.get("height") or hi)
+    #: The lane counts `_place_stairs` may choose between, and the widest of them that
+    #: does not fit inside the thickness. The solver prefers the fewest lanes and is
+    #: free to take more where the ground refuses a placement -- a width-6 wall 48 high
+    #: measured four columns of hanging stair though its cheapest switchback would have
+    #: fitted -- so the published figure is the bound over the search and not the
+    #: cheapest case. A wall thick enough for the widest switchback hangs nothing.
+    nfl0 = max(2, int(math.ceil(H / float(MAX_FLIGHT))))
+    hangs = [n for n in range(nfl0, MAX_LANES + 1)
+             if width < n + STAIR_INSIDE_SPARE]
+    either = max(hangs) if hangs else 0
+    inner = 1 if width >= CROWN_ROAD_MIN else 0
+    return {"band": width, "outer": 1, "inner": inner, "either": either,
+            "above": PARAPET_COURSES, "clearance": int(NEEDS["clearance"]),
+            "total": width + 1 + inner + either,
+            "why": (f"a {width}-wide wall {H} high fills {width + 1 + inner + either} "
+                    f"columns across the line: the band, one column of corbel outside"
+                    + (", one inside under the crown road's inner parapet" if inner
+                       else "")
+                    + (f", and up to {either} columns of switchback stair hanging past "
+                       f"one face (the side is chosen from the ground)" if either else
+                       ", and a switchback that stands inside its own thickness")
+                    + f". The batter steps in, not out. Clearance "
+                      f"{NEEDS['clearance']}.")}
 
 
 def _sgn(v):
@@ -522,20 +609,32 @@ def build(b, part, seed, **params):
             elif face == "banded":
                 # coursed masonry: a string course in trim every `band` courses and at
                 # the corners, no posts
-                y = F + 3 + band
-                while y <= te - 3:
-                    b.place_block(x, y, z, TRIM)
-                    y += band
+                with b.figure("wall_string_course"):
+                    y = F + 3 + band
+                    while y <= te - 3:
+                        b.place_block(x, y, z, TRIM)
+                        y += band
             elif face == "masonry":
                 # **dressed stonework**, the craft round (E4): a plinth at the foot in
                 # the footing family, a string course of trim every `STRING_EVERY`, and
                 # a buttress pier of the wall family standing proud of the face at
                 # `PIER_EVERY`. The batter is in the cell's own top, above.
                 b.place_cuboid(x, F + 1, z, x, min(F + PLINTH_H, te - 2), z, FOOT)
-                y = F + PLINTH_H + STRING_EVERY
-                while y <= te - 3:
-                    b.place_block(x, y, z, TRIM)
-                    y += STRING_EVERY
+                # **The string course is a figure and the plinth is not.** Composition
+                # round. The design round's pass put vertical stains up this face that
+                # cut straight through the purpur course (`out/des-
+                # material/comparison.json`, criterion 5) -- a horizontal line drawn
+                # every `STRING_EVERY` courses is the one thing on a monumental wall
+                # that must stay unbroken, because it is what says the wall is dressed
+                # rather than heaped. The plinth below it is deliberately left editable:
+                # an irregular damp base course on the foot of a wall is weathering and
+                # the same round's diagnostic arm showed it reading as weathering. So:
+                # protect the line, let the mass age.
+                with b.figure("wall_string_course"):
+                    y = F + PLINTH_H + STRING_EVERY
+                    while y <= te - 3:
+                        b.place_block(x, y, z, TRIM)
+                        y += STRING_EVERY
                 # a buttress belongs on a mass: on a wall too thin to carry a walk a
                 # pier standing proud of the face closes a pocket behind the parapet
                 # that nothing can walk into (E003 at width 2, found by the sweep)
@@ -544,8 +643,10 @@ def build(b, part, seed, **params):
                     for (px, pz) in rec["corb"]:
                         if (px, pz) not in cells:
                             b.place_cuboid(px, F + 1, pz, px, te - 2, pz, WALL)
-            # plain: one unbroken face, the cornice alone
-            b.place_block(x, te - 1, z, TRIM)
+            # plain: one unbroken face, the cornice alone -- and the cornice is the same
+            # kind of line as the string course, so it is declared the same way
+            with b.figure("wall_cornice"):
+                b.place_block(x, te - 1, z, TRIM)
         if rec["par"]:
             b.place_block(x, te + 1, z, WALL)
             if crenel and b.merlon(rec["t"] + mer_phase):

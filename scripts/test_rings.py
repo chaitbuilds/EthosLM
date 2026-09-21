@@ -549,8 +549,21 @@ def t_2_the_plan_stage_lays_a_ringed_place_out_and_asks_for_no_place_planner():
         rnd = pipeline.Round(name="ring_fixture", sentence="Build a ringed town.",
                              state_dir=tmp, voice="ochre_stone_green_tile")
         be = pipeline.OfflineBackend(rnd)
-        got = stages_plan.stage_plan_levels(rnd, be, {}, s)["plan"]
+        # **The stage is re-entered for as long as it asks to be**, which is what the
+        # driver does (`pipeline.round._drive_reentries`). The integration round moved
+        # the capacity repair to the plan level, so this ringed town's first answer is
+        # `reenter`: the band a city is inferred to be is negotiated down to what the
+        # ground gave, the place is resolved again, and only then is a district asked
+        # for. Asserting the first answer is `needs_model` was asserting the protocol
+        # the repair was added to change.
+        reentries = []
+        for _ in range(8):
+            got = stages_plan.stage_plan_levels(rnd, be, {}, s)["plan"]
+            if got.get("status") != "reenter":
+                break
+            reentries.append(got.get("why"))
         assert got["status"] == "needs_model", got
+        assert reentries, "the plan level asked for no repair at all"
         # **the compound is laid by the library and no model is asked for it**, the
         # craft round (E5): a palace's composition declares an axis, so the stage writes
         # `plan.compound.<name>.json` itself and the next thing it asks for is a
@@ -568,8 +581,9 @@ def t_2_the_plan_stage_lays_a_ringed_place_out_and_asks_for_no_place_planner():
         assert first["failures"] == [] and "arithmetic" in first["checked"], first
         axial = json.load(open(os.path.join(tmp, "compound_great_court_axial.json")))
         return (f"the stage wrote {len(place['districts'])} districts, laid the compound "
-                f"itself as a sequence ({' -> '.join(axial['order'])}) and asked next "
-                f"for {got['level']}; no place brief and no compound brief exists")
+                f"itself as a sequence ({' -> '.join(axial['order'])}), repaired its "
+                f"own capacity finding and re-entered {len(reentries)} time(s), then "
+                f"asked for {got['level']}; no place brief and no compound brief exists")
 
 
 # ---------------------------------------------- phase 3: the site and the core
@@ -727,9 +741,14 @@ def t_3_a_rural_district_is_held_to_covering_its_ground_and_the_brief_says_so():
         {"kind": "plot", "name": f"farm_{i}", "type": "farmstead", "seed": i,
          "x0": x0 + 2 + i * 30, "z0": z0 + 2, "x1": x0 + 2 + i * 30 + 23,
          "z1": z0 + 25} for i in range(4)]}]}
+    part = placeplan._district_part(s, d)
+    # **the land use, not the role.** The unification round: a fishing village is also
+    # `rural` and owes no fields, so what demands cover is the ground being farmland --
+    # declared by the part or, as here, said in its own name and notes.
+    assert spec_mod.land_use(part) == "farmland", part
     got = placeplan.district_failures(d, sparse, place, rdecls, role=role,
-                                      form=s.get("form"))
-    cover = [f for f in got if f["check"] == "cover"]
+                                      form=s.get("form"), part=part, spec=s)
+    cover = [f for f in got if f["check"] == "farmland_cover"]
     assert cover and cover[0]["part"] == d["name"], got
     assert cover[0]["share"] < placeplan.RURAL_COVER == 0.6
     assert str(cover[0]["columns"]) in cover[0]["why"]
@@ -746,8 +765,14 @@ def t_3_a_rural_district_is_held_to_covering_its_ground_and_the_brief_says_so():
                       "z1": z0 + 25})
     covered = {"quarters": [{"name": "farms", "plots": plots}]}
     got2 = placeplan.district_failures(d, covered, place, rdecls, role=role,
-                                       form=s.get("form"))
-    assert not [f for f in got2 if f["check"] == "cover"], got2
+                                       form=s.get("form"), part=part, spec=s)
+    assert not [f for f in got2 if f["check"] == "farmland_cover"], got2
+    # ...and the same district as a settled one is not asked for fields at all
+    settled = dict(part, land_use="settled")
+    got3 = placeplan.district_failures(d, sparse, place, rdecls, role=role,
+                                       form=s.get("form"), part=settled,
+                                       spec={**s, "defining_parts": [settled]})
+    assert not [f for f in got3 if f["check"] == "farmland_cover"], got3
     # the fields were written as `plot` and are areas, by construction: no kind failure
     assert not [f for f in got2 if f["check"] == "type"], got2
     assert all(p["kind"] == "area" for p in placeplan.district_plots(covered, role)

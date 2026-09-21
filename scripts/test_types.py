@@ -837,8 +837,24 @@ def t_c0_the_checkers_partner_voice_is_the_places_own_and_never_a_named_constant
         old = styles.VOICES
         styles.VOICES = table
         try:
-            got = styles.partner_voice("japanese_temple")
-            assert got == "zz_pagoda", got
+            # **The base voice is found, not named.** It used to be `japanese_temple`.
+            # The composition round gave `packed_earth_and_dark_tile` a straight eave --
+            # a crowded ring cannot afford a turned-up one -- which put it at the
+            # *maximum* silhouette distance from the temple as well, so on that base the
+            # added voice only ties and the tie is broken by name. The claim being made
+            # is that a voice added to the directory becomes the partner of the ones it
+            # is least like, so the base is a voice `zz_pagoda` is uniquely furthest
+            # from, and the failure names which one was tried.
+            def _farthest(v):
+                pool = [o for o in sorted(table)
+                        if o != v and styles.explicit_silhouette(o)]
+                top = max(styles.silhouette_distance(v, o) for o in pool)
+                return [o for o in pool if styles.silhouette_distance(v, o) == top]
+            base = next(v for v in sorted(table)
+                        if v != "zz_pagoda" and styles.explicit_silhouette(v)
+                        and _farthest(v) == ["zz_pagoda"])
+            got = styles.partner_voice(base)
+            assert got == "zz_pagoda", (base, got)
         finally:
             styles.VOICES = old
     finally:

@@ -17,6 +17,11 @@ FORM = "civic"
 #: `FORM` is the tradition it is built in and this is a different question: a farmhouse
 #: and a shop-house are both east Asian.
 ROLE = "civic"
+#: **What this area is for.** The expression round: a paved crossing with four booths at
+#: its corners is a market by function, and the booths are reported below as a measured
+#: feature so the function is evidenced by what stood and not by this tag.
+FUNCTION = "market"
+FEATURES = ("stalls",)
 
 PARAMS = {
     "paving": ("choice", ["banded", "checker", "radial"]),
@@ -98,42 +103,55 @@ def _column(b, x, y0, y1, block):
 
 
 def _pave(b, rect, y, pattern, cx, cz, rng):
-    """The floor of the square: one field, read at the scale of a person."""
+    """The floor of the square: one field, read at the scale of a person.
+
+        **Declared a figure** (composition round). The whole paved field is one drawn
+        thing -- the ground course and the accent that reads against it are the two halves
+        of one pattern, and repainting either destroys it -- so the declaration wraps the
+        lot rather than the accent cells alone. The design round's material pass had no way
+        to know: it turned this square's chequer of cobble and mossy cobble into camouflage
+        and the palace forecourts' laid quartz into uniform grey noise, and the round's
+        result names both (`out/des-material/comparison.json`, criterion 5). The pattern
+        exists nowhere but the arithmetic below, so this function is the only thing that
+        can say so.
+        
+    """
     x0, z0, x1, z1 = rect
-    b.fill_region(x0, y, z0, x1, y, z1, _foot(b))
-    phase = rng.randrange(2)
-    if pattern == "checker":
-        for x in range(x0, x1 + 1):
-            for z in range(z0, z1 + 1):
-                if ((x // 2) + (z // 2)) % 2 == phase:
-                    b.place_block(x, y, z, _foot2(b))
-    elif pattern == "banded":
-        step = rng.choice([3, 4])
-        for x in range(x0, x1 + 1):
-            for z in range(z0, z1 + 1):
-                if (x - x0 + phase) % step == 0 or (z - z0 + phase) % step == 0:
-                    b.place_block(x, y, z, _foot2(b))
-        for x in range(x0, x1 + 1):
-            for z in range(z0, z1 + 1):
-                if (x - x0 + phase) % step == 0 and (z - z0 + phase) % step == 0:
-                    b.place_block(x, y, z, _panel(b))
-    else:
-        rmax = min(cx - x0, x1 - cx, cz - z0, z1 - cz)
-        r = 2
-        band = 0
-        while r <= rmax:
-            b.ring(cx, y, cz, r, _panel(b) if band % 2 == phase else _foot2(b))
-            r += 2
-            band += 1
-    # the four ways in, marked in the paving rather than gated
-    mx0, mx1 = cx - 1, cx + 1
-    mz0, mz1 = cz - 1, cz + 1
-    for x in range(mx0, mx1 + 1):
-        b.place_block(x, y, z0, _panel(b))
-        b.place_block(x, y, z1, _panel(b))
-    for z in range(mz0, mz1 + 1):
-        b.place_block(x0, y, z, _panel(b))
-        b.place_block(x1, y, z, _panel(b))
+    with b.figure(f"square_paving_{pattern}"):
+        b.fill_region(x0, y, z0, x1, y, z1, _foot(b))
+        phase = rng.randrange(2)
+        if pattern == "checker":
+            for x in range(x0, x1 + 1):
+                for z in range(z0, z1 + 1):
+                    if ((x // 2) + (z // 2)) % 2 == phase:
+                        b.place_block(x, y, z, _foot2(b))
+        elif pattern == "banded":
+            step = rng.choice([3, 4])
+            for x in range(x0, x1 + 1):
+                for z in range(z0, z1 + 1):
+                    if (x - x0 + phase) % step == 0 or (z - z0 + phase) % step == 0:
+                        b.place_block(x, y, z, _foot2(b))
+            for x in range(x0, x1 + 1):
+                for z in range(z0, z1 + 1):
+                    if (x - x0 + phase) % step == 0 and (z - z0 + phase) % step == 0:
+                        b.place_block(x, y, z, _panel(b))
+        else:
+            rmax = min(cx - x0, x1 - cx, cz - z0, z1 - cz)
+            r = 2
+            band = 0
+            while r <= rmax:
+                b.ring(cx, y, cz, r, _panel(b) if band % 2 == phase else _foot2(b))
+                r += 2
+                band += 1
+        # the four ways in, marked in the paving rather than gated
+        mx0, mx1 = cx - 1, cx + 1
+        mz0, mz1 = cz - 1, cz + 1
+        for x in range(mx0, mx1 + 1):
+            b.place_block(x, y, z0, _panel(b))
+            b.place_block(x, y, z1, _panel(b))
+        for z in range(mz0, mz1 + 1):
+            b.place_block(x0, y, z, _panel(b))
+            b.place_block(x1, y, z, _panel(b))
 
 
 def _stood_on(b, c, fy):
@@ -382,6 +400,7 @@ def build(b, part, seed, **params):
 
     # four stalls, one to a corner, no two of them the same booth
     covered = []
+    stalls = []
     half = min(w, d) // 2 - 1
     wlen, dlen = min(4, half), min(3, half)
     if half >= 2:
@@ -421,6 +440,7 @@ def build(b, part, seed, **params):
                 walled_goods if (opts["sides"] or opts["lockup"])
                 else open_goods)
             _stall(b, srect, fy, back, opts, rng)
+            stalls.append(tuple(srect))
             covered.append((max(x0, srect[0] - 1), max(z0, srect[1] - 1),
                             min(x1, srect[2] + 1), min(z1, srect[3] + 1)))
 
@@ -453,4 +473,30 @@ def build(b, part, seed, **params):
     _lid(b, covered, fy)
     _sweep(b, rect, fy, rng)
     _lid(b, covered, fy)
-    return {"ok": True}
+    # the reserved doorway stays walkable, whatever the floor and the border did
+    b.area_way_in(part["x0"], part["z0"], part["x1"], part["z1"], int(part["floor_y"]))
+    # the expression round: what stood, said by the type and measured by construction.
+    # `rects.stalls` is the ground the booths occupy; a square too small for booths
+    # reports them omitted rather than calling paving a market. **Four booths are four
+    # rectangles, not the box round them** (the design round). This published `[min x,
+    # min z, max x, max z]` over all four corners, which on a 40x40 square is a 38x38
+    # rectangle with the whole open market inside it; `construction._verify_rect` asks
+    # whether half of a claimed rectangle carries something, four corner booths gave it
+    # three per cent, and the square's stalls read `claimed_not_found` on every square
+    # this type has ever built, however well they stood. The `des-farm` run is where
+    # that showed: two booths had genuinely been razed by a neighbour's siting and the
+    # record could not tell that from the four standing perfectly.
+    srect = [list(r) for r in stalls] or None
+    emitted = {
+        "requested": {"paving": paving, "canopy": canopy, "stalls": True},
+        "storeys": 0, "attempt": 0,
+        "fallback": None if stalls else "no room for a booth in any corner: paving and a well",
+        "omitted": [] if stalls else ["stalls"],
+        "features": {"stalls": len(stalls), "well": bool(wellcell)},
+        "rects": {"main": [x0, z0, x1, z1],
+                  **({"stalls": srect} if srect else {}),
+                  **({"well": [wellcell[0], wellcell[1], wellcell[0], wellcell[1]]}
+                     if wellcell else {})},
+        "floors": [fy],
+    }
+    return {"ok": True, "stalls": len(stalls), "emitted": emitted}

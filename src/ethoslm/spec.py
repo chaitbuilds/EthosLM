@@ -231,19 +231,29 @@ RING_FIELDS = ("ring", "share", "walled", "voice")
 #: `CHARACTER_DEFAULTS` fills what is not said. frontage `street`: lots front the
 #: streets, doors on them, a clearance apart; `open`: freestanding buildings a lane
 #: apart, the way in wherever the lanes arrive. block the block's length along its
-#: street, in columns. lot_depth how deep a lot runs back from its street, in columns.
-#: attached true: lots in a row touch, party wall to party wall. courtyard_share the
-#: share of blocks whose back row is a court the front row shares, 0 to 1. open_share
-#: the share of blocks left as open ground -- fields, gardens, groves, a plaza, by the
-#: role and the density -- 0 to 1. landmarks `[{"type": name, "notes": ...}]`: a fixed
-#: landmark, placed on the block nearest the district's middle with a plaza about it.
-#: variety how far a lot's width and depth may stray from the density's own, 0 to 1 of
-#: the lot side; omit it and the frontage decides (`district_compile.VARIETY`). storeys
-#: `[lo, hi]`: the band a lot's building takes its storeys from, clamped into what each
-#: type declares. Omit it and the density's own band is used. A run of roofs steps
-#: rather than lying flat.
-CHARACTER_FIELDS = ("frontage", "block", "lot_depth", "attached", "courtyard_share",
-                    "open_share", "landmarks", "variety", "storeys")
+#: street, in columns. lot_width how wide a lot's frontage is, in columns. Declared, it
+#: is the width the lots are laid at -- clamped into what the type admits and never
+#: grown by the cover lever, which is `lot_depth`'s rule. lot_depth how deep a lot runs
+#: back from its street, in columns. attached true: lots in a row touch, party wall to
+#: party wall. courtyard_share the share of blocks whose back row is a court the front
+#: row shares, 0 to 1. open_share the share of blocks left as open ground -- fields,
+#: gardens, groves, a plaza, by the role and the density -- 0 to 1. landmarks `[{"type":
+#: name, "notes": ...}]`: a fixed landmark, placed on the block nearest the district's
+#: middle with a plaza about it. variety how far a lot's width and depth may stray from
+#: the density's own, 0 to 1 of the lot side; omit it and the frontage decides
+#: (`district_compile.VARIETY`). storeys `[lo, hi]`: the band a lot's building takes its
+#: storeys from, clamped into what each type declares. Omit it and the density's own
+#: band is used. A run of roofs steps rather than lying flat. `lot_width` is the
+#: realization round's, and it is the field an inspection asked for and could not have.
+#: The shore village came back as six buildings twenty-four columns wide -- a barn's
+#: frontage -- because the compiler grows the lot to make its district cover and a
+#: character could say how *deep* a lot is and never how *wide*. The reading asked for
+#: "more, smaller houses"; the only lever that existed made them shallower and the cover
+#: fell, so the revision was rolled back for doing what it was asked. A declared width
+#: is the compiler's to clamp into what the type admits and not to grow, which is the
+#: rule `lot_depth` has always had.
+CHARACTER_FIELDS = ("frontage", "block", "lot_width", "lot_depth", "attached",
+                    "courtyard_share", "open_share", "landmarks", "variety", "storeys")
 
 FRONTAGES = ("street", "open")
 
@@ -255,17 +265,19 @@ FRONTAGES = ("street", "open")
 #: clamped into what each type declares -- a farm belt is low and a dense quarter builds
 #: upward, and either way a street of one height is a wall and not a skyline.
 CHARACTER_DEFAULTS = {
-    "sparse": {"frontage": "open", "block": None, "lot_depth": None, "attached": False,
+    "sparse": {"frontage": "open", "block": None, "lot_width": None,
+               "lot_depth": None, "attached": False,
                "courtyard_share": 0.0, "open_share": 0.5, "landmarks": [],
                "variety": None, "storeys": [1, 2]},
-    "low":    {"frontage": "open", "block": None, "lot_depth": None, "attached": False,
+    "low":    {"frontage": "open", "block": None, "lot_width": None,
+               "lot_depth": None, "attached": False,
                "courtyard_share": 0.0, "open_share": 0.3, "landmarks": [],
                "variety": None, "storeys": [1, 3]},
-    "medium": {"frontage": "street", "block": None, "lot_depth": None,
-               "attached": False, "courtyard_share": 0.15, "open_share": 0.15,
+    "medium": {"frontage": "street", "block": None, "lot_width": None,
+               "lot_depth": None, "attached": False, "courtyard_share": 0.15, "open_share": 0.15,
                "landmarks": [], "variety": None, "storeys": [2, 3]},
-    "dense":  {"frontage": "street", "block": None, "lot_depth": None,
-               "attached": False, "courtyard_share": 0.25, "open_share": 0.05,
+    "dense":  {"frontage": "street", "block": None, "lot_width": None,
+               "lot_depth": None, "attached": False, "courtyard_share": 0.25, "open_share": 0.05,
                "landmarks": [], "variety": None, "storeys": [1, 3]},
 }
 
@@ -637,6 +649,20 @@ _NUMBER_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
                  "hundred": 100, "two hundred": 200, "three hundred": 300,
                  "four hundred": 400, "five hundred": 500, "a thousand": 1000}
 
+# **Thirteen to ninety-nine, by rule.** The closure round's first retained failure: the
+# table above had no row for `sixteen`, and a village of sixteen cottages was sized at
+# fifty-two. The interpretation now carries the count (see
+# `stages_plan.explicit_count_of`) and this table is the rules' cross-check, which has
+# to be able to read the same words.
+_NUMBER_WORDS.update({"thirteen": 13, "fourteen": 14, "sixteen": 16, "seventeen": 17,
+                      "eighteen": 18, "nineteen": 19})
+for _tens, _tv in (("twenty", 20), ("thirty", 30), ("forty", 40), ("fifty", 50),
+                   ("sixty", 60), ("seventy", 70), ("eighty", 80), ("ninety", 90)):
+    for _ones, _ov in (("one", 1), ("two", 2), ("three", 3), ("four", 4), ("five", 5),
+                       ("six", 6), ("seven", 7), ("eight", 8), ("nine", 9)):
+        _NUMBER_WORDS[f"{_tens}-{_ones}"] = _tv + _ov
+        _NUMBER_WORDS[f"{_tens} {_ones}"] = _tv + _ov
+
 _ABOUT_WORDS = ("about", "around", "roughly", "some", "approximately", "or so", "~")
 
 
@@ -654,11 +680,18 @@ def count_in(sentence: str) -> dict | None:
     # size of the settlement and it is attached to a word for a building.
     unit = r"(?:houses?|homes?|dwellings?|buildings?|structures?|cottages?|halls?)"
     words = "|".join(sorted(_NUMBER_WORDS, key=len, reverse=True))
+    # **Six digits, and thousands separators.** The architecture audit, found by asking
+    # for one: `\d{1,4}` read "10000 houses" as no count at all, so a sentence naming a
+    # number this system certainly cannot build was read as a sentence naming none --
+    # and a place that cannot be built became a place nobody asked a question about. A
+    # number too large is refused downstream, by name, with the number in the refusal; a
+    # number unread is refused nowhere.
     m = re.search(rf"(\b(?:{'|'.join(_ABOUT_WORDS[:-1])})\s+)?"
-                  rf"\b(\d{{1,4}}|{words})\b[\w\s-]{{0,20}}?\b{unit}\b", s)
+                  rf"\b(\d{{1,3}}(?:,\d{{3}})+|\d{{1,6}}|{words})\b[\w\s-]{{0,20}}?"
+                  rf"\b{unit}\b", s)
     if not m:
         return None
-    raw = m.group(2)
+    raw = m.group(2).replace(",", "")
     n = int(raw) if raw.isdigit() else _NUMBER_WORDS[raw]
     about = bool(m.group(1)) or "or so" in s or "~" in s
     return {"n": n, "about": about, "phrase": m.group(0).strip()}
@@ -724,6 +757,8 @@ def apportion(parts: list, declared: int, target: int) -> list:
         groups = [p for p in parts if district(p)]
         if not groups or not target:
             return parts
+        for p in groups:
+            p["structures_inferred"] = True      # the closure round: an inferred share
         weight = {p["name"]: (float(p["share"]) / DENSITIES.get(p.get("density")
                                                                   or "medium", 1.0)
                               if p.get("share") is not None else 1.0) for p in groups}
@@ -807,6 +842,8 @@ def read_part(d: dict, where: str) -> dict:
            "density": read_density(d.get("density"), f"{where} ({name})"),
            "notes": str(d.get("notes") or "")}
     out["role"] = read_role(d.get("role"), out, f"{where} ({name})")
+    if d.get("structures_inferred"):
+        out["structures_inferred"] = True        # a checked spec read back keeps it
     read_ring_fields(d, out, f"{where} ({name})")
     read_character(d.get("character"), out, f"{where} ({name})")
     of = d.get("of")
@@ -907,7 +944,7 @@ def read_character(got, out: dict, where: str) -> None:
             if v not in FRONTAGES:
                 raise SpecError(f"{where}: frontage is one of {list(FRONTAGES)}, not "
                                 f"{v!r}", field="character", part=out["name"])
-        elif k in ("block", "lot_depth"):
+        elif k in ("block", "lot_width", "lot_depth"):
             if isinstance(v, bool) or not isinstance(v, int) or not 3 <= v <= 256:
                 raise SpecError(f"{where}: {k} is a whole number of columns, 3 to 256, "
                                 f"not {v!r}", field="character", part=out["name"])
@@ -1093,7 +1130,25 @@ def plot_share(part: dict) -> float:
     """
     from .placeplan import fabric, DENSITY_ROLE
     d = part.get("density") or "medium"
-    return float(fabric(d, part.get("role") or DENSITY_ROLE.get(d))["plot_share"])
+    # **Of the fabric this part is actually built of.** `fabric` has always taken the
+    # character and this caller has always dropped it, so a district that declared its
+    # own lot was held to the cover of the density's *default* lot -- a target computed
+    # for a fabric it had been told not to build. Found by running the shore village's
+    # revision: the inspection asked for a twelve-column frontage, the district laid it,
+    # and its validator refused it for covering 30% against a floor derived from a
+    # twenty-four column one. A check whose evidence is a different decision than the
+    # one that was made is the defect this whole round is about, one level down. **The
+    # declared lot, and not the shares.** The lot is a thing a character *declares* and
+    # the compiler honours; `open_share` and `courtyard_share` are the levers the
+    # compiler moves to reach its count, and feeding those back into the count is a
+    # circle: a character asking for open ground everywhere made `houses_per_block`
+    # zero, so the district was asked for no houses, so there was nothing for the
+    # compiler to lower the share for. Found by running `test_compile`'s own
+    # `open_share: 1` case.
+    ch = {k: v for k, v in (part.get("character") or {}).items()
+          if k in ("lot_width", "lot_depth", "attached", "frontage")}
+    return float(fabric(d, part.get("role") or DENSITY_ROLE.get(d),
+                        ch or None)["plot_share"])
 
 
 def structures_for(columns: float, part: dict, shape: tuple | None = None) -> int:
@@ -1113,8 +1168,18 @@ def structures_for(columns: float, part: dict, shape: tuple | None = None) -> in
                                      part.get("character")))
 
 
-def read_spec(doc: dict, sentence: str | None = None) -> dict:
+def read_spec(doc: dict, sentence: str | None = None, count: dict | None = None) -> dict:
     """A place spec off a model's answer: checked, completed, and scaled. A1 + A2.
+
+        `count` is the explicit count the **interpretation** read from the sentence
+        (`{"n", "about", "phrase", "what"}`), the closure round. Read before this the count
+        came from `count_in` alone, a regex with a table of number words, so "sixteen low
+        cottages" -- a number word the table lacks -- was read as no count at all and the
+        village was sized at fifty-two from the kind's band while the interpretation beside
+        it said sixteen, exactly. Meaning lost at the first consumer. The order now: the
+        count handed in; else the count a **checked** spec already carries, so a spec read
+        back from disk is the spec that was written; else `count_in`, for a round with no
+        interpretation.
 
         What the model is answerable for is `kind`, `defining_parts` and `voice`. The band,
         the structure count, the footprint and the ceiling are computed here from the
@@ -1174,7 +1239,11 @@ def read_spec(doc: dict, sentence: str | None = None) -> dict:
         raise SpecError("invariants is a short paragraph of prose -- the named place's "
                         "defining spatial facts -- or null")
 
-    count = count_in(sentence)
+    if count is None and isinstance(doc.get("explicit_count"), dict) \
+            and doc["explicit_count"].get("n"):
+        count = dict(doc["explicit_count"])
+    if count is None:
+        count = count_in(sentence)
     lo, hi = band_for(kind, count)
     #: How big this place is, in the order the three answers are trusted: 1. the number
     #: the sentence gave -- "about sixty houses" is sixty; 2. what the **districts** say
@@ -1199,7 +1268,10 @@ def read_spec(doc: dict, sentence: str | None = None) -> dict:
             "voice": voice or None, "form": form or None,
             **({"authored_voice": authored} if authored else {}),
             "setting": read_setting(doc.get("setting")),
-            "needs": _read_needs(doc.get("needs"), target, kind),
+            "needs": _read_needs(doc.get("needs"), target, kind,
+                                 least=(doc.get("footprint_from") or {}).get("footprint")
+                                 or (doc.get("footprint_from") or {}).get("wanted_footprint")
+                                 or (doc.get("footprint_from") or {}).get("least_footprint")),
             "ceiling": dict(CEILING, footprint=footprint_ceiling(kind),
                             structures=structures_ceiling(kind)),
             "notes": str(doc.get("notes") or "")}
@@ -1207,6 +1279,51 @@ def read_spec(doc: dict, sentence: str | None = None) -> dict:
         spec["invariants"] = str(invariants).strip()
     if ring_voices:
         spec["authored_voices"] = ring_voices
+    # **The least ground the parts need, before the count's footprint stands.** The
+    # closure round's transfer case: an explicit count of twenty-four sized the
+    # footprint at 240 and the ring arithmetic could not lay a 93-column compound and
+    # two rings at their least widths in it. Extent, hierarchy and count are resolved
+    # together: the footprint is the larger of what the count implies and what the
+    # defining parts need, and the record says which governed.
+    try:
+        from . import placeplan as _placeplan
+        least = _placeplan.least_footprint(spec)
+    except Exception:                            # noqa: BLE001 -- no layout, no floor
+        least = None
+    recorded = doc.get("footprint_from") if isinstance(doc.get("footprint_from"), dict) else None
+    if least and int(least) > int(spec["needs"]["footprint"]):
+        spec["needs"]["footprint"] = int(least)
+    if least and int(least) >= int(spec["needs"]["footprint"]):
+        spec["footprint_from"] = {"least_footprint": int(least),
+                                  "why": "the defining parts' least ground governs"}
+    # **...and the ground the sentence's own count needs at its density words.** The
+    # expression round (worker A): `least_footprint` is the side the ring layout refuses
+    # below; `wanted_footprint` adds the ground each ring of the count needs at the
+    # least cover its density word admits, so a sparse ring of nine farmhouses is not
+    # squeezed onto a count-sized site and the farm's fields are not short of their
+    # purpose.
+    try:
+        from . import placeplan as _placeplan
+        wanted = _placeplan.wanted_footprint(spec)
+    except Exception:                            # noqa: BLE001 -- no layout, no want
+        wanted = None
+    if wanted and int(wanted) > int(spec["needs"]["footprint"]):
+        spec["needs"]["footprint"] = int(wanted)
+        spec["footprint_from"] = {"wanted_footprint": int(wanted),
+                                  **({"least_footprint": int(least)} if least else {}),
+                                  "why": "the ground the count needs at its density words "
+                                         "governs"}
+    # **A record is read back as it was written.** A checked spec carries the footprint
+    # it was sited on under `footprint_from`; a later change to the layout's arithmetic
+    # does not resize a place that has already been laid out, and the record says which
+    # number governed then.
+    if recorded and recorded.get("footprint") is not None:
+        spec["needs"]["footprint"] = int(recorded["footprint"])
+        spec["footprint_from"] = dict(recorded)
+    elif recorded and spec.get("footprint_from"):
+        spec["footprint_from"]["footprint"] = int(spec["needs"]["footprint"])
+    if spec.get("footprint_from"):
+        spec["footprint_from"].setdefault("footprint", int(spec["needs"]["footprint"]))
     spec = scale_to_ceiling(spec)
     # The setting's relief word, folded into the place's need as a cap over the
     # footprint the place finally has: the tighter of the two caps stands, so a spec
@@ -1228,6 +1345,35 @@ def read_spec(doc: dict, sentence: str | None = None) -> dict:
     # would vanish on the second read. It is kept.
     if doc.get("scaled_from") and "scaled_from" not in spec:
         spec["scaled_from"] = doc["scaled_from"]
+    # ...and the same for the record of a requirement the ceiling could not meet. A spec
+    # read back from disk is already under the ceiling, so nothing here would write
+    # `unmet` a second time -- and an obligation that vanishes when the record is re-
+    # read is the failure mode this whole round exists to close.
+    if doc.get("unmet") and "unmet" not in spec:
+        spec["unmet"] = doc["unmet"]
+    if spec.get("unmet") and spec.get("explicit_count"):
+        # The band on disk is the band the sentence set, and a second read restates it
+        # rather than deriving a softer one from the reduced count.
+        spec["size_band"] = [int(v) for v in spec["unmet"]["band"]]
+    # **A negotiated target survives being read again.** The architecture round, found
+    # by running the repair loop: `repair.apply` writes the revised band and count to
+    # `place.checked.json`, and the next `place_spec()` re-derived both from the kind
+    # and threw them away -- so the repair landed, the plan was laid out from the
+    # programme it had before, and the finding it was meant to close stayed open. A
+    # negotiation is a **decision about an inferred choice**, on the record with its
+    # bound and its reason, and it is as much a part of the spec as the sentence's own
+    # count. Only `size_band` and `structures` are restated, and never over an explicit
+    # count: `repair` refuses to negotiate one and this could not restate it if it did.
+    neg = doc.get("negotiated")
+    if neg:
+        spec["negotiated"] = list(neg)
+        last = [n for n in neg if n.get("what") == "size_band"]
+        if last and not spec.get("explicit_count"):
+            to = last[-1]["to"]
+            spec["size_band"] = [int(v) for v in to["size_band"]]
+            spec["structures"] = int(to["structures"])
+            apportion(out_parts, sum(p["structures"] for p in out_parts if district(p)),
+                      spec["structures"])
     return spec
 
 
@@ -1266,7 +1412,8 @@ def read_voice(got) -> tuple:
     return (name, authored)
 
 
-def _read_needs(got, structures: int, kind: str | None = None) -> dict:
+def _read_needs(got, structures: int, kind: str | None = None,
+                least: int | None = None) -> dict:
     """The ground the place wants, filled out. **The footprint is derived, never given.**
 
         A footprint that is present and does not match what the count implies is refused by
@@ -1296,11 +1443,15 @@ def _read_needs(got, structures: int, kind: str | None = None) -> dict:
         if got.get("plateau") is not None:
             out["plateau"] = int(got["plateau"])
         # A spec on the record is read back as the spec it was, and the record is not
-        # resized.
+        # resized. ...or the footprint the defining parts' least ground governed, which
+        # a checked spec records beside its needs (`footprint_from`) -- the closure
+        # round
         if got.get("footprint") is not None \
                 and int(got["footprint"]) != want \
                 and int(got["footprint"]) != min(want, footprint_ceiling(kind)) \
-                and int(got["footprint"]) != min(want, CEILING["footprint"]):
+                and int(got["footprint"]) != min(want, CEILING["footprint"]) \
+                and int(got["footprint"]) != (int(least) if least else None) \
+                and not (least and int(got["footprint"]) >= want):
             raise SpecError(
                 f"needs['footprint'] is derived from the structure count and is not "
                 f"yours to give: {structures} structures is {want}x{want} and this "
@@ -1341,8 +1492,30 @@ def scale_to_ceiling(spec: dict) -> dict:
     got = sum(p["structures"] for p in spec["defining_parts"])
     spec["structures"] = min(cap, got or min(want, cap))
     lo, hi = spec["size_band"]
-    spec["size_band"] = [min(int(lo), spec["structures"]),
-                         min(int(hi), cap)]
+    # **The band the sentence gave is not the band the ceiling may move.** The
+    # architecture audit, and the sharpest thing it found: asked for *exactly 2,000
+    # houses*, the ceiling reduced the place to 1,824 and moved the acceptance band down
+    # to match, so `in_band` passed and the run reported success on a request it had not
+    # met. A ceiling is a statement about this system's capacity. It is not a licence to
+    # rewrite what was asked for. So the band moves only where it was the **library's
+    # own inference** -- the kind's band, which is revisable by definition -- and stands
+    # where the **sentence** set it. A spec whose explicit count cannot be reached keeps
+    # the band that says so, carries `unmet` naming the limiting constraint, and fails
+    # the count clause honestly.
+    explicit = spec.get("explicit_count")
+    if explicit:
+        spec["unmet"] = {
+            "requirement": "count/structures",
+            "asked": int(explicit["n"]), "about": bool(explicit.get("about")),
+            "band": [int(lo), int(hi)], "can_build": spec["structures"],
+            "limit": "structures_ceiling", "limit_value": cap,
+            "why": (f"the sentence asks for {explicit['n']} structures and this "
+                    f"build's ceiling for a {spec.get('kind')} is {cap}; the place is "
+                    f"planned at {spec['structures']} and the band the sentence set is "
+                    f"left where it is, so the count clause fails rather than passing "
+                    f"against a band moved to fit")}
+    else:
+        spec["size_band"] = [min(int(lo), spec["structures"]), min(int(hi), cap)]
     spec["needs"]["footprint"] = min(footprint_for(spec["structures"], spec.get("kind")),
                                      fcap, int(spec["needs"]["footprint"]))
     spec["scaled_from"] = {
@@ -1352,9 +1525,12 @@ def scale_to_ceiling(spec: dict) -> dict:
                       "per_part": {p["name"]: p["structures"]
                                    for p in spec["defining_parts"]}},
         "ceiling": dict(CEILING, footprint=fcap, structures=cap),
+        "band_held": bool(explicit),
         "why": ("the spec asked for more than the ceiling allows; counts inside each "
                 "defining part were reduced proportionally and no defining part was "
-                "dropped")}
+                "dropped"
+                + ("; the sentence's own band was NOT moved to fit the reduction"
+                   if explicit else ""))}
     return spec
 
 
@@ -1384,6 +1560,167 @@ def compound(part: dict) -> bool:
 def district(part: dict) -> bool:
     """Is this defining part a district: a division of the place that holds houses?"""
     return part.get("kind") == "group" and part.get("family") in DISTRICT_FAMILIES
+
+
+#: What the ground between the buildings of a district **is**. Distinct from `role`,
+#: which says what the buildings are for, and the integration review's fourth finding
+#: turns on the two having been the same word: > its supplied programme uses `role:
+#: rural`, which `placeplan.district_failures` > treats as a **farmland belt** requiring
+#: 60% farms/fields coverage [...] "rural > means farmland" also imports the wrong
+#: functional assumption. A fishing village is rural and is not a farm. A farm belt is a
+#: farm because it is fields, and a spec that means fields can say so.
+LAND_USES = ("settled", "farmland", "pasture", "orchard", "industrial", "civic")
+
+#: The words a spec spends on a district when it means farmland, for the derivation
+#: below. Read off the part's **own** name and prose, which is where a model that meant
+#: a farm belt actually said so. Matched on word boundaries against the part's name and
+#: prose with `_` read as a space, so `farm_belt` and "the belt of fields inside the
+#: great wall" both answer and "a village of fisherfolk" does not.
+_FARMLAND_WORDS = ("farm", "farms", "farmland", "farmlands", "farmstead", "farmsteads",
+                   "field", "fields", "agrarian", "agricultural", "arable", "paddy",
+                   "paddies", "cropland", "irrigation")
+
+
+#: **The programme's entities, bound once.** The expression round. The falsification
+#: pass's held-out sentence spent one of eleven houses on the orchard's lot and could
+#: not select the orchard by word, because "what is a counted building, what is land"
+#: was answered by each policy with its own noun table. A defining part is one of these
+#: classes, read from what it declares -- kind, family, role, function, land use -- and
+#: never from its name alone; the explicit count is spent only on `building` entities
+#: whose unit is the count's subject. `land` families are areas of ground with a
+#: purpose.
+ENTITY_CLASSES = ("building", "land", "amenity", "compound", "boundary", "point")
+_LAND_FAMILIES = ("field", "orchard", "pasture", "paddy", "grove", "garden", "yard",
+                  "farmland", "meadow", "park", "cropland")
+_AMENITY_FAMILIES = ("square", "plaza", "market", "court", "well", "fountain")
+_LAND_USE_WORDS = {"orchard": ("orchard", "orchards", "fruit trees"),
+                   "pasture": ("pasture", "pastures", "paddock", "grazing", "meadow"),
+                   "farmland": tuple(_FARMLAND_WORDS),
+                   "garden": ("garden", "gardens", "allotment"),
+                   "grove": ("grove", "wood", "woods", "copse"),
+                   "square": ("square", "plaza", "market", "marketplace")}
+_HOUSE_FAMILIES = ("house", "houses", "home", "homes", "dwelling", "cottage", "cottages",
+                   "minka", "townhouse", "row_house", "shop_house", "courtyard_house",
+                   "farmstead", "residence")
+
+
+def land_use_of(part: dict | None) -> str | None:
+    """The land use a defining part names, or None where it names none.
+
+    In order: the declaration; the part's own **name** (an `orchard` laid as a grove is
+    an orchard); its family; its prose -- and prose can only name working land
+    (`orchard`, `pasture`, `farmland`, `garden`, `grove`), never a square: a homes
+    district "gathered about the market square" is not a square."""
+    import re as _re
+    p = part or {}
+    said = str(p.get("land_use") or "").strip().lower()
+    if said in LAND_USES:
+        return said
+
+    def in_text(text, words):
+        return any(_re.search(rf"(?<![a-z]){_re.escape(w)}(?![a-z])", text) for w in words)
+    name = str(p.get("name") or "").lower().replace("_", " ")
+    working = ("orchard", "pasture", "farmland", "garden", "grove")
+    for use in working:
+        if in_text(name, _LAND_USE_WORDS[use]):
+            return use
+    fam = str(p.get("family") or "").lower()
+    for use, words in _LAND_USE_WORDS.items():
+        if fam == use or fam in words:
+            return use
+    # prose names a land use only for ground that is mostly open: a homes district whose
+    # notes say "the orchard takes none of them" is not an orchard
+    ch = p.get("character") if isinstance(p.get("character"), dict) else {}
+    mostly_open = (int(p.get("structures") or 0) == 0
+                   or float(ch.get("open_share") or 0) >= 0.5
+                   or str(p.get("density") or "") == "sparse")
+    if not mostly_open:
+        return None
+    blob = " ".join(str(p.get(k) or "") for k in ("notes", "purpose")).lower() \
+        .replace("_", " ")
+    for use in working:
+        if in_text(blob, _LAND_USE_WORDS[use]):
+            return use
+    return None
+
+
+def entity_of(part: dict | None, count: dict | None = None) -> dict:
+    """`{"class", "counted", "unit", "land_use"}` for one defining part.
+
+    `count` is the spec's explicit count (`{"n", "what", ...}`); a part is `counted` when
+    it is a `building` entity whose unit is the count's subject class (house words are
+    one class). A group of houses is a building entity too: its lots are what the count
+    is spent on. A group whose land use is farmland/orchard/pasture is `land` even if
+    the spec budgets a few farm cottages in it -- those cottages are counted, the ground
+    is not."""
+    p = part or {}
+    kind = str(p.get("kind") or "plot")
+    fam = str(p.get("family") or "").lower()
+    # a land use is a fact about ground: an area or a group has one, a hall "on the
+    # square" does not
+    use = land_use_of(p) if kind in ("area", "group") or p.get("land_use") else None
+    what = str(((count or {}) if isinstance(count, dict) else {}).get("what") or "").lower()
+    house_unit = (not what) or what.rstrip("s") in [h.rstrip("s") for h in _HOUSE_FAMILIES] \
+        or what in ("building", "buildings", "structure", "structures")
+    if compound(p):
+        cls, counted, unit = "compound", False, None
+    elif kind == "edge":
+        cls, counted, unit = "boundary", False, None
+    elif kind == "point":
+        cls, counted, unit = "point", False, None
+    elif kind == "area":
+        if fam in _LAND_FAMILIES or use in ("orchard", "pasture", "farmland", "garden",
+                                             "grove"):
+            cls, counted, unit = "land", False, None
+        else:
+            cls, counted, unit = "amenity", False, None
+    elif kind == "group":
+        if use in ("orchard", "pasture", "farmland", "grove", "garden") \
+                and int(p.get("structures") or 0) == 0:
+            cls, counted, unit = "land", False, None
+        elif use in ("orchard", "pasture", "farmland", "grove", "garden"):
+            # working land with a few buildings in it: the ground is land, the lots are
+            # counted buildings of the fabric's unit
+            cls, counted, unit = "land", bool(house_unit), ("house" if house_unit else None)
+        else:
+            cls, counted, unit = "building", bool(house_unit), ("house" if house_unit else None)
+    else:
+        # a plot: a house family is a counted building; a hall, temple, workshop is a
+        # building of another unit and is counted only when the sentence counts it
+        is_house = fam in _HOUSE_FAMILIES or str(p.get("function") or "") == "dwelling"
+        unit = "house" if is_house else (fam or None)
+        counted = bool(is_house and house_unit) or (bool(what) and what.rstrip("s") == fam.rstrip("s"))
+        cls = "building"
+    return {"class": cls, "counted": counted, "unit": unit, "land_use": use}
+
+
+def entities(spec: dict) -> list:
+    """Every defining part's entity binding, in spec order, with its name."""
+    count = spec.get("explicit_count") if isinstance(spec.get("explicit_count"), dict) else None
+    return [{"part": d.get("name"), "kind": d.get("kind"), "family": d.get("family"),
+             **entity_of(d, count)} for d in spec.get("defining_parts") or []]
+
+
+def land_use(part: dict | None) -> str:
+    """What the ground of this district is given over to. `settled` where it does not say.
+
+        Declared first -- `land_use` on the defining part, from `LAND_USES` -- then derived
+        from the part's own name and notes, and `settled` otherwise. Derivation reads the
+        part's prose because that is where a spec that means a farm belt says it does, and
+        it reads nothing else: a *role* is what the buildings are for and never implies what
+        lies between them.
+        
+    """
+    said = str((part or {}).get("land_use") or "").strip().lower()
+    if said in LAND_USES:
+        return said
+    import re as _re
+    blob = " ".join(str((part or {}).get(k) or "")
+                    for k in ("name", "notes", "purpose")).lower().replace("_", " ")
+    if any(_re.search(rf"(?<![a-z]){_re.escape(w)}(?![a-z])", blob)
+           for w in _FARMLAND_WORDS):
+        return "farmland"
+    return "settled"
 
 
 def compounds(spec: dict) -> list:

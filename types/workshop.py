@@ -230,7 +230,7 @@ def _fit(b, rng, kinds, cells, y, room, budget):
             r = b.fitting(kind, x, y, z, facing, mat=b.voice["footing"], extent=extent,
                           room=room)
             if r and r.get("ok"):
-                placed.append(kind)
+                placed.append((kind, x, z))
                 for c in r.get("cells") or [(x, y, z)]:
                     used.add((c[0], c[2]))
                 used.add((x, z))
@@ -323,6 +323,7 @@ def _yard_wall(b, rng, ys, open_side, yx0, yz0, yx1, yz1, fy, h):
 
 
 def build(b, part, seed, **params):
+    _asked_kw, _rung = {}, 0
     rng = random.Random(seed * 131 + 7)
     px0, pz0, px1, pz1 = part["x0"], part["z0"], part["x1"], part["z1"]
     fy = part["floor_y"]
@@ -392,7 +393,9 @@ def build(b, part, seed, **params):
         kw["flashing"] = True
     res = b.building(label, bx0, bz0, bx1, bz1, storeys=n, roof=rspec, mat=dict(b.voice),
                      openings="rhythm", stair="none", **kw)
+    _asked_kw, _rung = dict(kw), 0
     if not res.get("ok"):
+        _rung = 1
         # The slope is the voice's (E015): a `"pitch": (2, 1)` stood in this spec and
         # the one below until the voice contract; `roof()` is handed the voice's.
         res = b.building(label, bx0, bz0, bx1, bz1, storeys=1, mat=dict(b.voice),
@@ -412,8 +415,34 @@ def build(b, part, seed, **params):
         b.fill_region(x, fy + 1, z, x, fy + 2, z, "air")
         b.doorway(x, fy + 1, z, OPP[dedge], b.voice["frame"], leaf=b.block(b.voice["frame"], "door"))
         rooms = [(bx0 + 1, fy, bz0 + 1, bx1 - 1, bz1 - 1)]
-    return _dress(b, rng, part, res, rooms, label, fy, n, trade,
-                  (bx0, bz0, bx1, bz1), yard, ys, dedge, inset, (dx, dz))
+    out = _dress(b, rng, part, res, rooms, label, fy, n, trade,
+                 (bx0, bz0, bx1, bz1), yard, ys, dedge, inset, (dx, dz))
+    # **What survived, said by the type.** The closure round: the one fallback drops the
+    # trade's chimney and the voice's roof for a plain gable, and a shell the library
+    # refused twice is a bare box; the record says which stood.
+    stood = bool(res.get("ok"))
+    out["emitted"] = {
+        "requested": {"storeys": n, "trade": trade},
+        "storeys": int(n), "attempt": (_rung if stood else 2),
+        "fallback": (None if (_rung == 0 and stood) else
+                     "ladder: a plain gable, no chimney" if stood else
+                     "ladder: a bare box the library did not shell"),
+        "omitted": (["chimney"] if (_rung or not stood) and "chimney" in _asked_kw
+                    else []),
+        "features": {"chimney": bool(_rung == 0 and stood and "chimney" in _asked_kw),
+                     "yard": bool(ys)},
+        "rects": {"main": [bx0, bz0, bx1, bz1]},
+        "floors": list(res.get("floors") or [fy]),
+    }
+    # **The trade's equipment, where it stands.** The expression round: a declared
+    # `trade` is a label; the forge, the hearth, the oven and the anvil are reported
+    # with their cells so `construction.outcome` verifies the working floor.
+    for kind, x, z in out.pop("fittings", []) or []:
+        if kind in ("forge", "hearth", "oven", "anvil", "workbench") \
+                and kind not in out["emitted"]["rects"]:
+            out["emitted"]["features"][kind] = True
+            out["emitted"]["rects"][kind] = [int(x), int(z), int(x), int(z)]
+    return out
 
 
 def _dress(b, rng, part, res, rooms, label, fy, n, trade, brect, yard, ys,
@@ -536,6 +565,7 @@ def _dress(b, rng, part, res, rooms, label, fy, n, trade, brect, yard, ys,
                      [(x, z, face)], fy + 1, "yard", 1)
 
     # the floor of the shop, and whatever is over it
+    fittings = []
     ground_y = min([r[1] for r in rooms]) if rooms else fy
     for r in rooms:
         rx0, ry, rz0, rx1, rz1 = r[0], r[1], r[2], r[3], r[4]
@@ -555,7 +585,7 @@ def _dress(b, rng, part, res, rooms, label, fy, n, trade, brect, yard, ys,
         budget = max(2, min(len(kinds), area // 4))
         if min(rx1 - rx0 + 1, rz1 - rz0 + 1) <= 2:
             budget = min(budget, 2)       # a narrow room keeps its walking room
-        _fit(b, rng, kinds, cells, ry + 1, room, budget)
+        fittings += _fit(b, rng, kinds, cells, ry + 1, room, budget)
 
     b.seal_voids(bx0, bz0, bx1, bz1, _wallb(b))
     b.check_walkable(label)
@@ -563,4 +593,4 @@ def _dress(b, rng, part, res, rooms, label, fy, n, trade, brect, yard, ys,
     for (x, y, z) in _floating(b.check_attached()):
         if y - 1 >= fy + 1 and b.get_block(x, y - 1, z) in ("air", "cave_air"):
             b.place_block(x, y - 1, z, _wallb(b))
-    return {"trade": trade, "storeys": n, "yard": ys}
+    return {"ok": True, "trade": trade, "storeys": n, "yard": ys, "fittings": fittings}

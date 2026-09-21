@@ -159,5 +159,7 @@ def build(b, part, seed, **params):
         laid += 1 if got.get("ok") else 0
 
     b.check_attached()
+    # the reserved doorway stays walkable, whatever the floor and the border did
+    b.area_way_in(part["x0"], part["z0"], part["x1"], part["z1"], int(part["floor_y"]))
     return {"ok": True, "paving": style, "edge": edge, "lamps": lit, "seats": laid,
             "cells": w * d}

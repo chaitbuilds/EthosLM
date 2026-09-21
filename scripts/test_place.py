@@ -777,8 +777,15 @@ def t_a5_a_two_level_tree_validates_at_both_levels_and_flattens_to_the_same_plot
 def t_a5_a_level_that_drops_a_defining_part_or_leaves_its_district_is_refused_by_name():
     """The failures A5 exists to catch, each named, and none of them a lint check."""
     _t, decls = placeplan.types_card()
+    # **The sentence is this fixture's own, not the sixty-house one.** The architecture
+    # round adds `asked/...` clauses, which read the **sentence** rather than the spec
+    # (`placeread.requirement_clauses`), and this fixture is eight buildings with its
+    # band hand-set to 4-12: scored against "about sixty houses" it fails the count
+    # honestly, which is the new clause working and the fixture's own sentence being
+    # wrong about it. The wall, the market and the keep are still read from the sentence
+    # and still checked.
     spec = spec_mod.read_spec(dict(SENTENCES["walled_town"]["spec"]),
-                              SENTENCES["walled_town"]["sentence"])
+                              "Build a walled town with a market square and a keep.")
     spec["structures"], spec["size_band"] = 8, [4, 12]
     for p in spec["defining_parts"]:
         if p["family"] == "district":
@@ -838,8 +845,15 @@ def t_a5_a_level_that_drops_a_defining_part_or_leaves_its_district_is_refused_by
 def t_a5_two_districts_that_pick_one_name_are_renamed_and_never_report_an_overlap():
     """A name is an identity, and a plan made in eight calls can collide on one."""
     _t, decls = placeplan.types_card()
+    # **The sentence is this fixture's own, not the sixty-house one.** The architecture
+    # round adds `asked/...` clauses, which read the **sentence** rather than the spec
+    # (`placeread.requirement_clauses`), and this fixture is eight buildings with its
+    # band hand-set to 4-12: scored against "about sixty houses" it fails the count
+    # honestly, which is the new clause working and the fixture's own sentence being
+    # wrong about it. The wall, the market and the keep are still read from the sentence
+    # and still checked.
     spec = spec_mod.read_spec(dict(SENTENCES["walled_town"]["spec"]),
-                              SENTENCES["walled_town"]["sentence"])
+                              "Build a walled town with a market square and a keep.")
     spec["structures"], spec["size_band"] = 8, [4, 12]
     place = _fixture_place()
     north = _fixture_district("north_quarter", 36)
@@ -926,8 +940,15 @@ def t_a6_the_same_read_holds_on_a_place_whose_wall_is_a_circuit_with_a_gate_on_i
         
     """
     _t, decls = placeplan.types_card()
+    # **The sentence is this fixture's own, not the sixty-house one.** The architecture
+    # round adds `asked/...` clauses, which read the **sentence** rather than the spec
+    # (`placeread.requirement_clauses`), and this fixture is eight buildings with its
+    # band hand-set to 4-12: scored against "about sixty houses" it fails the count
+    # honestly, which is the new clause working and the fixture's own sentence being
+    # wrong about it. The wall, the market and the keep are still read from the sentence
+    # and still checked.
     spec = spec_mod.read_spec(dict(SENTENCES["walled_town"]["spec"]),
-                              SENTENCES["walled_town"]["sentence"])
+                              "Build a walled town with a market square and a keep.")
     spec["structures"], spec["size_band"] = 8, [4, 12]
     for p in spec["defining_parts"]:
         if p["family"] == "district":

@@ -12,6 +12,13 @@ FORM = "east_asian"
 #: and a shop-house are both east Asian.
 ROLE = "rural"
 
+#: **What this type is for.** The realization round: a `ROLE` says what work a building
+#: is for and is satisfied by a hall, a barn or a temple alike; a sentence asking for
+#: houses people live in is asking for a `dwelling`. Declared so that the function can
+#: be checked rather than inferred from a label.
+FUNCTION = "dwelling"
+
+
 PARAMS = {
     "storeys": ("int", 1, 2),
     "yard_use": ("choice", ["store", "byre", "stack"]),
@@ -313,6 +320,7 @@ def build(b, part, seed, **params):
     label = part["label"]
 
     storeys = int(params.get("storeys") or 1)
+    asked_storeys = max(1, min(2, storeys))
     yard_use = params.get("yard_use") or "store"
 
     m_wall = b.block(voice["wall"], "full")
@@ -335,6 +343,8 @@ def build(b, part, seed, **params):
     if max(ha, hd) < 7 or min(ha, hd) < 5:
         storeys = 1
     storeys = _clamp(storeys, 1, 2)
+    gave_up = ([f"massing: storeys {asked_storeys} -> 1 for a {ha}x{hd} house"]
+               if storeys < asked_storeys else [])
 
     spec = _roof_spec(rng, part, hx0, hz0, hx1, hz1, min(ha, hd))
 
@@ -347,14 +357,28 @@ def build(b, part, seed, **params):
                          mat=voice, openings="rhythm", stair="auto")
     if not res.get("ok") and storeys > 1:
         storeys = 1
+        gave_up.append("ladder: one storey")
         res = b.building(label, hx0, hz0, hx1, hz1, 1, spec,
                          mat=voice, openings="rhythm", stair="auto")
     if not res.get("ok"):
         spec2 = {"style": "hip", "axis": spec["axis"], "pitch": (1, 2)}
+        gave_up.append("ladder: a plain hip roof")
         res = b.building(label, hx0, hz0, hx1, hz1, 1, spec2,
                          mat=voice, openings="rhythm", stair="none")
     if not res.get("ok"):
-        return res
+        return dict(res, emitted={"requested": {"storeys": asked_storeys},
+                                  "storeys": 0, "attempt": None,
+                                  "fallback": "no shell stood", "omitted": ["storeys"],
+                                  "features": {}})
+    # **What survived, said by the type.** The closure round.
+    emitted = {"requested": {"storeys": asked_storeys, "yard_use": yard_use},
+               "storeys": int(storeys), "attempt": len(gave_up),
+               "fallback": "; ".join(gave_up) or None,
+               "omitted": [] if storeys >= asked_storeys else ["storeys"],
+               "features": {"brackets": bool(extras) and "brackets" in extras,
+                            "engawa": True},
+               "rects": {"main": [hx0, hz0, hx1, hz1]},
+               "floors": list(res.get("floors") or [])}
 
     eave_y = res.get("eave_y") or (fy + 4)
     door_xz = _as_xz(res.get("door")) or fr["to"](u_door, hv0)
@@ -698,4 +722,5 @@ def build(b, part, seed, **params):
 
     b.seal_voids(hx0, hz0, hx1, hz1, m_wall)
     b.seal_voids(px0, pz0, px1, pz1, m_foot, max_cells=96)
+    res["emitted"] = emitted
     return res

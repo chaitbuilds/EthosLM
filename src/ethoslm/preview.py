@@ -102,6 +102,197 @@ def block_colour(state: str) -> tuple:
     return UNKNOWN
 
 
+# ------------------------------------------------------------- block textures v2,
+# design round, C1. One flat colour a block is the right instrument for massing and the
+# wrong one for judging a *material*: this table puts cobblestone at (127, 127, 127) and
+# andesite at (136, 136, 136), nine units apart and then shaded, so the expression
+# round's comparison could not see the substitution it existed to judge and reported
+# "the walls show nothing". The two stones are not nine units apart to a person -- they
+# differ in mottle. The game's own 16x16 textures are already on this host (Chunky's
+# copy of the client jar) and carry exactly that, so a close view draws real texels
+# instead of an average. Close views only. The isometric and the plan map stay flat:
+# they answer composition, where a texture is noise, and every cached judgement of them
+# stays valid.
+
+#: Chunky's client jar, the one `render.py` already points the renderer at.
+MC_JAR = os.environ.get("ETHOSLM_MC_JAR") or os.path.join(
+    settlement.ROOT, "run", "chunky", "home", "minecraft", "versions",
+    "1.21.11", "1.21.11.jar")
+TEXTURE_DIR = "assets/minecraft/textures/block/"
+TEXTURE_PX = 16                # the game's own texel grid; one block is 16x16
+#: Suffixes a block name carries that are a *shape*, not a material: the texture of a
+#: cobblestone stair is the texture of cobblestone.
+_SHAPE_SUFFIX = ("_stairs", "_slab", "_wall", "_fence_gate", "_fence", "_pane",
+                 "_button", "_pressure_plate", "_carpet", "_trapdoor")
+#: What a texture file is called when it is not called the block. In order: a wood's
+#: planks, the side of a column block, a crop's last stage, a fluid's still frame.
+_TEXTURE_SUFFIX = ("_planks", "_side", "_top", "_front", "_bottom", "_block",
+                   "_block_side", "_block_bottom", "_stage3", "_stage7", "_still",
+                   "_log", "_plant")
+_ATLAS: dict = {}      # the jar and its file list
+_TEXTURES: dict = {}   # block -> 16x16 texels
+_TILES: dict = {}      # (block, px) -> the tile a frame is painted with
+
+
+def _jar():
+    """The client jar, opened once, or None where this checkout has no `run/`."""
+    if "zip" not in _ATLAS:
+        import zipfile
+        try:
+            z = zipfile.ZipFile(MC_JAR)
+            _ATLAS["zip"] = z
+            _ATLAS["names"] = frozenset(
+                n[len(TEXTURE_DIR):-4] for n in z.namelist()
+                if n.startswith(TEXTURE_DIR) and n.endswith(".png"))
+        except Exception:                         # noqa: BLE001 -- no jar, flat display
+            _ATLAS["zip"] = _ATLAS["names"] = None
+    return _ATLAS["zip"]
+
+
+def texture_names() -> frozenset:
+    _jar()
+    return _ATLAS.get("names") or frozenset()
+
+
+def texture_name(state: str) -> str | None:
+    """The texture file a block state is drawn with, or None where the atlas has none.
+
+        A pure name resolution, separate from the pixels so the audit can read it: strip
+        the namespace and the state, strip a shape suffix, then try the names the game
+        actually files a block's side under. `scripts/test_design_material.py` asserts
+        every family in `prims.MATERIALS` resolves -- those are the blocks a recipe can
+        substitute, and a material comparison drawn on a fallback colour is the defect
+        this exists to remove.
+        
+    """
+    have = texture_names()
+    if not have:
+        return None
+    n = str(state).split("[")[0].split(":")[-1]
+    if n in AIR:
+        return None
+    base = n
+    for s in _SHAPE_SUFFIX:
+        if n.endswith(s) and len(n) > len(s):
+            base = n[: -len(s)]
+            break
+    seeds = [n, base]
+    if base.startswith("waxed_"):
+        base = base[len("waxed_"):]
+        seeds.append(base)
+    if base.startswith("smooth_"):
+        seeds.append(base[len("smooth_"):])
+    if base.endswith("_wood"):
+        seeds.append(base[: -len("_wood")] + "_log")
+    if base.endswith("_bed"):
+        seeds.append("white_wool")
+    if n.endswith("_carpet"):
+        seeds.append(base + "_wool")
+    if base.endswith("_block"):
+        seeds.append(base[: -len("_block")])
+    cands = list(seeds)
+    for b in seeds:
+        cands += [b + s for s in _TEXTURE_SUFFIX]
+        cands += [b + "s", b + "s_side"]
+        if b.endswith("_tile"):
+            cands.append(b + "s")
+        if b.endswith("_brick"):
+            cands.append(b + "s")
+    for b in list(cands):
+        cands += [b + "_bottom", b + "_side", b + "_top"]
+    for c in cands:
+        if c in have:
+            return c
+    return None
+
+
+def texture_of(state: str) -> np.ndarray | None:
+    """A block's 16x16 RGB texels, alpha composited over the background, or None.
+
+        Cached by state. Animated textures (water, fire) are a vertical strip of frames;
+        the first frame is the one a still picture wants.
+        
+    """
+    key = str(state).split("[")[0]
+    if key in _TEXTURES:
+        return _TEXTURES[key]
+    name = texture_name(key)
+    img = None
+    if name:
+        import cv2
+        raw = np.frombuffer(_jar().read(f"{TEXTURE_DIR}{name}.png"), np.uint8)
+        a = cv2.imdecode(raw, cv2.IMREAD_UNCHANGED)
+        if a is not None:
+            if a.ndim == 2:
+                a = a[:, :, None].repeat(3, 2)
+            if a.shape[0] > a.shape[1]:            # an animation strip: the first frame
+                a = a[: a.shape[1]]
+            if a.shape[2] == 4:
+                al = a[:, :, 3:4].astype(np.float32) / 255.0
+                rgb = a[:, :, 2::-1].astype(np.float32)
+                a = (rgb * al + BG * (1 - al))
+            else:
+                a = a[:, :, ::-1].astype(np.float32)
+            img = np.clip(a, 0, 255).astype(np.uint8)
+    _TEXTURES[key] = img
+    return img
+
+
+def _tile(state: str, px: int) -> np.ndarray:
+    """One block's texels at `px` square, or its flat colour where it has no texture.
+
+        A block with no texture (air's neighbours, a decorated pot) falls back to the flat
+        table rather than dropping out, so a textured view is never *less* complete than a
+        flat one; the audit is what keeps the fallback off the material families.
+        
+    """
+    key = (str(state).split("[")[0], int(px))
+    got = _TILES.get(key)
+    if got is None:
+        tex = texture_of(state)
+        if tex is None:
+            got = np.full((px, px, 3), block_colour(str(state)), np.float32)
+        elif px == tex.shape[0]:
+            got = tex.astype(np.float32)
+        else:
+            import cv2
+            mode = cv2.INTER_AREA if px < tex.shape[0] else cv2.INTER_NEAREST
+            got = cv2.resize(tex, (px, px), interpolation=mode).astype(np.float32)
+        _TILES[key] = got
+    return got
+
+
+def _paint(grid: np.ndarray, fade: np.ndarray, palette, scale: int,
+           texture: bool) -> np.ndarray:
+    """A (rows, cols) grid of palette codes (-1 for nothing) into an image.
+
+        Flat: one colour a cell, then `scale` pixels a cell -- byte-identical to what this
+        module has always drawn. Textured: `scale` is the texel square a block gets, and
+        the cell is the block's own texels under the same shading.
+        
+    """
+    drawn = grid >= 0
+    rows = np.nonzero(drawn.any(axis=1))[0]
+    cols = np.nonzero(drawn.any(axis=0))[0]
+    if not len(rows) or not len(cols):
+        return np.full((2, 2, 3), BG, np.uint8)
+    grid = grid[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
+    fade = fade[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
+    if not texture:
+        lut = np.array([block_colour(s) for s in palette] + [(BG, BG, BG)], np.float32)
+        img = np.clip(lut[grid] * fade[:, :, None], 0, 255).astype(np.uint8)
+        img[grid < 0] = BG
+        return _trim(img, scale)
+    H, W = grid.shape
+    out = np.full((H * scale, W * scale, 3), BG, np.uint8)
+    tiles = {c: _tile(palette[c], scale) for c in np.unique(grid) if c >= 0}
+    for r, c in zip(*np.nonzero(grid >= 0)):
+        cell = tiles[grid[r, c]] * fade[r, c]
+        out[r * scale:(r + 1) * scale, c * scale:(c + 1) * scale] = \
+            np.clip(cell, 0, 255).astype(np.uint8)
+    return out
+
+
 def _solid(vol: observe.Volume, clip: bool = True) -> np.ndarray:
     """The occupancy the projections draw, clipped to ground - 8.
 
@@ -194,8 +385,31 @@ def preview(vol: observe.Volume, scale: int = 2, grey: bool = False,
     return _trim(img, scale)
 
 
+def top_down(vol: observe.Volume, scale: int = 2, texture: bool = False) -> np.ndarray:
+    """The built volume from above: the top block's colour, shaded by the fall to its
+    neighbours, so a roof reads as a roof and a lane as a lane. The closure round's
+    cheapest picture of an assembled place; one pixel a column.
+
+    `texture=True` draws the block's own texels instead, which is what a court, a
+    paved floor and a roofscape need when the question is the material."""
+    solid = _solid(vol, clip=False)
+    sx, sy, sz = solid.shape
+    top = np.where(solid.any(axis=1), sy - 1 - np.argmax(solid[:, ::-1, :], axis=1), -1)
+    xs, zs = np.nonzero(top >= 0)
+    ys = top[xs, zs]
+    east = np.where(xs + 1 < sx, top[np.minimum(xs + 1, sx - 1), zs], ys)
+    south = np.where(zs + 1 < sz, top[xs, np.minimum(zs + 1, sz - 1)], ys)
+    fall = (ys - east) + (ys - south)
+    grid = np.full((sz, sx), -1, np.int32)
+    shade = np.ones((sz, sx), np.float64)
+    grid[zs, xs] = vol.codes[xs, ys, zs]
+    shade[zs, xs] = np.clip(1.0 + 0.08 * fall, 0.6, 1.25)
+    return _paint(grid, shade, list(vol.palette), scale, texture)
+
+
 def elevation(vol: observe.Volume, facing: str = "south", scale: int = 2,
-              grey: bool = False, clip: bool = True) -> np.ndarray:
+              grey: bool = False, clip: bool = True,
+              texture: bool = False) -> np.ndarray:
     """Orthographic front elevation: the wall as a wall, one horizontal axis flattened.
 
         `facing` names the elevation you are looking at -- "south" is the south front, seen
@@ -206,6 +420,11 @@ def elevation(vol: observe.Volume, facing: str = "south", scale: int = 2,
         Depth is not discarded: a cell set back from the frontmost plane is drawn darker,
         one step per two blocks of recess, so a recessed opening, a jetty and a stepped
         row read as such rather than flattening into one plane.
+
+        `texture=True` draws each block as its own 16x16 game texels rather than one
+        averaged colour, and `scale` becomes the texel square a block gets. That is the
+        display a *material* judgement needs and the flat one cannot give: see
+        `texture_name` above.
         
     """
     solid = _solid(vol, clip)
@@ -233,16 +452,16 @@ def elevation(vol: observe.Volume, facing: str = "south", scale: int = 2,
     else:
         raise ValueError(f"facing must be a compass point, not {facing!r}")
 
-    img = np.full((sy, width, 3), BG, np.uint8)
+    grid = np.full((sy, width), -1, np.int32)
+    shade = np.ones((sy, width), np.float64)
+    grid[sy - 1 - rows, cols] = codes
+    shade[sy - 1 - rows, cols] = np.clip(1.0 - 0.06 * (dist // 2), 0.55, 1.0)
     if grey:
-        base = np.full((len(rows), 3), 190, np.float32)
-    else:
-        lut = np.array([block_colour(s2) for s2 in vol.palette], np.float32)
-        base = lut[codes]
-    fade = np.clip(1.0 - 0.06 * (dist // 2), 0.55, 1.0)[:, None]
-    col = np.clip(base * fade, 0, 255).astype(np.uint8)
-    img[sy - 1 - rows, cols] = col
-    return _trim(img, scale)
+        img = np.full((sy, width, 3), BG, np.uint8)
+        img[sy - 1 - rows, cols] = np.clip(
+            190.0 * shade[sy - 1 - rows, cols][:, None], 0, 255).astype(np.uint8)
+        return _trim(img, scale)
+    return _paint(grid, shade, list(vol.palette), scale, texture)
 
 
 # --------------------------------------------------------------- the plan, as a map v2,

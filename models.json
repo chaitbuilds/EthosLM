@@ -16,7 +16,13 @@
   "  tier name, a literal provider/model, or `subagent` to leave that role staged.",
   "Environment: ETHOSLM_MODEL_API=<provider> routes every role through that provider's tiers;",
   "  ETHOSLM_MODEL_<ROLE>=<provider>/<model> overrides one role; ETHOSLM_MODEL_<ROLE>=subagent stages it;",
-  "  ETHOSLM_MODEL_API=anthropic with ETHOSLM_MODEL_NAME=<id> (the types_n knob) means that model for every role."
+  "  ETHOSLM_MODEL_API=anthropic with ETHOSLM_MODEL_NAME=<id> (the types_n knob) means that model for every role.",
+  "retrieval: the architecture round's bounded reference acquisition. ETHOSLM_RETRIEVAL=none (the default,",
+  "  and the honest one: nothing is retrieved and every claim in the reading is marked inferred),",
+  "  `recorded` (a cassette directory named by ETHOSLM_RETRIEVAL_CASSETTE: what a real run returned, for",
+  "  deterministic tests and warm replay), or `http` (a real search endpoint). An http provider names its",
+  "  URL, method, query parameter, key variable and where the results live in the answer, so any JSON",
+  "  search API is configuration rather than code; ETHOSLM_RETRIEVAL_PROVIDER picks one by name."
  ],
  "providers": {
   "anthropic": {
@@ -73,5 +79,36 @@
   "build": "frontier",
   "revise": "small",
   "judge": "vision"
+ },
+ "retrieval": {
+  "default": "search",
+  "providers": {
+   "search": {
+    "search_url": "",
+    "search_url_env": "ETHOSLM_SEARCH_URL",
+    "method": "GET",
+    "query_param": "q",
+    "key": "ETHOSLM_SEARCH_KEY",
+    "key_header": "x-subscription-token",
+    "results_path": "web.results",
+    "title_key": "title",
+    "url_key": "url",
+    "snippet_key": "description",
+    "headers": {
+     "accept": "application/json"
+    }
+   },
+   "searxng": {
+    "search_url": "http://localhost:8888/search?format=json",
+    "search_url_env": "ETHOSLM_SEARXNG_URL",
+    "method": "GET",
+    "query_param": "q",
+    "key": null,
+    "results_path": "results",
+    "title_key": "title",
+    "url_key": "url",
+    "snippet_key": "content"
+   }
+  }
  }
 }

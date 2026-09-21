@@ -173,6 +173,9 @@ def _open_runs(x0, z0, x1, z1, cells, rng):
 def _gap_cells(x0, z0, x1, z1, gates, half):
     gap = set()
     for (gx, gz) in gates:
+        # the gate cell itself, corner or not: the closure round found the reserved
+        # doorway on a field's corner and a border post standing on it
+        gap.add((gx, gz))
         side = _side_of(x0, z0, x1, z1, gx, gz)
         if side in ("north", "south"):
             for x in range(max(x0 + 1, gx - half), min(x1 - 1, gx + half) + 1):
@@ -374,6 +377,7 @@ def build(b, part, seed, **params):
                     b.place_block(x, y + 1, z, name + "[age=" + str(age) + "]")
 
     _border(b, voice, x0, z0, x1, z1, y, style, gap, rng)
+    b.area_way_in(x0, z0, x1, z1, y)
 
     # the boarded deck under the eave has no eave here: a drying stage on the headland,
     # boards laid a step up, on the side of the field away from the gate

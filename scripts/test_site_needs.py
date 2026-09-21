@@ -1345,8 +1345,15 @@ def t_5_the_district_calls_are_asked_for_as_a_batch():
         json.dump({}, open(first["write"], "w"))
         again = stages_plan.district_asks(rnd, s, site, place, None, "ochre_stone_green_tile")
         assert len(again) == n - 1
-        assert pipeline._needs_model({"plan": {"status": "needs_model"}, **asks}) \
-            == ["plan"] + list(asks)
+        # **The driver waits on every one of them.** `_needs_model` returns the agent
+        # jobs themselves and not their keys -- `model.staged`'s rule since the
+        # unification round, so that a stage answering *flat* is visible to the loop
+        # that waits -- so what is asserted is that the flat entry and every district's
+        # are all in the list, one each.
+        waiting = pipeline._needs_model({"plan": {"status": "needs_model"}, **asks})
+        assert len(waiting) == 1 + len(asks), waiting
+        assert {w.get("write") for w in waiting if w.get("write")} == \
+            {v["write"] for v in asks.values()}, waiting
     return (f"{n} districts asked for at once, each its own entry with its brief on "
             f"disk; one answered leaves {n - 1}; the driver waits on all of them")
 

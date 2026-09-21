@@ -319,7 +319,9 @@ def build(b, part, seed, **params):
                 mat = TRIM
             b.place_cuboid(x, body0, z, x, wy - 1, z, mat)
             if face != 0 and mat != TRIM:
-                b.place_block(x, wy - 1, z, TRIM)
+                # the cornice under the walk: one continuous line, a figure
+                with b.figure("wall_cornice"):
+                    b.place_block(x, wy - 1, z, TRIM)
         b.place_block(x, wy, z, PAVE)
         mark(x, z, wy)
 
@@ -375,14 +377,26 @@ def build(b, part, seed, **params):
                     tb = bs + ((wy - bs) * 3) // 4
                     if tb >= bb:
                         b.place_cuboid(kx, bb, kz, kx, tb, kz, WALL)
-                        b.place_block(kx, tb + 1, kz, b.block(voice["trim"], "slab")
-                                      + "[type=bottom]")
+                        # the cap of the pier: part of the same drawn line as the string
+                        # course below, and declared a figure for the same reason
+                        with b.figure("wall_string_course"):
+                            b.place_block(kx, tb + 1, kz, b.block(voice["trim"], "slab")
+                                          + "[type=bottom]")
                         mark(kx, kz, tb + 1)
                 else:
                     sc = bs + (wy - bs) // 2
                     if sc > bb:
-                        b.place_block(kx, sc, kz, b.block(voice["trim"], "slab")
-                                      + "[type=top]")
+                        # **The string course is a figure.** Composition round. This one
+                        # trim slab per bay, all at one height, is the horizontal line
+                        # that says the wall is dressed; the design round's material
+                        # pass put vertical stains up this face that cut straight
+                        # through it (`out/des-material/comparison.json`, criterion 5,
+                        # on `great_wall_upper_ring` -- which is this type). The wall
+                        # body either side of the line stays editable, so the mass may
+                        # age while the line does not break.
+                        with b.figure("wall_string_course"):
+                            b.place_block(kx, sc, kz, b.block(voice["trim"], "slab")
+                                          + "[type=top]")
                         mark(kx, kz, sc)
 
     # ---- where the walk changes level, it changes on treads ------------------

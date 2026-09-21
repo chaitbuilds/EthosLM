@@ -15,6 +15,13 @@ FORM = "european_vernacular"
 #: and a shop-house are both east Asian.
 ROLE = "rural"
 
+#: **What this type is for.** The realization round: a `ROLE` says what work a building
+#: is for and is satisfied by a hall, a barn or a temple alike; a sentence asking for
+#: houses people live in is asking for a `dwelling`. Declared so that the function can
+#: be checked rather than inferred from a label.
+FUNCTION = "dwelling"
+
+
 PARAMS = {
     "storeys": ("int", 1, 3),
     "outshot": ("choice", ["byre", "store", "scullery"]),
@@ -32,6 +39,320 @@ NEEDS = {
     "ground": "any",
     "clearance": 2,
 }
+
+#: **The lots this type needs, measured** by `$PY scripts/type_needs.py --envelope
+#: --transcribe cottage`: each row is the least lot on which the parameters stand with
+#: the features named, at one seed (`lot_min`) and at seeds [1, 2, 3] (`lot_pref`). Read
+#: by `ethoslm.envelope.lot_for` before a lot is drawn; the outcome construction measures
+#: afterwards remains authoritative.
+ENVELOPE = [
+ {
+  "params": {
+   "outshot": "byre",
+   "storeys": 1
+  },
+  "features": [],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "byre",
+   "storeys": 1
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "byre",
+   "storeys": 2
+  },
+  "features": [],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "byre",
+   "storeys": 2
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   15,
+   17
+  ],
+  "lot_pref": [
+   16,
+   17
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "byre",
+   "storeys": 3
+  },
+  "features": [],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "byre",
+   "storeys": 3
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   15,
+   17
+  ],
+  "lot_pref": [
+   16,
+   17
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "store",
+   "storeys": 1
+  },
+  "features": [],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "store",
+   "storeys": 1
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "store",
+   "storeys": 2
+  },
+  "features": [],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "store",
+   "storeys": 2
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   15,
+   17
+  ],
+  "lot_pref": [
+   16,
+   17
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "store",
+   "storeys": 3
+  },
+  "features": [],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "store",
+   "storeys": 3
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   15,
+   17
+  ],
+  "lot_pref": [
+   16,
+   17
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "scullery",
+   "storeys": 1
+  },
+  "features": [],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "scullery",
+   "storeys": 1
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "scullery",
+   "storeys": 2
+  },
+  "features": [],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "scullery",
+   "storeys": 2
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   15,
+   17
+  ],
+  "lot_pref": [
+   16,
+   17
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "scullery",
+   "storeys": 3
+  },
+  "features": [],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "outshot": "scullery",
+   "storeys": 3
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   15,
+   17
+  ],
+  "lot_pref": [
+   16,
+   17
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ }
+]
 
 OPP = {"north": "south", "south": "north", "east": "west", "west": "east"}
 
@@ -372,6 +693,10 @@ def _furnish_hall(b, rect, y, blocked, rng, stack_side, flue):
     if area >= 20:
         _put(b, "rug", [c for c in mid if c not in used], y, rect, room=room,
              mat=b.voice["floor"])
+    # the expression round: the fire is the hall's function, and where it stands is
+    # reported so `construction.outcome` can verify a hearth rather than take it on
+    # trust
+    return hearth
 
 
 def _furnish_chamber(b, rect, y, blocked, rng):
@@ -407,12 +732,34 @@ def _furnish_chamber(b, rect, y, blocked, rng):
              mat=b.voice["floor"])
 
 
-def _furnish_outshot(b, rect, y, blocked, rng, use):
-    """The lean-to, and what it is for."""
+def _furnish_outshot(b, rect, y, blocked, rng, use, way=()):
+    """The lean-to, and what it is for.
+
+        `way` is the row of this room that faces the house -- where the way through from the
+        hall comes out. It is already in `blocked`, which keeps a fitting from being *placed
+        on* it; what that does not do is keep a fitting from being placed beside it and
+        **reaching** across it, and a store is three cells long.
+
+        Found by running the shore village: one cottage in six came back with its lean-to
+        sealed -- "a room of 12 cells cannot be walked into", "none of its floor cells can be
+        walked to from its own doorway". It reproduces on flat ground at seeds 4 and 5 with
+        `storeys=1, outshot="store"` on a 28x12 lot, and never with a scullery, whose pieces
+        are one cell each. A candidate list that filters the anchor and not the length is a
+        filter with the piece's own size missing from it.
+        
+    """
     x0, _, z0, x1, z1 = rect
     edge = _room_cells(x0, z0, x1, z1, blocked, rng, True)
     mid = _room_cells(x0, z0, x1, z1, blocked, rng, False)
     used = set()
+
+    def clear_of_way(cells, reach):
+        """The candidates a `reach`-long piece can stand on without crossing `way`."""
+        if not way or reach <= 1:
+            return list(cells)
+        return [(x, z) for (x, z) in cells
+                if not any(abs(x - wx) < reach and abs(z - wz) < reach
+                           for (wx, wz) in way)]
     if use == "byre":
         for kind in ("trough", "fodder", "fodder"):
             c = _put(b, kind, [c for c in edge if c not in used], y, rect,
@@ -433,9 +780,11 @@ def _furnish_outshot(b, rect, y, blocked, rng, use):
         if c is not None:
             used.add(c)
     else:
-        c = _put(b, "store", [c for c in edge if c not in used], y, rect,
-                 mat=b.voice["floor"], extent=3)
+        c = _put(b, "store", clear_of_way([c for c in edge if c not in used], 3), y,
+                 rect, mat=b.voice["floor"], extent=3)
         if c is None:
+            # nowhere a three-long piece stands clear of the way through: one cell,
+            # which `blocked` alone is enough to keep off it
             c = _put(b, "store", [c for c in edge if c not in used], y, rect,
                      mat=b.voice["floor"], extent=1)
         if c is not None:
@@ -454,6 +803,7 @@ def build(b, part, seed, **params):
     if not isinstance(storeys, int) or storeys < 1:
         storeys = 1
     storeys = min(3, storeys)
+    asked_storeys = storeys
     use = params.get("outshot", "byre")
     if use not in ("byre", "store", "scullery"):
         use = "store"
@@ -470,9 +820,21 @@ def build(b, part, seed, **params):
             "chimney": plan["chimney"], "flashing": True}
     if plan["dormers"]:
         base["dormers"] = plan["dormers"]
+    # **A porch only where the door stands at its lane.** The expression round's farm,
+    # found by the improve loop: three one-storey cottages on platforms (the ground
+    # falling four to seven blocks under the pad) each got the porch fallback, and
+    # `building()` then re-laid the way in from the porch's deck down the platform's
+    # face -- straight through the doorway cell the circulation pass had reserved at the
+    # foot of the bank, three courses of masonry in it, E008 on every one. The same lots
+    # asked for two storeys took the ladder past the porch and passed. A porch is a roof
+    # over a doorstep, and a doorstep at the top of a bank has the bank for its approach
+    # already; the type does not add one there.
+    lane = b.nearest_lane(part["door"][0], part["door"][-1])
+    lane_y = lane.get("y") if isinstance(lane, dict) else None
+    raised = isinstance(lane_y, int) and fy - lane_y >= 2
     if plan["depth"] >= 2:
         base["outshot"] = {"side": plan["out_side"], "depth": plan["depth"]}
-    else:
+    elif not raised:
         # too tight a pad for a lean-to: the door gets a porch instead
         base["porch"] = True
 
@@ -493,14 +855,57 @@ def build(b, part, seed, **params):
     ]
     res = None
     won = None
-    for (st, spec, kw) in attempts:
+    won_st = None
+    rung = None
+    for i, (st, spec, kw) in enumerate(attempts):
         r = b.building(label, main[0], main[1], main[2], main[3], st, spec, **kw)
         if isinstance(r, dict) and r.get("ok"):
             res = r
             won = kw
+            won_st = st
+            rung = i
             break
     if res is None:
-        return {"ok": False, "label": label}
+        return {"ok": False, "label": label,
+                "emitted": {"requested": {"storeys": asked_storeys, "outshot": use},
+                            "storeys": 0, "attempt": None, "fallback": "no shell stood",
+                            "omitted": ["storeys", "outshot"], "features": {}}}
+    # **What survived, said by the type itself.** The closure round. Two things reduce a
+    # cottage below what it was asked for and neither used to be reported: `_plan` drops
+    # storeys the inner block cannot carry, and the ladder above drops the dormers, then
+    # the lean-to and the porch, then a storey, then the roof it was given. The record
+    # names which rung stood and what each rung gave up; `construction.outcome` measures
+    # the geometry beside it and the measurement wins where they disagree.
+    gave_up = []
+    if plan["storeys"] < asked_storeys:
+        gave_up.append(f"plan: storeys {asked_storeys} -> {plan['storeys']} for a "
+                       f"{main[2] - main[0] + 1}x{main[3] - main[1] + 1} main block")
+    if plan["depth"] < 2:
+        gave_up.append("plan: no room for a lean-to; a porch instead" if not raised else
+                       "plan: no room for a lean-to, and the door stands above its lane "
+                       "on a raised pad, so no porch either")
+    rung_names = ("as planned", "no dormers", "no lean-to or porch", "one storey fewer",
+                  "one plain storey under a flat gable")
+    if rung:
+        gave_up.append(f"ladder: {rung_names[rung]}")
+    emitted = {
+        "requested": {"storeys": asked_storeys, "outshot": use},
+        "storeys": int(won_st), "attempt": int(rung),
+        "fallback": "; ".join(gave_up) or None,
+        "omitted": ([] if won_st >= asked_storeys else ["storeys"])
+                   + ([] if "outshot" in won else ["outshot"])
+                   + ([] if ("dormers" in won or not plan["dormers"]) else ["dormers"]),
+        "features": {"outshot": "outshot" in won, "porch": bool(won.get("porch")),
+                     "dormers": int(won.get("dormers") or 0),
+                     "chimney": "chimney" in won},
+        "rects": {**({"outshot": list(res["outshot"])} if res.get("outshot") else {}),
+                  **({"chimney": [int(res["chimney"]["x"]), int(res["chimney"]["z"]),
+                                  int(res["chimney"]["x"]), int(res["chimney"]["z"])]}
+                     if isinstance(res.get("chimney"), dict)
+                     and res["chimney"].get("x") is not None else {}),
+                  "main": list(main)},
+        "floors": list(res.get("floors") or []),
+    }
 
     ridge = res.get("ridge_y")
     eave = res.get("eave_y")
@@ -525,6 +930,8 @@ def build(b, part, seed, **params):
     blocked |= _way_in(main, plan["door_side"], part["door"][0],
                        part["door"][-1])
 
+    #: Where the hall's fire was accepted, checked at the end of the build. See there.
+    hearth_cell = None
     rooms = []
     for r in (res.get("rooms") or []):
         if not isinstance(r, (list, tuple)) or len(r) != 5:
@@ -550,12 +957,31 @@ def build(b, part, seed, **params):
             circulation = {(r[0] + 1, r[2]), (r[0] + 1, r[4]),
                            (r[3] - 1, r[2]), (r[3] - 1, r[4])}
             if i == 0:
-                _furnish_hall(b, r, y, blocked | circulation, rng, plan["chimney"]
-                              if isinstance(plan["chimney"], str) else "north",
-                              flue)
+                # **And the hall's own side of the way through.** `_inner_row` keeps the
+                # lean-to's side of the link clear; nothing kept the hall's, so a store
+                # or a shelf could stand in the hall directly in front of the opening
+                # and seal the room behind it -- "a room of 12 cells cannot be walked
+                # into", on a 28x12 lot at seeds 4 and 5 with `storeys=1,
+                # outshot="store"`. An opening with a cupboard on one side of it is not
+                # an opening, and which side the obstruction is on makes no difference
+                # to the person trying to walk through.
+                facing = set()
+                for other in lower[1:]:
+                    facing |= _inner_row(r, other[:1] + other[2:])
+                hearth_at = _furnish_hall(b, r, y, blocked | circulation | facing, rng,
+                                          plan["chimney"]
+                                          if isinstance(plan["chimney"], str) else "north",
+                                          flue)
+                if hearth_at is not None:
+                    # **claimed where the fire is, and checked at the end.** The rect is
+                    # the cell the fitting was asked at; whether a fire is standing in
+                    # it when the house is finished is a different question, and
+                    # `_hearth_stands` below is where it is asked. See there.
+                    hearth_cell = (int(hearth_at[0]), int(hearth_at[1]), int(y))
             else:
-                _furnish_outshot(b, r, y, blocked | circulation | _inner_row(r, main), rng,
-                                 use)
+                way = _inner_row(r, main)
+                _furnish_outshot(b, r, y, blocked | circulation | way, rng, use,
+                                 way=way)
         for r in upper:
             y = _stand_y(b, r[0], r[1], r[2], r[3], r[4])
             _furnish_chamber(b, r, y, blocked, rng)
@@ -579,4 +1005,26 @@ def build(b, part, seed, **params):
                  max_cells=400)
     b.check_walkable(label)
     b.check_attached()
-    return {"ok": True, "label": label, "ridge_y": ridge}
+    # **A rectangle for a fire that is not there is a false certificate.** The design
+    # round, measured on a probe: a one-storey cottage lays its campfire and a
+    # *two*-storey one lays none at all -- `b.fitting("hearth", ...)` answers `ok` and
+    # the fire is not in the emitted blocks -- and this file published `rects.hearth`
+    # either way. `construction._verify_rect` then found the second storey's floor four
+    # courses up the hearth's own column and certified it, so seven of the `des-farm`
+    # farm's seventeen cottages carried a verified hearth that does not exist. The
+    # rectangle is published only where the fire is standing when the house is finished;
+    # where it is not, the hearth is `omitted`, which is what it is, and
+    # `construction.constraint` routes it to the owner who can build it.
+    if hearth_cell is not None:
+        hx, hz, hy = hearth_cell
+        if "campfire" in b.get_block(hx, hy, hz):
+            emitted["features"]["hearth"] = True
+            emitted["rects"]["hearth"] = [hx, hz, hx, hz]
+        else:
+            emitted["features"]["hearth"] = False
+            if "hearth" not in emitted["omitted"]:
+                emitted["omitted"].append("hearth")
+            emitted["fallback"] = emitted.get("fallback") or (
+                f"the hearth the room accepted at ({hx}, {hz}) carries no fire when the "
+                f"house is finished")
+    return {"ok": True, "label": label, "ridge_y": ridge, "emitted": emitted}

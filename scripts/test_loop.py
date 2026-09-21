@@ -144,7 +144,14 @@ def t_2_one_bounded_revision_of_the_characters_or_the_voice_and_then_the_build()
     with tempfile.TemporaryDirectory() as tmp:
         rnd, be = _round(tmp)
         t0 = time.perf_counter()
+        # **Driven, not called once.** A stage that changes the candidate under itself
+        # returns `reenter` and the driver runs it again -- the unification round gave
+        # the layout owner ground and type actions, so a place short of its band now
+        # asks to be re-entered where before it moved its own promise in one pass. One
+        # call is not the production path; `round._drive_reentries` is.
+        from ethoslm.pipeline import round as driver
         res = stages_plan.stage_plan(rnd, be, {})
+        res = driver._drive_reentries(rnd, be, {}, "plan", res)
         plan_s = time.perf_counter() - t0
         assert not list(model_mod.staged(res)) and not res.get("plan", {}).get("stop"), res
         assert os.path.exists(rnd.rel("plan.json"))
@@ -176,6 +183,23 @@ def t_2_one_bounded_revision_of_the_characters_or_the_voice_and_then_the_build()
         open(ask["write"], "w").write(
             "The blocks read as detached houses on lawns; the hall is right.\n")
         res = pipeline.STAGES["preview"](rnd, be, {})
+        # **The repair pass stands between the reading and the revision.** The
+        # architecture round: the findings this plan carries are routed to the layer
+        # that owns them and the ones this build can make are made, before a word is
+        # changed. Where one changes a planning decision the plan is laid out again and
+        # the stage goes back to the reading, so the repaired plan is *inspected* and
+        # not merely redrawn -- which is the thing the old loop never did.
+        repaired = res.get("repair")
+        if repaired and repaired.get("changed"):
+            assert repaired["applied"], repaired
+            assert "after" in repaired and "closed" in repaired, repaired
+            assert not res.get("revision"), "the revision is asked after the recheck"
+            res = pipeline.STAGES["preview"](rnd, be, {})
+            ask = res["reading"]
+            assert ask["role"] == "judge", ask
+            open(ask["write"], "w").write(
+                "The blocks read as detached houses on lawns; the hall is right.\n")
+            res = pipeline.STAGES["preview"](rnd, be, {})
         ask2 = res["revision"]
         assert ask2["status"] == "needs_model" and ask2["role"] == "spec", ask2
         assert ask2["write"].endswith("revision.json") and len(ask2["images"]) == 3
@@ -195,10 +219,26 @@ def t_2_one_bounded_revision_of_the_characters_or_the_voice_and_then_the_build()
                    "why": "courts behind every row, and the hillside's own stone"},
                   open(ask2["write"], "w"))
         t0 = time.perf_counter()
+        # **Driven, not called once** -- the same rule as the plan stage above, and for
+        # the same reason. A revision changes the candidate, so the stage asks to be re-
+        # entered and reads *this* design before it is built; a caller that runs the
+        # stage once sees the pending re-entry and calls it unfinished. The reading of
+        # the revised candidate is answered here, which is what the driver's wait loop
+        # does with any `needs_model` a re-entered stage returns.
         res = pipeline.STAGES["preview"](rnd, be, {})
+        for _ in range(4):
+            if not res.get("status") == "reenter" and not res.get("reading"):
+                break
+            ask3 = res.get("reading")
+            if ask3 and not os.path.exists(ask3["write"]):
+                open(ask3["write"], "w").write(
+                    "The courts read as one place now; the hall still leads.\n")
+            res = pipeline.STAGES["preview"](rnd, be, {})
         apply_s = time.perf_counter() - t0
         rec = res["preview"]
         assert rec.get("done") and rec["revisions"] == 1, rec
+        # the revised candidate was read, not merely redrawn
+        assert os.path.exists(os.path.join(rnd.rel("preview"), "reading_1.md"))
         applied = rec["applied"]
         assert list(applied["characters"]) == ["houses"], applied
         assert applied["characters"]["houses"]["courtyard_share"] == 1.0

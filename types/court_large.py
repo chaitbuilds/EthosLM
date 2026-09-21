@@ -22,6 +22,10 @@ FORM = "east_asian"
 #: and a shop-house are both east Asian.
 ROLE = "urban"
 
+#: What this type delivers, by name, so a requirement can ask for it and the assembled
+#: world can be asked whether it is there. The yard is the point of the building.
+FEATURES = ("courtyard",)
+
 PARAMS = {
     "storeys": ("int", 1, 3),
     "yard": ("choice", ["garden", "well", "orchard"]),
@@ -685,4 +689,17 @@ def build(b, part, seed, **params):
     b.check_door(dx, fy + 1, dz)
     b.check_walkable(part["label"])
     b.check_attached()
-    return {"ranges": 4, "storeys": ns, "yard": (yx0, yz0, yx1, yz1)}
+    # **The court is declared, so the assembled world can be asked about it.** The
+    # composition round: this type lays four ranges round a yard and published nothing
+    # about it, so `usable.court_accessible` answered `unsupported` on every one of the
+    # twenty-five courts the section built -- the registered relationship "courts that
+    # are enclosed and entered" could not be measured at all, and an unmeasured
+    # relationship holds nothing. `courtyard` is in `construction.OPEN_FEATURES`, so
+    # what is verified is that the yard is *open* ground reachable from the house, which
+    # is what a court is.
+    return {"ranges": 4, "storeys": ns, "yard": (yx0, yz0, yx1, yz1),
+            "emitted": {"storeys": int(ns),
+                        "features": {"courtyard": True, "chimney": False},
+                        "rects": {"main": [int(x0), int(z0), int(x1), int(z1)],
+                                  "courtyard": [int(yx0), int(yz0), int(yx1),
+                                                int(yz1)]}}}

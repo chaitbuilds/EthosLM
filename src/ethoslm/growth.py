@@ -36,28 +36,96 @@ GROWTH_CAP = 2
 LEAF_KINDS = ("plot", "edge", "point", "area")
 
 
-def type_gaps(spec: dict, names=None) -> list:
-    """The defining parts no committed type builds, in spec order.
+def type_gaps(spec: dict, names=None, intent: dict | None = None) -> list:
+    """The defining parts no committed **capability** answers, in spec order, and --
+        the expression round -- the **functions** the request asks for that no type of the
+        place's form declares (`function_gaps`).
 
-        A part of one of `LEAF_KINDS` (never a compound: its halls and walls are the
-        committed types') with no type of its kind **named for its family** -- `tower` or
-        `tower_*` -- among the types of the place's form (and the part's own), which is
-        the rule `stages_plan._choose_voice` refuses on and `placesolve._type_for` places
-        by. `names` is the round's own list of types where it has one.
+        Was: a type of the right kind whose *filename* began with the family, among the
+        types of the place's form. The architecture audit's finding is that a filename is
+        not a capability -- the same rule admitted a type of the wrong form at
+        `stage()` below -- so the question is now asked of what the type declares about
+        itself: its kind, its form, its role, its envelope and its attachment. See
+        `ethoslm.capability.fits`.
+
+        `names` is the round's own list of types where it has one; `intent` the checked
+        intent record, where the caller has one (without it only defining-part gaps open).
         
     """
+    from . import capability
+    out = list(capability.gaps(spec, names=names))
+    for p in function_gaps(spec, intent, names=names):
+        if p not in out:
+            out.append(p)
+    return out
+
+
+#: Which functions are open ground rather than a building, so the gap is an `area`.
+AREA_FUNCTIONS = ("market", "bazaar", "fair")
+
+
+def _declares_function(decl: dict, fn: str, form: str | None) -> bool:
+    got = decl.get("function") or (decl.get("needs") or {}).get("function")
+    if not got or str(got).lower() != str(fn).lower():
+        return False
+    return _pipeline.form_ok(decl.get("form"), form)
+
+
+def function_gaps(spec: dict, intent: dict | None, names=None) -> list:
+    """The functions the request asks for by name that no committed type of the place's
+        form declares, each as a **pseudo defining part** the growth path can author.
+
+        A `function` requirement (`function/market`, `function/smithing`) or a `feature`
+        requirement whose feature word is a function (`feature/market`) opens a gap when
+        every type declaring that function is of another form. The part carries the
+        requirement it answers (`answers`) and the function (`function`), which the brief
+        names as the feature contract and the gate checks on the answer: a type adopted for
+        a function gap declares the function, or it is not adopted. Unsupported
+        requirements open nothing -- they were refused by name upstream and stay refused.
+        
+    """
+    from . import envelope
+    if not intent:
+        return []
     from .placeplan import types_card
+    _t, decls = types_card(names, forms=[None])
+    form = spec.get("form")
     out = []
-    for p in spec.get("defining_parts") or []:
-        if p.get("kind") not in LEAF_KINDS or spec_mod.compound(p):
+    seen = set()
+    for r in intent.get("requirements") or []:
+        if r.get("kind") not in ("function", "feature"):
             continue
-        forms = [f for f in [spec.get("form"), *(p.get("forms") or [])] if f]
-        _t, decls = types_card(names, forms=forms or [None])
-        fam = p["family"]
-        if any(d.get("kind", "plot") == p["kind"]
-               and (n == fam or n.startswith(fam + "_")) for n, d in decls.items()):
+        if r.get("status") in ("unsupported", "satisfied"):
             continue
-        out.append(p)
+        # (coordinator, the expression round's farm run) a soft reading of what the
+        # whole place is for -- `function/farming` of a "farming village" -- is not a
+        # capability gap: only a hard function of a buildable thing opens one
+        w = r.get("wants") or {}
+        if not r.get("hard") or str(w.get("what") or "").lower() in (
+                "village", "town", "city", "hamlet", "place", "settlement", "ring",
+                "district", "quarter"):
+            continue
+        fn = str(w.get("function") or "").lower()
+        if not fn and r.get("kind") == "feature":
+            feat = str(w.get("feature") or "").lower()
+            fn = feat if any(feat in words for words in
+                             (envelope.FEATURE_WORDS.get("stalls"),
+                              envelope.FEATURE_WORDS.get("forge"))) else ""
+        if not fn or fn in seen:
+            continue
+        if any(_declares_function(d, fn, form) for d in decls.values()):
+            continue
+        seen.add(fn)
+        kind = "area" if fn in AREA_FUNCTIONS else "plot"
+        tokens = [t for t, words in envelope.FEATURE_WORDS.items() if fn in words]
+        out.append({"name": fn, "kind": kind, "family": fn, "relation": "throughout",
+                    "count": 1, "structures": 0, "role": "civic" if kind == "area" else None,
+                    "forms": [form] if form else None, "function": fn,
+                    "features": tokens, "answers": [r["id"]],
+                    "notes": (f"the request asks for {fn} ({r.get('phrase') or r['id']}) "
+                              f"and no committed type of this place's form declares "
+                              f"FUNCTION = {fn!r}"),
+                    "of": "function"})
     return out
 
 
@@ -95,7 +163,32 @@ def request_for(spec: dict, part: dict) -> str:
             f"has an inside; every room is reachable without jumping; it stands on the "
             f"pad the library prepares and lays nothing below `part['floor_y']`. Write "
             f"the file, run `check.py`, read `findings.md`, and finish when every "
-            f"instance is clean in both voices.\n")
+            f"instance is clean in both voices.\n"
+            + _feature_contract(part))
+
+
+def _feature_contract(part: dict) -> str:
+    """What a type authored for a **function** gap has to declare and emit, so the gate
+    can check it and construction can measure it. Empty for a family gap."""
+    fn = part.get("function")
+    if not fn:
+        return ""
+    tokens = list(part.get("features") or [])
+    return (f"\n## The feature contract\n\n"
+            f"This type answers the request's `{fn}` function (requirement(s) "
+            f"{part.get('answers') or []}). Declare `FUNCTION = {fn!r}` beside `FORM` and "
+            f"`ROLE`, and `FEATURES = {tuple(tokens)!r}` naming the features it can be "
+            f"asked to deliver. `build()` returns `{{\"ok\": True, \"emitted\": {{...}}}}` "
+            f"where `emitted` carries `requested` (the parameters as asked), `storeys` "
+            f"(what stood), `attempt`, `fallback` (what was given up and why, or None), "
+            f"`omitted` (the requested things that did not stand), `features` "
+            f"({{name: bool or count}} for {tokens or ['the function\'s equipment']}) and "
+            f"`rects` ({{name: [x0, z0, x1, z1]}} for every feature named, so "
+            f"`construction.outcome` verifies each one on the built blocks -- a declared "
+            f"feature with no rectangle is not evidence). The adoption gate refuses a "
+            f"type that does not declare the function. `ethoslm.envelope.lot_for` will "
+            f"probe the type for the lot each feature needs; keep the smallest lot that "
+            f"delivers the function small.\n")
 
 
 def default_fixtures(kind: str) -> list:
@@ -114,6 +207,8 @@ def _tspec(rnd, spec: dict, part: dict, voice: str, fixtures: list) -> dict:
             "file": os.path.join("types", f"{name}.py"), "voice": voice,
             "kind": f"a {part['family']}", "request": request_for(spec, part),
             "fixtures": fixtures,
+            **({"function": part["function"], "form": spec.get("form"),
+                "answers": list(part.get("answers") or [])} if part.get("function") else {}),
             "check_sweep": bool(rnd.flags.get("growth_sweep", True))}
 
 
@@ -150,13 +245,120 @@ def gate(rnd, be, tspec: dict, src_path: str, place_voice: str | None) -> dict:
     passes = (not res.get("crashed") and bool(by)
               and all(v["instances"] > 0 and v["clean"] == v["instances"]
                       for v in by.values()))
+    # **A function gap is closed by a type that declares the function**, in the place's
+    # form: clean instances of a hall do not make it a market.
+    fn = tspec.get("function")
+    why_fn = ""
+    used = None
+    if fn:
+        try:
+            decl = _pipeline.load_type(src_path)
+        except Exception as e:                   # noqa: BLE001 -- the gate reports
+            decl, why_fn = {}, f"does not load: {e}"
+        if decl and not _declares_function(decl, fn, tspec.get("form")):
+            why_fn = (f"declares FUNCTION={decl.get('function')!r} and FORM="
+                      f"{decl.get('form')!r}; this gap is `{fn}` in "
+                      f"{tspec.get('form') or 'any form'}")
+        # **...and by a type whose function can be *used*.** The expression review's
+        # fourth finding: "its feature contract is stronger in the authoring brief than
+        # in the adoption gate". The brief tells the author that every feature carries a
+        # rectangle so `construction.outcome` can verify it; the gate then checked the
+        # declaration and the clean instances and never once asked whether a person
+        # could walk up to the thing the function needs. `usable` asks, on the world one
+        # probe build assembles.
+        if not why_fn:
+            used = _usable_for(tspec, src_path)
+            if used.get("refused"):
+                why_fn = used["refused"]
+        if why_fn:
+            passes = False
     return {"passes": bool(passes), "instances": res.get("instances"),
+            **({"function": fn, "function_refused": why_fn,
+                **({"usable": used} if used else {})} if fn else {}),
             "errors": res.get("errors"), "entry_lines": res.get("entry_lines"),
             "crashed": bool(res.get("crashed")), "voices": by,
             "fixtures": [f"{f['round']}/{f.get('plot') or f.get('part')}"
                          for f in fixtures], "seeds": seeds,
             "sweep": bool(tspec.get("check_sweep", True)),
             "seconds": res.get("seconds"), "text": res.get("text", "")}
+
+
+#: The lot a gate's usability probe builds the candidate on: the middle of the band its
+#: own `NEEDS.footprint` declares, so the answer is about the type and not about a pad
+#: it was never meant to stand on. Bounded to one build: the gate already pays for a
+#: whole checker sweep and this is the one question that sweep cannot ask.
+USABLE_PROBE = 0.5
+
+
+def _usable_for(tspec: dict, src_path: str) -> dict:
+    """Can a person get in and use what this authored type builds? One probe build.
+
+        The three predicates a function gap is about -- a way in, equipment that stands and
+        can be reached, a court that is open and reachable -- asked of the assembled probe
+        world through `ethoslm.usable`. An `unsupported` answer refuses nothing: a type with
+        no court has no court to be inaccessible, and this gate is not the place to invent
+        a requirement the brief did not make. What it refuses is a predicate that **fails**.
+        
+    """
+    from . import construction, usable
+    name = tspec.get("name") or os.path.splitext(os.path.basename(src_path))[0]
+    try:
+        ns = {"__name__": "__ethoslm_type__", "__file__": src_path}
+        exec(compile(open(src_path).read(), src_path, "exec"), ns)   # noqa: S102
+        lo_w, lo_d, hi_w, hi_d = (_pipeline.read_needs(ns, where=src_path)
+                                  .get("footprint") or (9, 9, 24, 24))
+        w = int(lo_w + USABLE_PROBE * (hi_w - lo_w))
+        d = int(lo_d + USABLE_PROBE * (hi_d - lo_d))
+        # the file being gated is not committed to `types/` -- that is what this gate
+        # decides -- so the probe is given its source by name
+        b, sited, res = construction.probe_build(name, w, d, {}, seed=1,
+                                                 voice=tspec.get("voice"),
+                                                 source=src_path)
+        got = construction.outcome(b, sited, None, {})
+    except Exception as e:                       # noqa: BLE001 -- the gate reports
+        return {"asked": [], "refused": None,
+                "why": f"the usability probe did not run: {type(e).__name__}: {e}"}
+    if not res.get("ok"):
+        return {"asked": [], "refused": None,
+                "why": f"the usability probe's instance did not stand: {res.get('reason')}"}
+    part = {**sited, "name": name, "kind": "plot", "type": name, "emitted": got}
+    world = usable.World.of_builder(b, part)
+    # **The same three the production pass asks, named once.** The composition round:
+    # this tuple was `construction.CONFIRM_WANTS` written out a second time, so a change
+    # to what construction confirms left the adoption gate asking the old set.
+    answers = {w2: usable.check(world, name, w2) for w2 in construction.CONFIRM_WANTS}
+    failed = sorted(k for k, a in answers.items() if a["holds"] is False)
+    return {"asked": sorted(answers), "lot": [w, d],
+            "answers": {k: {"holds": a["holds"], "method": a["method"], "why": a["why"]}
+                        for k, a in answers.items()},
+            "refused": (f"the authored type builds a {w}x{d} instance that fails "
+                        + "; ".join(answers[k]["why"] for k in failed)) if failed else None,
+            "why": usable.says(answers)}
+
+
+
+
+def _refresh_capabilities(rnd, spec: dict, types, site) -> None:
+    """Re-match the capability record after the library grew.
+
+    The record is written **before** growth opens its gaps (it is what the gaps are
+    read from), so a type adopted here answered its want on disk and not on the record,
+    and the plan went on refusing the part -- "nothing on disk is a plot for a worship"
+    with `types/worship.py` freshly adopted. The orchard hamlet found it. The record is
+    re-derived with the same facts the plan stage used, so the adoption is a decision
+    the rest of the run can read."""
+    try:
+        from . import capability, contracts
+        from .pipeline.stages_plan import site_capability_facts
+        facts = site_capability_facts(rnd, spec, site)
+        caps = capability.match(spec, names=types, ground=facts["ground"],
+                                relief=facts["relief"],
+                                round_boundaries=facts["round_boundaries"],
+                                intent=contracts.load(rnd, "intent"))
+        contracts.save(rnd, "capabilities", caps)
+    except Exception as e:                       # noqa: BLE001 -- reported, never fatal
+        print(f"   growth: the capability record could not be refreshed: "
+              f"{type(e).__name__}: {e}", flush=True)
 
 
 def stage(rnd, be, spec: dict, gaps: list, *, types=None, site=None,
@@ -183,8 +385,48 @@ def stage(rnd, be, spec: dict, gaps: list, *, types=None, site=None,
         sub = os.path.join("growth", name)
         path = _pipeline._resolve(os.path.join("types", f"{name}.py"))
         if os.path.exists(path):
-            rec["adopted"].setdefault(name, {"note": "already on disk"})
-            continue
+            # **A file with the right name is not the capability.** The architecture
+            # audit reproduced the bypass this replaces: `type_gaps` opened a gap
+            # because the only `tower` on disk was of the wrong form, and this line --
+            # `if os.path.exists(path)` -- closed it again with that very file, so the
+            # place was planned around a capability it did not have. The file is now a
+            # *candidate*: it is loaded, its declarations are read, and it is adopted
+            # only where they answer the gap that was opened.
+            from . import capability
+            want = next((w for w in capability.wants_of(spec)
+                         if w.get("part") == part["name"]), None)
+            if part.get("function"):
+                try:
+                    decl = _pipeline.load_type(path)
+                    ok = _declares_function(decl, part["function"], spec.get("form"))
+                    why = "" if ok else (f"the file already at types/{name}.py declares "
+                                         f"FUNCTION={decl.get('function')!r}, FORM="
+                                         f"{decl.get('form')!r} and this gap is "
+                                         f"`{part['function']}` in {spec.get('form')!r}")
+                except Exception as e:           # noqa: BLE001 -- reported, not raised
+                    ok, why = False, f"types/{name}.py does not load as a type: {e}"
+            else:
+                ok, why = (capability.adoptable(path, want) if want
+                           else (True, ""))
+            if ok:
+                rec["adopted"].setdefault(name, {"note": "already on disk, and its "
+                                                         "declarations answer this gap",
+                                                 **({"answers": list(part["answers"]),
+                                                     "function": part["function"]}
+                                                    if part.get("function") else {})})
+                _save(rnd, rec)
+                _refresh_capabilities(rnd, spec, types, site)
+                continue
+            rec["failed"][name] = {"why": why, "file": os.path.relpath(
+                path, _pipeline.ROOT), "passes": False}
+            _save(rnd, rec)
+            return {"plan": {"status": "error", "stop": True, "level": f"type/{name}",
+                             "error": f"the library cannot build {part['name']} "
+                                      f"({part['family']}, {part['kind']}): {why}. "
+                                      f"A type of the right name is not a type of the "
+                                      f"right kind, form, role and envelope, and one "
+                                      f"cannot be adopted over the other",
+                             "growth": rec["failed"][name]}}
         if name in rec["failed"]:
             _save(rnd, rec)
             return {"plan": {"status": "error", "stop": True, "level": f"type/{name}",
@@ -211,17 +453,23 @@ def stage(rnd, be, spec: dict, gaps: list, *, types=None, site=None,
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 shutil.copyfile(src_path, path)
                 got["file"] = os.path.relpath(path, _pipeline.ROOT)
+                if tspec.get("function"):
+                    got["answers"] = list(tspec.get("answers") or [])
+                    got["function"] = tspec["function"]
                 rec["adopted"][name] = got
                 print(f"   growth: {name} adopted as {got['file']} -- "
                       f"{got['instances']} instances clean in "
                       f"{', '.join(got['voices'])}", flush=True)
                 _save(rnd, rec)
+                _refresh_capabilities(rnd, spec, types, site)
                 continue
             got["why"] = (f"{got['errors']} error(s), {got['entry_lines']} way-in "
                           f"line(s), crashed {got['crashed']} over {got['instances']} "
                           f"instance(s); per voice "
                           + "; ".join(f"{v}: {d['clean']}/{d['instances']} clean"
-                                      for v, d in got["voices"].items()))
+                                      for v, d in got["voices"].items())
+                          + (f"; {got['function_refused']}" if got.get("function_refused")
+                             else ""))
             rec["failed"][name] = got
             _save(rnd, rec)
             return {"plan": {"status": "error", "stop": True, "level": f"type/{name}",

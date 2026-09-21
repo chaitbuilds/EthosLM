@@ -362,7 +362,11 @@ check("a5: the tree flattens to six leaves inside one district",
 routing = circulate.parts_to_routing(parts, passage={"gate_tower"})
 wall_cells = routing["obstacles"] | routing["passable"]
 check("a5: the wall is an obstacle and the gate is the hole in it",
-      len(routing["sites"]) == 5 and len(routing["passable"]) == 3
+      # the expression round: the passage spans the wall's obstacle band, clearance
+      # included (3 + 2 * EDGE_CLEARANCE cells), so a gate is still the hole in a wall
+      # whose base is wider than its line
+      len(routing["sites"]) == 5
+      and len(routing["passable"]) == 3 + 2 * circulate.EDGE_CLEARANCE
       and (25, 10) in routing["passable"] and (24, 10) in routing["obstacles"],
       f"{len(routing['sites'])} sites, {len(routing['obstacles'])} wall columns, "
       f"{sorted(routing['passable'])} passable")

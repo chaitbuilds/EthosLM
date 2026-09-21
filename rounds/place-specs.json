@@ -124,7 +124,8 @@
       "forms": null,
       "density": null,
       "notes": "One district band between each pair of walls, outer to inner; Ringed City sorts its people by ring, so the ring divisions are defining and the houses inside them are not.",
-      "role": "urban"
+      "role": "urban",
+      "structures_inferred": true
      }
     ],
     "voice": null,
@@ -196,7 +197,8 @@
       "forms": null,
       "density": null,
       "notes": "The single loose cluster of dwellings that is the hamlet itself; the sentence asks for a hamlet and nothing else, and a hamlet is one group of houses standing together, so this is the only division the place needs and later calls fill it with whatever the band allows.",
-      "role": "urban"
+      "role": "urban",
+      "structures_inferred": true
      }
     ],
     "voice": null,
@@ -409,6 +411,5 @@
    "sentence": "Build a walled town of about sixty houses with a market square and a keep.",
    "true_tokens": 17000
   }
- },
- "read_note": "`read` is derived: it is what `spec.read_spec` gives for `answered` under the instruments as they now stand, and it is regenerated whenever one of them moves. The craft round re-expressed every kind's size band at the fabric the library lays (`spec.fabric_ratio`), which moved these three: ringed_city 585->1186 in [270, 900]->[547, 1824]; hamlet 8->17 in [5, 12]->[10, 24]; walled_town 60->60 in [48, 72]->[48, 72]"
+ }
 }

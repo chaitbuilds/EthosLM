@@ -4,8 +4,54 @@ Everything here exists to remove a specific observed failure. Nothing here makes
 design decision for the model — pitch, style, material and massing are all its choice."""
 from __future__ import annotations
 
+import contextlib
 import functools
 import math
+
+
+class Material(str):
+    """A material name that remembers the **voice role** it was drawn from.
+
+        The expression round. `b.voice["wall"]` and `b.voice["floor"]` are both
+        `cobblestone` in the drystone voice, and a block id alone cannot say which of the
+        two a laid block is. A `Material` is a plain `str` to every caller -- it formats,
+        compares and hashes as one -- and carries `.role` for the one reader that cares:
+        the builder's write path, which records the role beside every emitted block. The
+        shape helpers below hand the role on (`shape`, `solid`, `material`); an f-string
+        drops it, and the builder then falls back to the role context or the family.
+        
+    """
+    role = None
+
+    def __new__(cls, value, role=None):
+        obj = super().__new__(cls, value)
+        obj.role = role if role is not None else getattr(value, "role", None)
+        return obj
+
+
+#: The roles a laid block can belong to, in the order they are packed. The six voice
+#: roles, the optional two, and the library's own: `ground` (the pad, the path, the
+#: cover -- never repainted), `step` (a tread the walk model reads), `fitting`, `door`,
+#: `glass` and `light` (protected: the physical behaviour of the place).
+SURFACE_ROLES = ("unknown", "wall", "footing", "frame", "roof", "trim", "floor",
+                 "ground", "wall_alt", "step", "fitting", "door", "glass", "light",
+                 "path", "joinery")
+ROLE_ID = {r: i for i, r in enumerate(SURFACE_ROLES)}
+#: The roles a material pass may edit: the palette's own. Everything else is protected
+#: by role, and a block is protected by id besides (`PROTECTED_WORDS`).
+EDITABLE_ROLES = ("wall", "footing", "frame", "roof", "trim", "floor", "wall_alt")
+PROTECTED_WORDS = ("door", "glass", "pane", "ladder", "lantern", "torch", "campfire",
+                   "trapdoor", "fence_gate", "_bed", "chest", "barrel", "furnace",
+                   "smoker", "anvil", "table", "loom", "composter", "cauldron", "rail",
+                   "sign", "banner", "flower_pot", "potted", "carpet", "candle",
+                   "sea_lantern", "glowstone", "shroomlight", "end_rod")
+
+
+def _role_tagged(value, like):
+    """`value` carrying `like`'s role, where `like` has one."""
+    role = getattr(like, "role", None)
+    return Material(value, role=role) if role else value
+
 
 # family -> (full block, stairs, slab). Roofs need all three shapes of one material.
 MATERIALS = {
@@ -75,6 +121,13 @@ _SHAPE_PREFIX = ("stripped_", "cut_", "smooth_", "polished_", "chiseled_")
 
 DIRS = {"north": (0, -1), "south": (0, 1), "east": (1, 0), "west": (-1, 0)}
 
+#: The one prefix that says a block was **worked by a person, not grown**. Nothing
+#: worldgen places starts `stripped_`: stripping is something you do to a log. Both
+#: terrain clearers below test for it, because `shape(fam, "post")` is
+#: `stripped_<wood>_log` for every wood family, so a timber frame is otherwise
+#: indistinguishable from a trunk by name. `clear_trees` had not.
+WORKED_TIMBER = "stripped_"
+
 VEGETATION = ("_leaves", "_log", "_wood", "_sapling", "_mushroom", "vine", "moss_carpet",
               "grass", "fern", "flower", "bush", "bamboo", "cactus", "sugar_cane",
               "snow", "dead_bush", "tulip", "orchid", "allium", "daisy", "cornflower",
@@ -135,6 +188,8 @@ def material(name: str) -> tuple[str, str, str]:
             f"so a roof, a tread or a cap cannot be made from it. Name one of "
             f"{', '.join(sorted(MATERIALS))} -- or, if you want this exact block "
             f"somewhere a shape is not needed, place it yourself.")
+    if getattr(name, "role", None):
+        return tuple(Material(v, role=name.role) for v in MATERIALS[fam])
     return MATERIALS[fam]
 
 
@@ -149,10 +204,10 @@ def solid(name: str) -> str:
     """
     fam = family(name)
     if fam is not None:
-        return MATERIALS[fam][0]
+        return _role_tagged(MATERIALS[fam][0], name)
     n = str(name).split("[")[0].split(":")[-1]
     if _has_block("minecraft:" + n):
-        return str(name)
+        return _role_tagged(str(name), name)
     raise ValueError(f"{name!r} is neither a material family nor a block in this "
                      f"version of Minecraft")
 
@@ -218,9 +273,9 @@ def shape(name: str, kind: str = "full") -> str:
         # passed that voice in. `smooth_stone` has a slab and no stairs, and what comes
         # back is `smooth_stone_slab` and a refusal by name. The cube of a thing that is
         # already a cube is itself.
-        cand = name if kind == "full" else f"{name}_{kind}"
+        cand = str(name) if kind == "full" else f"{name}_{kind}"
         if _has_block("minecraft:" + cand):
-            return cand
+            return _role_tagged(cand, name)
         raise ValueError(
             f"{name!r} is not a material family and Minecraft "
             f"{registry_version()} has no {cand}, so it has no {kind}. Name a "
@@ -230,14 +285,14 @@ def shape(name: str, kind: str = "full") -> str:
         raise ValueError(f"a shape is one of {', '.join(SHAPES)}, not {kind!r}")
     full, stairs, slab = MATERIALS[fam]
     if kind == "stairs":
-        return stairs
+        return _role_tagged(stairs, name)
     if kind == "slab":
-        return slab
+        return _role_tagged(slab, name)
     stem = full[:-1] if full.endswith("s") else full
     for form in _SHAPE_FORMS[kind]:
         cand = form.format(f=fam, full=full, full_stem=stem)
         if _has_block("minecraft:" + cand):
-            return cand
+            return _role_tagged(cand, name)
     raise ValueError(
         f"there is no {fam} {kind} in Minecraft {registry_version()}: a {kind} of this "
         f"material does not exist, so nothing here will substitute one. Ask for a "
@@ -360,7 +415,73 @@ def _is_surface(state: str) -> bool:
     return bool(lower and upper)
 
 
+class _Laying:
+    """The role context a primitive lays under. See `Primitives.laying`."""
+
+    def __init__(self, owner, role: str, protected: bool):
+        self._o, self._role, self._protected = owner, role, protected
+
+    def __enter__(self):
+        st = getattr(self._o, "_role_stack", None)
+        if st is None:
+            st = self._o._role_stack = []
+        st.append((self._role, self._protected))
+        return self
+
+    def __exit__(self, *exc):
+        self._o._role_stack.pop()
+        return False
+
+
+class _Figure:
+    """The pattern context a type lays a deliberate figure under. See
+    `Primitives.figure`. A sibling of `_Laying`: the same shape of declaration, on the
+    same stack discipline, saying *what the cells are* rather than *whose they are*."""
+
+    def __init__(self, owner, name: str):
+        self._o, self._name = owner, name
+
+    def __enter__(self):
+        st = getattr(self._o, "_figure_stack", None)
+        if st is None:
+            st = self._o._figure_stack = []
+        st.append(self._name)
+        return self
+
+    def __exit__(self, *exc):
+        self._o._figure_stack.pop()
+        return False
+
+
 class Primitives:
+    def laying(self, role: str, protected: bool = False):
+        """`with b.laying("roof"):` -- every block placed inside is recorded as that
+        role (and as protected, where said). The expression round: the primitive that
+        lays a roof knows it is a roof, and that knowledge was thrown away at the
+        write. Nesting takes the innermost; an explicit context outranks the material's
+        own tag and the family rule (see `buildlib.Builder._tag`)."""
+        return _Laying(self, role, protected)
+
+    def figure(self, name: str):
+        """`with b.figure("market_chequer"):` -- every block placed inside is part of a
+                **deliberate figure** and no material pass may repaint it.
+
+                The composition round, and the design round's own cause 4: the surface record
+                said who owned a cell and what role it had, and nothing said the cell was part
+                of a pattern somebody drew, so a contextual material pass replaced both market
+                floors' designed chequers, the palace courts' laid paving and the great wall's
+                string course with noise. Ownership was recorded; intent was not.
+
+                The patterns exist only as arithmetic inside a type program -- `(x // 2 + z // 2)
+                % 2`, a ring every second radius, a trim block every `STRING_EVERY` courses --
+                so the type that lays one is the only thing that knows it is a figure and this
+                is how it says so. Nesting takes the innermost name; `surfaces.record` turns the
+                cells into `FLAGS["figure"]` and `material.plan` refuses them. Cheap: one dict
+                entry per declared cell, and nothing at all for a type that declares nothing.
+                
+        """
+        return _Figure(self, str(name))
+
     """Mixed into Builder. Assumes self.place_block / self.get_height exist."""
 
     # ---------------------------------------------------------------- curves
@@ -590,6 +711,12 @@ class Primitives:
             return self._roof_tiers(x0, z0, x1, z1, y, mat, style, axis, pitch,
                                     overhang, solid_fill, profile, ends, eave,
                                     int(tiers), rise_max=rise_max)
+        with self.laying("roof"):
+            return self._roof_one(x0, z0, x1, z1, y, mat, style, axis, pitch, overhang,
+                                  solid_fill, profile, ends, eave, rise_max, _stop_out)
+
+    def _roof_one(self, x0, z0, x1, z1, y, mat, style, axis, pitch, overhang,
+                  solid_fill, profile, ends, eave, rise_max, _stop_out) -> int:
         full, stairs, slab = material(mat)
         rx0, rx1 = x0 - overhang, x1 + overhang
         rz0, rz1 = z0 - overhang, z1 + overhang
@@ -1160,12 +1287,13 @@ class Primitives:
         """
         decided = self._decide_steps()
         placed = demoted = 0
-        for (x, y, z), b in decided.items():
-            self.place_block(x, y, z, b)
-            if "_stairs[" in b:
-                placed += 1
-            else:
-                demoted += 1
+        with self.laying("step", protected=True):
+            for (x, y, z), b in decided.items():
+                self.place_block(x, y, z, b)
+                if "_stairs[" in b:
+                    placed += 1
+                else:
+                    demoted += 1
         self._step_queue().clear()
         return {"treads": placed + demoted, "stairs": placed, "demoted": demoted}
 
@@ -1183,6 +1311,17 @@ class Primitives:
                 rectangle, for a caller whose ground is a line rather than a box: the swept run
                 of a wall is a few thousand columns and its bounding box is the city inside it.
                 The margin is applied round each column.
+
+                **A stripped log is a post, not a trunk.** The design round: `Builder.site()`
+                calls this for every part, so this box reaches past the plot into whatever a
+                neighbour already built, and `prims.shape(fam, "post")` returns
+                `stripped_<wood>_log` for all eight wood families -- every timber-framed voice
+                stands its frames in a block that ends `_log` and contains `_log`. One part's
+                site clearance therefore seeded on its neighbour's posts and flooded through
+                them: in `out/des-farm` the market square's canopy was left standing on nothing
+                and the construction check stopped the run with six `E010`s. Nothing the world
+                generates is ever `stripped_`, which is why `clear_ground_cover` one function
+                down already makes the same exclusion.
                 
         """
         removed = 0
@@ -1198,6 +1337,8 @@ class Primitives:
             g = self.get_height(x, z)
             for y in range(g - 1, g + 3):
                 b = self.get_block(x, y, z)
+                if b.startswith(WORKED_TIMBER):
+                    continue
                 if b.endswith("_log") or b.endswith("_stem") or b.endswith("_wood"):
                     trunks.append((x, y, z))
                     break
@@ -1211,7 +1352,12 @@ class Primitives:
             b = self.get_block(*p)
             # A mangrove propagule hangs from the leaves rather than being one, so the
             # flood stopped at it and left a single block at (1634,70,414) with air
-            # above and below it. E010, "1 blocks are held up by nothing".
+            # above and below it. E010, "1 blocks are held up by nothing". ...and the
+            # same exclusion on the flood, not only on the seed: a real tree overhanging
+            # a frame would otherwise walk into the post from outside and take it, which
+            # is the reported defect by another route.
+            if b.startswith(WORKED_TIMBER):
+                continue
             if not any(v in b for v in ("_log", "_wood", "_leaves", "_stem", "vine",
                                         "shroomlight", "_hyphae", "_propagule")):
                 continue
@@ -1486,6 +1632,9 @@ class Primitives:
                 literature. This gives the wall articulation for free.
                 
         """
+        roles = {id(block): getattr(block, "role", None) or "wall",
+                 id(base): getattr(base, "role", None) or "footing",
+                 id(band): getattr(band, "role", None) or "trim"}
         for x in range(min(x0, x1), max(x0, x1) + 1):
             for y in range(min(y0, y1), max(y0, y1) + 1):
                 for z in range(min(z0, z1), max(z0, z1) + 1):
@@ -1494,18 +1643,20 @@ class Primitives:
                         b = base
                     elif band and y == max(y0, y1):
                         b = band
-                    self.place_block(x, y, z, b)
+                    with self.laying(roles[id(b)]):
+                        self.place_block(x, y, z, b)
         if post:
             horiz = "x" if abs(x1 - x0) >= abs(z1 - z0) else "z"
             lo, hi = (min(x0, x1), max(x0, x1)) if horiz == "x" else (min(z0, z1), max(z0, z1))
-            for c in list(range(lo, hi + 1, spacing)) + [hi]:
-                for y in range(min(y0, y1), max(y0, y1) + 1):
-                    if horiz == "x":
-                        for z in range(min(z0, z1), max(z0, z1) + 1):
-                            self.place_block(c, y, z, post)
-                    else:
-                        for x in range(min(x0, x1), max(x0, x1) + 1):
-                            self.place_block(x, y, c, post)
+            with self.laying(getattr(post, "role", None) or "frame"):
+                for c in list(range(lo, hi + 1, spacing)) + [hi]:
+                    for y in range(min(y0, y1), max(y0, y1) + 1):
+                        if horiz == "x":
+                            for z in range(min(z0, z1), max(z0, z1) + 1):
+                                self.place_block(c, y, z, post)
+                        else:
+                            for x in range(min(x0, x1), max(x0, x1) + 1):
+                                self.place_block(x, y, c, post)
 
     # Form, where two good builders would disagree and the disagreement is the point.
     # Their *shapes* are here; every number in them is a parameter with a default, and
@@ -1527,6 +1678,13 @@ class Primitives:
         ground = {(x, z): self.grade(x, z)
                   for x in range(x0 - grow_max, x1 + grow_max + 1)
                   for z in range(z0 - grow_max, z1 + grow_max + 1)}
+        with self.laying(getattr(block, "role", None) or "footing"):
+            return self._plinth_lay(x0, z0, x1, z1, y, block, courses, course, batter,
+                                    overhang, cap, to_grade, max_depth, grow_max,
+                                    ground)
+
+    def _plinth_lay(self, x0, z0, x1, z1, y, block, courses, course, batter, overhang,
+                    cap, to_grade, max_depth, grow_max, ground) -> dict:
         n = blocks = 0
         lowest = y
         for k in range(max(1, courses)):
@@ -1842,22 +2000,50 @@ class Primitives:
             raise ValueError(f"unknown fitting {kind!r}; "
                              f"have {sorted(self.FITTING_BLOCKS)}")
 
+        # **Which cells ARE the piece**, as against the ones it lays round itself. The
+        # distinction is the one `_NEED_FLOOR`/`_NEED_CLEAR`/`_NEED_NOTHING` already
+        # draws: a hearth's stone base, its surround and its flue are cells it is
+        # entitled to replace outright, and the campfire is the cell it *needs*. A
+        # caller that loses a `_NEED_NOTHING` cell has lost masonry; a caller that loses
+        # one of these has lost the fire, and is owed a refusal rather than a count of
+        # blocks. Checked over all sixteen kinds: every one resolves to its own
+        # equipment block -- campfire, furnace, bed, barrel, cauldron, carpet -- and
+        # `well` resolves to its shaft, which is the thing a well is.
+        defining = [(p[0], p[1], p[2]) for p in plan if p[4] is not self._NEED_NOTHING]
+        block_at = {(p[0], p[1], p[2]): p[3] for p in plan}
         bad = None if getattr(self, "allow_collide", False) \
             else self._fitting_conflict(plan)
+
+        def _names(cell) -> str:
+            """`the campfire` / `the stone it lays round itself`, for a reason line.
+            A cell the plan does not fill at all is the floor a cell needs under it,
+            which is the one thing `_fitting_conflict` names outside the plan."""
+            b = str(block_at.get(tuple(cell)) or "").split("[")[0]
+            if not b:
+                return "the floor it needs under it"
+            return (f"the {b}" if tuple(cell) in set(defining)
+                    else f"the {b} it lays round itself")
         if dry:
             return {"ok": bad is None, "cells": [(p[0], p[1], p[2]) for p in plan],
+                    "defining": defining,
                     "cell": None if bad is None else list(bad[0]),
-                    "reason": (f"a {kind} would fill {len(plan)} cell(s)"
+                    "defining_refused": bad is not None and tuple(bad[0]) in set(defining),
+                    "reason": (f"a {kind} would fill {len(plan)} cell(s), "
+                               f"{len(defining)} of which are the piece itself"
                                if bad is None else
-                               f"a {kind} needs the cell at {bad[0]} and {bad[1]}")}
+                               f"a {kind} needs the cell at {bad[0]} for "
+                               f"{_names(bad[0])}, and {bad[1]}")}
         if bad is not None:
             cell, what = bad
-            return {"ok": False, "cells": [], "cell": list(cell),
+            return {"ok": False, "cells": [], "cell": list(cell), "defining": defining,
+                    "defining_refused": tuple(cell) in set(defining),
                     "reason": f"a {kind} needs the cell at "
-                              f"({cell[0]},{cell[1]},{cell[2]}) and {what} -- nothing "
-                              f"has been placed; move it or clear the cell first"}
-        for (px, py, pz, b, _need) in plan:
-            self.place_block(px, py, pz, b)
+                              f"({cell[0]},{cell[1]},{cell[2]}) for {_names(cell)}, and "
+                              f"{what} -- nothing has been placed; move it or clear the "
+                              f"cell first"}
+        with self.laying("fitting", protected=True):
+            for (px, py, pz, b, _need) in plan:
+                self.place_block(px, py, pz, b)
         cells = [(p[0], p[1], p[2]) for p in plan]
         # ...and write down that these cells are furniture. The one thing that can tell
         # a barrel from a dais is the call that placed it, and every walkability number
@@ -1865,8 +2051,10 @@ class Primitives:
         # masonry surround is in here and the identical cobblestone a type lays as a
         # counter is not, which is the whole difference.
         self._record_fitting(cells)
-        return {"ok": True, "cells": cells,
-                "reason": f"{kind} placed in {len(plan)} cell(s)"}
+        return {"ok": True, "cells": cells, "defining": defining,
+                "defining_refused": False,
+                "reason": f"{kind} placed in {len(plan)} cell(s), {len(defining)} of "
+                          f"which are the piece itself"}
 
     def _record_fitting(self, cells) -> None:
         """Remember cells `fitting()` laid, as furniture. See `observe.floor_stances`."""
@@ -1997,16 +2185,21 @@ class Primitives:
                     "reason": f"{len(open_sides)} side(s) of this doorway are open air; "
                               f"the door would stand at the end of a wall run"}
         built = 0
-        for (jx, jy, jz) in open_sides:
-            for dy in (0, 1):
-                self.place_block(jx, jy + dy, jz, full)
-                built += 1
-        self.place_block(x, y, z, f"{leaf}[facing={facing},half=lower,hinge={hinge}]")
-        self.place_block(x, y + 1, z, f"{leaf}[facing={facing},half=upper,hinge={hinge}]")
+        with self.laying(getattr(mat, "role", None) or "wall"):
+            for (jx, jy, jz) in open_sides:
+                for dy in (0, 1):
+                    self.place_block(jx, jy + dy, jz, full)
+                    built += 1
+        with self.laying("door", protected=True):
+            self.place_block(x, y, z, f"{leaf}[facing={facing},half=lower,hinge={hinge}]")
+            self.place_block(x, y + 1, z,
+                             f"{leaf}[facing={facing},half=upper,hinge={hinge}]")
         if lintel:
-            self.place_block(x, y + 2, z, full if lintel is True else lintel)
+            with self.laying(getattr(lintel, "role", None) or "trim"):
+                self.place_block(x, y + 2, z, full if lintel is True else lintel)
         if threshold:
-            self.place_block(x, y - 1, z, threshold)
+            with self.laying("step", protected=True):
+                self.place_block(x, y - 1, z, threshold)
         return {"ok": True, "jambs": built, "open_sides": open_sides,
                 "front": [fx, y, fz],
                 "reason": (f"built {built} block(s) of jamb where the wall stopped short"

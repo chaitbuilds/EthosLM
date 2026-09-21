@@ -12,6 +12,13 @@ FORM = "european_vernacular"
 #: and a shop-house are both east Asian.
 ROLE = "urban"
 
+#: **What this type is for.** The realization round: a `ROLE` says what work a building
+#: is for and is satisfied by a hall, a barn or a temple alike; a sentence asking for
+#: houses people live in is asking for a `dwelling`. Declared so that the function can
+#: be checked rather than inferred from a label.
+FUNCTION = "dwelling"
+
+
 PARAMS = {
     "storeys": ("int", 2, 3),
     "jetty_side": ("choice", ["street", "left", "right", "both"]),
@@ -624,9 +631,29 @@ def build(b, part, seed, **params):
 
     res = _house(b, part, rng, storeys, jetty_side, int(seed))
     if not res:
-        return {"ok": False, "reason": "no massing stood on this pad"}
+        return {"ok": False, "reason": "no massing stood on this pad",
+                "emitted": {"requested": {"storeys": storeys, "jetty_side": jetty_side},
+                            "storeys": 0, "attempt": None, "fallback": "no shell stood",
+                            "omitted": ["storeys"], "features": {}}}
 
     n = res.get("_storeys") or storeys
+    # **What survived, said by the type.** The closure round: `_house` walks the storeys
+    # down from what was asked and the jetty and the oriel off the massing; the record
+    # says what stood beside what `construction.outcome` measures.
+    _kw = res.get("_asked") or {}
+    res["emitted"] = {
+        "requested": {"storeys": storeys, "jetty_side": jetty_side},
+        "storeys": int(n), "attempt": None,
+        "fallback": ("; ".join(
+            ([f"storeys {storeys} -> {n}"] if n < storeys else [])
+            + (["no jetty"] if n >= 2 and "jetty" not in _kw else [])) or None),
+        "omitted": ([] if n >= storeys else ["storeys"])
+                   + (["jetty"] if n >= 2 and "jetty" not in _kw else []),
+        "features": {"jetty": "jetty" in _kw, "oriel": "oriel" in _kw,
+                     "chimney": bool(_kw.get("chimney"))},
+        "rects": {"main": list(res["_rect"])},
+        "floors": list(res.get("floors") or []),
+    }
     floors = _levels(res.get("floors"), fy, n)
     eave = int(res.get("eave_y") or (fy + 4 * n))
     _frame(b, res, fy, eave - 1, floors)

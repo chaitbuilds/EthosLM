@@ -4,7 +4,7 @@
   "blurb": "The poor ring of an earth-built city: mud brick and rough stone under dark tile, crowded and low.",
   "construction": "Mud-brick walls on a cobblestone footing with dark spruce posts and lintels; small openings, party walls, no gardens.",
   "ground": "Packed mud lanes between the houses, no paving.",
-  "roofs": "Single-tier hipped roofs of dark tile with a slight upturn at the eave, pitched one-in-one, running unbroken over rows of houses.",
+  "roofs": "Single-tier hipped roofs of dark tile, pitched one-in-one and hipped at both ends so a roof can run unbroken over a row of party-walled houses. The eave is straight and oversails one block: the narrowest overhang that still throws a shadow line (S202), because in a lane four blocks wide a wider one meets the roof opposite. **A design decision, not a source's claim**: the crowded ring's roof is the middle ring's roof with everything expensive taken off it -- one pitch instead of two, a straight eave instead of a turned-up one, one block of oversail instead of two, hipped ends instead of an irimoya. The taxonomy and the shadow-line rule are S200, S201 and S202; which end of it a poor ring gets is this voice's decision.",
   "signature": "A sea of dark roofs on earth-coloured walls, reading from the air as one brown-grey belt against the green tile of the rings within."
  },
  "roles": {
@@ -16,8 +16,9 @@
   "wall": "mud_brick"
  },
  "roof": {
-  "eave": "upturned",
+  "eave": "straight",
   "ends": "hip",
+  "overhang": 1,
   "profile": [
    [
     1,

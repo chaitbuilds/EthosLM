@@ -92,11 +92,35 @@ def _dry_circulation(rnd: Round, be) -> dict:
                if os.path.exists(os.path.join(_pipeline.ROOT, "types", f"{n}.py"))
                and _pipeline.load_type(
                    os.path.join(_pipeline.ROOT, "types", f"{n}.py"))["passage"]}
+    from .stages_plan import type_declarations as _tdecl
+    _decls_c = _tdecl(parts)
+    parts = [({**p, "clearance": ((_decls_c.get(p.get("type")) or {}).get("needs")
+                                  or {}).get("clearance")}
+              if p.get("kind") == "edge" and ((_decls_c.get(p.get("type")) or {})
+                                              .get("needs") or {}).get("clearance")
+              is not None else p) for p in parts]
     routing = circulate.parts_to_routing(parts, passage=passage)
     mat = plan.get("circulation_material") or "cobblestone"
     if mat not in prims.MATERIALS:
         mat = "cobblestone"
-    vol = be.volume
+    # **The lanes are laid on the ground before any lane, every time.** The expression
+    # round's farm: the improve stage replanned after construction and this stage --
+    # which bakes the lanes into `world.npz` from the backend's working volume -- wrote
+    # the first candidate's sixteen cottages and its square into the base ground, so the
+    # rebuild stood on the previous build (three blocked doorways, then a market on a
+    # hill of its own paving). The ground as the plateau and the terraces left it is
+    # kept beside the base the first time lanes are routed, and every routing starts
+    # from it: a replan's lanes replace the previous lanes instead of joining them.
+    before_lanes = rnd.rel(rnd.base_volume.replace(".npz", ".before-lanes.npz"))
+    base_p = rnd.rel(rnd.base_volume)
+    if not os.path.exists(before_lanes) and os.path.exists(base_p):
+        import shutil
+        shutil.copyfile(base_p, before_lanes)
+    if os.path.exists(before_lanes):
+        vol = offline.load_volume(before_lanes)
+        be._vol = vol
+    else:
+        vol = be.volume
     heights, wet = observe.ground_heights(vol)
     avoid = np.where(wet, 40.0, 0.0)
     # ...and, on a designed place, the band at the foot of every terrace
@@ -126,6 +150,15 @@ def _dry_circulation(rnd: Round, be) -> dict:
     net.notes["dry_run"] = True
     net.save(rnd.rel("network.json"))
     offline.save_volume(be.volume, rnd.rel(rnd.base_volume))
+    # **The ground with its lanes is the ground the stamp accepts.** The ground stamp is
+    # bound to the base file's digest; this save moved it, and every run so far was
+    # rescued by the next invocation's terraces re-stamp (there was always a pending
+    # reading in between). A run that re-routes and builds in one invocation -- the
+    # expression city after its wall clearance changed -- refused its own ground.
+    from .stages_plan import _stamp_ground
+    from .. import deps as _deps_c
+    if _deps_c.recorded(rnd, "ground"):
+        _stamp_ground(rnd, rnd.plan(), "lanes laid into the prepared ground")
     ctx = lint.Context.build(be.volume, _plots_or_empty(rnd), network=net,
                              sites=routing["sites"])
     rep = lint.lint(ctx)
@@ -182,13 +215,47 @@ def stage_circulation(rnd: Round, be, results: dict) -> dict:
 #: taken this much.
 CACHE_PAD = 48
 
+#: Where a round records the squares its site search chose and whose ground could not
+#: then be read. The dry search excludes them, so a run walks down its own ranking
+#: instead of stopping on the first square the save does not fully hold.
+UNREADABLE_SITES = "sites_unreadable.json"
+
 
 def stage_cache(rnd: Round, be, results: dict) -> dict:
     p = rnd.rel(rnd.base_volume)
     if os.path.exists(p):
         vol = offline.load_volume(p)
-        return {"skipped": "already cached -- the base volume is a fixture, not a "
-                           "running state", "path": p, "shape": list(vol.shape)}
+        # **Cached for the site that was chosen, or cached again.** The closure round's
+        # transfer case: the spec grew its footprint, the search chose a larger square
+        # at the same origin, and this stage handed back the volume cached for the
+        # smaller one because the file existed. A dry run's base volume is the ground
+        # under the chosen site plus its pad and nothing else; a volume for another site
+        # is set aside by name.
+        want = rnd.site or rnd.chosen_site() or {}
+        if want and not rnd.site and not be.live:
+            pad = int(rnd.flags.get("cache_pad", CACHE_PAD))
+            X, Z, S = int(want["origin"][0]), int(want["origin"][1]), int(want["size"])
+            if (int(vol.x0), int(vol.z0)) != (X - pad, Z - pad) \
+                    or int(vol.shape[0]) != S + 2 * pad or int(vol.shape[2]) != S + 2 * pad:
+                stale = rnd.rel(rnd.base_volume.replace(
+                    ".npz", f".stale.{vol.x0 + pad}_{vol.z0 + pad}_{vol.shape[0] - 2 * pad}.npz"))
+                os.replace(p, stale)
+                for f in (rnd.base_volume.replace(".npz", ".before-plateau.npz"),
+                          "site.json", "plateau.json", "ground.npz", "ground.json"):
+                    if os.path.exists(rnd.rel(f)):
+                        os.replace(rnd.rel(f), rnd.rel(f"stale.{os.path.basename(f)}"))
+                from .. import deps as _deps_c
+                for a in ("plateau", "ground", "plan"):
+                    with contextlib.suppress(Exception):
+                        _deps_c.invalidate(rnd, a, "the site search chose a different site")
+                print(f"   cache: the base volume was cached for ({vol.x0 + pad},"
+                      f"{vol.z0 + pad}) {vol.shape[0] - 2 * pad}x{vol.shape[0] - 2 * pad} "
+                      f"and the search chose ({X},{Z}) {S}x{S}; it is set aside and the "
+                      f"ground is read again", flush=True)
+                vol = None
+        if vol is not None:
+            return {"skipped": "already cached -- the base volume is a fixture, not a "
+                               "running state", "path": p, "shape": list(vol.shape)}
     if not be.live and getattr(be, "dry_run", False):
         # **A dry run caches its own ground, off the save's region files, with no
         # server.** v2, C5, and the gap a fresh site found: the search reads region
@@ -225,9 +292,50 @@ def stage_cache(rnd: Round, be, results: dict) -> dict:
             vol = savedworld.SavedWorld(world_dir).volume(X - pad, Z - pad,
                                                           S + 2 * pad, S + 2 * pad)
         except Exception as e:                   # noqa: BLE001 -- reported by name
-            return {"status": "error", "stop": True,
-                    "error": f"the ground under ({X},{Z}) {S}x{S} cannot be read off "
-                             f"this save's region files: {type(e).__name__}: {e}"}
+            # **A site whose ground cannot be read is the site owner's finding.** The
+            # search ranks the squares `out/sites/` holds, and a square's *cached height
+            # field* existing does not mean the save holds every generated chunk of the
+            # padded volume this stage reads. Until this the run simply stopped, and a
+            # request that could not be built for that reason reported a chunk number --
+            # which is the failure the realization round's refusal case exists to
+            # prevent, in a different place. So the square is written down as unreadable
+            # and the site search is asked again: the next-ranked square is chosen on
+            # the next invocation, and a run that exhausts them says that, by name,
+            # instead of naming a chunk.
+            from .. import deps as _deps_c
+            ref_p = rnd.rel(UNREADABLE_SITES)
+            rec = json.load(open(ref_p)) if os.path.exists(ref_p) else {"refused": []}
+            here = {"origin": [X, Z], "size": S, "pad": pad,
+                    "why": f"{type(e).__name__}: {e}"}
+            if not any(r["origin"] == here["origin"] and r["size"] == S
+                       for r in rec["refused"]):
+                rec["refused"].append(here)
+                json.dump(rec, open(ref_p, "w"), indent=1)
+            for f in ("site_search.json", "site.json"):
+                if os.path.exists(rnd.rel(f)):
+                    os.replace(rnd.rel(f), rnd.rel(f"unreadable.{X}_{Z}.{f}"))
+            _deps_c.invalidate(rnd, "site_search",
+                               f"the ground under ({X},{Z}) cannot be read")
+            print(f"   cache: the ground under ({X},{Z}) {S}x{S} cannot be read "
+                  f"({type(e).__name__}); the square is refused and the site is "
+                  f"searched again", flush=True)
+            # the driver re-enters the stage that asked, and the stage that has to run
+            # again is the one before it, so this stage runs it: the search excludes
+            # every refused square (`_dry_site_search`) and the re-entry caches the next
+            # one it ranks
+            from .. import place as _place
+            got = _place.stage_site_search(rnd, be, {})
+            if got.get("stop"):
+                return {**got, "refused_sites": rec["refused"],
+                        "error": (f"{got.get('error')}. "
+                                  f"{len(rec['refused'])} square(s) were chosen and "
+                                  f"then refused because this save does not hold every "
+                                  f"generated chunk of the padded ground they need")}
+            return {"status": "reenter", "refused_site": here,
+                    "refused_total": len(rec["refused"]),
+                    "why": (f"the ground under ({X},{Z}) {S}x{S} cannot be read off "
+                            f"this save's region files ({type(e).__name__}); it is "
+                            f"recorded unreadable and the search runs again")}
         h, _wet = observe.ground_heights(vol)
         inner = h[pad:pad + S, pad:pad + S]
         y0 = max(vol.y0, int(inner.min()) - 8)
@@ -300,6 +408,35 @@ def stage_briefs(rnd: Round, be, results: dict) -> dict:
     return out
 
 
+def _reconcile_surfaces(rnd: Round, path: str, built_path: str) -> dict:
+    """Rewrite `surfaces.json` as what the **assembled** world makes true of it.
+
+        Reported and never raised: a record that could not be reconciled stays exactly as
+        emission left it, which is the weaker evidence it always was, and says so. See
+        `ethoslm.surfaces.reconcile` for what is taken out and why.
+        
+    """
+    from .. import offline as offline_mod, surfaces as surfaces_mod
+    try:
+        doc = surfaces_mod.read(path) or {}
+        if doc.get("reconciled"):
+            return {"skipped": "already reconciled against this built world"}
+        was = surfaces_mod.editable_cells(doc)
+        doc, report = surfaces_mod.reconcile(
+            doc, offline_mod.load_volume(built_path),
+            note="reconciled by stage_finish against the assembled world")
+        json.dump(doc, open(path, "w"), indent=1)
+        now = surfaces_mod.editable_cells(doc)
+        print(f"   surfaces: {was} -> {now} editable cell(s) after reconciliation "
+              f"against the assembled world", flush=True)
+        return {"editable_before": was, "editable_after": now, "report": report}
+    except Exception as e:                        # noqa: BLE001 -- reported, not raised
+        return {"status": "unreconciled",
+                "why": (f"the surface record could not be reconciled against the "
+                        f"assembled world ({type(e).__name__}: {e}); it stands as "
+                        f"emission left it, which is weaker evidence")}
+
+
 def stage_finish(rnd: Round, be, results: dict) -> dict:
     """The seam between what was built and what was there, then the built world cached.
 
@@ -315,7 +452,33 @@ def stage_finish(rnd: Round, be, results: dict) -> dict:
         # does. What a dry run does need is the same file every measure reads off:
         # `world_built.npz`, which is the cached volume as the waves left it.
         built = rnd.rel("world_built.npz")
-        be.save(built)
+        if not ((results.get("parts") or {}).get("skipped") and os.path.exists(built)):
+            be.save(built)
+        # **The built world is stamped for the plan it was built from.** See
+        # `stage_parts`: a rebuild that nothing asked for is not a replay.
+        from .. import deps as _deps_f
+        sp = rnd.rel("surfaces.json")
+        if os.path.exists(sp):
+            from .. import surfaces as surfaces_mod
+            doc = surfaces_mod.read(sp) or {}
+            if doc.get("built_digest") != _deps_f.content_print(built):
+                surfaces_mod.write(sp, doc.get("parts") or [], candidate=doc.get("candidate"),
+                                   built_digest=_deps_f.content_print(built),
+                                   note=doc.get("note") or "")
+            # **...and the record on disk says what is true of the assembled world.**
+            # The design round, worker C's second request. Each part's surface record is
+            # made inside one builder before its neighbours exist, so a cell a later
+            # part overwrote, one another part protects, one that no longer stands and
+            # one that nothing can see are all still in it. Between a fifth and a half
+            # of the recorded editable cells are of those kinds on the cached candidates
+            # (22,110 -> 12,688 on the farm; 262,618 -> 167,448 on the city). Half a
+            # second on a city-sized volume, and it is the difference between a record
+            # and a record that is right.
+            _reconcile_surfaces(rnd, sp, built)
+        with contextlib.suppress(ValueError):
+            _deps_f.stamp(rnd, "built", outputs=["parts.json", "world_built.npz"]
+                          + (["surfaces.json"] if os.path.exists(sp) else []),
+                          plan=rnd.plan(), note="the dry run's built volume")
         rows = [r for w in (results.get("parts") or {}).get("waves", [])
                 for r in w["parts"]]
         return {"dry_run": True, "world_built": built,
@@ -1939,6 +2102,362 @@ def part_waves(parts: list) -> list:
     return out
 
 
+def sample_parts(parts: list, sample: dict) -> tuple:
+    """The leaves of a **construction sample**: adjoining quarters and what joins them.
+
+        The architecture round. A place of four hundred leaves cannot be materialised to
+        answer "can the plan's promised geometry actually be built", and a single house
+        cannot answer it either -- what a sample has to span is the seam: two districts that
+        touch, the lanes between them, and the wall, gate or square that stands on their
+        boundary. So the rule is written down and run off the plan, not chosen by hand:
+
+          1. the `quarters` plot-bearing quarters with the most plots, taking the first by
+             count and then each next one **nearest an already chosen quarter**, so the
+             sample is contiguous rather than the largest few scattered over the place;
+          2. every non-plot leaf -- an edge, a point, an area -- whose own rectangle comes
+             within `margin` of their union. That is the boundary and the way through it.
+
+        `sample` is `{"quarters": n, "margin": m}` off the round's flags. Returns
+        `(parts, record)`; the record is what the readout and the report quote.
+        
+    """
+    from .. import pipeline as _pipeline
+    n = max(1, int((sample or {}).get("quarters") or 2))
+    margin = int((sample or {}).get("margin") or 24)
+    by_q: dict = {}
+    for p in parts:
+        if p.get("kind", "plot") == "plot" and p.get("in"):
+            by_q.setdefault(p["in"][-1], []).append(p)
+    if not by_q:
+        return list(parts), {"quarters": [], "why": "this plan has no plot quarters"}
+
+    def box(rows):
+        rs = [_pipeline.part_rect({**p, "name": p.get("name")}) for p in rows]
+        return (min(r[0] for r in rs), min(r[1] for r in rs),
+                max(r[2] for r in rs), max(r[3] for r in rs))
+
+    boxes = {q: box(rows) for q, rows in by_q.items()}
+    order = sorted(by_q, key=lambda q: (-len(by_q[q]), q))
+    # **A sample chosen by its architectural questions** (the expression round). The
+    # closure city built two lower-ring quarters and every ring wall -- 120 parts that
+    # answered no question about form. With `market`, the first quarter is the one that
+    # holds a market leaf (working space); with `compound`, the compound's own quarters
+    # join it (a courtyard/compound); the quarter between them, nearest both, joins for
+    # the transition; with `boundary`, only the walls whose LINE passes within `margin`
+    # of a chosen quarter are built, with their gates -- not every ring.
+    want_market = bool((sample or {}).get("market"))
+    want_compound = bool((sample or {}).get("compound"))
+    want_boundary = bool((sample or {}).get("boundary"))
+    question = []
+    chosen = []
+    if want_market:
+        with_market = sorted({(p.get("in") or [None])[-1] for p in parts
+                              if str(p.get("type") or "") == "market" and p.get("in")
+                              and (p.get("in") or [None])[-1] in by_q},
+                             key=lambda q: (-len(by_q[q]), q))
+        if with_market:
+            chosen.append(with_market[0])
+            question.append(f"working space: {with_market[0]} holds the market")
+    if not chosen:
+        chosen = [order[0]]
+    if want_compound:
+        comp_q = sorted({q for q in by_q if any(p.get("compound") for p in by_q[q])},
+                        key=lambda q: (-len(by_q[q]), q))
+        if comp_q:
+            a = boxes[chosen[0]]
+            def gap_to(q):
+                b = boxes[q]
+                return (max(0, max(b[0] - a[2], a[0] - b[2]))
+                        + max(0, max(b[1] - a[3], a[1] - b[3])))
+            cq = sorted(comp_q, key=lambda q: (gap_to(q), q))[0]
+            chosen.append(cq)
+            question.append(f"compound: {cq}")
+            # the quarter between the two, nearest both, for the transition
+            def near_both(q):
+                out_ = 0
+                for c in (chosen[0], cq):
+                    b, r_ = boxes[c], boxes[q]
+                    out_ += (max(0, max(b[0] - r_[2], r_[0] - b[2]))
+                             + max(0, max(b[1] - r_[3], r_[1] - b[3])))
+                return out_
+            between = [q for q in order if q not in chosen
+                       and not any(p.get("compound") for p in by_q[q])]
+            if between:
+                bq = sorted(between, key=lambda q: (near_both(q), -len(by_q[q]), q))[0]
+                chosen.append(bq)
+                question.append(f"transition: {bq} between them")
+    while len(chosen) < n and len(chosen) < len(order):
+        def near(q):
+            a = boxes[q]
+            return min(max(0, max(b[0] - a[2], a[0] - b[2]))
+                       + max(0, max(b[1] - a[3], a[1] - b[3]))
+                       for b in (boxes[c] for c in chosen))
+        rest = [q for q in order if q not in chosen]
+        chosen.append(sorted(rest, key=lambda q: (near(q), -len(by_q[q]), q))[0])
+    x0 = min(boxes[q][0] for q in chosen) - margin
+    z0 = min(boxes[q][1] for q in chosen) - margin
+    x1 = max(boxes[q][2] for q in chosen) + margin
+    z1 = max(boxes[q][3] for q in chosen) + margin
+    grown = [(boxes[q][0] - margin, boxes[q][1] - margin, boxes[q][2] + margin,
+              boxes[q][3] + margin) for q in chosen]
+
+    def line_passes(p) -> bool:
+        """Does any segment of this edge's line come within margin of a chosen quarter?"""
+        for r in _pipeline.part_rects({**p, "name": p.get("name")}):
+            for g in grown:
+                if r[0] <= g[2] and g[0] <= r[2] and r[1] <= g[3] and g[1] <= r[3]:
+                    return True
+        return False
+    out, joins = [], []
+    for p in parts:
+        if p.get("kind", "plot") == "plot":
+            if (p.get("in") or [None])[-1] in chosen:
+                out.append(p)
+            continue
+        r = _pipeline.part_rect({**p, "name": p.get("name")})
+        if not (r[0] <= x1 and x0 <= r[2] and r[1] <= z1 and z0 <= r[3]):
+            continue
+        if want_boundary and p.get("kind") == "edge" and not line_passes(p):
+            continue                    # a ring wall whose line is elsewhere
+        if p.get("kind") == "area" and p.get("in") \
+                and (p.get("in") or [None])[-1] not in chosen and want_boundary:
+            continue                    # another quarter's open ground
+        out.append(p)
+        joins.append(p["name"])
+    # **A wall in the sample brings its gates.** The closure round's transfer sample:
+    # the town wall was within the margin and its ring gate was not, so the wall was
+    # built through the gate's cell, over the threshold the circulation pass had
+    # reserved for it, and the sample's own check refused the sample for a defect the
+    # sampling rule had made. A point that stands on an included edge is included.
+    edge_rects = [r for p in out if p.get("kind") == "edge"
+                  for r in _pipeline.part_rects({**p, "name": p.get("name")})]
+    for p in parts:
+        if p.get("kind") == "point" and p not in out and p.get("at"):
+            ax, az = int(p["at"][0]), int(p["at"][-1])
+            if any(r[0] - 2 <= ax <= r[2] + 2 and r[1] - 2 <= az <= r[3] + 2
+                   for r in edge_rects):
+                out.append(p)
+                joins.append(p["name"])
+    rec = {"quarters": chosen, "margin": margin,
+           "rect": [int(x0), int(z0), int(x1), int(z1)],
+           "question": question,
+           "plots": sum(len(by_q[q]) for q in chosen),
+           "joining_parts": joins,
+           "of_plan": {"quarters": len(by_q), "leaves": len(parts)},
+           "why": (f"the {len(chosen)} adjoining quarter(s) with the most plots, and "
+                   f"every edge, point and area within {margin} columns of their "
+                   f"union: the seam between two districts and the way through it")}
+    return out, rec
+
+
+#: The least a clipped wall run may be, in columns, before it is not a wall: below this
+#: a boundary reads as a stub and costs a part to say nothing. Registered here before
+#: the section was selected.
+SECTION_MIN_RUN = 12
+
+#: How much clear wall a gate needs on either side of it inside the section before the
+#: passage reads as a passage rather than as a gate standing on its own. A section cut
+#: closer than this to a gate is refused, by name, rather than silently made.
+SECTION_GATE_CLEAR = 16
+
+
+def _clip_runs(path: list, rect: tuple, *, half: int = 0) -> list:
+    """The parts of an edge's polyline that lie inside `rect`, as separate runs.
+
+        **A section is bounded at a cut, not by paying for the whole circuit.** The design
+        round's sampler kept an edge leaf whenever its *bounding* rectangle met the sample
+        (`sample_parts`, and `part_rect` of an edge is the bbox of the whole ring), so one
+        wall segment touching the sample bought the entire annulus and its gates: 48 parts
+        of which the walls, the gates and a compound were most, and the inhabited fabric the
+        section was chosen for was two short rows. Clipping the line means the boundary in
+        the section is the boundary *of* the section.
+
+        Axis-aligned runs are clipped to the rectangle. A diagonal run -- a ring's chamfer --
+        is kept only where it lies wholly inside, because half a staircase is not a wall
+        somebody would build. Consecutive pieces that still meet are one run, so a clipped
+        corner stays one part rather than two abutting ones.
+        
+    """
+    x0, z0, x1, z1 = (min(rect[0], rect[2]), min(rect[1], rect[3]),
+                      max(rect[0], rect[2]), max(rect[1], rect[3]))
+    pts = [(int(a[0]), int(a[1])) for a in (path or [])]
+    pieces = []
+    for a, b in zip(pts, pts[1:]):
+        if a == b:
+            continue
+        inside = (lambda p: x0 <= p[0] <= x1 and z0 <= p[1] <= z1)
+        if a[0] != b[0] and a[1] != b[1]:
+            if inside(a) and inside(b):
+                pieces.append((a, b))
+            continue
+        if a[0] == b[0]:                                  # runs along z
+            if not (x0 <= a[0] <= x1):
+                continue
+            lo, hi = sorted((a[1], b[1]))
+            lo, hi = max(lo, z0), min(hi, z1)
+            if hi - lo + 1 < 2:
+                continue
+            piece = ((a[0], lo), (a[0], hi)) if b[1] >= a[1] else ((a[0], hi), (a[0], lo))
+        else:                                             # runs along x
+            if not (z0 <= a[1] <= z1):
+                continue
+            lo, hi = sorted((a[0], b[0]))
+            lo, hi = max(lo, x0), min(hi, x1)
+            if hi - lo + 1 < 2:
+                continue
+            piece = ((lo, a[1]), (hi, a[1])) if b[0] >= a[0] else ((hi, a[1]), (lo, a[1]))
+        pieces.append(piece)
+    runs: list = []
+    for a, b in pieces:
+        if runs and runs[-1][-1] == a:
+            runs[-1].append(b)
+        else:
+            runs.append([a, b])
+    out = []
+    for r in runs:
+        length = sum(abs(q[0] - p[0]) + abs(q[1] - p[1]) for p, q in zip(r, r[1:])) + 1
+        if length >= SECTION_MIN_RUN:
+            out.append({"path": [list(p) for p in r], "columns": int(length)})
+    return out
+
+
+def section_parts(parts: list, section: dict) -> tuple:
+    """The leaves of a **registered section**: one connected piece of a larger place.
+
+        The composition round. `sample_parts` above chooses its own extent from the plan --
+        the quarter with a market, the nearest compound, the quarter between them -- which
+        is a rule for finding *an* interesting seam and not a rule for answering a stated
+        architectural question. This takes the extent as given, registered before any
+        candidate was compiled, and selects against it:
+
+          - a **plot or area leaf is taken whole or not at all**, so a section cut falls
+            between buildings and never through one. A leaf that straddles the boundary is
+            counted and named in `cut_out`, not half-built;
+          - an **edge is clipped** to the section (`_clip_runs`), so a boundary costs the
+            section only the length of boundary the section actually contains;
+          - a **point stands on an included run**, with its whole pad inside, and a cut
+            closer than `SECTION_GATE_CLEAR` to a gate **refuses the section by name**
+            rather than cutting through the passage and then excusing the failure as
+            sampling.
+
+        `section` is the round file's `flags.section`:
+        `{"id", "rect": [x0,z0,x1,z1], "boundary", "gate", "sides": {label: district_prefix},
+          "demonstrate": [...]}`. Returns `(parts, record)`; the record goes into
+        `parts.json` under `sample`, because every downstream reader of a partial build --
+        `intent.sample_scope`, `placeread`'s `limits.sample`, the lint's region -- already
+        keys on that name, and a section is exactly a partial build: **its clauses qualify
+        its own scope and nothing outside it.**
+        
+    """
+    from .. import pipeline as _pipeline
+    rect = [int(v) for v in (section or {}).get("rect") or []]
+    if len(rect) != 4:
+        return list(parts), {"refused": "the section registers no rect", "quarters": []}
+    x0, z0, x1, z1 = (min(rect[0], rect[2]), min(rect[1], rect[3]),
+                      max(rect[0], rect[2]), max(rect[1], rect[3]))
+    sid = str((section or {}).get("id") or "section")
+
+    def whole_in(r) -> bool:
+        return r[0] >= x0 and r[1] >= z0 and r[2] <= x1 and r[3] <= z1
+
+    def meets(r) -> bool:
+        return r[0] <= x1 and x0 <= r[2] and r[1] <= z1 and z0 <= r[3]
+
+    out, joins, cut_out, runs_rec = [], [], [], []
+    quarters: dict = {}
+    for p in parts:
+        kind = p.get("kind", "plot")
+        if kind in ("plot", "area"):
+            r = _pipeline.part_rect({**p, "name": p.get("name")})
+            if whole_in(r):
+                out.append(p)
+                q = (p.get("in") or [None])[-1]
+                if kind == "plot" and q:
+                    quarters.setdefault(q, []).append(p["name"])
+                elif kind == "area":
+                    joins.append(p["name"])
+            elif meets(r):
+                cut_out.append({"part": p["name"], "type": p.get("type"),
+                                "kind": kind, "rect": [int(v) for v in r]})
+            continue
+        if kind == "edge":
+            got = _clip_runs(p.get("path") or [],
+                             (x0, z0, x1, z1),
+                             half=max(1, int(p.get("width", 1))) // 2)
+            for i, run in enumerate(got):
+                name = f"{p['name']}@{sid}" + (f"_{i}" if len(got) > 1 else "")
+                out.append({**p, "name": name, "path": run["path"],
+                            "section_clip": {"of": p["name"], "columns": run["columns"],
+                                             "in": sid}})
+                joins.append(name)
+                runs_rec.append({"of": p["name"], "part": name,
+                                 "columns": run["columns"], "path": run["path"]})
+            continue
+    # a point -- a gate, a well -- stands on an included run, whole pad inside.
+    edge_cells = {}
+    for p in out:
+        if p.get("kind") == "edge":
+            from ..placeplan import _edge_cells
+            edge_cells[p["name"]] = set(_edge_cells(p))
+    all_cells = set().union(*edge_cells.values()) if edge_cells else set()
+    refused = []
+    for p in parts:
+        if p.get("kind") != "point" or not p.get("at"):
+            continue
+        r = _pipeline.part_rect({**p, "name": p.get("name")})
+        ax, az = int(p["at"][0]), int(p["at"][-1])
+        on_run = any((ax + dx, az + dz) in all_cells
+                     for dx in range(-2, 3) for dz in range(-2, 3))
+        if whole_in(r) and (on_run or not all_cells):
+            out.append(p)
+            joins.append(p["name"])
+            # **A cut may not fall on a gate.** The round: do not cut through a gate or
+            # a structure, break access, and then excuse the failure as sampling.
+            for run in runs_rec:
+                for end in (run["path"][0], run["path"][-1]):
+                    d = abs(end[0] - ax) + abs(end[1] - az)
+                    if d < SECTION_GATE_CLEAR:
+                        refused.append(
+                            f"the section's cut of {run['of']} ends {d} column(s) from "
+                            f"{p['name']}, inside the {SECTION_GATE_CLEAR} this build "
+                            f"calls clear: move the section boundary, do not cut a gate")
+        elif meets(r) and (on_run or not all_cells):
+            cut_out.append({"part": p["name"], "type": p.get("type"), "kind": "point",
+                            "rect": [int(v) for v in r]})
+    sides = dict((section or {}).get("sides") or {})
+    by_side = {k: 0 for k in sides}
+    for q, names in quarters.items():
+        for label, prefix in sides.items():
+            if str(q).startswith(str(prefix)):
+                by_side[label] += len(names)
+    types: dict = {}
+    for p in out:
+        types[str(p.get("type") or p.get("kind"))] = \
+            types.get(str(p.get("type") or p.get("kind")), 0) + 1
+    rec = {"section": sid, "quarters": sorted(quarters), "margin": 0,
+           "rect": [x0, z0, x1, z1],
+           "registered": {k: v for k, v in (section or {}).items() if k != "rect"},
+           "question": list((section or {}).get("demonstrate") or []),
+           "plots": sum(len(v) for v in quarters.values()),
+           "included_plots": sorted(n for v in quarters.values() for n in v),
+           "by_side": by_side, "types": types,
+           "joining_parts": joins,
+           "boundary_runs": runs_rec,
+           "cut_out": cut_out,
+           "of_plan": {"quarters": len({(p.get("in") or [None])[-1] for p in parts
+                                       if p.get("kind", "plot") == "plot"
+                                       and p.get("in")}),
+                       "leaves": len(parts)},
+           "why": (f"the registered section {sid} {[x0, z0, x1, z1]}: every plot and "
+                   f"area whole inside it, every boundary clipped to it, every gate on "
+                   f"an included run -- a bounded connected extent, not a quarter "
+                   f"count")}
+    if refused:
+        rec["refused"] = refused[0]
+        rec["refusals"] = refused
+    return out, rec
+
+
 def annotate_gates(parts: list) -> list:
     """Which point stands on which edge, and what that means for both. Demo-polish, 2b.
 
@@ -2170,6 +2689,34 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None,
         return {"part": name, "status": "crashed", "type": part.get("type"),
                 "error": f"{type(e).__name__}: {e}",
                 "traceback": pipeline.scrub_traceback(traceback.format_exc())[-1200:]}
+    # **What construction actually delivered, measured before the blocks are
+    # committed.** The closure round's construction boundary: the height clause read the
+    # planned `params.storeys` and called a one-storey cottage tall. The outcome is read
+    # off the builder's own pending blocks, the surface context beside it, and a
+    # constraint where a requested feature was lost -- so the checker measures the
+    # building that stands and the recovery ladder has a lot size to act on.
+    emitted = surfaces = limit = surface_record = None
+    try:
+        from .. import construction
+        sited_now = dict(b.parts[-1]) if getattr(b, "parts", None) else {}
+        leaf = {**part, "params": params, **({"footprint": sited_now["footprint"]}
+                                             if sited_now.get("footprint") else {})}
+        emitted = construction.outcome(b, {**leaf, **sited_now, "name": name,
+                                           "kind": geo["kind"]}, decl, params)
+        surfaces = construction.surfaces(b, {**leaf, **sited_now, "name": name})
+        # **The owned surfaces, recorded at emission.** The expression round (worker C):
+        # who laid every block and as what role, with its exposure and what is protected
+        # -- the record a material pass may edit and nothing else may.
+        from .. import surfaces as surfaces_mod
+        surface_record = surfaces_mod.record(
+            b, {**leaf, **sited_now, "name": name, "kind": geo["kind"],
+                "type": part.get("type")},
+            voice_name=part.get("voice") or rnd.voice_name() or None)
+        limit = construction.constraint(leaf, decl, emitted, seed=int(part.get("seed", 0)),
+                                        voice=part.get("voice") or rnd.voice_name() or None)
+    except Exception as e:                       # noqa: BLE001 -- reported, never fatal
+        emitted = {"measured": False, "why": f"the outcome could not be measured: "
+                                             f"{type(e).__name__}: {e}"}
     placed = be.commit(b)
     # What this part laid as a way in, beside the plot it was laid for. The finishing
     # pass reads it and keeps off those columns. Written here because `stage_parts` is
@@ -2187,6 +2734,8 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None,
             json.dump(rows + [dict(r) for r in b.paths], open(pp, "w"), indent=1)
     sited = dict(b.parts[-1]) if getattr(b, "parts", None) else {}
     return {"part": name, "status": "built", "type": part.get("type"),
+            # transient: `stage_parts` strips it from the row into surfaces.json
+            "surface_record": surface_record,
             # 2b: the pad the library sited a point on, for the registry.
             "footprint": (list(sited.get("footprint")) if sited.get("footprint")
                           and part.get("kind") == "point" else None),
@@ -2205,6 +2754,8 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None,
             **({"voice_stood_in": sited["voice_stood_in"]}
                if sited.get("voice_stood_in") else {}),
             "refusals": getattr(b, "_type_refusals", None),
+            "emitted": emitted, "surfaces": surfaces,
+            **({"constraint": limit} if limit else {}),
             "seconds": round(time.perf_counter() - t0, 1)}
 
 
@@ -2336,9 +2887,76 @@ def stage_parts(rnd, be, results: dict) -> dict:
     """
     from .. import lint, pipeline, stages
     from . import stages_measure
+    from .stages_plan import ground_for_this_design
     parts = rnd.parts()
     if not parts:
         return {"error": "no plan.json, or a plan with no leaves in it"}
+    # **Built once per candidate.** The closure round: this stage rebuilt every part on
+    # every invocation, so a replay that changed nothing re-laid the world, moved the
+    # built volume's identity under the inspection bound to it, and asked the judge to
+    # read the same place again. A built world is an artifact of the plan it was built
+    # from, stamped like any other, and reused while nothing it was made from has moved.
+    from .. import deps as _deps_w
+    # **The ground this is about to be built on was prepared for this design.** The
+    # review's sixth finding: preparation and planning were separate decisions and
+    # nothing connected them, so a repaired plan could be built on the terraces cut for
+    # the plan it replaced. `terrain` is the baseline and `ground` is the preparation,
+    # stamped against the plan it was cut for; this is where the two meet. **Asked
+    # before the warm return, not after it** (the composition round). This check stood
+    # eight lines below the warm return, so a build could be handed back as fresh
+    # without the question ever being put -- and `DEPENDS["built"]` did not carry ground
+    # identity either, so the freshness check could not notice the cut had moved. Both
+    # halves had to go: the dependency is real now (`deps`, evidence stream) and the
+    # order is this way round. A warm build is a claim about the world *and the ground
+    # under it*; making that claim without asking is how a stale certificate survives.
+    ready, why = ground_for_this_design(rnd)
+    if not ready:
+        return {"status": "error", "stop": True, "ground": why,
+                "error": (f"the prepared ground under this plan was cut for a different "
+                          f"candidate: {why}. Run the ground stages again before "
+                          f"building on it")}
+    fresh, why = _deps_w.check(rnd, "built", plan=rnd.plan())
+    if fresh and os.path.exists(rnd.rel("parts.json")) \
+            and os.path.exists(rnd.rel("world_built.npz")):
+        was = json.load(open(rnd.rel("parts.json")))
+        # the built volume is what every later stage reads; put it in the backend
+        with contextlib.suppress(Exception):
+            be._vol = offline.load_volume(rnd.rel("world_built.npz"))
+        return {**{k: was.get(k) for k in ("built", "failed", "sample", "candidate",
+                                           "voice", "voices")},
+                "skipped": why, "written": rnd.rel("parts.json"), "waves": was.get("waves")}
+    # **A round may build a sample of its plan rather than all of it.** The architecture
+    # round: the large case stops at planning and preview, and what answers "can this
+    # plan's promised geometry be built" is a compact sample spanning two adjoining
+    # districts and the boundary between them. The rule is in `sample_parts` and the
+    # round file names its two numbers; a round with no `sample` flag builds every leaf,
+    # exactly as every round before it did. ...and **a round may register the section it
+    # means** (the composition round): a bounded connected extent, chosen for the
+    # architectural questions it has to answer and written down before any candidate was
+    # compiled. `section_parts` selects against that registration; `sample_parts` above
+    # chooses its own.
+    sample_rec = None
+    if rnd.flags.get("section"):
+        parts, sample_rec = section_parts(parts, rnd.flags["section"])
+        if sample_rec.get("refused"):
+            return {"status": "error", "stop": True, "sample": sample_rec,
+                    "error": f"the registered section refuses its own selection: "
+                             f"{sample_rec['refused']}"}
+        print(f"   section {sample_rec['section']} {sample_rec['rect']}: "
+              f"{sample_rec['plots']} plot(s) in {len(sample_rec['quarters'])} "
+              f"quarter(s), {len(sample_rec['boundary_runs'])} clipped boundary run(s), "
+              f"{len(sample_rec['joining_parts'])} joining part(s), "
+              f"{len(sample_rec['cut_out'])} leaf/leaves cut out, of "
+              f"{sample_rec['of_plan']['leaves']} leaves in the plan"
+              + (f"; by side {sample_rec['by_side']}" if sample_rec.get("by_side")
+                 else ""), flush=True)
+    elif rnd.flags.get("sample"):
+        parts, sample_rec = sample_parts(parts, rnd.flags["sample"])
+        print(f"   sample: {sample_rec['plots']} plot(s) in "
+              f"{len(sample_rec['quarters'])} adjoining quarter(s) "
+              f"({', '.join(sample_rec['quarters'])}) and "
+              f"{len(sample_rec['joining_parts'])} joining part(s), of "
+              f"{sample_rec['of_plan']['leaves']} leaves in the plan", flush=True)
     # **The voice the place is in, not the config's field.** Voice contract, A1.
     # `Round.voice` is the *config's* voice, and a round that carries a sentence leaves
     # it empty on purpose -- "a coordinate in the config is a human having chosen the
@@ -2373,6 +2991,7 @@ def stage_parts(rnd, be, results: dict) -> dict:
     # before any of them is sited; the edge's sited floor reaches its gates as each edge
     # is built, since the walls wave builds an edge before the points on it.
     out: dict = {"waves": [], "built": 0, "failed": 0,
+                 **({"sample": sample_rec} if sample_rec else {}),
                  "gates_on_edges": annotate_gates(parts),
                  "voice": voice,
                  "voices": sorted({p.get("voice") or voice for p in parts
@@ -2398,6 +3017,7 @@ def stage_parts(rnd, be, results: dict) -> dict:
         json.dump(out, open(rnd.rel("parts.json"), "w"), indent=1)
         return out
     floors: dict = {}
+    surface_records: list = []
     # **The ground, settled once, before the first part.** v2, B1: every leaf's pad and
     # level, every edge's footing, the lanes and the doorsteps, declared on the volume
     # as it stands now and resolved by one contract; each part then lays what was
@@ -2477,6 +3097,9 @@ def stage_parts(rnd, be, results: dict) -> dict:
                                    ground=resolved)
             write_paths()
             rec["voice"] = v
+            sr = rec.pop("surface_record", None)
+            if sr:
+                surface_records.append(sr)
             if rec.get("floor_y") is not None:
                 floors[part["name"]] = int(rec["floor_y"])
             rows.append(rec)
@@ -2504,6 +3127,9 @@ def stage_parts(rnd, be, results: dict) -> dict:
                 write_paths()
             plots = record_part_floors(rnd, res["rows"], plots)
             for r in res["rows"]:
+                sr = r.pop("surface_record", None)
+                if sr:
+                    surface_records.append(sr)
                 print(f"   {res['wave']}/{r['part']}: {r['status']}"
                       + (f" {r.get('blocks')} blocks, {r.get('ground')}"
                          if r["status"] == "built" else f" -- {r.get('error', '')[:120]}"),
@@ -2514,7 +3140,20 @@ def stage_parts(rnd, be, results: dict) -> dict:
                          "worker_seconds": res["seconds"]})
         out["parallel"] = {"workers": n_workers, "quarter_waves": len(quarters),
                            "snapshot": os.path.relpath(snapshot, _pipeline.ROOT)}
+    # **Which candidate this construction is of.** The closure round: a parts record
+    # that cannot say which design it built is a record a revision can inherit.
+    from .. import deps as _deps_b
+    with contextlib.suppress(Exception):
+        out["candidate"] = _deps_b.candidate_id(rnd)
     p = rnd.rel("parts.json")
     json.dump(out, open(p, "w"), indent=1)
     out["written"] = p
+    from .. import surfaces as surfaces_mod
+    surfaces_mod.write(rnd.rel("surfaces.json"), surface_records,
+                       candidate=out.get("candidate"),
+                       note=f"{len(surface_records)} part(s) recorded at emission; the "
+                            f"built digest is stamped by stage_finish")
+    out["surfaces"] = rnd.rel("surfaces.json")
+    # the built volume is saved by the driver's cache step after this stage; the stamp
+    # is written by `stage_finish`/`stage_lint` once it exists (see `_stamp_built`)
     return out

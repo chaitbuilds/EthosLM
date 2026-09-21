@@ -96,8 +96,7 @@
    "flat",
    "slope"
   ],
-  "slope_fall": 8,
-  "edge_widths_note": "The craft round, E4, re-swept the two edge types over the widths a place may declare as its wall's mass (placeplan.WALL_MASSES: 3, 5, 9, 12) and the ones between -- 1, 2, 3, 5, 7, 9, 12 -- at runs 4, 16, 64 and 128, on the plane and on the bank, at every face, parapet and crown at the bottom, the middle and the top of the height range: 1,680 instances of great_wall and 2,520 of wall. Every one of them passes. The sweep found great_wall broken at width 2 under the new `masonry` face -- a buttress pier standing proud of a wall too thin to carry a walk closes a pocket behind the parapet, E003 -- and the type was fixed with the case kept (a pier needs CROWN_ROAD_MIN of mass), so width 2 passes too. The rest of the band -- every run and every plot size of every other type -- is the full sweep's and is unmoved."
+  "slope_fall": 8
  },
  "types": {
   "_area": {
@@ -11508,6 +11507,1235 @@
     "except": [],
     "note": "the maximum is the largest size swept"
    }
+  },
+  "courtyard_house": {
+   "type": "courtyard_house",
+   "kind": "plot",
+   "combinations": 6,
+   "seeds": [
+    1,
+    2
+   ],
+   "sizes": [
+    {
+     "size": [
+      3,
+      3
+     ],
+     "of": 24,
+     "failed": 24,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 1
+      },
+      "why": "refused: no courtyard ring stood"
+     }
+    },
+    {
+     "size": [
+      4,
+      4
+     ],
+     "of": 24,
+     "failed": 24,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 1
+      },
+      "why": "refused: no courtyard ring stood"
+     }
+    },
+    {
+     "size": [
+      5,
+      5
+     ],
+     "of": 24,
+     "failed": 24,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 1
+      },
+      "why": "refused: no courtyard ring stood"
+     }
+    },
+    {
+     "size": [
+      6,
+      6
+     ],
+     "of": 24,
+     "failed": 24,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 1
+      },
+      "why": "refused: no courtyard ring stood"
+     }
+    },
+    {
+     "size": [
+      7,
+      7
+     ],
+     "of": 24,
+     "failed": 24,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 1
+      },
+      "why": "refused: no courtyard ring stood"
+     }
+    },
+    {
+     "size": [
+      8,
+      8
+     ],
+     "of": 24,
+     "failed": 24,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 1
+      },
+      "why": "refused: no courtyard ring stood"
+     }
+    },
+    {
+     "size": [
+      9,
+      9
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      10,
+      10
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      11,
+      11
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      12,
+      12
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      13,
+      13
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      14,
+      14
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      15,
+      15
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      16,
+      16
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      17,
+      17
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      18,
+      18
+     ],
+     "of": 24,
+     "failed": 12,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 2
+      },
+      "why": "6 own lint error(s): E003 needs: a room of 50 cells at (23,69,35) cannot be walked into; E003 needs: a room of 26 cells at (23,69,27) cannot be walked into"
+     }
+    },
+    {
+     "size": [
+      19,
+      19
+     ],
+     "of": 24,
+     "failed": 12,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 2
+      },
+      "why": "6 own lint error(s): E003 needs: a room of 53 cells at (23,69,36) cannot be walked into; E003 needs: a room of 29 cells at (23,69,27) cannot be walked into"
+     }
+    },
+    {
+     "size": [
+      20,
+      20
+     ],
+     "of": 24,
+     "failed": 12,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 2
+      },
+      "why": "6 own lint error(s): E003 needs: a room of 56 cells at (23,69,37) cannot be walked into; E003 needs: a room of 32 cells at (23,69,27) cannot be walked into"
+     }
+    },
+    {
+     "size": [
+      21,
+      21
+     ],
+     "of": 24,
+     "failed": 12,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 2
+      },
+      "why": "6 own lint error(s): E003 needs: a room of 59 cells at (23,69,38) cannot be walked into; E003 needs: a room of 35 cells at (23,69,27) cannot be walked into"
+     }
+    },
+    {
+     "size": [
+      22,
+      22
+     ],
+     "of": 24,
+     "failed": 12,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 2
+      },
+      "why": "6 own lint error(s): E003 needs: a room of 62 cells at (23,69,39) cannot be walked into; E003 needs: a room of 38 cells at (23,69,27) cannot be walked into"
+     }
+    },
+    {
+     "size": [
+      24,
+      24
+     ],
+     "of": 24,
+     "failed": 18,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 1
+      },
+      "why": "1 own lint error(s): E002 door at (33,65,45) cannot be reached on foot from anywhere outdoors -- getting to it needs 1 jump"
+     }
+    },
+    {
+     "size": [
+      28,
+      28
+     ],
+     "of": 24,
+     "failed": 18,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 1
+      },
+      "why": "1 own lint error(s): E002 door at (35,65,49) cannot be reached on foot from anywhere outdoors -- getting to it needs 1 jump"
+     }
+    },
+    {
+     "size": [
+      32,
+      32
+     ],
+     "of": 24,
+     "failed": 18,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "flat",
+      "slope"
+     ],
+     "first": {
+      "ground": "flat",
+      "seed": 1,
+      "params": {
+       "screen": "wall",
+       "storeys": 1
+      },
+      "why": "1 own lint error(s): E002 door at (37,65,53) cannot be reached on foot from anywhere outdoors -- getting to it needs 1 jump"
+     }
+    }
+   ],
+   "band": {
+    "footprint": [
+     9,
+     9,
+     17,
+     17
+    ],
+    "runs": [
+     [
+      9,
+      17
+     ]
+    ],
+    "except": [],
+    "note": "the envelope closes below what was swept"
+   }
+  },
+  "market": {
+   "type": "market",
+   "kind": "area",
+   "combinations": 6,
+   "seeds": [
+    1,
+    2
+   ],
+   "sizes": [
+    {
+     "size": [
+      3,
+      3
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      4,
+      4
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      5,
+      5
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      6,
+      6
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      7,
+      7
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      8,
+      8
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      9,
+      9
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      10,
+      10
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      11,
+      11
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      12,
+      12
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      13,
+      13
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      14,
+      14
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      15,
+      15
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      16,
+      16
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      17,
+      17
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      18,
+      18
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      19,
+      19
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      20,
+      20
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      21,
+      21
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      22,
+      22
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      24,
+      24
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      28,
+      28
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      32,
+      32
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      40,
+      40
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      48,
+      48
+     ],
+     "of": 24,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    }
+   ],
+   "band": {
+    "footprint": [
+     3,
+     3,
+     48,
+     48
+    ],
+    "runs": [
+     [
+      3,
+      48
+     ]
+    ],
+    "except": [],
+    "note": "the maximum is the largest size swept"
+   }
+  },
+  "worship": {
+   "type": "worship",
+   "kind": "plot",
+   "combinations": 2,
+   "seeds": [
+    1,
+    2
+   ],
+   "sizes": [
+    {
+     "size": [
+      3,
+      3
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      4,
+      4
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      5,
+      5
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      6,
+      6
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      7,
+      7
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      8,
+      8
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      9,
+      9
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      10,
+      10
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      11,
+      11
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      12,
+      12
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      13,
+      13
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      14,
+      14
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      15,
+      15
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      16,
+      16
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      17,
+      17
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      18,
+      18
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      19,
+      19
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      20,
+      20
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      21,
+      21
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      22,
+      22
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      24,
+      24
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      28,
+      28
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      32,
+      32
+     ],
+     "of": 8,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    }
+   ],
+   "band": {
+    "footprint": [
+     3,
+     3,
+     32,
+     32
+    ],
+    "runs": [
+     [
+      3,
+      32
+     ]
+    ],
+    "except": [],
+    "note": "the maximum is the largest size swept"
+   }
   }
  },
  "seconds": 6167.8,
@@ -11544,6 +12772,15 @@
   },
   "shop_house": {
    "seconds": 4060.6
+  },
+  "courtyard_house": {
+   "seconds": 262.6
+  },
+  "market": {
+   "seconds": 262.6
+  },
+  "worship": {
+   "seconds": 21.1
   }
  }
 }

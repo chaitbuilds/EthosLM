@@ -14,6 +14,13 @@ import random
 KIND = "plot"
 FORM = "east_asian"
 ROLE = "urban"
+
+#: **What this type is for.** The realization round: a `ROLE` says what work a building
+#: is for and is satisfied by a hall, a barn or a temple alike; a sentence asking for
+#: houses people live in is asking for a `dwelling`. Declared so that the function can
+#: be checked rather than inferred from a label.
+FUNCTION = "dwelling"
+
 #: v2, C2: the two long flanks are party walls, so this type may stand **attached** --
 #: the next house against it, the pad reaching the plot's edge on that side, the way in
 #: on the street. The plan says which sides (`part["attached"]`); the type builds its
@@ -172,6 +179,8 @@ def build(b, part, seed, storeys=None, front=None, **kw):
     if storeys is None:
         storeys = rng.choice([1, 2, 2, 3])
     st = max(1, min(int(storeys), top))
+    asked_storeys = int(storeys)
+    capped_by_lot = st < asked_storeys
     if front not in _FRONT:
         front = rng.choice(list(_FRONT.keys()))
 
@@ -180,6 +189,13 @@ def build(b, part, seed, storeys=None, front=None, **kw):
         [[(1, 2), (2, 1)], [(1, 2), (3, 1)], [(1, 3), (2, 1)]])
     eave_kind = vr.get("eave") or "upturned"
     tiers = 1
+    # **The ends are not the voice's to give this house.** Composition round. A row
+    # house's gable stands against the next house, so what happens at the end of the
+    # ridge is a fact about the end of the **row**; a voice that says "irimoya" is
+    # describing a building that stands free, and this one does not. The eave's reach
+    # *is* the voice's -- a crowded ring in a four-block lane cannot afford the two
+    # blocks a ring of courtyard houses standing back behind their own gates can -- and
+    # it arrives on `building()` from `TypeBuilder` without this file naming it.
     ends = ("gable", "gable") if rng.random() < 0.5 else ("half-hip", "half-hip")
     roofspec = {"style": "gable", "axis": ax, "profile": profile,
                 "ends": ends, "eave": eave_kind, "tiers": tiers}
@@ -213,7 +229,26 @@ def build(b, part, seed, storeys=None, front=None, **kw):
             house_d, w, st = hd, ww, stt
             break
     if not (res and res.get("ok")):
-        return res
+        return dict(res or {"ok": False}, emitted={
+            "requested": {"storeys": asked_storeys}, "storeys": 0, "attempt": None,
+            "fallback": "no shell stood", "omitted": ["storeys"], "features": {}})
+    # **What survived, said by the type.** The closure round: the lot's depth and width
+    # cap the storeys before anything is built, and the ladder then walks the storeys
+    # down; both are on the record beside the geometry `construction.outcome` measures.
+    emitted = {
+        "requested": {"storeys": asked_storeys},
+        "storeys": int(st), "attempt": int(attempts.index((house_d, w, st))),
+        "fallback": ("; ".join(
+            ([f"lot: storeys {asked_storeys} -> {min(asked_storeys, top)} for a "
+              f"{house_d}x{w} house"] if capped_by_lot else [])
+            + ([f"ladder: storeys walked down to {st}"]
+               if st < min(asked_storeys, top) else [])) or None),
+        "omitted": [] if st >= asked_storeys else ["storeys"],
+        "features": {"chimney": bool(chim if st >= 2 else None),
+                     "brackets": bool(w >= 8)},
+        "rects": {"main": list(rect(house_d, w, a))},
+        "floors": [fy + 4 * i for i in range(st)],
+    }
 
     floors = [fy + 4 * i for i in range(st)]
     ridge_y = res.get("ridge_y") or (fy + 4 * st + 4)
@@ -558,5 +593,5 @@ def build(b, part, seed, storeys=None, front=None, **kw):
 
     b.check_walkable(label)
     b.check_attached()
-    return {"ok": True, "storeys": st, "depth": house_d, "width": w,
+    return {"ok": True, "storeys": st, "depth": house_d, "width": w, "emitted": emitted,
             "front": front, "rear": rear}

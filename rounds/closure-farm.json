@@ -1,0 +1,50 @@
+{
+ "name": "closure-farm",
+ "sentence": "Build a farming village of sixteen low cottages gathered around a market square, with a hall on the square, fields beside the houses, and no wall.",
+ "flags": {
+  "dry_run": true,
+  "seed": 1,
+  "max_new_squares": 0,
+  "workers": 4,
+  "memory_kb": 12000000,
+  "parts_bound_seconds": 1800
+ },
+ "preregistered": {
+  "written_before": "the sentence was interpreted, the spec was written, the site was searched, the ground was cached, the place was laid out, anything was built or any finding was read",
+  "terrain": "dry run over the cached squares under out/sites/ (max_new_squares 0); no new ground is generated and the baseline volume is recorded before any cut",
+  "model": "no API key and no retrieval provider are configured. The interpretation, the place spec, the preview reading, the revision and any judgment are staged for the supervising terminal agent, which this project documents as a first-class runtime; every answer is kept under fixtures/closure-farm/ so the run replays without a person. SUPERVISED, not a fresh autonomous model pass.",
+  "original_requirements": {
+   "count/cottages": "exactly 16 cottages -- the subject is the cottages and not every plot; a hall on the square is not the seventeenth cottage and a village of 12 or 20 is not this one",
+   "function/dwelling": "the cottages are houses people live in; only types that declare the function answer it",
+   "quality/height/low": "measured against the storey band each committed type declares",
+   "feature/market": "one market square",
+   "relation/cottages_around_market": "the cottages stand around the square, measured as bearings: at least 3 of 4 sides reached within the registered reach; a clump beside it FAILS",
+   "feature/hall": "one hall",
+   "relation/hall_on_square": "the hall stands on the square: beside it, measured as distance from the hall to the square's own edge and not to its centre",
+   "feature/farmland": "fields -- working ground with a purpose, laid as farmland the place owns",
+   "relation/fields_beside_houses": "the fields stand beside the houses, measured on the geometry",
+   "absent/wall": "no leaf of the plan is a wall, read by its own type"
+  },
+  "expectations": {
+   "preserved_meaning": "`sixteen` survives as an exact count of the cottages through interpretation, cross-check, spec, plan and place read; the spec's band is [16,16]; a shortfall is reported as a shortfall and never negotiated",
+   "causal_composition": "the relations reach the layout as constraints before rectangles are filled: the arrangement the place adopts satisfies `around` and `beside` on the same measurement the checker uses, or the run ends blocked naming which relation and why",
+   "stable_realization": "arranging again from the original proposals reproduces the same arrangement; adopted counts never become the next proposal; what each cottage was built with (storeys, features, omissions) is measured off the emitted construction and not read off its planned params",
+   "construction": "the whole place is built offline and its construction check runs over what was built; lint errors or a lane network in more than one piece BLOCK as `construction`",
+   "revision": "one real compositional finding from the reading causes one bounded change to its responsible decision, the affected output is rebuilt and inspected again, and the second inspection shows the finding closed. Rollback, no-op or an exhausted budget does not meet this",
+   "qualification": "the place read consumes the reading, the capability record and any judgment of THIS candidate; a place that does not answer its request blocks as `fidelity`",
+   "outcome": "a finished place with every hard requirement satisfied by measurement, or a run that ends blocked naming the clause, the owner and the limiting constraint. Nothing in between is reported as success"
+  },
+  "bounds": {
+   "plan_repair_passes": "2 per candidate, 6 per lineage; a deliberate revision opens a new lineage",
+   "preview_revisions": 1,
+   "district_growth": "0.5 of the rectangle the district was FIRST laid out as",
+   "scale_negotiation": "refused outright: the count is explicit",
+   "parts": "1800 seconds of construction, 12 GB of address space"
+  },
+  "commands": {
+   "cold": "rm -rf out/closure-farm && \"$PY\" scripts/round.py rounds/closure-farm.json --dry-run  (answers replay from fixtures/closure-farm/)",
+   "warm": "\"$PY\" scripts/round.py rounds/closure-farm.json --dry-run  (unchanged inputs replay warm: no stage re-plans, re-builds or re-asks)",
+   "accept": "\"$PY\" scripts/check_closure.py --run c1"
+  }
+ }
+}

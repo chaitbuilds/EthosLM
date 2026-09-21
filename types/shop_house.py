@@ -23,6 +23,13 @@ FORM = "east_asian"
 #: and a shop-house are both east Asian.
 ROLE = "urban"
 
+#: **What this type is for.** The realization round: a `ROLE` says what work a building
+#: is for and is satisfied by a hall, a barn or a temple alike; a sentence asking for
+#: houses people live in is asking for a `dwelling`. Declared so that the function can
+#: be checked rather than inferred from a label.
+FUNCTION = "dwelling"
+
+
 PARAMS = {
     "storeys": ("int", 2, 3),
     "trade": ("choice", ["grain", "cloth", "tea", "smith"]),
@@ -118,6 +125,7 @@ def build(b, part, seed, **params):
     if "storeys" in params and params["storeys"]:
         storeys = int(params["storeys"])
     storeys = max(2, min(3, storeys))
+    asked_storeys = storeys
     trade = "grain"
     if "trade" in params and params["trade"]:
         trade = str(params["trade"])
@@ -735,4 +743,16 @@ def build(b, part, seed, **params):
             if bb[1] <= fy:
                 continue
             b.place_cuboid(bb[0], bb[1], bb[2], bb[3], bb[4], bb[5], "air")
-    return {"ridge": ridge_y, "storeys": storeys, "trade": trade}
+    # **What survived, said by the type.** The closure round: a plot that cannot carry a
+    # flight cannot carry a floor over the shop, and the storeys fell above; here the
+    # record says so beside what `construction.outcome` measures.
+    return {"ok": True, "ridge": ridge_y, "storeys": storeys, "trade": trade,
+            "emitted": {"requested": {"storeys": asked_storeys, "trade": trade},
+                        "storeys": int(storeys), "attempt": 0,
+                        "fallback": (f"flights: storeys {asked_storeys} -> {storeys}, no "
+                                     f"line inside long enough for another flight"
+                                     if storeys < asked_storeys else None),
+                        "omitted": [] if storeys >= asked_storeys else ["storeys"],
+                        "features": {"shopfront": True},
+                        "rects": {"main": [part["x0"], part["z0"], part["x1"], part["z1"]]},
+                        "floors": [fy + sh * i for i in range(storeys)]}}

@@ -46,9 +46,229 @@ MONUMENT_BLOCKS_MARGIN = 3.0
 GREAT_WALL_HEIGHT = 30
 
 
+def requirement_clauses(spec: dict, plan: dict, parts_record: dict,
+                        intent_rec: dict | None = None,
+                        resolution: dict | None = None,
+                        site: dict | None = None,
+                        reading: dict | None = None,
+                        capabilities: dict | None = None,
+                        judgment: dict | None = None) -> list:
+    """The `asked/*` clauses alone; see `requirement_read` for the findings beside them."""
+    return requirement_read(spec, plan, parts_record, intent_rec, resolution, site,
+                            reading=reading, capabilities=capabilities,
+                            judgment=judgment)[0]
+
+
+def requirement_read(spec: dict, plan: dict, parts_record: dict,
+                     intent_rec: dict | None = None,
+                     resolution: dict | None = None,
+                     site: dict | None = None,
+                     reading: dict | None = None,
+                     capabilities: dict | None = None,
+                     judgment: dict | None = None) -> tuple:
+    """The **sentence's** own requirements, checked against what stands. One clause each.
+
+        Every other clause in this file is generated from the spec, and the architecture
+        audit's counterexample is why that is not enough: a sentence asking for a walled
+        village whose spec omitted the wall passed every one of them, because a clause
+        generated from a document cannot notice what the document left out. These come from
+        `ethoslm.intent`, which reads the sentence and has never seen the spec.
+
+        Silent where the sentence states nothing this build reads by rule -- "Build Ba Sing
+        Se" states no requirement outright, and a clause that holds vacuously is a clause
+        nobody can read.
+        
+    """
+    from . import contracts, intent as intent_mod
+    rec = intent_rec or intent_mod.read(spec.get("sentence") or "")
+    if not rec.get("requirements"):
+        return [], []
+    # **Everything the requirements are answerable against, and three of them were
+    # missing.** The review's fifth finding, in its second half: this is the place
+    # reader that decides whether the finished place meets the sentence, and it supplied
+    # neither the sourced reading, nor the capability record, nor the inspection's
+    # verdicts. So a named place could never be more than "nothing has been read about
+    # this name yet" however much research the run had done and however the inspection
+    # had judged it -- an unreachable success route beside an isolated false-pass
+    # interface.
+    checked, found = intent_mod.coverage(rec, spec, plan=plan,
+                                         parts_record=parts_record,
+                                         resolution=resolution, site=site,
+                                         reading=reading, capabilities=capabilities,
+                                         judgment=judgment)
+    out = []
+    for r in checked["requirements"]:
+        if not r["hard"]:
+            continue
+        # a requirement a construction sample left unbuilt is neither met nor missed by
+        # the sample; `limits.sample` names it
+        outside = intent_mod.OUTSIDE_SAMPLE in (r.get("evidence") or [])
+        out.append({"clause": f"asked/{r['id']}",
+                    "holds": r["status"] == "satisfied" or outside,
+                    "outside_sample": outside,
+                    "says": f"the sentence asks for {r['says']}: {r['status']}"
+                            + (f" -- {r['why']}" if r["why"] else ""),
+                    "status": r["status"], "phrase": r["phrase"],
+                    "owner": r["owner"], "evidence": r["evidence"],
+                    # how this requirement's status was established, which the clause
+                    # labelling below keeps separate from how much of the place was
+                    # built
+                    "method": r.get("method") or "plan"})
+    return out, list((found or {}).get("findings") or [])
+
+
+def construction_limits(plan: dict, parts_record: dict, findings: list) -> list:
+    """What construction delivered short of what was asked, as recorded constraints.
+
+        Interface I3's reader. `intent.emitted_findings` writes a `find/emitted/<part>`
+        finding for every part whose emitted outcome dropped a storey or a feature; the
+        fresh checker found sixteen of them on the finished proof and nothing reading them.
+        They are not failing clauses -- the `low` clause holds on what stands, and a lost
+        lean-to is a constraint on the lot and not a refusal of the place -- so each becomes
+        a record here: the part, what was lost, what was requested and emitted, the owner,
+        and the constraint `construction.constraint` derives by probing the type
+        (`needs.lot_min`).
+        
+    """
+    rows = [f for f in findings or [] if str(f.get("id", "")).startswith("find/emitted/")]
+    if not rows:
+        return []
+    from . import construction
+    parts = {p["name"]: p for p in pipeline.plan_parts(plan)}
+    decls = _decls(list(parts.values()))
+    out = []
+    for f in rows:
+        part = parts.get(f.get("part")) or {}
+        em = (f.get("evidence") or {}).get("emitted") or {}
+        got = None
+        try:
+            got = construction.constraint(part, decls.get(str(part.get("type") or "")),
+                                          em, params=part.get("params"),
+                                          seed=part.get("seed"))
+        except Exception as e:                    # noqa: BLE001 -- recorded, not raised
+            got = {"why": f"the constraint could not be probed: {type(e).__name__}: {e}"}
+        got = got or {}
+        omitted = list(em.get("omitted") or [])
+        out.append({"part": f.get("part"), "type": part.get("type"),
+                    "what": got.get("what") or (omitted[0] if omitted else "storeys"),
+                    "requested": got.get("requested",
+                                         (part.get("params") or {}).get("storeys")),
+                    "emitted": got.get("emitted", em.get("storeys")),
+                    "omitted": omitted, "owner": got.get("owner") or f.get("owner"),
+                    "needs": got.get("needs") or {"lot": None, "lot_min": None},
+                    "fallback": em.get("fallback"),
+                    "why": got.get("why") or f.get("says")})
+    return out
+
+
+#: The words a sentence can use for a ring, and what each one is a statement **about**.
+#: `inner`/`outer` are radial and nothing else; `lower`/`upper` are elevation words that
+#: a flat place can only mean radially, and a **hill** place means literally.
+RING_WORDS = {"inner": ("radial", 0), "innermost": ("radial", 0),
+              "outer": ("radial", 1), "outermost": ("radial", 1),
+              "lower": ("elevation", 0), "upper": ("elevation", 1),
+              "high": ("elevation", 1), "low": ("elevation", 0)}
+
+#: The words a sentence uses for ground a place climbs. Where one of these is in the
+#: request, its `lower` and `upper` rings are read as heights; where none is, and the
+#: rings differ socially, they are read as ranks. See `ring_words`.
+HILL_WORDS = ("hill", "hillside", "slope", "hilltop", "terraced", "on terraces",
+              "mountain", "mountainside", "valley", "escarpment", "cliff")
+
+#: How much the terraces of a place have to differ before its `lower`/`upper` words are
+#: read as elevation at all. Below this every ring stands at the same height and the
+#: words can only be radial, so there is nothing to check.
+RING_RELIEF = 3
+
+
+def ring_words(spec: dict, layout: dict | None) -> list:
+    """**A ring's rank, its elevation and the word the sentence used, kept apart.**
+
+        The expression round put a Japanese hill town's *dense lower ring* on the terrace
+        four blocks **above** its sparse upper ring, and nothing noticed, because `lower`
+        and `upper` had been taken as names for ring 0 and ring 1. They are not names. On a
+        hill they are statements about height, and a place whose rings differ in elevation
+        can be asked whether it honoured them.
+
+        Returns one row per ring word the spec's part names carry:
+        `{"part", "word", "means", "ring", "level", "agrees", "why"}`. `agrees` is None
+        where the word is radial or the place is flat -- neither met nor missed.
+        
+    """
+    rings = [r for r in ((layout or {}).get("rings") or []) if r.get("name")]
+    if len(rings) < 2:
+        return []
+    # **Social rank is the third thing, and it is not elevation either.** The round's
+    # own instruction: keep radial order, social rank and terrain elevation distinct. a
+    # Lower Ring of the poor and an Upper Ring of the elite -- and reading `upper` there
+    # as a statement about height asks a city to put its rich quarter on a hill because
+    # of a word. Where the rings' own record says the order is social (they differ in
+    # density, role or voice, which is what a class ranking is in this build), the word
+    # is a rank and this clause has nothing to hold it to. A hill town whose rings
+    # differ only in where they stand is the case that remains. ...and what decides
+    # between the two readings is the **sentence**, not a rule about rings. `a small
+    # Japanese HILL town ... a dense lower ring and a sparse upper ring` is about a
+    # slope. A sentence that names the ground the place climbs means its words
+    # literally; one that does not, and whose rings differ in density, role and voice,
+    # is ranking them.
+    said = str((spec or {}).get("sentence") or "").lower()
+    on_a_slope = any(w in said for w in HILL_WORDS)
+    social = [tuple(sorted(((r.get("order") or {}).get("social") or {}).items()))
+              for r in rings]
+    if not on_a_slope and len([x for x in social if x]) == len(rings) \
+            and len(set(social)) == len(rings):
+        return [{"part": r["name"],
+                 "word": next((w for w in RING_WORDS
+                               if w in str(r["name"]).lower().split("_")), None),
+                 "means": "social", "ring": r.get("ring"), "level": r.get("level"),
+                 "agrees": None,
+                 "why": ("this place's rings are ranked socially -- they differ in "
+                         "density, role and voice -- so `upper` and `lower` are rank "
+                         "words here and not statements about height")}
+                for r in rings
+                if any(w in str(r["name"]).lower().split("_") for w in RING_WORDS)]
+    levels = [r.get("level") for r in rings if isinstance(r.get("level"), (int, float))]
+    relief = (max(levels) - min(levels)) if len(levels) == len(rings) else 0
+    by_rank = sorted(rings, key=lambda r: int(r.get("ring") or 0))
+    by_level = sorted(rings, key=lambda r: float(r.get("level") or 0))
+    out = []
+    for r in rings:
+        name = str(r.get("name") or "").lower()
+        word = next((w for w in RING_WORDS if w in name.split("_")), None)
+        if word is None:
+            continue
+        means, end = RING_WORDS[word]
+        if means == "radial" or relief < RING_RELIEF:
+            out.append({"part": r["name"], "word": word, "means": means,
+                        "ring": r.get("ring"), "level": r.get("level"),
+                        "agrees": None,
+                        "why": (f"`{word}` is a radial word" if means == "radial" else
+                                f"the rings stand within {relief} of one another, so "
+                                f"`{word}` can only be read as radial order here")})
+            continue
+        want = by_level[-1] if end else by_level[0]
+        ok = want["name"] == r["name"]
+        out.append({"part": r["name"], "word": word, "means": "elevation",
+                    "ring": r.get("ring"), "level": r.get("level"),
+                    "agrees": bool(ok),
+                    "why": (f"`{word}` on a place whose rings differ by {relief} is a "
+                            f"statement about height: "
+                            + (f"{r['name']} stands at {r.get('level')}, which is the "
+                               f"{'highest' if end else 'lowest'} of them"
+                               if ok else
+                               f"{r['name']} stands at {r.get('level')} and the "
+                               f"{'highest' if end else 'lowest'} ring is "
+                               f"{want['name']} at {want.get('level')}; the ring rank "
+                               f"was substituted for the elevation"))})
+    return out
+
+
 def read(spec: dict, plan: dict, parts_record: dict, *, voice: str | None = None,
          site: dict | None = None, built=None, base=None,
-         plateau: dict | None = None) -> dict:
+         plateau: dict | None = None, intent_rec: dict | None = None,
+         resolution: dict | None = None, reading: dict | None = None,
+         capabilities: dict | None = None, judgment: dict | None = None,
+         layout: dict | None = None) -> dict:
     """The whole read. No model, no server: the plan, what stood, and -- when the
     built world and the ground it was built on are given -- what it is made of.
 
@@ -56,14 +276,44 @@ def read(spec: dict, plan: dict, parts_record: dict, *, voice: str | None = None
     cached ground before the first part was laid. With both, the `palette/built` clause
     is asked (A2 of the voice contract); without them it is not, and a stage that has a
     built world always gives it."""
+    from . import intent as intent_mod
     parts = pipeline.plan_parts(plan)
     by_name = {p["name"]: p for p in parts}
     decls = _decls(parts)
     stood = _stood(parts_record)
+    links = group_links(plan)
     clauses = []
+    # **A sample qualifies its constructed scope.** Where the parts record carries a
+    # `sample`, every clause that counts standing leaves is measured over the sampled
+    # leaves -- planned-in-sample against standing-in-sample -- and says so; clauses
+    # about the plan (relations, hierarchy, layout, density) stay whole-place. The
+    # transfer town's read judged 116 leaves by the 57 its sample built and failed the
+    # whole town for the quarters it never attempted.
+    scope = intent_mod.sample_scope(parts_record, parts)
+    sparts = [p for p in parts if p["name"] in scope] if scope is not None else parts
+    tag = f" (sample of {len(scope)} of {len(parts)} leaves)" if scope is not None else ""
 
-    def clause(name, ok, says, **more):
-        clauses.append({"clause": name, "holds": bool(ok), "says": says, **more})
+    #: **What a clause was read off**, independent of how much of the place was built.
+    #: See `intent.METHODS`. The default is `plan`, because the great majority of the
+    #: clauses below are measured on the planned geometry, and a clause that reads the
+    #: built world or the construction record says so by passing `method="observed"`.
+    #: The expression round had no such field and promoted every clause to `built_place`
+    #: the moment the last leaf stood.
+    def clause(name, ok, says, method="plan", **more):
+        clauses.append({"clause": name, "holds": bool(ok), "says": says,
+                        "method": method, **more})
+
+    def scoped(name, ok, says, method="plan", **more):
+        clauses.append({"clause": name, "holds": bool(ok), "says": says + tag,
+                        "method": method,
+                        **({"sampled": True} if scope is not None else {}), **more})
+
+    def not_sampled(name, says, **more):
+        clauses.append({"clause": name, "holds": True,
+                        "says": f"{says}: no leaf of it is in the construction sample, "
+                                f"so it is neither met nor missed here{tag}",
+                        "method": "unsupported",
+                        "sampled": False, "outside_sample": True, **more})
 
     # --- present ---------------------------------------------------------
     for d in spec["defining_parts"]:
@@ -73,26 +323,75 @@ def read(spec: dict, plan: dict, parts_record: dict, *, voice: str | None = None
             continue
         if d["kind"] == "group":
             # A group defining part is districts, and a district is not built: what it
-            # is answerable for is that its quarters have plots in them.
-            got = {p["in"][-1] for p in parts
-                   if p.get("kind", "plot") == "plot" and p.get("in")}
-            clause(f"present/{d['name']}", len(got) >= d["count"],
-                   f"the spec asks for {d['count']} {d['family']}(s) and the plan has "
-                   f"{len(got)} quarter(s) with plots in them",
-                   wanted=d["count"], got=sorted(got))
+            # is answerable for is that **its own** quarters have plots in them, and
+            # that those plots stand. **Its own, and standing.** The architecture
+            # audit's second finding, with a probe that reproduced it: this counted the
+            # *global* set of quarters holding planned plots, so a spec declaring
+            # `homes` and `missing_district` passed both presence clauses on a plan
+            # whose only plot was in `homes_row` -- and the plot did not have to stand.
+            # A district nobody drew was present because a different district was, which
+            # is the clearest possible case of a clause generated from the plan rather
+            # than asked of it.
+            linked = bool(links) or any(
+                a == d["name"] or a.startswith(d["name"] + "_")
+                for p in parts for a in (p.get("in") or []))
+            # **A land district is present when its ground stands.** The expression
+            # round's held-out village: the pasture, a district of no houses, holds only
+            # area leaves (grazing strips, groves), and a clause counting plots read it
+            # as absent. A district asked for no structures is answerable for its areas;
+            # one asked for houses is answerable for its plots, as before.
+            land = int(d.get("structures") or 0) == 0
+            kinds = ("area", "plot") if land else ("plot",)
+            mine, up = set(), set()
+            for p in sparts:
+                if p.get("kind", "plot") not in kinds or not p.get("in"):
+                    continue
+                if linked and not _in_group(p, d, links):
+                    continue
+                mine.add(p["in"][-1])
+                if stood.get(p["name"], False):
+                    up.add(p["in"][-1])
+            if scope is not None and not mine:
+                not_sampled(f"present/{d['name']}",
+                            f"the spec asks for {d['count']} {d['family']}(s) called "
+                            f"{d['name']}", wanted=d["count"], got=[], standing=[])
+                continue
+            want = min(d["count"], len(mine)) if scope is not None else d["count"]
+            scoped(f"present/{d['name']}", len(up) >= want,
+                   f"the spec asks for {d['count']} {d['family']}(s) called "
+                   f"{d['name']} and the plan has {len(mine)} quarter(s) "
+                   + ("of it " if linked else "(this plan carries no link from a "
+                                              "quarter to the part it answers, so "
+                                              "every quarter counts) ")
+                   + f"with plots in them, {len(up)} of which have a plot standing",
+                   method="observed",
+                   wanted=want, got=sorted(mine), standing=sorted(up),
+                   linked=linked)
             continue
-        mine = _matching(parts, d, decls)
+        mine = _matching(sparts, d, decls)
+        if scope is not None and not mine:
+            not_sampled(f"present/{d['name']}",
+                        f"the spec asks for {d['count']} x {d['family']} as a "
+                        f"{d['kind']} ({d['relation']})", wanted=d["count"],
+                        planned=[], stood=[])
+            continue
         up = [p["name"] for p in mine if stood.get(p["name"], False)]
-        clause(f"present/{d['name']}", len(up) >= d["count"],
+        want = min(d["count"], len(mine)) if scope is not None else d["count"]
+        scoped(f"present/{d['name']}", len(up) >= want,
                f"the spec asks for {d['count']} x {d['family']} as a {d['kind']} "
                f"({d['relation']}); the plan has {len(mine)} and {len(up)} of them "
                f"stand",
-               wanted=d["count"], planned=[p["name"] for p in mine], stood=up)
+               method="observed",
+               wanted=want, planned=[p["name"] for p in mine], stood=up)
 
     # --- closed ----------------------------------------------------------
     asked_cliff = any(w in spec["sentence"].lower() for w in CLIFF_WORDS)
     for d in spec_mod.walls(spec):
         mine = [p for p in _matching(parts, d, decls) if p.get("kind") == "edge"]
+        if scope is not None and mine and not any(p["name"] in scope for p in mine):
+            not_sampled(f"closed/{d['name']}", "the spec calls this a wall")
+            continue
+        mine = [p for p in mine if scope is None or p["name"] in scope]
         if not mine:
             clause(f"closed/{d['name']}", False,
                    "the spec calls this a wall and there is no edge part for it"
@@ -104,10 +403,10 @@ def read(spec: dict, plan: dict, parts_record: dict, *, voice: str | None = None
             path = [(int(a[0]), int(a[1])) for a in (p.get("path") or [])]
             closed = len(path) >= 4 and path[0] == path[-1]
             up = stood.get(p["name"], False)
-            gates = _gates_on(p, parts, decls)
+            gates = _gates_on(p, sparts, decls)
             standing_gates = [g for g in gates if stood.get(g, False)]
             ok = closed and up and bool(standing_gates)
-            clause(f"closed/{p['name']}", ok,
+            scoped(f"closed/{p['name']}", ok,
                    f"{len(path)} vertices, "
                    + ("a closed loop" if closed else "NOT a closed loop: it starts at "
                       f"{list(path[0]) if path else None} and ends at "
@@ -119,21 +418,80 @@ def read(spec: dict, plan: dict, parts_record: dict, *, voice: str | None = None
                    gates_standing=standing_gates)
 
     # --- compounds -------------------------------------------------------
-    clauses += compound_clauses(spec, plan, parts, decls, stood, parts_record,
-                                plateau=plateau)
+    comp = compound_clauses(spec, plan, sparts, decls, stood, parts_record,
+                            plateau=plateau)
+    if scope is not None:
+        sampled_comp = {d["name"] for d in spec_mod.compounds(spec)
+                        if any(p.get("compound") and (
+                            p.get("defines") == d["name"] or p.get("compound") == d["name"]
+                            or str(p.get("compound", "")).startswith(d["name"]))
+                               for p in sparts)}
+        for c in comp:
+            name = c["clause"].split("/")[1]
+            if name not in sampled_comp:
+                c.update(holds=True, sampled=False, outside_sample=True,
+                         says=f"{name}: no leaf of it is in the construction sample, "
+                              f"so it is neither met nor missed here{tag}")
+            else:
+                c["says"] += tag
+                c["sampled"] = True
+    clauses += comp
 
     # --- concentric ------------------------------------------------------
     clauses += concentric_clauses(spec, plan, parts, decls, stood)
-    clauses += great_wall_clauses(spec, plan, parts, decls, stood)
+    for c in great_wall_clauses(spec, plan, sparts, decls, stood):
+        if scope is not None:
+            c["says"] += tag
+            c["sampled"] = True
+        clauses.append(c)
 
-    # --- count -----------------------------------------------------------
+    # --- count ----------------------------------------------------------- **A count is
+    # a count of the thing the sentence counted.** The closure round's proof: sixteen
+    # cottages and a hall stood, the sentence's own clause held at 16, and this clause
+    # failed at 17 because it counted every standing plot. Where the spec carries an
+    # explicit count with a subject, `intent.select` -- the one rule for which leaves a
+    # word names -- picks the plots counted; a spec with no explicit subject counts
+    # every plot, as before.
+    from . import intent as intent_mod
+    what = str(((spec.get("explicit_count") or {}) if isinstance(
+        spec.get("explicit_count"), dict) else {}).get("what") or "")
+    if what and intent_mod._slug(what) in ("building", "buildings", "structure",
+                                            "structures"):
+        what = ""
     plots = [p for p in parts if p.get("kind", "plot") == "plot"]
-    up = [p["name"] for p in plots if stood.get(p["name"], False)]
+    counted = ([p for p in intent_mod.select(parts, what)
+                if p.get("kind", "plot") == "plot"] if what else plots)
     lo, hi = spec["size_band"]
-    clause("count", spec_mod.in_band(spec, len(up)),
-           f"{len(up)} structure(s) stand of {len(plots)} planned, against the band "
-           f"{lo}-{hi} the spec produced",
-           stood=len(up), planned=len(plots), band=[lo, hi])
+    if scope is not None:
+        in_s = [p for p in counted if p["name"] in scope]
+        up = [p["name"] for p in in_s if stood.get(p["name"], False)]
+        scoped("count", len(up) == len(in_s) and spec_mod.in_band(spec, len(counted)),
+               f"{len(up)} of {len(in_s)} sampled {what or 'structure(s)'} stand; "
+               f"{len(counted)} planned in the whole place"
+               + (f" ({len(plots)} plot(s) in all)" if what else "")
+               + f", against the band {lo}-{hi} the spec produced",
+               method="observed",
+               stood=len(up), planned=len(in_s), planned_whole=len(counted),
+               band=[lo, hi], subject=what or "every plot")
+    else:
+        up = [p["name"] for p in counted if stood.get(p["name"], False)]
+        clause("count", spec_mod.in_band(spec, len(up)),
+               f"{len(up)} {what or 'structure(s)'} stand of {len(counted)} planned"
+               + (f" ({len(plots)} plot(s) in all)" if what else "")
+               + f", against the band {lo}-{hi} the spec produced",
+               method="observed", stood=len(up), planned=len(counted),
+               band=[lo, hi], subject=what or "every plot")
+
+    # --- ring words ------------------------------------------------------ **A rank is
+    # not a height.** Only asked where the sentence's own rings carry an elevation word
+    # and the place's terraces actually differ; a flat place's `lower` ring is a radial
+    # statement and there is nothing here to hold it to.
+    words = [w for w in ring_words(spec, layout) if w["agrees"] is not None]
+    if words:
+        clause("rings/elevation", all(w["agrees"] for w in words),
+               "; ".join(w["why"] for w in words), method="observed",
+               rings=words,
+               failed=[w["part"] for w in words if not w["agrees"]])
 
     # --- palette. One clause: it holds when every voice standing in the place holds.
     chosen = voice or plan.get("voice") or spec.get("voice")
@@ -146,12 +504,95 @@ def read(spec: dict, plan: dict, parts_record: dict, *, voice: str | None = None
            failed=[v for v, ok, _s in reads if not ok])
     # --- palette, as built ------------------------------------------------
     if built is not None:
-        clause("palette/built", **built_palette(chosen, parts, stood, built, base))
+        got_pal = built_palette(chosen, sparts, stood, built, base)
+        if scope is not None:
+            got_pal["says"] += tag
+            got_pal["sampled"] = True
+        clause("palette/built", method="observed", **got_pal)
 
-    holds = all(c["holds"] for c in clauses)
+    # --- what the sentence asked for -------------------------------------- Last,
+    # because it is the only group of clauses that does not come from the spec, and a
+    # reader should see the place checked against its own plan and then against the
+    # request that produced it.
+    asked, found = requirement_read(spec, plan, parts_record, intent_rec, resolution,
+                                    site, reading=reading, capabilities=capabilities,
+                                    judgment=judgment)
+    clauses += asked
+
+    # **Every clause says what evidence it rests on.** The expression round; the closure
+    # review's fourth finding. A clause measured over the plan while a sample was built,
+    # a clause measured on the sampled leaves, a clause on a place built whole, and a
+    # clause whose subject was never built are four different statements, and they
+    # collapsed into one `holds` flag. An outside-sample clause is `unobserved` and its
+    # `holds` is None -- neither met nor missed -- and it never makes a read hold.
+    # **...and standing leaves do not promote a plan measurement.** The design round;
+    # the expression review's third finding. Coverage and method are two independent
+    # questions, and `built_place` is the conjunction of both: the whole place stood
+    # *and* this clause was read off what stands. A relation measured on the drawing is
+    # `plan` evidence on a village built to the last thatch.
+    every_leaf = [p for p in parts if p.get("kind", "plot") in ("plot", "edge", "point",
+                                                                  "area")]
+    all_stood = bool(every_leaf) and all(stood.get(p["name"], False) for p in every_leaf)
+    for c in clauses:
+        method = c.get("method") or "plan"
+        if c.get("outside_sample"):
+            c["evidence"] = "unobserved"
+            c["holds"] = None
+        elif method in ("plan", "declared"):
+            c["evidence"] = "plan"
+        elif method == "unsupported":
+            c["evidence"] = "unobserved"
+        # `observed`, `judged` and `site` are all readings of something that exists --
+        # the built world, the inspection's view of it, the ground it stands on -- so
+        # they take the coverage the place actually has.
+        elif scope is not None:
+            c["evidence"] = "built_sample" if c.get("sampled") else "plan"
+        else:
+            c["evidence"] = "built_place" if all_stood else "plan"
+    holds = all(c["holds"] for c in clauses if c["holds"] is not None)
+    # **What this read cannot say, said.** Unresolved and unsupported obligations are
+    # not failures of the place and they are not passes either; a sample built of a
+    # larger plan qualifies the sample. Both travel with the verdict so a reader of a
+    # `holds: true` sees what it is a verdict about.
+    limits = {"unobserved": [c["clause"] for c in clauses
+                             if c.get("evidence") == "unobserved"],
+              "unresolved": [c["clause"] for c in clauses
+                             if c.get("status") == "unresolved"],
+              "unsupported": [c["clause"] for c in clauses
+                              if c.get("status") == "unsupported"],
+              "sample": (parts_record or {}).get("sample"),
+              # what construction delivered short of the ask: recorded constraints, not
+              # failing clauses (interface I3's reader)
+              "construction": construction_limits(plan, parts_record, found)}
+    if limits["sample"]:
+        unbuilt = [p["name"] for p in parts if p["name"] not in (scope or set())]
+        limits["sample"] = dict(limits["sample"],
+                                not_built={"leaves": len(unbuilt),
+                                           "of": len(parts),
+                                           "quarters": sorted({(p.get("in") or ["?"])[-1]
+                                                               for p in parts
+                                                               if p["name"] not in
+                                                               (scope or set())
+                                                               and p.get("in")}),
+                                           "examples": unbuilt[:8]},
+                                outside_sample=[c["clause"] for c in clauses
+                                                if c.get("outside_sample")])
+        limits["note"] = (f"a construction sample of {len(scope or [])} of {len(parts)} "
+                          f"leaves: this read qualifies the sample and not the whole "
+                          f"place; {len(unbuilt)} leaf/leaves were not built")
     return {"holds": bool(holds), "got": 1 if holds else 0,
             "clauses": clauses,
-            "failed": [c["clause"] for c in clauses if not c["holds"]],
+            "failed": [c["clause"] for c in clauses if c["holds"] is False],
+            "evidence": {lvl: sum(1 for c in clauses if c.get("evidence") == lvl)
+                         for lvl in ("built_place", "built_sample", "plan", "unobserved")},
+            # **the other census**: what the clauses were read off, which coverage
+            # cannot tell you. A read of 17 clauses at `built_place` over a whole built
+            # village and a read of 17 clauses of which 4 were observed are different
+            # statements, and the second is the true one for most places.
+            "method": {m: sum(1 for c in clauses if (c.get("method") or "plan") == m)
+                       for m in ("observed", "plan", "declared", "judged", "site",
+                                 "unsupported")},
+            "limits": limits,
             "sentence": spec["sentence"], "kind": spec["kind"],
             "band": list(spec["size_band"]),
             "note": "The built place against the sentence's own spec, "
@@ -544,14 +985,7 @@ def _corners(p: dict) -> list:
 
 def great_wall_clauses(spec: dict, plan: dict, parts: list, decls: dict,
                        stood: dict) -> list:
-    """The great wall, where the spec asks for one.
-
-        In a place of concentric rings the outermost ring is the great wall, and it is held
-        to `GREAT_WALL_HEIGHT`: the height the plan asked its type for, and the wall stood.
-        Silent where nothing is concentric -- a walled town of sixty houses asked for a
-        wall and not a great one.
-        
-    """
+    """The outermost wall of a ringed place, held to **the hierarchy the design adopted**."""
     got = rings(spec, parts)
     if not got:
         return []
@@ -559,14 +993,76 @@ def great_wall_clauses(spec: dict, plan: dict, parts: list, decls: dict,
     p = outer["part"]
     h = (p.get("params") or {}).get("height")
     up = stood.get(p["name"], False)
-    ok = up and h is not None and int(h) >= GREAT_WALL_HEIGHT
-    return [{"clause": f"great/{p['name']}", "holds": bool(ok),
-             "says": f"{p['name']} is the outermost of {len(got)} rings and the "
-                     f"place's great wall: planned {h if h is not None else 'no'} "
-                     f"high as `{p.get('type')}`, against {GREAT_WALL_HEIGHT}"
+    hier = p.get("hierarchy") if isinstance(p.get("hierarchy"), dict) else None
+    others = [(r["part"].get("params") or {}).get("height") for r in got[1:]]
+    others = [int(v) for v in others if v is not None]
+    sentence = str(spec.get("sentence") or "").lower()
+    if hier:
+        kind = str(hier.get("kind") or "town")
+        want = hier.get("height")
+        if kind == "great":
+            ok = (up and h is not None and (want is None or int(h) >= int(want))
+                  and all(int(h) > o for o in others))
+            says = (f"{p['name']} is the outermost of {len(got)} rings and the design's "
+                    f"great wall (from {hier.get('from')}): planned {h} high against its "
+                    f"recorded {want}, the other ring walls {others or 'none'}"
+                    + ("; it stands" if up else "; it DOES NOT STAND"))
+        else:
+            ok = up and h is not None and (want is None or int(h) == int(want))
+            says = (f"{p['name']} is the outermost of {len(got)} rings and a {kind} wall "
+                    f"by the design (from {hier.get('from')}): planned {h} high against "
+                    f"its recorded {want}" + ("; it stands" if up else "; it DOES NOT STAND"))
+        return [{"clause": f"great/{p['name']}", "holds": bool(ok), "says": says,
+                 "height": h, "against": want, "kind": kind, "type": p.get("type"),
+                 "stood": up, "from": hier.get("from")}]
+    if "great wall" in sentence:
+        ok = up and h is not None and int(h) >= GREAT_WALL_HEIGHT
+        return [{"clause": f"great/{p['name']}", "holds": bool(ok),
+                 "says": f"{p['name']} is the outermost of {len(got)} rings and the "
+                         f"sentence asks for a great wall: planned "
+                         f"{h if h is not None else 'no'} high as `{p.get('type')}`, "
+                         f"against {GREAT_WALL_HEIGHT} (no hierarchy record on the plan)"
+                         + ("; it stands" if up else "; it DOES NOT STAND"),
+                 "height": h, "against": GREAT_WALL_HEIGHT, "type": p.get("type"),
+                 "stood": up}]
+    return [{"clause": f"great/{p['name']}", "holds": bool(up),
+             "says": f"{p['name']} is the outermost of {len(got)} rings; the sentence "
+                     f"asks for a wall and not a great one, and the plan records no "
+                     f"hierarchy, so it is held to standing: planned {h} high"
                      + ("; it stands" if up else "; it DOES NOT STAND"),
-             "height": h, "against": GREAT_WALL_HEIGHT, "type": p.get("type"),
-             "stood": up}]
+             "height": h, "against": None, "type": p.get("type"), "stood": up}]
+
+
+def group_links(plan: dict) -> dict:
+    """`{group node name: the defining part it answers}` off the plan tree."""
+    out: dict = {}
+
+    def walk(nodes):
+        for n in nodes:
+            if n.get("children"):
+                if n.get("defines"):
+                    out[n.get("name")] = n["defines"]
+                walk(n["children"])
+    walk(plan.get("parts") or [])
+    return out
+
+
+def _in_group(part: dict, d: dict, links: dict | None = None) -> bool:
+    """Is this leaf inside the group defining part `d`?
+
+        By the plan's own `defines` link where it carries one, and otherwise by the name
+        the place level gives a district -- `<defining part>_<sector>` -- which is the same
+        link a step weaker. A leaf whose ancestry resolves to no defining part is nobody's
+        and is counted for nobody.
+        
+    """
+    name = d["name"]
+    for a in part.get("in") or []:
+        if (links or {}).get(a) == name:
+            return True
+        if a == name or a.startswith(name + "_"):
+            return True
+    return False
 
 
 def _matching(parts: list, d: dict, decls: dict | None = None) -> list:
@@ -656,6 +1152,13 @@ def built_palette(voice: str | None, parts: list, stood: dict, built, base) -> d
     for p in parts:
         name = p["name"]
         if not stood.get(name, False):
+            continue
+        # **Open ground is not read against a building voice.** The expression round's
+        # town: the temple compound's courts are paved in the podium's stone and read
+        # 60% "in the voice" of the ring they stand in; a square, a court, a field or a
+        # grove is laid in the ground's materials and is unread here, not failed.
+        if p.get("kind") == "area":
+            unread.append(name)
             continue
         own = p.get("voice") or voice
         if own not in styles.VOICES:

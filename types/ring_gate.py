@@ -19,6 +19,13 @@ FORM = "fortification"
 ROLE = "defensive"
 KIND = "point"
 PASSAGE = True
+#: **What family of part this builds**, said outright. `capability._named_for` reads a
+#: family off the committed name and `ring_gate` neither is `gate` nor starts with
+#: `gate_`, while the ring layout's own chooser matched it on the substring -- so the
+#: capability record said the place's gate was `gate_tower` and the place had a
+#: `ring_gate` in it. Two rules, one library, two answers: a gate a ring wall is passed
+#: through.
+FAMILY = "gate"
 
 PARAMS = {
     "storeys": ("int", 1, 3),

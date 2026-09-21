@@ -1,6 +1,7 @@
 {
- "name": "pale_quartz_and_gilt",
  "ceremonial": true,
+ "chimney": false,
+ "name": "pale_quartz_and_gilt",
  "notes": {
   "blurb": "White quartz under a gilded copper roof, banded in purple: the brightest and richest palette this project has, for the quarter at a place's centre and never for the whole of an ordinary one.",
   "construction": "Dressed quartz ashlar on a pale diorite footing, birch posts and lintels framing tall openings, purpur string courses at sill and cornice; the second stone is cherry, a rose-tinted wall for the houses between the white ones.",
@@ -48,5 +49,25 @@
   ],
   "tiers": 2
  },
- "chimney": false
+ "variants": {
+  "footing": [
+   {
+    "family": "stone_brick",
+    "weight": 0.35,
+    "when": "damp"
+   }
+  ],
+  "wall": [
+   {
+    "family": "diorite",
+    "weight": 0.45,
+    "when": "damp"
+   },
+   {
+    "family": "diorite",
+    "weight": 0.22,
+    "when": "runoff"
+   }
+  ]
+ }
 }

@@ -5,6 +5,7 @@
     $PY scripts/type_needs.py townhouse  # one type, printed
     $PY scripts/type_needs.py --transcribe   # write the measured bands onto the files
     $PY scripts/type_needs.py --merge temple ring_gate   # re-sweep these, write their rows
+    $PY scripts/type_needs.py --envelope [--transcribe] cottage   # the ENVELOPE rows
 
 `NEEDS` is a type's own declaration and A1 says every type file carries one. This is the
 instrument that says whether a declaration is true, and it is the same shape of answer
@@ -589,9 +590,37 @@ def transcribe(bank: dict, names=None) -> dict:
     return moved
 
 
+def envelope_rows(names: list, transcribe_rows: bool) -> int:
+    """`--envelope <type ...>`: measure each type's ENVELOPE rows (the least lot on
+    which every parameter combination stands with each feature it declares, at one
+    seed and at three) through `ethoslm.envelope.table`, and print them or, with
+    `--transcribe`, write them onto the type file as its `ENVELOPE` table. The
+    expression round: the same instrument the layout consults before it draws a lot."""
+    from ethoslm import envelope
+    for name in names:
+        t0 = time.perf_counter()
+        rows = envelope.table(name)
+        path = os.path.join(ROOT, "types", f"{name}.py")
+        if transcribe_rows:
+            envelope.transcribe(path, rows, f"$PY scripts/type_needs.py --envelope "
+                                            f"--transcribe {name}")
+        print(f"{name}: {len(rows)} envelope row(s) in "
+              f"{round(time.perf_counter() - t0, 1)}s"
+              + (" -> ENVELOPE written onto the file" if transcribe_rows else ""))
+        for r in rows:
+            print(f"  {json.dumps(r['params'])} + {r['features']}: min {r['lot_min']} "
+                  f"pref {r['lot_pref']}")
+    return 0
+
+
 def main(argv: list) -> int:
     check = "--check" in argv
     names = [a for a in argv if not a.startswith("--")] or None
+    if "--envelope" in argv:
+        if not names:
+            print("--envelope takes type names")
+            return 1
+        return envelope_rows(names, "--transcribe" in argv)
     if "--merge" in argv:
         # Re-sweep the named types and write their rows into the registered bank, the
         # rest of it unmoved: a round that changes two types does not wait an hour and a

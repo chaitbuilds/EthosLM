@@ -109,6 +109,41 @@ def lane_stances(nav: observe.Nav, network) -> list:
     return out
 
 
+def reachable_from(graph: dict, entries) -> set:
+    """Every node of `graph` reachable from `entries`. A walk from nowhere reaches nothing.
+
+        **The primitive the access proof was missing.** The review's account of the city
+        sample: `_doors_from_the_lane` reported zero unreachable doors while the same run
+        reported a disconnected component of 5,922 stances, because the walk was seeded from
+        *every* lane stance -- so each island seeded itself and proved that it reaches
+        itself. Connected access is reachability from the entries a place actually has, and
+        a seed set that is the whole graph cannot express that.
+        
+    """
+    seen, stack = set(), [e for e in entries if e in graph]
+    seen.update(stack)
+    while stack:
+        n = stack.pop()
+        for m in graph.get(n) or ():
+            if m not in seen:
+                seen.add(m)
+                stack.append(m)
+    return seen
+
+
+def components(graph: dict) -> list:
+    """The connected components of `graph`, largest first."""
+    seen, out = set(), []
+    for n in graph:
+        if n in seen:
+            continue
+        got = reachable_from(graph, [n])
+        seen |= got
+        out.append(got)
+    out.sort(key=len, reverse=True)
+    return out
+
+
 @dataclass
 class Check:
     code: str

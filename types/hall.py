@@ -770,13 +770,40 @@ def build(b, part, seed, storeys=2, dormers=1, use=None):
                   {"mat": dict(b.voice), "openings": "rhythm", "stair": "none"}))
 
     res, used, kw = None, rect, {}
+    rung = None
     for i, (rc, kwi) in enumerate(plans):
         r = b.building(label, rc[0], rc[1], rc[2], rc[3], st, roofspec, **kwi)
         if r and r.get("ok"):
             res, used, kw = r, rc, kwi
+            rung = i
             break
     if res is None:
-        return {"ok": False, "reason": "no shell"}
+        return {"ok": False, "reason": "no shell",
+                "emitted": {"requested": {"storeys": st, "dormers": nd},
+                            "storeys": 0, "attempt": None, "fallback": "no shell stood",
+                            "omitted": ["storeys"], "features": {}}}
+    # **What survived, said by the type.** The closure round: the ladder above gives up
+    # the jetty, the porch, the oriel, the dormers and the chimney one at a time, then
+    # most of them, then everything, then the whole pad with no stair; the record names
+    # the rung and what it gave up, and `construction.outcome` measures beside it.
+    _feat = ("jetty", "porch", "oriel", "dormers", "chimney", "brackets")
+    emitted = {
+        "requested": {"storeys": st, "dormers": nd},
+        "storeys": int(st), "attempt": int(rung),
+        "fallback": (None if rung == 0 else
+                     f"ladder rung {rung}: without " + ", ".join(
+                         f for f in _feat if f in base and f not in kw)
+                     + (" and on the whole pad with no stair" if rung == len(plans) - 1
+                        else "")),
+        "omitted": [f for f in ("dormers",) if f in base and f not in kw],
+        "features": {f: bool(kw.get(f)) for f in _feat},
+        "rects": {"main": list(used),
+                  **({"chimney": [int(res["chimney"]["x"]), int(res["chimney"]["z"]),
+                                  int(res["chimney"]["x"]), int(res["chimney"]["z"])]}
+                     if isinstance(res.get("chimney"), dict)
+                     and res["chimney"].get("x") is not None else {})},
+        "floors": list(res.get("floors") or []),
+    }
     ex = res.get("extras") or {}
 
     rooms = [tuple(r) for r in (res.get("rooms") or [])]
@@ -864,4 +891,4 @@ def build(b, part, seed, storeys=2, dormers=1, use=None):
                used)
     _unfloat(b, b.check_attached(), px0, pz0, px1, pz1, avoid)
     b.check_walkable(label)
-    return {"ok": True, "use": use, "rect": used, "storeys": st}
+    return {"ok": True, "use": use, "rect": used, "storeys": st, "emitted": emitted}

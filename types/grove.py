@@ -159,5 +159,7 @@ def build(b, part, seed, **params):
                 under += 1
 
     b.check_attached()
+    # the reserved doorway stays walkable, whatever the floor and the border did
+    b.area_way_in(part["x0"], part["z0"], part["x1"], part["z1"], int(part["floor_y"]))
     return {"ok": True, "planting": planting, "floor": floor, "trees": planted,
             "undergrowth": under, "cells": w * d}

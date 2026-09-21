@@ -29,5 +29,43 @@
    ]
   ],
   "tiers": 1
+ },
+ "variants": {
+  "footing": [
+   {
+    "family": "mossy_stone_brick",
+    "weight": 0.5,
+    "when": "damp"
+   },
+   {
+    "family": "mossy_stone_brick",
+    "weight": 0.15,
+    "when": "patch"
+   }
+  ],
+  "trim": [
+   {
+    "family": "spruce",
+    "weight": 0.25,
+    "when": "patch"
+   }
+  ],
+  "wall": [
+   {
+    "family": "dark_oak",
+    "weight": 0.5,
+    "when": "damp"
+   },
+   {
+    "family": "dark_oak",
+    "weight": 0.3,
+    "when": "exposed"
+   },
+   {
+    "family": "dark_oak",
+    "weight": 0.15,
+    "when": "patch"
+   }
+  ]
  }
 }

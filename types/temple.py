@@ -570,13 +570,44 @@ def build(b, part, seed, **params):
 
     mass = _massing(b, part, rng, plan)
     res, used = None, None
-    for kw in _attempts(b, part, rng, storeys, plan, mass):
+    rung = None
+    tries = _attempts(b, part, rng, storeys, plan, mass)
+    for i, kw in enumerate(tries):
         r = b.building(label, **kw)
         if r and r.get("ok"):
             res, used = r, kw
+            rung = i
             break
     if res is None:
-        return {"ok": False, "reason": "no footprint the library would take"}
+        return {"ok": False, "reason": "no footprint the library would take",
+                "emitted": {"requested": {"storeys": storeys, "plan": plan},
+                            "storeys": 0, "attempt": None, "fallback": "no shell stood",
+                            "omitted": ["storeys"], "features": {}}}
+    # **What survived, said by the type.** The closure round: the footprint caps the
+    # storeys before the first attempt and the ladder gives up the wing, the yard, the
+    # dormers and the storeys after it; the record names the rung and what it gave up.
+    _first = tries[0]
+    emitted = {
+        "requested": {"storeys": storeys, "plan": plan},
+        "storeys": int(used["storeys"]), "attempt": int(rung),
+        "fallback": ("; ".join(
+            ([f"footprint: storeys {storeys} -> {_first['storeys']}"]
+             if _first["storeys"] < storeys else [])
+            + ([f"ladder rung {rung}: without "
+                + ", ".join(f for f in ("wing", "yard", "dormers", "brackets")
+                            if f in _first and f not in used)
+                + (f", storeys {_first['storeys']} -> {used['storeys']}"
+                   if used["storeys"] < _first["storeys"] else "")]
+               if rung else [])) or None),
+        "omitted": ([] if used["storeys"] >= storeys else ["storeys"])
+                   + [f for f in ("wing", "yard", "dormers") if f in _first and f not in used],
+        "features": {"wing": "wing" in used, "yard": "yard" in used,
+                     "dormers": int(used.get("dormers") or 0),
+                     "brackets": bool(used.get("brackets"))},
+        "rects": {"main": [used["x0"], used["z0"], used["x1"], used["z1"]],
+                  **({"wing": list(used["wing"])} if used.get("wing") else {})},
+        "floors": list(res.get("floors") or []),
+    }
 
     foot = (used["x0"], used["z0"], used["x1"], used["z1"])
     wing = used.get("wing")
@@ -630,4 +661,4 @@ def build(b, part, seed, **params):
     b.seal_voids(part["x0"], part["z0"], part["x1"], part["z1"], b.block(b.voice["footing"]))
     b.check_walkable(label)
     b.check_attached()
-    return {"ok": True, "footprint": foot, "storeys": n}
+    return {"ok": True, "footprint": foot, "storeys": n, "emitted": emitted}

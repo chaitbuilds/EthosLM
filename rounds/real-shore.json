@@ -1,0 +1,32 @@
+{
+ "name": "real-shore",
+ "sentence": "Build a small lakeside village of low houses facing the water, gathered around a market square, with no wall.",
+ "flags": {
+  "dry_run": true,
+  "seed": 1,
+  "max_new_squares": 0,
+  "workers": 4
+ },
+ "preregistered": {
+  "spec": "One complete small place",
+  "written_before": "the sentence was interpreted, the spec was written, the site was searched, the ground was cached, the place was laid out, anything was built or any finding was read",
+  "model": "no API key and no retrieval provider are configured. The `spec` and `judge` roles -- the interpretation, the place spec, the district characters, the preview reading and the revision -- are staged for the supervising terminal agent, which this project documents as a first-class runtime. SUPERVISED, not a fresh autonomous model pass.",
+  "expectations": {
+   "interpretation/relation": "the interpreter reads `gathered around a market square` as a relation between the houses and the square, and the cross-check records it as `read_only` because no phrase rule in this build can express a relation at all",
+   "absent/wall": "satisfied, read from `no wall` and checked against every leaf of the plan by its own type",
+   "relation/around": "measured as bearings about the square: satisfied only if the houses reach at least 3 of its 4 sides within the registered reach, and FAILED if they stand in a clump on one side of it. A market square with houses beside it is not houses gathered around a market square",
+   "quality/height/low": "measured against the storey band each committed type declares, and never satisfied on the word alone",
+   "facing/water": "satisfied only if a majority of the homes front the water beside them, none fronts away, and at least three quarters of them can be measured at all",
+   "capacity": "each district's promise is the arrangement its own ground holds, laid by the construction logic that builds it. Where a district is short of the allocator's proposal, the ground and the fabric are tried and measured BEFORE any number moves, and the ladder is on the record",
+   "construction": "the place is built offline and the construction check runs over what was built. Lint errors or a lane network in more than one piece BLOCK the run as `construction` and are not reported beside a finished place",
+   "revision": "one bounded revision that changes a real consumer decision -- the arrangement, the fabric or the ground -- applied, rebuilt as needed and INSPECTED AGAIN. A no-op, a reordering of a record, or a revision that is rolled back does not count as recovery",
+   "qualification": "`place_check` consumes the reading, the capability record and any judgment of THIS candidate. A place that does not answer its request blocks as `fidelity`. A judgment of an earlier candidate is not read against this one"
+  },
+  "bounds": {
+   "plan_repair_passes": "2 per candidate, 6 per lineage; a deliberate revision opens a new lineage",
+   "preview_revisions": 1,
+   "district_growth": "0.5 of the rectangle the district was FIRST laid out as",
+   "scale_negotiation": "no lower than 0.25 of the size band first accepted for the kind"
+  }
+ }
+}

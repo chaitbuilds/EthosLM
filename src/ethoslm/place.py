@@ -3,11 +3,14 @@
 from .pipeline.round import ROOT
 
 from .pipeline.stages_plan import (
+    stage_reading,
+    stage_interpret,
     stage_place_spec,
     SPEC_BRIEF,
     spec_brief,
     stage_site_search,
     stage_plateau,
+    stage_ground,
     stage_terraces,
     pipeline_site,
     pipeline_voice,
@@ -35,4 +38,5 @@ from .pipeline.stages_build import (
 
 from .pipeline.stages_measure import (
     stage_place_check,
+    stage_qualify,
 )

@@ -1,0 +1,55 @@
+{
+ "name": "des-city",
+ "sentence": "Build Ringed City.",
+ "flags": {
+  "dry_run": true,
+  "seed": 1,
+  "max_new_squares": 0,
+  "workers": 4,
+  "memory_kb": 16000000,
+  "parts_bound_seconds": 3600,
+  "improve": {
+   "cycles_per_candidate": 1,
+   "cycles_per_lineage": 1
+  },
+  "sample": {
+   "quarters": 1,
+   "margin": 32,
+   "compound": true,
+   "boundary": true,
+   "market": true
+  }
+ },
+ "preregistered": {
+  "written_before": "the sentence was interpreted, the programme resolved, the site searched, the section chosen, anything built or read",
+  "model": "no API key and no retrieval provider are configured; the terminal agent answers every staged job. Research REPLAYED from fixtures/closure-city/evidence and disclosed; any new retrieval is recorded in sources/INDEX.md with its URL, access date and the exact claim it supports.",
+  "section_extent": {
+   "registered_as": "relationships, not a part-count target",
+   "must_demonstrate": [
+    "two adjoining districts whose fabric contrasts -- different house type, lot grain and storey band -- with the boundary between them in the section",
+    "one monumental boundary and the transition through it: the wall, its gate, and the ground on both sides of the passage",
+    "courtyard dwelling function verified on the built blocks: court, gate and enclosing range in the intended relationship",
+    "market function verified on the built blocks: usable stalls, a clear aisle and a way in from the street",
+    "one connected circulation network across every part of the section, from the outermost gate in the section to the innermost part of it"
+   ],
+   "reported_not_targeted": "the number of parts the section comes to, its columns, and its build time"
+  },
+  "expectations": {
+   "architecture_not_labels": "every functional claim about the section rests on a final-world predicate run on the assembled world after all construction; a FUNCTION label, an occupied bounding box or a generator assertion establishes nothing, and an unsupported predicate is reported unresolved rather than satisfied",
+   "references": "the judge cites claims this run actually made from retrieved sources; a form claimed beyond what a source says is recorded as a design decision in the type's own docstring and in sources/INDEX.md, not as a sourced fact",
+   "honest_scope": "clauses about parts outside the section are `unobserved` and hold nothing; clauses measured on the plan are `plan` evidence however much of the section stood; whole-city identity is not claimed and the read fails on it as registered",
+   "outcome": "a built, checked, inspected connected section demonstrating the five relationships above with section-level fidelity stated, or a stop naming which relationship could not be demonstrated and why"
+  },
+  "bounds": {
+   "plan_repair_passes": "2 per candidate, 6 per lineage",
+   "improve_cycles": "1 per candidate, 1 per lineage",
+   "parts": "3600 s, 16 GB",
+   "sites": "cached squares only (max_new_squares 0)"
+  },
+  "commands": {
+   "cold": "rm -rf out/des-city && \"$PY\" scripts/round.py rounds/des-city.json --dry-run",
+   "replay": "fresh",
+   "accept": "\"$PY\" scripts/check_design.py --run d1"
+  }
+ }
+}

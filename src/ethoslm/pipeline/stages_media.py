@@ -1224,6 +1224,25 @@ or nobody's; is the density what the sentence means -- then the landmark, then t
 buildings and the voice. Name each finding with the picture it is in and the
 district or type it is about. Say what is right too, in a line. No score, no
 numbers: what a person sees.
+
+## And the same findings as data
+
+Then write a second file, `{findings}`:
+
+```json
+{{"findings": [{{"id": "r1", "about": "composition|fabric|access|voice|scale",
+                "says": "one sentence", "measure": "one of {measure_names} or null",
+                "owner": "layout|fabric|voice|scale"}}],
+  "closed": ["ids of the earlier reading's findings, listed below, that this plan no longer shows"],
+  "right": ["what is right, briefly"]}}
+```
+
+`owner` is the decision that would have to change: `fabric` is a district's character
+(lot size, frontage, storeys, open ground), `voice` the palette, `layout` where the
+districts and the parts stand, `scale` how big the place is. `measure` names the number
+that would move if the finding were fixed, or null.
+
+{earlier}
 """
 
 REVISION_BRIEF = """# One revision before the build
@@ -1262,17 +1281,23 @@ The voice as it stands is `{voice_name}`. The voices on disk:
 
 {voices}
 
+The reading's findings, as data:
+
+{findings}
+
 ## Output
 
 Reply with one JSON document:
 
 {{"characters": {{"<district part name>": {{...a character, whole...}}}},
   "voice": "<a voice name>" or null,
+  "caused_by": ["the ids of the findings above this change answers"],
   "why": "one or two sentences"}}
 
 `characters` holds only the districts you change, each with its whole character;
-`{{}}` changes none. `voice` null keeps the voice. If the reading finds nothing worth
-a change, say so in `why` and change nothing.
+`{{}}` changes none. `voice` null keeps the voice. `caused_by` names the findings the
+change is for -- a revision answers a finding or it is not a revision. If the reading
+finds nothing worth a change, say so in `why` and change nothing.
 """
 
 
@@ -1401,24 +1426,163 @@ def _draw_preview(rnd: Round, plan: dict, parts: list, site, voice: str | None,
     return out
 
 
-#: What a revision may touch, and therefore what is put back where one is refused.
+#: What a revision or a repair may touch, and therefore what is put back where one is
+#: refused. **The whole candidate and not the plan files.** The integration review's
+#: fifth finding, reproduced: a rejected repair was rolled back and the round kept the
+#: rejected candidate's `resolution.json` and `findings.json`, so the plan said one
+#: thing and the record of what was wrong with it said another. A candidate is the plan,
+#: the programme it was laid out from, the records that describe it, the ground it was
+#: prepared on and the evidence it was judged by; restoring some of those is not
+#: restoring a candidate.
 REVISION_FILES = ("plan.", "district_", "place.json", "place.checked.json",
                   "plots.json", "network.json", "circulation.json", "voice.json",
-                  "character.")
+                  "character.",
+                  # the records of the design and what is wrong with it
+                  "resolution.json", "findings.json", "capabilities.json",
+                  "intent.json", "reading.json",
+                  # what each artifact was made from, so a rolled-back candidate does
+                  # not keep the rejected one's freshness claims
+                  "deps.json",
+                  # the ground the candidate was prepared on, and the arterials it was
+                  # routed with
+                  "ground.json", "plateau.json", "terraces.json", "arterials.",
+                  # **the decisions a repair made, and the ground it made them on.** The
+                  # review rolled a candidate back and found the rejected candidate's
+                  # `layout_repairs.json` and `plan_repairs.json` still on disk beside
+                  # the restored plan -- so the accepted design carried the record of
+                  # revisions that had been withdrawn, and the repair budget those files
+                  # count was spent on a candidate that no longer existed. The terrain
+                  # was outside the snapshot for the same reason and is the one file the
+                  # terraces pass actually rewrites.
+                  "layout_repairs.json", "plan_repairs.json", "reallocations.json",
+                  "world.npz", "world_built.npz", "world.quarters-from.npz")
+
+#: The preview directory is part of the candidate too: a reading and a drawing are
+#: judgments **of a particular plan**, and keeping them across a rollback is how a
+#: candidate ends up carrying another candidate's inspection.
+REVISION_DIRS = ("preview",)
+
+
+def _candidate_files(rnd: Round) -> list:
+    out = [f for f in sorted(os.listdir(rnd.state))
+           if f.startswith(REVISION_FILES) and os.path.isfile(rnd.rel(f))]
+    for d in REVISION_DIRS:
+        root = rnd.rel(d)
+        if not os.path.isdir(root):
+            continue
+        for f in sorted(os.listdir(root)):
+            if os.path.isfile(os.path.join(root, f)):
+                out.append(os.path.join(d, f))
+    return out
 
 
 def _snapshot(rnd: Round) -> dict:
-    return {f: open(rnd.rel(f), "rb").read() for f in sorted(os.listdir(rnd.state))
-            if f.startswith(REVISION_FILES) and os.path.isfile(rnd.rel(f))}
+    return {f: open(rnd.rel(f), "rb").read() for f in _candidate_files(rnd)}
 
 
 def _restore(rnd: Round, snap: dict) -> None:
-    for f in sorted(os.listdir(rnd.state)):
-        if f.startswith(REVISION_FILES) and os.path.isfile(rnd.rel(f)) and f not in snap:
+    for f in _candidate_files(rnd):
+        if f not in snap:
             os.remove(rnd.rel(f))
     for f, blob in snap.items():
+        os.makedirs(os.path.dirname(os.path.abspath(rnd.rel(f))), exist_ok=True)
         with open(rnd.rel(f), "wb") as fh:
             fh.write(blob)
+
+
+def _replan(rnd, be):
+    """Lay the plan out again, **driven to an outcome** rather than called once.
+
+        The review's fifth finding, last part: "The preview's revision and repair helpers
+        call `stage_plan` once directly. A legitimate `reenter` or pending agent response is
+        not driven to completion there." A stage that changes the candidate under itself
+        returns `reenter` and the driver runs it again; a helper that calls it once reads
+        that state as a result and decides the revision failed. Plan, preview and revision
+        have to use the same control path or they are three different systems that look
+        alike.
+        
+    """
+    from . import round as driver, stages_plan
+    res = stages_plan.stage_plan(rnd, be, {})
+    return driver._drive_reentries(rnd, be, {}, "plan", res)
+
+
+def _finish_preview(rnd: Round, rec: dict, rec_p: str, plan: dict | None) -> dict:
+    """Mark this inspection done **and stamp what it was made from**. One exit.
+
+        There were two, and only one of them stamped. The other -- "the revision budget is
+        spent, so the loop is over" -- wrote `done` and returned, so the preview that had
+        just been through a revision carried no dependency stamp at all; the next entry read
+        "carries no dependency stamp: what it was made from is unknown", withdrew the
+        drawings and the reading, and asked the judge to read the same candidate again. A
+        completion that does not record what it completed is not a completion, and an
+        inspection loop that re-opens itself on the next invocation is not bounded.
+        
+    """
+    from .. import deps
+    rec["done"] = True
+    os.makedirs(os.path.dirname(rec_p), exist_ok=True)
+    json.dump(rec, open(rec_p, "w"), indent=1)
+    with contextlib.suppress(ValueError):
+        deps.stamp(rnd, "preview", outputs=["preview/preview.json"], plan=plan,
+                   note=f"{rec.get('revisions', 0)} revision(s), "
+                        f"{len(rec.get('repairs') or [])} repair pass(es)")
+    return rec
+
+
+def _withdraw_preview(rnd: Round, d: str, rec: dict, why: str) -> dict:
+    """Retire a preview's drawings and readings: they are about a candidate that is gone.
+
+        One implementation, because there are two ways to find that out -- the stamped plan
+        fingerprinted differently, or the candidate moved under a *pending* inspection -- and
+        two copies of "withdraw the evidence" would be two answers. Invalidating the stamp of
+        an artifact whose contents are still reused is not invalidating anything, so the
+        drawings, the reading and the revision go with it.
+        
+    """
+    from .. import deps
+    rec = dict(rec)
+    rec["done"] = False
+    rec["stale"] = why
+    rec["withdrawn"] = {"drawn": sorted(rec.get("drawn") or {}), "why": why,
+                        "candidate": rec.get("candidate"),
+                        # **the evidence is kept, its authority is withdrawn.** The
+                        # closure round: a revision that was applied and then overtaken
+                        # by a moved candidate is still a thing that happened
+                        "applied": rec.get("applied"), "readings": rec.get("readings"),
+                        "at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+    rec["drawn"] = {}
+    rec.pop("reading", None)
+    rec.pop("revision", None)
+    rec.pop("applied", None)
+    rec.pop("readings", None)
+    for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+        if f.startswith(("reading", "revision")) and f.endswith((".md", ".json")):
+            os.replace(os.path.join(d, f), os.path.join(d, f"stale.{f}"))
+    deps.invalidate(rnd, "preview", why)
+    return rec
+
+
+def _new_repair_lineage(rnd: Round, why: str) -> int:
+    """Open a fresh plan-repair lineage. Returns its number. See `_apply_revision`.
+
+        The passes already spent stay in the record and are marked with the lineage they
+        were spent in, so "this run has made eleven repair passes" remains true and
+        readable; what the run-wide cap counts is the passes of the lineage in hand.
+        
+    """
+    from . import stages_plan
+    p = rnd.rel(stages_plan.PLAN_REPAIR_RECORD)
+    was = json.load(open(p)) if os.path.exists(p) else {"passes": []}
+    now = int(was.get("lineage") or 0) + 1
+    for q in was["passes"]:
+        q.setdefault("lineage", now - 1)
+    was["lineage"] = now
+    was.setdefault("lineages", []).append({"lineage": now, "why": why,
+                                           "spent_before": len(was["passes"])})
+    os.makedirs(rnd.state, exist_ok=True)
+    json.dump(was, open(p, "w"), indent=1)
+    return now
 
 
 def _apply_revision(rnd: Round, be, spec: dict, doc: dict) -> dict:
@@ -1496,7 +1660,51 @@ def _apply_revision(rnd: Round, be, spec: dict, doc: dict) -> dict:
         for f in ("plan.json", "plots.json", "network.json", "circulation.json"):
             if os.path.exists(rnd.rel(f)):
                 os.remove(rnd.rel(f))
-        applied["plan"] = stages_plan.stage_plan(rnd, be, {})
+        # **And the districts the revision is about.** A character revision changes what
+        # a district is made of, and the compiled district on disk is made of the old
+        # one: left there, the plan stage's arrangement pass finds a file and skips, so
+        # the revised fabric reached the compiler through `district_asks` with the
+        # allocation the *old* fabric had been given and none of the capacity re-ask or
+        # the recovery ladder ran. The shore village's revision was rolled back for a
+        # cover it missed by forty-two columns while its own rectangle held two more
+        # houses than it had been asked for.
+        for f in sorted(os.listdir(rnd.state)):
+            if f.startswith(("plan.district.", "district_")) \
+                    and os.path.isfile(rnd.rel(f)):
+                os.remove(rnd.rel(f))
+        # **A revision the principal asked for is a new design, and it gets the plan
+        # stage's budget rather than the remains of the one before it.** The run-wide
+        # cap on plan repairs exists to bound a *loop* -- each applied repair makes a
+        # new candidate, and a new candidate would otherwise carry a fresh per-candidate
+        # budget for ever. A deliberate revision is not that loop: it is the one bounded
+        # change the inspection is allowed, and arriving at it with the run's budget
+        # already spent on the design being replaced meant the revised place could not
+        # be negotiated onto its own ground and was rolled back for it. Found by running
+        # the loop fixture. The ledger is carried over, not discarded -- what was spent
+        # stays readable -- and the lineage is what the cap counts.
+        applied["lineage"] = _new_repair_lineage(
+            rnd, f"the principal's revision at the preview: "
+                 f"{str(doc.get('why') or '')[:120]}")
+        # **The place level stands across a revision of its fabric.** A character says
+        # what a district is made of; it does not say where the districts are. But a
+        # character is part of the spec, the spec is what the place level is keyed on,
+        # and the plan stage therefore called the place stale and solved it again from
+        # the negotiated target -- producing *smaller districts*, on which the finer
+        # fabric the inspection had asked for could not cover its own ground, and the
+        # revision was rolled back for it. Re-deriving the geometry a decision was
+        # measured against is the descent `stages_plan._plan_repair` already refuses for
+        # a repair; a deliberate revision gets the same rule. The districts and
+        # everything under them are dropped above; the layout is kept, and stamped so by
+        # its owner.
+        if applied["characters"] and os.path.exists(rnd.rel("plan.place.json")):
+            from .. import deps as _deps_v
+            with contextlib.suppress(ValueError):
+                _deps_v.stamp(rnd, "plan", outputs=["plan.place.json"],
+                              note=(f"kept across the principal's revision of "
+                                    f"{', '.join(sorted(applied['characters']))}: a "
+                                    f"character changes what a district is made of and "
+                                    f"not where it is"))
+        applied["plan"] = _replan(rnd, be)
         # **The lanes are the plan's, so a revision re-routes them.** The preview stands
         # after the circulation pass, because a building with no way in is an empty pad;
         # a revision that moves the plots leaves a network routed to plots that are not
@@ -1519,6 +1727,120 @@ def _apply_revision(rnd: Round, be, spec: dict, doc: dict) -> dict:
     return applied
 
 
+def _repair_pass(rnd: Round, be, spec: dict, rec: dict, site) -> dict:
+    """One bounded repair pass over `findings.json`, rechecked.
+
+        Returns the record of it: what was routed where, what was applied, what was refused
+        and -- where a planning decision changed -- the findings that stand *after* the plan
+        was laid out again. A pass that changes nothing is recorded too, because "the
+        findings were read and none of them was this layer's to fix" is a result.
+        
+    """
+    from .. import contracts, repair as repair_mod
+    from . import stages_plan
+    findings = contracts.load(rnd, "findings")
+    if findings is None or not findings["findings"]:
+        return {"changed": False, "says": "no finding was open on the plan",
+                "applied": [], "refused": [], "routed": {}}
+    before = [f["id"] for f in findings["findings"]]
+    snap = _snapshot(rnd)
+    place_p = rnd.rel("plan.place.json")
+    place = json.load(open(place_p)) if os.path.exists(place_p) else None
+    got = repair_mod.apply(rnd, spec, findings, place=place, place_path=place_p)
+    out = {"changed": False, "says": repair_mod.says(got), "before": before,
+           "applied": got["applied"], "refused": got["refused"],
+           "routed": got["routed"], "bounds": got["bounds"]}
+    if not got.get("changed_plan"):
+        return out
+    # The plots and the lanes are laid out again from the repaired candidate. **The
+    # place level survives a layout repair and not a scale one**: a frontage action
+    # writes its decision *onto* `plan.place.json` (each district's `faces`), and
+    # deleting the file would throw the repair away and lay the same place again; a
+    # scale action changes the programme, and the place level has to be solved from it.
+    # **The place level stands across a repair, whichever owner made it.** A layout
+    # action writes its decision onto `plan.place.json` and deleting the file throws the
+    # repair away; a scale action moves an *inferred target* to the capacity this very
+    # geometry measured, and solving the place again from the smaller target measures a
+    # smaller capacity and re-opens the same finding one size down. Found by running
+    # both. What is dropped is what is downstream of the target: the districts, whose
+    # lot sizes come from it, and the plan assembled out of them.
+    doomed = ["plan.json", "plots.json", "network.json", "circulation.json"]
+    for f in doomed:
+        if os.path.exists(rnd.rel(f)):
+            os.remove(rnd.rel(f))
+    for f in sorted(os.listdir(rnd.state)):
+        if f.startswith(("plan.district.", "district_")) and os.path.isfile(rnd.rel(f)):
+            os.remove(rnd.rel(f))
+    from .. import deps as _deps
+    with contextlib.suppress(ValueError):
+        _deps.stamp(rnd, "plan", outputs=["plan.place.json"],
+                    note=f"kept across a preview repair: {repair_mod.says(got)}")
+    again = _replan(rnd, be)
+    p = (again.get("plan") or {}) if isinstance(again, dict) else {}
+    ok = (not p.get("stop") and p.get("status") not in ("error", "needs_model")
+          and os.path.exists(rnd.rel("plan.json")))
+    if not ok:
+        _restore(rnd, snap)
+        out["rolled_back"] = True
+        out["says"] = (f"the repair was not applied and the plan stands as it was: laid "
+                       f"out again it " + (f"fails at {p.get('level')} -- {p.get('error')}"
+                                           if p.get("error") else
+                                           f"did not come back planned ({p.get('status')})"))
+        return out
+    out["circulation"] = _pipeline.stage_circulation(rnd, be, {})
+    after = contracts.load(rnd, "findings")
+    out["after"] = [f["id"] for f in (after or {}).get("findings") or []]
+    out["closed"] = sorted(set(before) - set(out["after"]))
+    out["opened"] = sorted(set(out["after"]) - set(before))
+    out["changed"] = True
+    out["says"] = (f"{repair_mod.says(got)}; rechecked: "
+                   f"{len(out['closed'])} finding(s) closed, "
+                   f"{len(out['opened'])} opened, {len(out['after'])} open")
+    # the plan changed, so the drawing of the one before it is not this plan's
+    rec["drawn"] = {}
+    rec["revisions"] = 0
+    for f in sorted(os.listdir(rnd.rel("preview"))):
+        if f.startswith("reading") and f.endswith(".md"):
+            os.replace(rnd.rel("preview", f),
+                       rnd.rel("preview", f.replace(".md", ".before_repair.md")))
+    return out
+
+
+def _earlier_findings(rec: dict, tag: str) -> list:
+    """The findings of the reading before this one, so the judge can say what closed."""
+    if not tag:
+        return []
+    n = int(tag.strip("_") or 0)
+    prev = "" if n <= 1 else f"_{n - 1}"
+    got = (rec.get("readings") or {}).get(prev) or {}
+    return list(got.get("findings") or [])
+
+
+def _verify_improvement(rnd: Round, rec: dict, tag: str) -> dict:
+    """Did the second reading close the findings the revision was for, and did the
+    measures it named move the right way? Written onto `rec["applied"]["improvement"]`."""
+    from . import inspect as inspect_mod
+    imp = rec["applied"].setdefault("improvement", {})
+    cited = list(rec["applied"].get("caused_by") or [])
+    closed = set((rec.get("readings") or {}).get(tag, {}).get("closed") or [])
+    cmp = imp.get("compare") or {}
+    imp["closed"] = sorted(c for c in cited if c in closed)
+    imp["still_open"] = sorted(c for c in cited if c not in closed)
+    measured = bool(imp.get("cited_measures"))
+    imp["verified"] = (bool(cited) and not imp["still_open"] and not cmp.get("worse")
+                       and (not measured or bool(cmp.get("better"))))
+    imp["verified_by"] = f"reading{tag}"
+    imp["why"] = (f"the second reading closes {len(imp['closed'])} of {len(cited)} cited "
+                  f"finding(s)" + (f"; still open: {imp['still_open']}"
+                                   if imp["still_open"] else "")
+                  + (f"; measures worse: {cmp.get('worse')}" if cmp.get("worse") else "")
+                  + (f"; measures better: {cmp.get('better')}" if cmp.get("better") else ""))
+    if not cited:
+        imp["why"] = "the revision cited no finding, so there is nothing to verify"
+    print(f"   preview: revision {imp['why']}", flush=True)
+    return imp
+
+
 def stage_preview(rnd: Round, be, results: dict) -> dict:
     """The loop before the city. v2, C4.
 
@@ -1539,10 +1861,69 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
     os.makedirs(d, exist_ok=True)
     rec_p = os.path.join(d, "preview.json")
     rec = json.load(open(rec_p)) if os.path.exists(rec_p) else {"revisions": 0,
-                                                               "drawn": {}}
+                                                                "drawn": {},
+                                                                "repairs": []}
+    rec.setdefault("repairs", [])
+    # **Which design this inspection is of.** A reading and a drawing are judgments of
+    # one plan; the record now says which, so an inspection carried across a candidate
+    # is visible rather than inferred from a `revisions` counter.
+    from .. import deps as _deps_c
+    #: **Which design this inspection is of -- compared before it is overwritten.** The
+    #: review's fourth finding, and the bug was the order of these two lines: the new
+    #: candidate id was assigned first and the freshness branch below only ran when the
+    #: previous preview was already `done`, so a *pending* preview of a plan that had
+    #: since changed kept its drawing and its refusal, performed zero redraws, took the
+    #: new id and returned `done: true`. Binding an inspection to a candidate means
+    #: asking whether it is still that candidate, in every state and not only the
+    #: finished one.
+    now = _deps_c.candidate_id(rnd, plan=plan)
+    was = rec.get("candidate")
+    # **...and to the types and the model it was drawn with.** The fresh checker: a
+    # pending preview whose type fingerprint had moved kept its drawing, because the
+    # pending branch compared the candidate id alone.
+    inputs_now = _deps_c.fingerprint(rnd, ("types", "model"))
+    inputs_was = rec.get("inputs")
+    moved_inputs = bool(inputs_was) and inputs_was != inputs_now and not rec.get("done")
+    if moved_inputs and was == now:
+        why = ("the types or the model this inspection was drawn with changed while it "
+               "was pending: what was drawn and whatever was read of it are about a "
+               "design that is gone")
+        print(f"   preview: {why}; it is drawn and read again", flush=True)
+        rec = _withdraw_preview(rnd, d, rec, why)
+    rec["inputs"] = inputs_now
+    if was and was != now and not rec.get("done"):
+        why = (f"the candidate moved from {was} to {now} while this inspection was "
+               f"pending: what was drawn and whatever was read of it are about a design "
+               f"that is gone")
+        print(f"   preview: {why}; it is drawn and read again", flush=True)
+        rec = _withdraw_preview(rnd, d, rec, why)
+    rec["candidate"] = now
     if rec.get("done"):
-        # the loop is bounded: looked at once, revised at most once, and then built
-        return {"preview": rec}
+        # **Done, of this plan.** The architecture audit's seventh finding: the stage's
+        # whole test was this flag, so a plan that had changed under it came back with
+        # the drawing of the one before. The loop is still bounded -- looked at once,
+        # revised at most once, then built -- but "already done" now means "done, and
+        # nothing it was made from has moved".
+        from .. import deps
+        # **"Never stamped" and "stamped, then withdrawn" are different.** They were the
+        # same test -- `"preview" not in deps.json` -- and invalidating the preview
+        # therefore *qualified* it as a legacy fixture and returned the old drawing.
+        # `deps.legacy` is the question that was meant.
+        legacy = deps.legacy(rnd, "preview")
+        fresh, why = deps.check(rnd, "preview", plan=plan)
+        if fresh or legacy:
+            return {"preview": rec,
+                    "dependencies": "warm" if not legacy else "unstamped"}
+        print(f"   preview: {why}; it is drawn and read again", flush=True)
+        # **And the drawing and the reading go with it.** The review reproduced the
+        # bypass in this exact branch: the check noticed the changed plan, the stamp was
+        # invalidated, `done` was cleared -- and then the code below found the current
+        # tag already in `drawn` and `reading_1.md` already on disk, returned both, and
+        # set `done` again. Invalidating the *stamp* of an artifact whose contents are
+        # still reused is not invalidating anything. A drawing and a reading are of one
+        # plan; when that plan moves they are evidence about a candidate that is gone.
+        rec = _withdraw_preview(rnd, d, rec, why)
+        json.dump(rec, open(rec_p, "w"), indent=1)
     spec = rnd.place_spec()
     site = rnd.site or (json.load(open(rnd.rel("site.json")))
                         if os.path.exists(rnd.rel("site.json")) else None)
@@ -1580,26 +1961,77 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
     intent = plan.get("intent", "")
     # 1. the reading
     reading_p = os.path.join(d, f"reading{tag}.md")
+    findings_p = os.path.join(d, f"reading{tag}.findings.json")
+    from . import inspect as inspect_mod
     if not os.path.exists(reading_p):
         brief_p = os.path.join(d, f"reading_prompt{tag}.md")
+        earlier_rows = _earlier_findings(rec, tag)
+        earlier = (("## The earlier reading's findings\n\n"
+                    + "\n".join(f"- `{f.get('id')}` {f.get('says')}" for f in earlier_rows))
+                   if earlier_rows else "")
         open(brief_p, "w").write(READING_BRIEF.format(
             sentence=sentence, intent=intent, landmark=landmark_says,
             buildings=buildings_says,
             voice=styles.voice_card(voice) if voice in styles.VOICES else "",
-            characters=chars_says))
-        rec["reading"] = {"request": brief_p, "write": reading_p}
+            characters=chars_says, findings=findings_p,
+            measure_names=", ".join(f"`{m}`" for m in inspect_mod.MEASURES),
+            earlier=earlier))
+        rec["reading"] = {"request": brief_p, "write": reading_p, "findings": findings_p,
+                          "candidate": rec.get("candidate")}
         json.dump(rec, open(rec_p, "w"), indent=1)
         return {"preview": rec,
                 "reading": {"status": "needs_model", "role": "judge", "request": brief_p,
                             "write": reading_p, "images": images,
+                            "candidate": rec.get("candidate"),
                             "note": "the preview's reading: what a person would see "
                                     "wrong, from the map, the landmark and five "
-                                    "buildings; no score"}}
+                                    "buildings; no score -- and the same as data"}}
+    # **The reading as data, beside the prose.** The closure round: a revision has to
+    # answer a finding by id, and a second reading has to say which of those it no
+    # longer sees, or "revised and inspected again" is two pages of prose with nothing
+    # between them a runner can check.
+    rec.setdefault("readings", {})
+    if tag not in rec["readings"]:
+        got = json.load(open(findings_p)) if os.path.exists(findings_p) else None
+        rec["readings"][tag] = {"path": reading_p, "structured": got is not None,
+                                "findings": list((got or {}).get("findings") or []),
+                                "closed": list((got or {}).get("closed") or []),
+                                "right": list((got or {}).get("right") or [])}
+        json.dump(rec, open(rec_p, "w"), indent=1)
+    if tag and rec.get("applied") and (rec["applied"].get("improvement") or {}).get(
+            "verified") is None:
+        _verify_improvement(rnd, rec, tag)
+        json.dump(rec, open(rec_p, "w"), indent=1)
+    # 1b. **the repairs the findings route to a layer that can make them.** The
+    # architecture round. Before this the only thing the loop could change was words: a
+    # district's character and the place's voice. A finding about *scale* -- the
+    # resolved design holds eleven structures against a band of twenty-four -- had
+    # nobody to go to, and a repair that did land was never looked at again. So:
+    # `repair.apply` makes the repairs this build can make, each inside a bound that is
+    # written down and never against an explicit requirement; the plan is laid out again
+    # from the repaired programme; the resolution and findings are recomputed; and the
+    # stage **goes back to the reading**, so the repaired plan is inspected and not
+    # merely redrawn. A repair whose plan will not lay out is rolled back by the
+    # snapshot this stage already keeps.
+    if spec is not None and not rec.get("repaired"):
+        got = _repair_pass(rnd, be, spec, rec, site)
+        rec["repairs"].append(got)
+        rec["repaired"] = True
+        json.dump(rec, open(rec_p, "w"), indent=1)
+        if got.get("changed"):
+            print(f"   preview: {got['says']}; the plan was laid out again and is read "
+                  f"a second time", flush=True)
+            # **An executable state, not a note.** The review drove the production
+            # return shape through the real driver and it went straight on to `parts`:
+            # the stage said in prose that it would re-enter and nothing re-entered it.
+            # `status: "reenter"` is what `pipeline.round.run` acts on.
+            return {"preview": rec, "repair": got, "status": "reenter",
+                    "why": ("a repair changed a planning decision; this stage is "
+                            "re-entered to inspect the plan it produced, and the plan "
+                            "before it has not been inspected")}
     # 2. the revision, once, and only where there is a spec to revise
     if rec["revisions"] >= PREVIEW_REVISIONS or spec is None:
-        rec["done"] = True
-        json.dump(rec, open(rec_p, "w"), indent=1)
-        return {"preview": rec}
+        return {"preview": _finish_preview(rnd, rec, rec_p, plan)}
     revision_p = os.path.join(d, "revision.json")
     if not os.path.exists(revision_p):
         prompt_p = os.path.join(d, "revision_prompt.md")
@@ -1611,11 +2043,16 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
                    + json.dumps(spec_mod.CHARACTER_DEFAULTS))
         voices = "\n".join(f"- `{k}` -- {v['blurb'].splitlines()[0][:110]}"
                             for k, v in styles.VOICES.items())
+        rows = (rec.get("readings") or {}).get(tag, {}).get("findings") or []
         open(prompt_p, "w").write(REVISION_BRIEF.format(
             sentence=sentence, intent=intent, landmark=landmark_says,
             buildings=buildings_says, reading=open(reading_p).read().strip(),
             characters=chars_says, fields=fields, voice_name=voice or "(none)",
-            voices=voices))
+            voices=voices,
+            findings=("\n".join(f"- `{f.get('id')}` ({f.get('owner')}, "
+                                f"measure {f.get('measure')}): {f.get('says')}"
+                                for f in rows)
+                      or "(the reading was not written as data; cite nothing)")))
         rec["revision"] = {"request": prompt_p, "write": revision_p}
         json.dump(rec, open(rec_p, "w"), indent=1)
         return {"preview": rec,
@@ -1625,10 +2062,37 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
                                      "characters or the voice, before the build"}}
     # 3. apply it, lay the plan out again, draw again
     doc = json.load(open(revision_p))
+    before_plan = rnd.plan()
+    arr_p = rnd.rel("arrangements.json")
+    before = inspect_mod.measure(before_plan, site,
+                                 json.load(open(arr_p)) if os.path.exists(arr_p) else None)
     applied = _apply_revision(rnd, be, spec, doc)
     rec["revisions"] += 1
     rec["applied"] = {k: v for k, v in applied.items() if k != "plan"}
     rec["applied"]["why"] = str(doc.get("why") or "")
+    # **What the revision was for, by id, and what it measurably did.** The closure
+    # round's gate: a real finding causes a bounded change, and a current inspection
+    # verifies the improvement. `caused_by` is the judge's finding ids; `improvement` is
+    # the composition before and after, against the measures those findings named, and
+    # `verified` is written when the revised candidate has been read again.
+    rows = (rec.get("readings") or {}).get(tag, {}).get("findings") or []
+    by_id = {f.get("id"): f for f in rows}
+    cited = [c for c in (doc.get("caused_by") or []) if c in by_id]
+    if not cited and rows and (doc.get("characters") or doc.get("voice")):
+        cited = [f["id"] for f in rows if f.get("owner") in ("fabric", "voice")]
+    rec["applied"]["caused_by"] = cited
+    rec["applied"]["caused_by_findings"] = [by_id[c] for c in cited]
+    measures = sorted({str(by_id[c].get("measure")) for c in cited
+                       if by_id[c].get("measure")})
+    after_plan = rnd.plan()
+    after = inspect_mod.measure(after_plan, site,
+                                json.load(open(arr_p)) if os.path.exists(arr_p) else None)
+    rec["applied"]["improvement"] = {
+        "before": before, "after": after, "cited_measures": measures,
+        "compare": inspect_mod.compare(before, after, measures),
+        "verified": False if applied.get("rolled_back") else None,
+        "why": ("the revision was rolled back" if applied.get("rolled_back") else
+                "written when the revised candidate has been read again")}
     if applied.get("plan") is not None:
         rec["applied"]["plan"] = {k: v for k, v in (applied["plan"].get("plan") or {}).items()
                                   if k in ("status", "error", "level")} \
@@ -1637,8 +2101,26 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
     parts = _pipeline.plan_parts(plan)
     voice = rnd.voice_name() or None
     tag = f"_{rec['revisions']}"
+    # **The record follows the candidate its own revision produced.** A revision changes
+    # the design on purpose, so the identity this inspection is bound to moves with it;
+    # without this the next entry finds the id it wrote before the revision, decides an
+    # inspection was carried across a candidate, and withdraws the revision it had just
+    # made. Deliberate change and stale evidence are different things and this is where
+    # they are told apart.
+    rec["candidate"] = _deps_c.candidate_id(rnd, plan=plan)
     if plan:
         rec["drawn"][tag] = _draw_preview(rnd, plan, parts, site, voice, tag)
-    rec["done"] = True
     json.dump(rec, open(rec_p, "w"), indent=1)
-    return {"preview": rec}
+    # **The revision is a changed candidate, so it is inspected.** The review: after the
+    # character/voice revision this stage drew the result and set `done`, so the saved
+    # village finished with `revisions: 1`, new images and no `reading_1.md` -- the
+    # thing that was actually built was the one thing nobody looked at. Re-entering here
+    # reaches the reading branch above with the new tag, which asks for a reading of
+    # *this* candidate; the next entry finds it on disk and finishes.
+    reading_now = os.path.join(d, f"reading{tag}.md")
+    if applied.get("plan") is not None and not applied.get("rolled_back") \
+            and not os.path.exists(reading_now):
+        return {"preview": rec, "status": "reenter",
+                "why": (f"revision {rec['revisions']} changed the candidate; it is read "
+                        f"before it is built, like the one before it")}
+    return {"preview": _finish_preview(rnd, rec, rec_p, plan)}

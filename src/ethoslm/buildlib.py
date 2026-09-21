@@ -13,7 +13,44 @@ from gdpc import Block
 from gdpc.interface import placeBlocks
 
 from . import world
-from .prims import Primitives
+from .prims import (Primitives, Material, ROLE_ID, SURFACE_ROLES, EDITABLE_ROLES,  # noqa: F401
+                    PROTECTED_WORDS, family as _family_of)
+
+
+def _lays(role: str, protected: bool = False):
+    """Decorate a Builder method so every block it lays is recorded as `role`."""
+    def deco(fn):
+        def call(self, *a, **k):
+            with self.laying(role, protected):
+                return fn(self, *a, **k)
+        call.__name__ = fn.__name__
+        call.__doc__ = fn.__doc__
+        call.__wrapped__ = fn
+        return call
+    return deco
+
+
+class _RoleDict(dict):
+    """The voice a type reads: `voice[role]` is a `Material` that remembers its role,
+    and the read is noted on the builder as the last role asked for -- the tie-break
+    the write path uses when a block's family belongs to two roles at once."""
+
+    def __init__(self, b, *a, **k):
+        super().__init__(*a, **k)
+        self._b = b
+
+    def __getitem__(self, key):
+        v = super().__getitem__(key)
+        if isinstance(v, str) and key in SURFACE_ROLES:
+            self._b._last_role = key
+            return Material(v, role=key)
+        return v
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
 
 MAX_BLOCKS = 2_000_000  # guard against a runaway loop filling the world, per 512 of site
 
@@ -244,13 +281,22 @@ def _mat_roles(mat) -> dict:
     else:
         base = {k: v for k, v in dict(mat).items() if k in _MAT_ROLES and v}
     wall = base.get("wall", "cobblestone")
-    return {r: base.get(r, wall) for r in _MAT_ROLES}
+    return {r: Material(base.get(r, wall), role=r) for r in _MAT_ROLES}
 
 
 #: The roof parameters `building()` passes straight through to `roof()`. They live in
 #: the roof spec rather than in `building()`'s own signature because they *are* the
 #: roof: a voice that says "irimoya, two tiers, upturned" is describing one thing, and a
-#: planner that hands that down should be able to hand down one dict.
+#: planner that hands that down should be able to hand down one dict. **`overhang` is
+#: deliberately not one of them.** A voice may say how far its roof oversails
+#: (`voices.ROOF_KEYS`, composition round) and it arrives as `building()`'s own
+#: `overhang=` keyword, put there by `TypeBuilder`. Adding it here instead was tried and
+#: reverted: `types/hall.py` and `types/court_large.py` already write `"overhang"` into
+#: a roof spec they hand `building()`, where it has always been dropped, and picking it
+#: up moved 2,032 cells of the palace great hall's roof in the retained `out/des-city`
+#: -- a silent change to a standing candidate, smuggled in under a change about voices.
+#: Honouring a type's own dropped `overhang` may well be right; it is a separate
+#: decision with its own before/after, not a side effect.
 _ROOF_EXTRAS = ("profile", "ends", "eave", "tiers")
 
 
@@ -571,6 +617,30 @@ class Builder(Primitives):
         #: ground a part stands on. See `Builder.site`.
         self.world_site = site
         self._pending: dict[tuple[int, int, int], str] = {}
+        #: **Who laid each standing block, and as what.** The expression round. One
+        #: packed int per cell beside `_pending`: the role (`prims.ROLE_ID`), whether
+        #: the block is protected (a tread, a door, a fitting, a light: the physical
+        #: behaviour of the place), how the role was decided (0 the primitive's own
+        #: context, 1 the material's tag, 2 the voice's family, 3 the family broken by
+        #: the last role the type asked the voice for) and which part it belongs to.
+        #: `surfaces.record` reads it; a material pass edits nothing this does not own.
+        self._owner: dict[tuple[int, int, int], int] = {}
+        self._role_stack: list = []
+        #: **What a type drew on purpose.** The composition round. `_owner` says whose a
+        #: cell is and what role it has; nothing said the cell was part of a figure
+        #: somebody designed, so a material pass replaced both market floors' chequers,
+        #: the palace courts' laid paving and the great wall's string course with noise
+        #: (the design round's `out/des-material`, cause 4). `Primitives.figure` pushes
+        #: a name here, `_tag` records the cell under it with last-write-wins -- an
+        #: ordinary write over a figure cell takes the cell back out -- and
+        #: `surfaces.record` turns it into `FLAGS["figure"]`. Empty for a type that
+        #: declares nothing, which is every type that draws no pattern.
+        self._figure_stack: list = []
+        self.figure_cells: dict[tuple[int, int, int], str] = {}
+        self._last_role = None
+        self._cur_part = 0
+        self._fam_cache: dict = {}
+        self._voice_fams: tuple = (None, {})
         self.calls = {"place_block": 0, "place_cuboid": 0, "fill_region": 0,
                       "get_height": 0, "get_block": 0}
         #: Positions written, counting a position written twice twice. `_pending` is
@@ -655,6 +725,7 @@ class Builder(Primitives):
     def _mark(self) -> dict:
         """Everything a call can change and a refusal has to be able to give back."""
         return {"pending": dict(self._pending), "writes": self.writes,
+                "owner": dict(self._owner), "figures": dict(self.figure_cells),
                 "steps": list(self._step_queue()),
                 "flight_seq": getattr(self, "_flight_seq", 0),
                 "paths": list(self.paths),
@@ -663,6 +734,10 @@ class Builder(Primitives):
 
     def _rollback(self, mark: dict) -> None:
         self._pending = dict(mark["pending"])
+        self._owner = dict(mark.get("owner") or {})
+        # ...and neither is one that leaves the figure register claiming a chequer the
+        # refusal wound back is still on the ground.
+        self.figure_cells = dict(mark.get("figures") or {})
         self.writes = mark["writes"]
         self._steps_pending = list(mark["steps"])
         self._flight_seq = mark["flight_seq"]
@@ -680,7 +755,78 @@ class Builder(Primitives):
         optionally with state, e.g. "oak_stairs[facing=north,half=bottom]"."""
         self.calls["place_block"] += 1
         self.writes += 1
-        self._pending[(int(x), int(y), int(z))] = block
+        c = (int(x), int(y), int(z))
+        self._pending[c] = block
+        self._tag(c, block)
+
+    # --- ownership at the write ---------------------------------------------
+    def _tag(self, cell, block) -> None:
+        """Record who laid `cell` and as what. See `_owner`."""
+        name = str(block).split("[")[0].split(":")[-1]
+        if name in AIR:
+            self._owner.pop(cell, None)
+            self.figure_cells.pop(cell, None)
+            return
+        # **The figure is of the last write, like the role is.** A pattern cell an
+        # ordinary write later covers over is no longer a pattern cell, and a pattern
+        # laid over ordinary work becomes one: `_pending` keeps the last write, so this
+        # register has to as well or the record would protect a cell that is gone.
+        if self._figure_stack:
+            self.figure_cells[cell] = self._figure_stack[-1]
+        elif cell in self.figure_cells:
+            self.figure_cells.pop(cell, None)
+        st = self._role_stack
+        if st:
+            role, prot = st[-1]
+            src = 0
+        else:
+            role, prot, src = getattr(block, "role", None), False, 1
+            if not role:
+                role, src = self._role_by_family(name)
+        if not prot:
+            for w in PROTECTED_WORDS:
+                if w in name:
+                    prot = True
+                    role = ("door" if w in ("door", "trapdoor", "fence_gate") else
+                            "glass" if w in ("glass", "pane") else
+                            "light" if w in ("lantern", "torch", "campfire", "candle",
+                                             "glowstone", "sea_lantern", "shroomlight",
+                                             "end_rod") else "fitting")
+                    break
+        self._owner[cell] = (ROLE_ID.get(role, 0) | (int(bool(prot)) << 4)
+                             | (int(src) << 5) | (int(self._cur_part) << 7))
+
+    def _role_by_family(self, name: str) -> tuple:
+        """(role, how) for a bare block id: the one voice role whose family it is,
+        the last role asked for where two share a family, `unknown` otherwise."""
+        fam = self._fam_cache.get(name)
+        if fam is None:
+            fam = self._fam_cache[name] = (_family_of(name) or name)
+        voice = None
+        if self.parts:
+            voice = self.parts[-1].get("voice") if isinstance(self.parts[-1], dict) else None
+        key = id(voice) if voice is not None else None
+        if self._voice_fams[0] != key:
+            table: dict = {}
+            for role, mat in (voice or _mat_roles(None)).items():
+                if isinstance(mat, str) and role in ROLE_ID:
+                    f = _family_of(mat) or str(mat).split("[")[0]
+                    table.setdefault(f, []).append(role)
+            self._voice_fams = (key, table)
+        roles = self._voice_fams[1].get(fam) or []
+        if len(roles) == 1:
+            return roles[0], 2
+        if roles and self._last_role in roles:
+            return self._last_role, 3
+        return "unknown", 2
+
+    def owner_of(self, cell) -> dict | None:
+        """`{"role", "protected", "how", "part"}` for a standing cell, or None."""
+        v = self._owner.get(tuple(cell))
+        if v is None:
+            return None
+        return {"role": SURFACE_ROLES[v & 15], "protected": bool(v & 16),
+                "how": (v >> 5) & 3, "part": v >> 7}
 
     def place_cuboid(self, x0: int, y0: int, z0: int, x1: int, y1: int, z1: int,
                      block: str) -> None:
@@ -691,6 +837,7 @@ class Builder(Primitives):
                 for z in range(min(z0, z1), max(z0, z1) + 1):
                     self.writes += 1
                     self._pending[(x, y, z)] = block
+                    self._tag((x, y, z), block)
         if len(self._pending) > self.max_blocks:
             raise BuildError(f"more than {self.max_blocks} blocks queued")
 
@@ -719,6 +866,7 @@ class Builder(Primitives):
                             continue
                     self.writes += 1
                     self._pending[(x, y, z)] = block
+                    self._tag((x, y, z), block)
         if len(self._pending) > self.max_blocks:
             raise BuildError(f"more than {self.max_blocks} blocks queued")
 
@@ -1107,6 +1255,7 @@ class Builder(Primitives):
     #: case on the record -- and small enough that the Nav over it costs milliseconds.
     APPROACH_RADIUS = 24
 
+    @_lays("ground", protected=True)
     def approach(self, label: str | None = None, x: int | None = None,
                  y: int | None = None, z: int | None = None, *,
                  mat: str | None = None, width: int = 2,
@@ -1209,7 +1358,29 @@ class Builder(Primitives):
 
         fam = mat or (net.notes.get("material") if net else None) or "cobblestone"
         full, _stairs, slab = _material(fam)
-        laid, cols = self._lay_approach(sub, route, full, slab, fam, width, lanes, built)
+        # **The reserved doorway takes a half step, never a tread.** The closure round's
+        # proof: two cottages on decks one course above their lane had the flight's
+        # tread laid on the very cell the pass reserved as the doorway, and a tread
+        # reads as a full block to the navigator -- the doorway the pass reserved at one
+        # height stood a whole block higher and E008 called it unenterable. A bottom
+        # slab there is half a step off the lane and half a step onto the deck, which is
+        # what a person walks and what `stance_near(..., tol=1)` accepts.
+        half_at = set()
+        # the network's own record, by id: `threshold()` merges the sited door over the
+        # reserved one, and the reserved cell is the one the check is about
+        for th in (net.thresholds if net else []):
+            if label and getattr(th, "id", None) == label:
+                half_at.add((int(th.x), int(th.z)))
+                d = getattr(th, "door", None)
+                if d is not None and len(tuple(d)) == 3:
+                    half_at.add((int(d[0]), int(d[2])))
+        if t and not half_at:
+            for key in ("door", "lane"):
+                got = t.get(key)
+                if got is not None and len(tuple(got)) >= 2:
+                    half_at.add((int(got[0]), int(tuple(got)[-1])))
+        laid, cols = self._lay_approach(sub, route, full, slab, fam, width, lanes, built,
+                                        half_at=frozenset(half_at))
         self._record_path(label, "approach", cols)
         # The way in is a worked piece of ground like any other. The path itself is
         # paved in `fam` and is not what this catches -- it is the columns beside it
@@ -1455,8 +1626,10 @@ class Builder(Primitives):
                         heapq.heappush(heap, (nd, -ns, nst))
         return None
 
+    @_lays("path", protected=True)
     def _lay_approach(self, sub, route: list, full: str, slab: str, fam: str,
-                      width: int, lanes: set, built: set) -> tuple[int, list]:
+                      width: int, lanes: set, built: set,
+                      half_at=frozenset()) -> tuple[int, list]:
         """Place the flight the search found: surface, fill under it, headroom over it.
 
                 Returns (columns laid, the columns themselves). The second is what the finishing
@@ -1552,7 +1725,13 @@ class Builder(Primitives):
                     have = view.get((px, c, pz))
                     if have is None or have.split("[")[0].split(":")[-1] in AIR:
                         self.place_block(px, c, pz, full)
-                if tread:
+                if tread and (px, pz) in half_at:
+                    # the reserved doorway: a bottom slab, see `approach()`
+                    self.place_block(px, cell, pz, f"{slab}[type=bottom]")
+                    if run:
+                        self.steps(run, fam, axis=run_axis, prefer=run_prefer)
+                        run = []
+                elif tread:
                     if run and axes[i] != run_axis:
                         self.steps(run, fam, axis=run_axis, prefer=run_prefer)
                         run = []
@@ -1662,6 +1841,7 @@ class Builder(Primitives):
     # deliberately the narrowest thing that answers the measured defect: from this floor
     # to that floor, walkable, or say why not.
 
+    @_lays("step", protected=True)
     def flight(self, label: str | None, x: int, z: int, y0: int, y1: int,
                facing: str, *, mat: str | None = None) -> dict:
         """A straight internal stair from floor `y0` up to floor `y1`, or a refusal.
@@ -1961,6 +2141,7 @@ class Builder(Primitives):
     # leave the subsoil they exposed lying on the surface. `Primitives.BARE_GROUND` is
     # what it puts back over.
 
+    @_lays("ground", protected=True)
     def _dress_worked(self, before: set, box: tuple, cover=None) -> int:
         """`before` is the pending set as it stood when the call started, so the columns
         are the ones the call is answerable for and nobody else's. `cover` defaults, as
@@ -1981,6 +2162,7 @@ class Builder(Primitives):
                               columns=cols, worked=True)
         return n + self._restore_stripped(cols, lanes)
 
+    @_lays("ground", protected=True)
     def _restore_stripped(self, cols: list, lanes: set) -> int:
         """Put back the ground `clear_ground_cover` took, at the level it took it from.
 
@@ -2118,7 +2300,9 @@ class Builder(Primitives):
                                     "clamped": res.clamped(label),
                                     "seams": {f"{a}|{b}": dict(v) for (a, b), v
                                               in res.seams_of(label).items()}}
-        out = self._site_part(part, mat=mat, decision=decision)
+        self._cur_part = len(self.parts)
+        with self.laying("ground", protected=True):
+            out = self._site_part(part, mat=mat, decision=decision)
         out["voice"] = {**_mat_roles(mat), _GROUND_ROLE: ground}
         alt = mat.get(_WALL_ALT) if isinstance(mat, dict) else None
         if alt:
@@ -2416,10 +2600,30 @@ class Builder(Primitives):
             self.frontage.sited[part["label"]] = {
                 "floor_block_y": int(floor_y), "stand_y": int(floor_y) + 1,
                 "door": [door[0], int(floor_y) + 1, door[1]]}
+        # **A deck one course above its threshold gets a half step on the reserved
+        # door.** The closure round's proof: two cottages on the lake edge stood on
+        # decks at y=63 over a lane at 62, the approach laid a tread on the reserved
+        # door cell, and a tread reads as a full block to the navigator -- so the
+        # doorway the pass reserved at 63 stood at 64 and E008 called it unenterable. A
+        # bottom slab of the footing on that cell is half a step off the lane and half a
+        # step onto the deck, which is what a person walks; laid before the approach, so
+        # the approach finds the door reachable and lays nothing over it.
+        step = None
+        rd = fr.get("door") if fr.get("source") == "threshold" else None
+        if rd is not None and len(tuple(rd)) == 3 and int(tuple(rd)[1]) == int(floor_y) \
+                and (int(rd[0]), int(rd[2])) not in lanes:
+            slab_b = _material(m["footing"])[2] if m and m.get("footing") else None
+            if slab_b:
+                self.place_block(int(rd[0]), int(floor_y), int(rd[2]),
+                                 f"{slab_b}[type=bottom]")
+                self.place_block(int(rd[0]), int(floor_y) + 1, int(rd[2]), "air")
+                self.place_block(int(rd[0]), int(floor_y) + 2, int(rd[2]), "air")
+                step = [int(rd[0]), int(floor_y), int(rd[2])]
         ap = ({"ok": False, "cells": 0, "reason": why} if door is None else
               self.approach(part.get("label"), door[0], floor_y + 1, door[1]))
         out = {**part, "x0": x0, "z0": z0, "x1": x1, "z1": z1,
                 "floor_y": int(floor_y), "footprint": [x0, z0, x1, z1],
+                **({"half_step": step} if step else {}),
                 "door": list(door) if door else None, "facing": facing,
                 "ground": ground,
                 "sited": {"ok": bool(ap.get("ok")), "relief": int(relief),
@@ -2693,6 +2897,7 @@ class Builder(Primitives):
                 best, key = (ex, ez), k
         return best
 
+    @_lays("ground", protected=True)
     def plateau(self, area, y: int | None = None, *, mat=None,
                 feather: int | None = None, label: str | None = None,
                 bound: int | None = None) -> dict:
@@ -2874,6 +3079,7 @@ class Builder(Primitives):
     #: that cannot be wrong about which block is commonest and costs nothing.
     SETTING_SAMPLE = 4096
 
+    @_lays("ground", protected=True)
     def setting_cover(self, cols, mat=None) -> dict:
         """What a piece of designed ground is dressed in, column by column.
 
@@ -2942,6 +3148,7 @@ class Builder(Primitives):
         """Is the `i`th column of a parapet a merlon rather than a crenel?"""
         return (int(i) % (self.MERLON_WIDTH + self.CRENEL_WIDTH)) < self.MERLON_WIDTH
 
+    @_lays("ground", protected=True)
     def terrace_annulus(self, outer, y: int, *, inner=None, mat=None,
                         cover: str | None = None, label: str | None = None,
                         feather: int | None = None, sides=None) -> dict:
@@ -3109,6 +3316,7 @@ class Builder(Primitives):
                            f"under water, {cut} cut, {retained} retained, {feathered} "
                            f"feathered over {f}, {swept} swept, {dressed} dressed")}
 
+    @_lays("footing")
     def _site_lay(self, rect, floor_y: int, bed: dict, water: dict, m,
                   ledge_cut: int | None = None) -> dict:
         """Lay the pad: piles under water, fill under ground, and cut what stands over.
@@ -3509,7 +3717,8 @@ class Builder(Primitives):
                  mat=None, dormers: int = 0, jetty=None, oriel=None,
                  brackets: bool = False, flashing: bool = False, yard=None,
                  deck: bool = False, platform: int = 0, courtyard=None,
-                 chimney_cap: int | None = None, rise_max: float | None = None) -> dict:
+                 chimney_cap: int | None = None, rise_max: float | None = None,
+                 overhang: int | None = None) -> dict:
         """The whole shell of one building, in one call, or a refusal.
 
         `(x0, z0)-(x1, z1)` is the footprint, corners inclusive. `storeys` counts floors
@@ -3575,6 +3784,17 @@ class Builder(Primitives):
         storeys = max(1, int(storeys))
         m = _mat_roles(mat)
         style, axis, pitch, roof_extras = _roof_spec(roof, x0, z0, x1, z1)
+        # **How far the roof oversails the wall is the voice's to say** (composition
+        # round). It was one block here for every building in every voice, and the eave
+        # is what a person in the lane sees: S202's rule is one to two blocks past the
+        # wall for a shadow line, and which end of that a crowded ring gets against a
+        # prosperous one is exactly the kind of thing a voice exists to decide. It
+        # arrives as a keyword and not inside the roof spec -- see `_ROOF_EXTRAS` for
+        # why -- put there by `TypeBuilder` from `voices.ROOF_KEYS["overhang"]`. None is
+        # the one block every building had before, so nothing stored moves. The calls
+        # below that name their own `overhang` keep it: a courtyard's yard-side sheds
+        # cut it to nothing on purpose, and an outshot's shed lands on the main wall.
+        overhang = 1 if overhang is None else max(0, int(overhang))
 
         if x1 - x0 < 2 or z1 - z0 < 2:
             return {"ok": False, "cells": 0, "reason":
@@ -3821,13 +4041,13 @@ class Builder(Primitives):
                     pitch=(1, 2), overhang=0))
         else:
             ridge_y = self.roof(x0, z0, x1, z1, eave_y, m["roof"], style=style,
-                                axis=axis, pitch=pitch, overhang=1, **roof_extras,
+                                axis=axis, pitch=pitch, overhang=overhang, **roof_extras,
                                 **cap_kw)
         if wing_r:
             ridge_y = max(ridge_y, self.roof(
                 wing_r[0], wing_r[1], wing_r[2], wing_r[3], eave_y, m["roof"],
                 style=style, axis=("x" if axis == "z" else "z"), pitch=pitch,
-                overhang=1, **roof_extras, **cap_kw))
+                overhang=overhang, **roof_extras, **cap_kw))
         if out_r:
             # Pulled two blocks in on the side it leans against, so that the shed's own
             # one-block overhang stops on the main wall instead of past it. `roof()`
@@ -4486,6 +4706,7 @@ class Builder(Primitives):
                 for dy in (1, 2):
                     self.place_block(cx, y + dy, cz, "air")
 
+    @_lays("step", protected=True)
     def _building_doorstep(self, door, facing, floor_y, block) -> int:
         """One course of the footing at the door's own level, one block out, three wide.
 
@@ -4531,6 +4752,22 @@ class Builder(Primitives):
         perp = ((1, 0), (-1, 0)) if dx == 0 else ((0, 1), (0, -1))
         a, c = sorted((door[0] - dx, ox))
         b, d = sorted((door[1] - dz, oz))
+        # **Never on the lane, and never on a threshold the pass reserved.** The closure
+        # round's proof: a farm cottage whose door opened straight onto the lane stood
+        # its two porch posts on lane cells -- one of them the threshold reserved for
+        # the cottage itself -- and the network lost two stances and the way in (E007,
+        # E008). A porch is a roof over the doorstep; where the doorstep is the lane
+        # there is no porch, and the way in is the lane's already.
+        net = self.frontage.net if self.frontage is not None else None
+        lanes = {(x, z) for (x, z) in net.cells} if net else set()
+        reserved = ({(t.x, t.z) for t in net.thresholds}
+                    | {(t.door[0], t.door[2]) for t in net.thresholds
+                       if getattr(t, "door", None)}) if net else set()
+        cells = {(x, z) for x in range(a + perp[1][0], c + perp[0][0] + 1)
+                 for z in range(b + perp[1][1], d + perp[0][1] + 1)}
+        cells |= {(ox + sx, oz + sz) for sx, sz in perp}
+        if cells & (lanes | reserved):
+            return None
         # The deck first, carried to real ground. A porch whose posts start at the
         # doorstep is a porch standing on nothing wherever the ground falls away from
         # the door -- which is most doors on this kind of site -- and it is also where
@@ -4682,6 +4919,7 @@ class Builder(Primitives):
     # `steps()` can lay that tread and nothing ever asked it to. This is the counterpart
     # primitive: a raised floor that brings its own way up.
 
+    @_lays("floor")
     def dais(self, x0: int, z0: int, x1: int, z1: int, y: int, mat: str) -> dict:
         """A raised floor one block up, with its own slab step on its longest open side.
 
@@ -4959,7 +5197,7 @@ class TypeBuilder:
         self._orig_part = part
         self._floor_y = part.get("floor_y")
         #: The settlement's palette, by role.
-        self.voice = dict(part.get("voice") or _mat_roles(None))
+        self.voice = _RoleDict(b, part.get("voice") or _mat_roles(None))
         # **`ground` is always on the voice a type reads.** `site()` writes the
         # setting's own surface there, and a builder standing a type outside the
         # pipeline gets the plain's. A type that asks for it never has to know which it
@@ -5079,6 +5317,13 @@ class TypeBuilder:
             k.pop("chimney", None)
         k.setdefault("chimney_cap", Builder.CHIMNEY_ABOVE_EAVE)
         k.setdefault("rise_max", Builder.ROOF_RISE_MAX)
+        # ...and the voice's word on how far the eave reaches. Composition round. Not
+        # one of `SILHOUETTE`'s four, because those are written into the roof spec and
+        # `_ROOF_EXTRAS` deliberately does not carry `overhang`; this is the one line
+        # that puts it on the call. A voice that says nothing leaves `building()`'s own
+        # one block, which is what every building had.
+        if (self.roof_spec or {}).get("overhang") is not None:
+            k["overhang"] = int(self.roof_spec["overhang"])
         res = self._b.building(*a, **k)
         # **The door the shell hung is held open too.** The doorstep held above is the
         # cell `site()` reserved; the shell hangs its leaf on its own wall, which on a
@@ -5157,35 +5402,147 @@ class TypeBuilder:
                 k["mat"] = self._shapeable(k["mat"], "stairs", name)
             elif pos is not None and len(a) > pos:
                 a[pos] = self._shapeable(a[pos], "stairs", name)
-            if name != "fitting" or not self._b.flight_way:
+            if name != "fitting":
                 return fn(*a, **k)
-            # **Furniture on the way to a flight is taken back out, not refused.** A
-            # refusal is something a type reads and acts on, and one committed type acts
-            # on it by building something else: eighteen refused fittings took `cottage`
-            # from twelve sealed instances in a sweep of 360 to twenty-two. The cells
-            # are the ones that have to stay clear, and clearing them after the fact
-            # leaves the type's own decisions where they were.
-            was = {c: self._b._pending.get(c) for c in self._b.flight_way}
-            out = fn(*a, **k)
-            for c, before in was.items():
-                here = self._b._pending.get(c)
-                if here is None or here == before:
-                    continue
-                if before is None:
-                    del self._b._pending[c]
-                else:
-                    self._b.place_block(c[0], c[1], c[2], before)
-                self._b.fitting_cells.discard(c)
-                self.refused.append({
-                    "call": "fitting",
-                    "reason": (f"a type does not furnish the way to its own flight: "
-                               f"fitting() put {here.split('[')[0]!r} at "
-                               f"({c[0]},{c[1]},{c[2]}), which building() holds open "
-                               f"between this storey's way in and the foot of its "
-                               f"flight. It has been taken back out.")})
-            return out
+            return self._fitting(fn, a, k)
         call.__name__ = name
         return call
+
+    def _fitting(self, fn, a: list, k: dict):
+        """`fitting()` with the two things a type's own library will not let it do.
+
+                Both are the same shape -- a cell the piece needs is a cell somebody else is
+                already answerable for -- and both refuse rather than place-and-empty, so the
+                caller's own candidate walk moves on to the next cell.
+                
+        """
+        held = self._b.flight_way
+        if held:
+            bad = self._flight_refusal(fn, a, k)
+            if bad is not None:
+                return bad
+        was = ({c: self._b._pending.get(c) for c in held}
+               if held and not k.get("dry") else None)
+        out = self._fitting_rooms(fn, a, k)
+        if was is not None and out.get("ok"):
+            self._take_back_flight_way(was)
+        return out
+
+    def _fitting_rooms(self, fn, a: list, k: dict):
+        """**A fitting does not shut a room off from its own door.**
+
+                The design round, the other side of the refusal above. With the fire going in
+                again, two of `des-farm`'s sixteen cottages put it in the cell their upper room
+                was reached through: `E003` and `E011`, a room of 30 cells at (-569,70,-71) and
+                one of 14 at (-513,64,-19), neither walkable from the doorway that serves it.
+                A house with a recorded refusal beats a house nobody can walk through, so the
+                piece is taken back out and refused, and `_put` offers the next cell.
+
+                `check_walkable` is the question, and it is the same one `E003`/`E011` ask: its
+                `ok` is False exactly when a room cannot be walked into **at all**. A room that
+                was already shut is not this fitting's doing and is not blamed on it.
+                
+        """
+        rect = self._fitting_rect()
+        if rect is None or k.get("dry"):
+            return fn(*a, **k)
+        probe = fn(*a, **dict(k, dry=True))
+        if not probe.get("ok"):
+            return fn(*a, **k)                 # already refused; let it say why
+        before = self._b.check_walkable(x0=rect[0], z0=rect[1], x1=rect[2], z1=rect[3])
+        cells = [tuple(c) for c in (probe.get("cells") or ())]
+        was = {c: self._b._pending.get(c) for c in cells}
+        out = fn(*a, **k)
+        if not out.get("ok") or not before.get("ok"):
+            return out
+        after = self._b.check_walkable(x0=rect[0], z0=rect[1], x1=rect[2], z1=rect[3])
+        if after.get("ok"):
+            return out
+        shut = next((rm for rm in after.get("rooms") or [] if not rm.get("walkable")), {})
+        for c, prev in was.items():
+            if prev is None:
+                self._b._pending.pop(c, None)
+                self._b._owner.pop(c, None)
+            else:
+                self._b.place_block(c[0], c[1], c[2], prev)
+            self._b.fitting_cells.discard(c)
+        why = (f"a fitting does not shut a room off from its own door: placing it in "
+               f"{len(cells)} cell(s) left the room at {shut.get('bbox')} with none of "
+               f"its {shut.get('cells', '?')} floor cells walkable from the doorway "
+               f"that serves it. It has been taken back out: offer it another cell.")
+        self.refused.append({"call": "fitting", "reason": why})
+        return {"ok": False, "cells": [], "cell": list(probe.get("defining") or [[]])[0],
+                "defining": probe.get("defining") or [], "defining_refused": True,
+                "reason": why}
+
+    def _fitting_rect(self):
+        """The part's own rectangle, or None where it has no box to judge -- an edge
+        or a point is a swept run and `check_walkable` has no room to find in it."""
+        p = self._part
+        if any(p.get(key) is None for key in ("x0", "z0", "x1", "z1")):
+            return None
+        return (min(p["x0"], p["x1"]), min(p["z0"], p["z1"]),
+                max(p["x0"], p["x1"]), max(p["z0"], p["z1"]))
+
+    def _flight_refusal(self, fn, a: list, k: dict):
+        """A refusal where the **piece itself** would stand on the way to a flight,
+                or None to carry on and place it.
+
+                The design round. `fitting()` answered `ok` for a hearth whose campfire
+                `_take_back_flight_way` had just removed, so `cottage._furnish_hall` recorded a
+                hearth, stopped looking for a cell that would take one, and the house stood
+                with a stone surround and no fire. Seven of `des-farm`'s cottages were like
+                that and the place read failed on `asked/function/dwelling`. The line is the
+                one `fitting` already draws: a cell the piece **needs** is a refusal the caller
+                can walk on from, and a cell it only lays round itself is still taken back
+                quietly below. Asked dry, so a piece that would be refused is never half-built
+                and a dry offer agrees with the real call.
+                
+        """
+        probe = fn(*a, **dict(k, dry=True))
+        held = [c for c in (probe.get("defining") or ())
+                if tuple(c) in self._b.flight_way]
+        if not (probe.get("ok") and held):
+            return None
+        c = tuple(held[0])
+        why = (f"a type does not furnish the way to its own flight, and the cell at "
+               f"({c[0]},{c[1]},{c[2]}) that building() holds open between this "
+               f"storey's way in and the foot of its flight is the piece itself, not "
+               f"stone it lays round itself. Nothing has been placed: offer it another "
+               f"cell.")
+        self.refused.append({"call": "fitting", "reason": why})
+        return {"ok": False, "cells": [], "cell": list(c),
+                "defining": probe.get("defining") or [],
+                "defining_refused": True, "reason": why}
+
+    def _take_back_flight_way(self, was: dict) -> None:
+        """**Furniture on the way to a flight is taken back out, not refused.**
+
+                A refusal is something a type reads and acts on, and one committed type acts on
+                it by building something else: eighteen refused fittings took `cottage` from
+                twelve sealed instances in a sweep of 360 to twenty-two. These are the cells
+                that have to stay clear and are not the piece -- `_flight_refusal` has already
+                turned that case away -- so clearing them after the fact leaves the type's own
+                decisions where they were. `was` is those cells as they stood before the call.
+                
+        """
+        for c, before in was.items():
+            here = self._b._pending.get(c)
+            if here is None or here == before:
+                continue
+            if before is None:
+                del self._b._pending[c]
+                self._b._owner.pop(c, None)
+            else:
+                self._b.place_block(c[0], c[1], c[2], before)
+            self._b.fitting_cells.discard(c)
+            self.refused.append({
+                "call": "fitting",
+                "reason": (f"a type does not furnish the way to its own flight: "
+                           f"fitting() put {here.split('[')[0]!r} at "
+                           f"({c[0]},{c[1]},{c[2]}), which building() holds open "
+                           f"between this storey's way in and the foot of its "
+                           f"flight. It has been taken back out.")})
 
     def __getattr__(self, name: str):
         if name in self.FORBIDDEN:
@@ -5233,6 +5590,51 @@ class TypeBuilder:
         if side == "north":
             return (int(x), int(z0))
         return (int(x), int(z1))
+
+    def area_way_in(self, x0: int, z0: int, x1: int, z1: int, y: int,
+                    footing: str | None = None) -> dict | None:
+        """Keep the doorway the circulation pass reserved for this area walkable.
+
+                The closure round's assembled proof, two E008s on area parts: a grove sited as a
+                deck one block above its lane laid its turf over the reserved doorway, so the
+                doorway stood a full block above the threshold -- `stance_near(..., tol=1)`
+                is half a block -- and a field whose reserved doorway fell on its own corner
+                put a border post on it, because its gates never included a corner. Both
+                types honoured the *side* the way in was on and neither honoured the cell.
+
+                So this is the library's, called by every area type after it has laid its
+                floor and its border: the doorway cell (`door_cell`) is cleared to head height,
+                and where the area's floor stands one course above the level the pass
+                reserved, the cell gets a bottom slab of the footing -- a half step off the
+                threshold and a half step onto the floor, which is what a person can walk.
+                Returns what it did, or None where no doorway was reserved anywhere near.
+                
+        """
+        cell = self.door_cell(x0, z0, x1, z1)
+        if cell is None:
+            return None
+        label = self._part.get("label") or self._part.get("name")
+        th = self._b.threshold(label) if label else None
+        # **The level the pass reserved, not the level `site()` wrote.** The record this
+        # builder hands back merges the frontage's own sited entry over the network's,
+        # and `site()` writes the door at the area's floor plus one -- the deck's own
+        # level, which is the thing being checked. The lane cell is the pass's and never
+        # moves: the reserved stand is one above it.
+        want = None
+        if th and th.get("lane") is not None and len(tuple(th["lane"])) == 3:
+            want = int(tuple(th["lane"])[1]) + 1
+        elif th and th.get("door") is not None and len(tuple(th["door"])) == 3:
+            want = int(tuple(th["door"])[1])
+        x, z = int(cell[0]), int(cell[1])
+        out = {"cell": [x, z], "floor_y": int(y), "reserved_stand": want, "laid": None}
+        self._b.place_block(x, int(y) + 1, z, "air")
+        self._b.place_block(x, int(y) + 2, z, "air")
+        if want is not None and int(y) + 1 - want == 1:
+            fam = footing or (self._part.get("voice") or {}).get("footing")
+            if fam:
+                self._b.place_block(x, int(y), z, self._b.block(fam, "slab"))
+                out["laid"] = "slab"
+        return out
 
     def check_attached(self, *a, **k):
         """`check_attached()`, asked only about this part's own half of the world."""
@@ -5352,6 +5754,7 @@ class TypeBuilder:
                 continue
             if before is None:
                 del self._b._pending[cell]
+                self._b._owner.pop(cell, None)
             else:
                 self._b.place_block(cell[0], cell[1], cell[2], before)
             what = ("a type does not build on its own doorstep"

@@ -4,7 +4,7 @@
   "blurb": "Ochre cut stone under green tile, with dark timber between; an earth-built city that shows its stone and crowns it in a single strong colour.",
   "construction": "Load-bearing sandstone laid in courses on a granite footing, dark oak posts and lintels framing the openings, red sandstone bands at sill and cornice.",
   "ground": "Dry ochre stone and smooth paving; the ground is quarried and dressed rather than planted, and terraces are cut flat rather than followed.",
-  "roofs": "Green tile broken over two pitches, steep at the ridge and easing out to an upturned eave, hipped and gabled together at the ends; the civic halls carry the same tile in two tiers, shallow below and steep at the ridge.",
+  "roofs": "Green tile over two pitches, easing out from the ridge to an upturned eave: one-in-two for the first run out and one-in-one above it on a house (profile [[1,2],[1,1]], rise-in-run as S200 states it), and **two**-in-one above it on a civic hall, in two tiers. Hipped below with a gable set back above it at both ends (irimoya). The eave oversails two blocks and turns up at the lip: two is the far end of S202's one-to-two shadow-line rule, and it is what a ring of courtyard houses standing back behind their own gates can afford. **A design decision, not a source's claim**: the sources give the taxonomy, the rise-in-run notation and the overhang rule; that this ring takes the generous end of all three where the lower ring takes the tight end is this voice's own, and it is the geometry meant to say 'traders and craftsmen' where the lower ring's says 'crowded'. That a civic roof is steeper at the ridge than a house's, rather than only taller, is the same kind of decision. The house profile also corrects an old contradiction: it read [[1,1],[1,2]], steep at the eave and shallow at the ridge, which is the opposite of what this note has always said the roof does.",
   "signature": "The green roof against the ochre wall, repeated from the smallest house to the palace so the whole city reads as one built thing."
  },
  "roles": {
@@ -18,14 +18,15 @@
  "roof": {
   "eave": "upturned",
   "ends": "irimoya",
+  "overhang": 2,
   "profile": [
    [
     1,
-    1
+    2
    ],
    [
     1,
-    2
+    1
    ]
   ],
   "tiers": 1
@@ -44,5 +45,26 @@
    ]
   ],
   "tiers": 2
+ },
+ "variants": {
+  "footing": [
+   {
+    "family": "mud_brick",
+    "weight": 0.4,
+    "when": "damp"
+   }
+  ],
+  "wall": [
+   {
+    "family": "granite",
+    "weight": 0.45,
+    "when": "damp"
+   },
+   {
+    "family": "granite",
+    "weight": 0.2,
+    "when": "runoff"
+   }
+  ]
  }
 }

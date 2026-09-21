@@ -51,15 +51,27 @@ def plan_parts(plan: dict) -> list:
                 for s in (plan.get("structures") or [])]
     out: list = []
 
-    def walk(nodes, ancestry):
+    def walk(nodes, ancestry, answers):
         for n in nodes:
             kind = n.get("kind", "plot")
+            # **The defining part a leaf answers, inherited.** The review's third
+            # finding, and it is why capability reconciliation found nothing in
+            # production: `placeplan.assemble` writes `defines` on the *quarter*, this
+            # flattener carried only the ancestor names, and `capability._types_used`
+            # reads leaf `defines` -- so the forty houses of a district were compared
+            # with nothing at all and only the handful of leaves that carry `defines`
+            # themselves were ever checked. A leaf answers the nearest defining part
+            # above it; where it names its own, its own wins.
+            mine = n.get("defines") or n.get("compound") or answers
             if kind in PART_GROUP_KINDS or n.get("children"):
-                walk(n.get("children") or [], ancestry + [n.get("name", kind)])
+                walk(n.get("children") or [], ancestry + [n.get("name", kind)], mine)
             else:
-                out.append({**n, "kind": kind, "name": n.get("name", n.get("id")),
-                            "in": list(ancestry)})
-    walk(plan["parts"], [])
+                row = {**n, "kind": kind, "name": n.get("name", n.get("id")),
+                       "in": list(ancestry)}
+                if mine and not row.get("answers"):
+                    row["answers"] = mine
+                out.append(row)
+    walk(plan["parts"], [], None)
     return out
 
 
@@ -214,7 +226,13 @@ def plan_failures(parts: list, decls: dict, ground: dict | None = None,
         # one place the two declarations are put side by side.
         admits = (tuple(p["admits"]) if p.get("admits") is not None
                   else (COMPOUND_ROLES if p.get("compound") else ()))
-        if not role_ok(decl.get("role"), p.get("role"), compound=bool(p.get("compound")),
+        # **A character-declared landmark is the district's own deliberate choice.** The
+        # closure round's held-out hamlet: a smithy declared as the homes district's
+        # landmark was refused because a workshop is an urban type in a rural district.
+        # The role rule keeps a compiler from filling a farm quarter with shops; it does
+        # not overrule a landmark the character's author named by type.
+        landmark = str(p.get("name") or "").startswith("landmark_")
+        if not landmark and not role_ok(decl.get("role"), p.get("role"), compound=bool(p.get("compound")),
                        admits=admits):
             fail(p, "role", f"{p['name']}: type {t} is a {decl.get('role')} building "
                  f"and this is a {p.get('role')} "
@@ -697,6 +715,19 @@ def ground_class(relief: int, water_pct: float) -> str:
     return "dry"
 
 
+#: `{(path, size, mtime_ns): declaration}` -- a type file read once per process. **The
+#: realization round, found by profiling the compiler.** `_compile_once` asks
+#: `placeplan.fabric` and `district_target` what a lot of this density costs, and each
+#: of those walks every committed type; one compile of an 84x35 district executed 768
+#: type files and spent 2.7 of its 2.9 seconds inside `compile()`. The district
+#: compiler's search runs that up to 28 times, so one small district cost 96 seconds --
+#: and the reason planning could not afford to ask the *actual* construction logic how
+#: many houses a rectangle holds was almost entirely this. Keyed on the file's identity
+#: and not its name, so a type edited mid-run is read again: the same rule
+#: `deps.content_print` uses, for the same reason.
+_TYPE_CACHE: dict = {}
+
+
 def load_type(path: str) -> dict:
     """Read a type file's declarations without building anything.
 
@@ -704,8 +735,18 @@ def load_type(path: str) -> dict:
         contract says so: a type file defines a function and some constants, and anything
         that placed a block at import time would place it once per instance. A file that
         breaks that is caught here, once, rather than twelve buildings later.
+
+        Cached per file identity -- see `_TYPE_CACHE`. The returned declaration is treated
+        as read-only by every caller in this build; it is the same object each time.
         
     """
+    try:
+        st = os.stat(path)
+        key = (path, st.st_size, st.st_mtime_ns)
+    except OSError:
+        key = None
+    if key is not None and key in _TYPE_CACHE:
+        return _TYPE_CACHE[key]
     src = open(path).read()
     ns: dict = {"__name__": "__ethoslm_type__", "__file__": path}
     exec(compile(src, path, "exec"), ns)                       # noqa: S102
@@ -715,7 +756,7 @@ def load_type(path: str) -> dict:
             f"{path}: a type declares {', '.join(TYPE_DECLARATIONS)} and defines "
             f"build(b, part, seed, **params); this one is missing "
             f"{', '.join(missing + ([] if callable(ns.get('build')) else ['build']))}")
-    return {"path": path, "src": src, "form": read_form(ns, where=path),
+    got = {"path": path, "src": src, "form": read_form(ns, where=path),
             # A2: what it is for, beside what it is built in. See `read_role`.
             "role": read_role(ns, where=path),
             "params": dict(ns["PARAMS"]), "lines": len(src.splitlines()),
@@ -723,6 +764,26 @@ def load_type(path: str) -> dict:
             # it. Optional, and a plot where it is not said, because every type written
             # before A3 is a building on a plot and none of them says so.
             "kind": ns.get("KIND", "plot"), "passage": bool(ns.get("PASSAGE", False)),
+            # the architecture round: a type may say which **family** of part it builds.
+            # Optional, because the family has always been read off the committed name
+            # and every file on disk predates this; where a file says it, its own word
+            # wins (`capability.family_of`).
+            "family": ns.get("FAMILY"),
+            # the integration round: a type may say which **named tradition** it is
+            # built in -- `japanese`, `german` -- which `FORM`'s four coarse families
+            # cannot express. Optional and unset on every committed file, which is
+            # exactly why a request for a Japanese village leaves its tradition
+            # requirement `unresolved` instead of passing on a form family.
+            "tradition": ns.get("TRADITION"),
+            # the realization round: **what this type is for**, which is not what it is
+            # built in (`FORM`), what work it is for (`ROLE`) or what kind of part it is
+            # (`FAMILY`). The review: "An allowed plot type and a coarse role do not
+            # establish that a dwelling's function has been fulfilled." A role of
+            # `rural` is satisfied by a hall, a temple and a barn; a sentence asking for
+            # houses people live in is not. Optional, and a type that declares none
+            # fulfils no function -- which is the honest answer and the one that keeps
+            # the obligation visible rather than letting the nearest label close it.
+            "function": ns.get("FUNCTION"),
             # v2, C2: a plot type whose flanks are party walls says so, and may then
             # stand touching the next such leaf on a shared frontage.
             "attached": bool(ns.get("ATTACHED", False)),
@@ -731,7 +792,18 @@ def load_type(path: str) -> dict:
             # What it needs from the ground. Optional here for the same reason. Every
             # file under `types/` declares it and `test_types.py` is what says so.
             "needs": read_needs(ns, where=path),
-            "declares_needs": ns.get("NEEDS") is not None}
+            "declares_needs": ns.get("NEEDS") is not None,
+            # **What this type actually fills, which is not always its rectangle.** The
+            # design round: the great wall lays piers, a parapet corbel and a switchback
+            # stair outside its declared band, so planning, ground, routing and the
+            # checks each had their own guess at how much room it takes. A type that
+            # knows publishes `occupied(part, **params)` and everything reads that one
+            # answer; a type that does not is its footprint plus its declared clearance.
+            # See `types/great_wall.occupied` and `ground.occupied_envelope`.
+            "occupied": ns.get("occupied") if callable(ns.get("occupied")) else None}
+    if key is not None:
+        _TYPE_CACHE[key] = got
+    return got
 
 
 def check_params(spec: dict, params: dict | None, where: str = "a type") -> dict:
@@ -811,6 +883,502 @@ def param_combinations(spec: dict, most: int = SWEEP_MAX) -> list:
     return [dict(zip(keys, c)) for c in itertools.product(*vals)]
 
 
+CLAIMS_BRIEF = """# Read the sources, and say what they establish
+
+> {sentence}
+
+This request was read as a **{kind}**{about}. {why}
+
+{evidence}
+
+## What is asked
+
+Write the **claims** these sources establish about the place this request asks for, and
+nothing else. A claim is one fact that a planner could act on: how the place is
+organised, what it is bounded by, what its buildings are made of and how they are
+roofed, how big it is, what stands at its middle.
+
+Every claim carries the **id of the source it came from**. A claim you cannot attach to
+one of the sources above is either left out or marked `"inferred": true` with the
+reasoning -- and a reading whose claims are all inferred is an honest weak reading,
+which is far better than a confident wrong one. Where two sources disagree, say so in
+`conflicts` rather than choosing silently.
+
+Do not write a place spec here. Do not invent a source, a url or a quotation. Nothing
+about the site, the size, the coordinates or the geometry is yours.
+
+## Output
+
+Reply with one JSON document:
+
+{{"claims": [{{"id": "claim/1", "says": "...", "about": "layout|construction|scale|materials|hierarchy",
+             "source": "src/1", "confidence": "high|medium|low", "inferred": false,
+             "conflicts": "..." }}],
+  "uncertainty": [{{"about": "...", "why": "..."}}],
+  "inferred": ["..."]}}
+"""
+
+
+#: What a terminal agent is asked for when nothing else can retrieve. Deliberately a
+#: contract and not an instruction to be clever: the fields are the ones
+#: `contracts.SOURCE_FIELDS` requires, and a source that cannot carry them is not one.
+RESEARCH_BRIEF = """# Research this request
+
+    {sentence}
+
+This build has **no retrieval provider configured**, and this request needs evidence:
+{why}
+
+You are the retrieval. Find out what is actually known about {about}, from sources you
+have really read, and write `{write}`.
+
+## What to write
+
+```json
+{{"sources": [{{"id": "short-slug",
+               "title": "the page's own title",
+               "url": "https://...",
+               "accessed": "YYYY-MM-DD",
+               "text": "the passage you read, quoted, not summarised",
+               "supports": "what this source is here to establish"}}],
+  "uncertainty": ["what the sources disagree about, or do not say"],
+  "note": "how you searched and what you could not find"}}
+```
+
+`text` is what makes this a source: it is the passage, quoted. Its identity is
+fingerprinted from those bytes and every claim made later has to name the source it came
+from, so a paraphrase from memory is worse than nothing here. A request you can find no
+source for gets `"sources": []` and a `note` saying so -- that is an honest answer and
+the run will carry the obligation as unresolved rather than pretend.
+
+## What this is for
+
+The claims a later step draws from these sources inform the design, and the identity
+requirement (`{about}`) can only be resolved by evidence that exists plus a judgment of
+what was built. Neither an empty reading nor a confident recollection resolves it.
+"""
+
+
+def _retrieval_provider():
+    """The configured retrieval provider, or None where there is none.
+
+        One seam, so "can this run retrieve" is asked once and can be answered by a test.
+        
+    """
+    from .. import evidence as evid
+    prov = evid.provider()
+    return None if getattr(prov, "name", "none") == "none" else prov
+
+
+def _research_handoff(rnd, sentence: str, out_dir: str) -> dict | None:
+    """**The review's missing job.** `stage_reading` completed an empty reading whenever no
+        provider was configured, and the claims job -- the only agent job in the reading --
+        ran *after* sources existed. So a request that names a place got `provider: none`,
+        no sources, no claims, and an identity obligation with nothing behind it, and there
+        was no state in which a terminal agent could supply what was missing. A terminal
+        agent is a supported runtime; this is the state it answers in.
+        
+    """
+    from .. import contracts, evidence as evid
+    if not evid.needs_evidence(sentence):
+        return None
+    if _retrieval_provider() is not None:
+        return None
+    answer = os.path.join(out_dir, "sources.json")
+    if os.path.exists(answer):
+        return None
+    what = evid.classify(sentence)
+    # **the question this answer will belong to.** A research answer is keyed to its
+    # sentence for the same reason a gathering is: the review reproduced a run that
+    # changed its sentence and kept the previous one's research, and a terminal answer
+    # is exactly as transferable as a retrieved one, which is to say not at all.
+    os.makedirs(out_dir, exist_ok=True)
+    with open(os.path.join(out_dir, "asked.json"), "w") as fh:
+        json.dump({"sentence": sentence,
+                   "sentence_digest": contracts.digest(sentence)}, fh, indent=1)
+    about = (f"{what['name']!r}" if what.get("name") else
+             f"{what['tradition']} building" if what.get("tradition") else
+             "this kind of place")
+    brief = rnd.rel("research_prompt.md")
+    os.makedirs(out_dir, exist_ok=True)
+    with open(brief, "w") as fh:
+        fh.write(RESEARCH_BRIEF.format(sentence=sentence, why=what["why"], about=about,
+                                       write=answer))
+    return {"status": "needs_model", "role": "research", "request": brief,
+            "write": answer,
+            "note": (f"no retrieval provider is configured and this request needs "
+                     f"evidence about {about}; the agent driving this round is the "
+                     f"retrieval, and writes the sources it actually read")}
+
+
+def _adopt_research(sentence: str, out_dir: str) -> dict | None:
+    """A terminal agent's `sources.json`, as a gathering. None where there is none.
+
+        Every source is written to disk under its own id and fingerprinted **from the bytes
+        that were written**, so the identity in the record is the identity of the text a
+        later claim will be drawn from and not a number the answer supplied about itself.
+        
+    """
+    from .. import contracts, evidence as evid
+    p = os.path.join(out_dir, "sources.json")
+    if not os.path.exists(p):
+        return None
+    asked = os.path.join(out_dir, "asked.json")
+    was = json.load(open(asked)) if os.path.exists(asked) else {}
+    if was.get("sentence_digest") != contracts.digest(sentence):
+        # the answer to a different question: set aside by name, never adopted
+        for f in ("sources.json", "asked.json"):
+            if os.path.exists(os.path.join(out_dir, f)):
+                os.replace(os.path.join(out_dir, f),
+                           os.path.join(out_dir, f"stale.{f}"))
+        print(f"   reading: the research on disk answers "
+              f"{was.get('sentence') or 'another sentence'}; it is set aside",
+              flush=True)
+        return None
+    doc = json.load(open(p))
+    what = evid.classify(sentence)
+    sources, refused = [], []
+    for i, s in enumerate(doc.get("sources") or []):
+        sid = str(s.get("id") or f"source_{i}").strip()
+        text = str(s.get("text") or "")
+        missing = [k for k in ("title", "url", "accessed") if not str(s.get(k) or "").strip()]
+        if not text.strip():
+            missing.append("text")
+        if missing:
+            refused.append({"id": sid, "missing": missing})
+            continue
+        rel = f"{evid._slug(sid) if hasattr(evid, '_slug') else sid}.txt"
+        with open(os.path.join(out_dir, rel), "w") as fh:
+            fh.write(text)
+        sources.append({"id": sid, "title": str(s["title"]), "url": str(s["url"]),
+                        "accessed": str(s["accessed"]),
+                        "fingerprint": evid._fingerprint(text.encode("utf-8")),
+                        "media": "text/plain", "supports": s.get("supports") or "",
+                        "provider": "terminal", "bytes": len(text.encode("utf-8")),
+                        "path": rel})
+    return {"classification": what, "queries": list(doc.get("queries") or []),
+            "sources": sources, "provider": "terminal" if sources else "none",
+            "refused": refused,
+            "uncertainty": list(doc.get("uncertainty") or []),
+            "note": (str(doc.get("note") or "")
+                     + (f"; {len(refused)} source(s) refused for missing "
+                        f"title, url, access date or text" if refused else "")),
+            "hits": []}
+
+
+def stage_reading(rnd, be, results: dict) -> dict:
+    """What this request is about, before anything is planned. The architecture round.
+
+        Two records come out of it, and they are different things on purpose:
+
+          `intent.json`   the **sentence's own** requirements, read by rule with no model
+                          call at all (`ethoslm.intent`). Immutable. This is what every later
+                          check is scored against, because a check generated from a model's
+                          interpretation of the sentence cannot find what that
+                          interpretation dropped.
+          `reading.json`  what was found out about it: the classification, the queries, the
+                          sources actually retrieved with their fingerprints, and the claims
+                          a model made **from those sources**.
+
+        A request that needs no evidence -- one that describes the place it wants -- gets an
+        empty, honest reading and no model call. A request that does, and has no retrieval
+        provider configured, gets a reading that says so: `provider: none`, every claim
+        inferred. Neither is a failure and both are visible.
+        
+    """
+    from .. import contracts, deps, evidence as evid, intent as intent_mod
+    if not rnd.sentence:
+        return {"skipped": "this round carries no sentence, so there is nothing to read"}
+    fresh, why = deps.check(rnd, "reading")
+    if fresh and contracts.load(rnd, "reading") is not None:
+        rec = contracts.load(rnd, "reading")
+        return {"skipped": why, "classification": rec["classification"],
+                "sources": len(rec["sources"]), "claims": len(rec["claims"]),
+                "provider": rec["provider"]}
+    os.makedirs(rnd.state, exist_ok=True)
+    it = intent_mod.read(rnd.sentence)
+    # **One producer for `intent.json`.** The review's fifth finding, reproduced by the
+    # closure runner: this stage stamped `intent.json` as its output, `stage_interpret`
+    # rewrote the same file, and the two took turns calling each other stale on every
+    # unchanged replay. The rules' own reading is kept beside the record as
+    # `intent.rules.json` -- it is what the cross-check quotes -- and `intent.json` is
+    # written here only where no interpretation of this sentence exists yet, so a round
+    # with no interpreter keeps the rules' reading exactly as it always did.
+    json.dump(it, open(rnd.rel("intent.rules.json"), "w"), indent=1)
+    interp = contracts.load(rnd, "interpretation")
+    if interp is None or interp.get("sentence") != rnd.sentence \
+            or contracts.load(rnd, "intent") is None:
+        contracts.save(rnd, "intent", it)
+    print(f"   intent: {len(it['requirements'])} requirement(s) read from the sentence"
+          + (": " + ", ".join(r["id"] for r in it["requirements"])
+             if it["requirements"] else " (it states none outright)"), flush=True)
+    out_dir = rnd.rel("evidence")
+    gath_p = rnd.rel("gathering.json")
+    # carrying the old sentence's classification, its queries and its named city into a
+    # request that never mentioned one. A research answer is keyed to its question.
+    want = contracts.digest(rnd.sentence)
+    gathering = None
+    if os.path.exists(gath_p):
+        was = json.load(open(gath_p))
+        if was.get("sentence_digest") == want:
+            gathering = was
+        elif was.get("sentence_digest") is None and not was.get("sources"):
+            # a gathering from before this key existed, and an empty one: its
+            # classification is re-derived below rather than trusted
+            print("   reading: the gathering on disk predates the sentence key and "
+                  "retrieved nothing; it is made again", flush=True)
+        else:
+            os.replace(gath_p, rnd.rel("gathering.stale.json"))
+            print(f"   reading: the gathering on disk was made for a different "
+                  f"sentence ({was.get('classification', {}).get('name') or 'unnamed'});"
+                  f" it is set aside and this request is researched again", flush=True)
+    if gathering is None:
+        # **The research handoff, before the empty answer.** With a provider this is
+        # `evid.gather`; with none and a request that needs evidence, the agent driving
+        # the round is asked to be the retrieval, and its answer is adopted as the
+        # gathering. An empty reading is still an available outcome -- a request that
+        # describes the place it wants needs no evidence, and an agent that finds no
+        # source says so -- but it is no longer what happens by default when nobody
+        # asked.
+        ask = _research_handoff(rnd, rnd.sentence, out_dir)
+        if ask is not None:
+            print(f"   reading: {ask['note']}", flush=True)
+            return {"reading": ask, "requirements": len(it["requirements"])}
+        gathering = _adopt_research(rnd.sentence, out_dir)
+        if gathering is None:
+            gathering = evid.gather(rnd.sentence, out_dir)
+        gathering["sentence_digest"] = want
+        gathering["sentence"] = rnd.sentence
+        json.dump(gathering, open(gath_p, "w"), indent=1)
+        for stale in ("reading.claims.json",):
+            if os.path.exists(rnd.rel(stale)):
+                os.replace(rnd.rel(stale), rnd.rel(stale + ".stale"))
+    claims_p = rnd.rel("reading.claims.json")
+    if gathering.get("sources") and not os.path.exists(claims_p):
+        brief_p = rnd.rel("reading_prompt.md")
+        what = gathering["classification"]
+        excerpts = []
+        for s in gathering["sources"]:
+            text = open(os.path.join(out_dir, s["path"])).read()[:6000]
+            excerpts.append(f"### `{s['id']}` {s['title']}\n<{s['url']}> "
+                            f"(accessed {s['accessed']}, {s['fingerprint']})\n\n"
+                            f"```\n{text}\n```")
+        open(brief_p, "w").write(CLAIMS_BRIEF.format(
+            sentence=rnd.sentence, kind=what["kind"],
+            about=(f" named {what['name']!r}" if what.get("name") else
+                   f" in the {what['tradition']} tradition" if what.get("tradition")
+                   else ""),
+            why=what["why"],
+            evidence="## The sources\n\n" + "\n\n".join(excerpts)))
+        # **Under `reading`, so the driver can see it.** `round._needs_model` reads the
+        # *entries* of a stage result, and this was returned flat -- so the one agent
+        # job the reading stage already had was invisible to the loop that waits for
+        # agent jobs, and a round with an unanswered claims job went straight on to plan
+        # a place from a reading nobody had written.
+        return {"reading": {
+            "status": "needs_model", "role": "spec", "request": brief_p,
+            "write": claims_p,
+            "note": f"{len(gathering['sources'])} source(s) retrieved by the "
+                    f"`{gathering['provider']}` provider; the claims they establish, "
+                    f"each carrying the id of the source it came from"}}
+    claims, uncertainty, inferred = [], [], []
+    if os.path.exists(claims_p):
+        doc = json.load(open(claims_p))
+        claims = list(doc.get("claims") or [])
+        uncertainty = list(doc.get("uncertainty") or [])
+        inferred = list(doc.get("inferred") or [])
+    rec = evid.reading_of(rnd.sentence, gathering, claims)
+    if uncertainty:
+        rec["uncertainty"] = uncertainty + list(rec["uncertainty"])
+    if inferred:
+        rec["inferred"] = inferred + list(rec["inferred"])
+    try:
+        contracts.save(rnd, "reading", rec)
+    except contracts.ContractError as e:
+        # A claim with no source and no `inferred` flag is refused **here**, before it
+        # can become a fact about the place. The answer is set aside and named.
+        os.replace(claims_p, rnd.rel("reading.claims.rejected.json"))
+        return {"status": "error", "stop": True,
+                "error": f"the reading's claims do not meet the reading contract: {e}"}
+    deps.stamp(rnd, "reading", outputs=["reading.json"],
+               note=f"provider {rec['provider']}")
+    print(f"   reading: {rec['classification']}, {len(rec['sources'])} source(s) via "
+          f"`{rec['provider']}`, {len(rec['claims'])} claim(s)", flush=True)
+    return {"classification": rec["classification"], "provider": rec["provider"],
+            "sources": len(rec["sources"]), "claims": len(rec["claims"]),
+            "queries": rec["queries"], "requirements": len(it["requirements"]),
+            "needs_evidence": evid.needs_evidence(rnd.sentence),
+            "note": rec.get("note") or ""}
+
+
+def stage_interpret(rnd, be, results: dict) -> dict:
+    """**What the sentence means**, read by an agent and cross-checked by the rules.
+
+        Between the reading and the spec, and both halves of that matter. After the reading,
+        because what has been sourced about a named place is what lets its sentence be
+        interpreted at all. Before the spec, because the programme is designed *from* the
+        meaning: an interpretation produced after the design would be a description of it.
+
+        The agent's answer becomes `interpretation.json`; `intent.json` is written again from
+        it, with the phrase rules' own reading of the same sentence as a cross-check and
+        every disagreement between them on the record. A round whose agent declines to
+        interpret keeps the rules' reading exactly as it was, so nothing that ever ran stops
+        running -- it simply keeps the weaker reading, and the record says which it has.
+        
+    """
+    from .. import contracts, deps, interpret as interpret_mod
+    if not rnd.sentence:
+        return {"skipped": "this round carries no sentence, so there is nothing to "
+                           "interpret"}
+    fresh, _why = deps.check(rnd, "interpretation")
+    got = contracts.load(rnd, "interpretation")
+    p = rnd.rel("interpretation.json")
+    answer_p = rnd.rel("interpretation.answer.json")
+    if fresh and got is not None:
+        return {"skipped": _why, "reads": len(got["reads"]),
+                "checks": {k: len(v) for k, v in (got.get("checks") or {}).items()
+                           if isinstance(v, list)}}
+    if not os.path.exists(answer_p):
+        brief_p = rnd.rel("interpretation_prompt.md")
+        os.makedirs(rnd.state, exist_ok=True)
+        open(brief_p, "w").write(interpret_mod.brief(
+            rnd.sentence, answer_p, contracts.load(rnd, "reading")))
+        return {"interpretation": {
+            "status": "needs_model", "role": "spec", "request": brief_p,
+            "write": answer_p,
+            "note": ("the sentence read into scoped, related, reasoned requirements; "
+                     "the phrase rules cross-check this and do not define it")}}
+    try:
+        rec = interpret_mod.load(answer_p, rnd.sentence)
+    except (contracts.ContractError, ValueError) as e:
+        # refused by name and left on disk, so the answer and its refusal are both
+        # readable; the round stops rather than designing from a reading it could not
+        return {"status": "error", "stop": True,
+                "error": f"the interpretation was refused: {e}"}
+    rec["checks"] = interpret_mod.cross_check(rnd.sentence, rec)
+    contracts.save(rnd, "interpretation", rec)
+    it = interpret_mod.requirements(rnd.sentence, rec,
+                                    reading=contracts.load(rnd, "reading"))
+    contracts.save(rnd, "intent", it)
+    ck = rec["checks"]
+    print(f"   interpreted: {len(rec['reads'])} reading(s) -> "
+          f"{len(it['requirements'])} requirement(s); cross-check "
+          f"{len(ck['agreed'])} agreed, {len(ck['read_only'])} read only, "
+          f"{len(ck['rules_only'])} by rule only, {len(ck['contradicts'])} "
+          f"contradicted, {len(ck['unsupported_phrase'])} refused", flush=True)
+    for c in ck["contradicts"]:
+        print(f"     ! {c['id']}: {c['why']}", flush=True)
+    for c in ck["unsupported_phrase"]:
+        print(f"     x {c['id']}: {c['why']}", flush=True)
+    with contextlib.suppress(ValueError):
+        # **The interpretation's output is the interpretation.** `intent.json` is
+        # written from it here and its `status`/`why` are rewritten by every check
+        # afterwards; binding this stamp to that file made the interpretation stale the
+        # moment the place was resolved, and an unchanged replay re-interpreted the
+        # sentence every time. The semantic content of `intent.json` is what the
+        # `intent` fingerprint kind hashes, and that is what every downstream artifact
+        # depends on.
+        deps.stamp(rnd, "interpretation", outputs=["interpretation.json"],
+                   note=f"{len(rec['reads'])} reading(s) from {rec['source']}")
+    return {"reads": len(rec["reads"]), "requirements": len(it["requirements"]),
+            "checks": {k: len(v) for k, v in ck.items() if isinstance(v, list)},
+            "contradicts": ck["contradicts"], "refused": ck["unsupported_phrase"]}
+
+
+def explicit_count_of(rnd) -> dict | None:
+    """The explicit count the intent record carries, in `spec.count_in`'s shape, or None.
+
+        The interpretation's `count` requirement -- `{"n", "about", "what"}` -- is the
+        sentence's own number read by the agent and cross-checked by the rules. Where the
+        record has one it is the count; where it has none the spec falls back to the regex,
+        which is every round that predates the interpretation stage.
+        
+    """
+    from .. import contracts
+    rec = contracts.load(rnd, "intent")
+    for r in (rec or {}).get("requirements") or []:
+        w = r.get("wants") or {}
+        if r.get("kind") == "count" and w.get("n") and r.get("status") != "unsupported":
+            return {"n": int(w["n"]), "about": bool(w.get("about")),
+                    "phrase": str(r.get("phrase") or ""), "what": str(w.get("what") or ""),
+                    "requirement": r["id"]}
+    return None
+
+
+#: How much of a place's square the fabric, its land and its lanes actually occupy. The
+#: rest is the arterial's band, the margins and the ground between districts that no
+#: district owns. Registered from the expression round's farm (a 192 square holding
+#: 26,600 columns of district against 36,864) and used only to turn a demand in columns
+#: into a side; the layout refuses or accepts on its own arithmetic afterwards.
+FOOTPRINT_PACKING = 0.72
+
+
+def _footprint_from_demand(rnd, spec: dict) -> dict | None:
+    """**A place is as big as what it has to hold.** Raise `needs.footprint` where the
+        resolved demand needs more ground than the count alone implies.
+
+        The design round's first contract, at the one place it had not reached: the
+        footprint. `spec.footprint_for` derives it from the count and the kind, so sixteen
+        cottages are a 192-column village whether each stands on a 12x10 lot or on the 24x24
+        one a **required second storey** forces -- four times the ground, on a square that
+        never moved. The expression round could not notice, because nothing asked the type
+        what the request needed of it before the place was sized.
+
+        So the demand is resolved here, before the site is searched, and every part's
+        `land_need` is summed over `FOOTPRINT_PACKING`. The footprint only ever **grows**,
+        never past the kind's ceiling, and the record says by how much and from what. A
+        place whose demand fits the count's own square is untouched.
+        
+    """
+    import math
+    from .. import contracts as contracts_mod, placesolve
+    try:
+        decls = _decls_for(rnd, spec)
+        resolved, _rec = placesolve.resolved_spec(
+            spec, rnd_capabilities(rnd), contracts_mod.load(rnd, "intent"), decls=decls)
+        need = 0
+        rows = []
+        for part in resolved.get("defining_parts") or []:
+            got = placesolve.land_need(part, int(part.get("structures") or 0), decls,
+                                       resolved)
+            need += int(got.get("columns") or 0)
+            if got.get("columns"):
+                rows.append(f"{part.get('name')}: {got['columns']:,} columns"
+                            + (f" at a lot of {got['lot'][0]}x{got['lot'][1]}"
+                               if got.get("lot") else ""))
+    except Exception as e:                        # noqa: BLE001 -- reported, not raised
+        return {"was": spec["needs"]["footprint"], "now": spec["needs"]["footprint"],
+                "why": (f"the demand could not be resolved before the site was sized "
+                        f"({type(e).__name__}: {e}); the footprint is the count's")}
+    if not need:
+        return None
+    side = int(math.ceil(math.sqrt(need / FOOTPRINT_PACKING)))
+    cap = int(spec_mod.footprint_ceiling(spec.get("kind")))
+    was = int(spec["needs"]["footprint"])
+    now = min(max(was, side), cap)
+    if now <= was:
+        return None
+    spec["needs"]["footprint"] = now
+    spec["footprint_from"] = {
+        # `spec.read_spec` reads `footprint_from.footprint` back as the least footprint
+        # this place may be re-read at, so a rewrite of the checked spec keeps it
+        "footprint": now,
+        "was": was, "wanted": side, "now": now, "ceiling": cap,
+        "columns": int(need), "packing": FOOTPRINT_PACKING, "parts": rows,
+        "why": (f"the resolved demand needs {need:,} columns of district and land -- "
+                + "; ".join(rows)
+                + f" -- which is {side} a side at {FOOTPRINT_PACKING:.0%} packing, "
+                  f"against the {was} the count alone asks for"
+                + (f"; held at the {cap} ceiling for a {spec.get('kind')}"
+                   if side > cap else ""))}
+    return {"was": was, "now": now, "why": spec["footprint_from"]["why"]}
+
+
+def rnd_capabilities(rnd):
+    from .. import contracts as _contracts
+    return _contracts.load(rnd, "capabilities")
+
+
 def stage_place_spec(rnd, be, results: dict) -> dict:
     """The first stage of a round that is given nothing but a sentence, and the only one in
     the whole pipeline that reads the request. What comes back is checked by
@@ -836,9 +1404,16 @@ def stage_place_spec(rnd, be, results: dict) -> dict:
             doc = spec_mod.merge_hand_back(json.load(open(first_p)), doc, fields)
             doc["hand_back"] = {"fields_taken": fields, "from_attempt": n,
                                 "rest_from": os.path.relpath(first_p, _pipeline.ROOT)}
+        # **The count the interpretation read, handed to the spec.** The closure round's
+        # retained first failure: `read_spec` derived the band from `count_in` alone and
+        # sized "sixteen low cottages" at fifty-two, because `sixteen` is not in the
+        # regex's table and nothing consulted `intent.json`, where the reader had
+        # written n=16 exact. An explicit quantity is the sentence's and it survives
+        # from here on.
+        count = explicit_count_of(rnd)
         try:
             s = spec_mod.read_spec({k: v for k, v in doc.items() if k != "hand_back"},
-                                   rnd.sentence or None)
+                                   rnd.sentence or None, count=count)
         except spec_mod.SpecError as e:
             # **Handed back once, by name.** The refusal goes on the end of the brief,
             # the answer is set aside, the record says which field, and the same
@@ -889,8 +1464,70 @@ def stage_place_spec(rnd, be, results: dict) -> dict:
                 wrote.append(os.path.relpath(_voices.path_for(name), _pipeline.ROOT))
                 print(f"   authored voice {name} -> {wrote[-1]}", flush=True)
             wrote = wrote[0] if len(wrote) == 1 else wrote
-        json.dump(s, open(rnd.rel("place.checked.json"), "w"), indent=1)
+        # **A negotiation survives the stage that would re-derive it away.** Found by
+        # replaying the held-out village: this stage rewrites the checked spec from
+        # `place.json` every run, so the band a repair had moved -- and the record of
+        # the bound it moved inside -- were gone by the time the plan stage read the
+        # spec back, the spec fingerprint went back to what it had been, the plan was
+        # called stale, and the whole place was laid out again. An unchanged replay was
+        # never warm and the same repair was made every time. `spec.read_spec` already
+        # restores a negotiated band from `negotiated`; what was missing is that nothing
+        # carried `negotiated` forward. It is carried only where the *model's* answer is
+        # unchanged, so a genuinely new spec starts clean.
+        checked = rnd.rel("place.checked.json")
+        if os.path.exists(checked):
+            was = json.load(open(checked))
+            if was.get("negotiated") and was.get("sentence") == s.get("sentence") \
+                    and not s.get("negotiated"):
+                s = spec_mod.read_spec({**s, "negotiated": was["negotiated"]},
+                                       rnd.sentence or None, count=count)
+                print(f"   spec: {len(was['negotiated'])} negotiation(s) carried "
+                      f"forward; the band reads {s['size_band']} and not the "
+                      f"kind's own", flush=True)
+            # **And a character its author revised survives the same way.** The same
+            # defect as the negotiation above, one field along: `stage_preview`'s
+            # revision and `apply_character` both write the new character into the
+            # *checked* spec, and this stage rewrites the checked spec from the model's
+            # raw answer every run -- so a revision that had been applied, compiled and
+            # inspected was erased by the next invocation, the districts were laid out
+            # again from the character the model first wrote, and the run reported the
+            # place the revision had replaced. Found by running the shore village
+            # through its second inspection. Carried only where the *model's* answer for
+            # that part is unchanged, so a genuinely new spec starts clean.
+            raw_parts = {q.get("name"): q for q in (doc.get("defining_parts") or [])}
+            kept = []
+            for q in was.get("defining_parts") or []:
+                name = q.get("name")
+                mine = next((r for r in s["defining_parts"]
+                             if r.get("name") == name), None)
+                if mine is None or q.get("character") is None:
+                    continue
+                if (raw_parts.get(name) or {}).get("character") == q.get("character"):
+                    continue          # the model's own character, not a revision
+                if mine.get("character") != q["character"]:
+                    mine["character"] = q["character"]
+                    kept.append(name)
+            if kept:
+                s = spec_mod.read_spec(s, rnd.sentence or None, count=count)
+                print(f"   spec: the revised character(s) of {', '.join(kept)} carried "
+                      f"forward; the districts are compiled from what their author "
+                      f"wrote and not from the first answer", flush=True)
+        grew = _footprint_from_demand(rnd, s)
+        json.dump(s, open(checked, "w"), indent=1)
         print(spec_mod.summary(s), flush=True)
+        if grew:
+            print(f"   footprint: {grew['was']} -> {grew['now']}; {grew['why']}",
+                  flush=True)
+        # An `unsupported` requirement is not a shortage of ground or of budget. It is
+        # this library saying it has no family, no policy and no form for the thing that
+        # was asked for, and that is known the moment the sentence has been read and the
+        # programme written. Searching for ground to put it on cannot change it, and
+        # whatever goes wrong during that search becomes the reason the run failed. So
+        # the refusal is made where it is decided, with its own reasons, and nothing
+        # downstream gets the chance to fail first for a reason of its own.
+        gate = _unsupported_gate(rnd, s)
+        if gate is not None:
+            return gate
         return {"status": "read", "spec": s, "path": p,
                 "authored_voice": wrote,
                 "summary": spec_mod.summary(s)}
@@ -900,10 +1537,126 @@ def stage_place_spec(rnd, be, results: dict) -> dict:
                          "planning: `sentence` in the config, and nothing else"}
     if not os.path.exists(brief):
         os.makedirs(rnd.state, exist_ok=True)
-        open(brief, "w").write(spec_brief(rnd.sentence, p))
+        open(brief, "w").write(spec_brief(rnd.sentence, p) + _reading_note(rnd))
     return {"status": "needs_model", "role": "spec", "request": brief, "write": p,
             "note": "one call, a fixed schema: the sentence becomes a place spec and "
                     "nothing about the site, the scale or the geometry is decided here"}
+
+
+def _unsupported_gate(rnd, spec: dict):
+    """Stop the round where the request names things this build cannot express.
+
+        Returns a stage result, or None where every hard requirement is something this build
+        can at least attempt. See the call site: the point is that the refusal is reached
+        **at the stage that knows it**, so that it is the reason the run ends rather than
+        whatever the ground search happens to fail on afterwards.
+
+        `unsupported` is written by `intent.read` and by the interpretation's cross-check,
+        and it means one thing: no family, no policy, no form. It is never written by a
+        measurement of a plan, so nothing later in the run can resolve it -- which is
+        exactly why continuing costs a site search and buys nothing.
+        
+    """
+    from .. import contracts
+    it = contracts.load(rnd, "intent")
+    rows = [r for r in (it or {}).get("requirements") or []
+            if r.get("status") == "unsupported" and r.get("hard")]
+    if not rows:
+        return None
+    # written into the findings record too, so the readout and any reader of
+    # `findings.json` see the same refusal the driver stopped on
+    findings = contracts.make(
+        "findings", stage="place_spec.unsupported",
+        note="the request names things this build has no family, policy or form for",
+        findings=[{"id": f"find/{r['id']}", "says": f"{r['says']}: {r['why']}",
+                   "requirement": r["id"], "part": None,
+                   "evidence": {"phrase": r.get("phrase"), "wants": r.get("wants")},
+                   "owner": "capability", "blocks": "fidelity", "severity": "error",
+                   "seen_by": "place_spec.unsupported", "fixed": False} for r in rows])
+    contracts.save(rnd, "findings", findings)
+    print(f"   spec: {len(rows)} requirement(s) this build cannot express; the round "
+          f"ends incomplete and says which", flush=True)
+    for r in rows:
+        print(f"     - {r['id']}: {r['why']}", flush=True)
+    return {
+        "status": "blocked", "stop": True, "blocks": "fidelity",
+        "spec": spec_mod.summary(spec),
+        "unsupported": [{"id": r["id"], "says": r["says"], "why": r["why"],
+                         "phrase": r.get("phrase")} for r in rows],
+        "error": (f"this build cannot express {len(rows)} hard requirement(s) of this "
+                  f"request, and no later stage can resolve one: "
+                  + "; ".join(f"{r['id']} -- {r['why']}" for r in rows)
+                  + ". Nothing is sited and nothing is built, because the place that "
+                    "was asked for is not one this library can make and a place it "
+                    "could make would be a different request")}
+
+
+def _reading_note(rnd) -> str:
+    """What the reading stage found out, and what the sentence requires outright.
+
+        Appended to the spec brief rather than written into it, so a round with no reading
+        stage -- every round before this one -- composes exactly the brief it always did.
+
+        The requirement table is here for one reason: a spec that omits something the
+        sentence says outright is refused downstream by `intent.coverage` **whatever the
+        brief said**, and telling the call what it will be held to is cheaper than handing
+        it back.
+        
+    """
+    from .. import contracts, evidence as evid
+    it = contracts.load(rnd, "intent")
+    reading = contracts.load(rnd, "reading")
+    interp = contracts.load(rnd, "interpretation")
+    if it is None and reading is None and interp is None:
+        return ""
+    out = []
+    # **The interpretation first, because the programme is designed from the meaning.**
+    # Without this the spec call saw a table of rule-derived requirements and never saw
+    # the scope of a negation, the relation between two kinds of building or the
+    # hierarchy between them -- so a reading that carried all three reached the design
+    # as a list of features, which is the same loss the phrase table was making one
+    # stage earlier.
+    if interp is not None and interp.get("reads"):
+        out.append("\n\n---\n\n## What the sentence means\n")
+        out.append("An interpreter read the request before you saw it. **Design from "
+                   "this.** Each line is a requirement the finished place is checked "
+                   "against; `scope` names the part of the place it is about, and a "
+                   "requirement with a scope needs a defining part that answers that "
+                   "name.\n")
+        for r in interp["reads"]:
+            out.append(f"- **{r['kind']}** `{r['id']}`"
+                       + (f" *(in {r['scope']})*" if r.get("scope") else "")
+                       + f" — {r['says']}"
+                       + (f"  `{json.dumps(r['wants'])}`" if r.get("wants") else "")
+                       + (f"\n    - why: {r['why']}" if r.get("why") else ""))
+        for r in interp.get("uncertain") or []:
+            out.append(f"- *uncertain*: {r}")
+        if interp.get("unread"):
+            out.append("\nThe interpreter could not read: "
+                       + ", ".join(f"`{u}`" for u in interp["unread"])
+                       + ". These stay open obligations; do not invent parts for them.")
+        ck = interp.get("checks") or {}
+        if ck.get("contradicts"):
+            out.append("\n**The phrase rules read some of this the other way round** "
+                       "and the disagreement is on the record: "
+                       + "; ".join(str(c.get("why")) for c in ck["contradicts"][:4])
+                       + ". Design from the interpretation above.")
+    out.append("\n\n---\n\n## What the sentence requires outright\n")
+    if it and it["requirements"]:
+        out.append("These were read from the sentence by rule, before you saw it, and "
+                   "the finished place is checked against them whatever this spec "
+                   "says. A defining part answering each of them is not optional:\n")
+        out.append(contracts.table(it))
+        out.append("\nA requirement marked `unsupported` is one this build has no way "
+                   "to express. Do **not** substitute something else for it: leave it "
+                   "out, and the run will report it as unmet.")
+    else:
+        out.append("The sentence states no requirement this build reads by rule. What "
+                   "the place is, is yours to read.")
+    if reading is not None:
+        out.append("\n\n## What was found out about this request\n")
+        out.append(evid.brief(reading))
+    return "\n".join(out)
 
 
 SPEC_BRIEF = """# Read a sentence into a place spec
@@ -1273,12 +2026,37 @@ def stage_site_search(rnd, be, results: dict) -> dict:
     and this is arithmetic over the world. What goes on the record is the top three with
     their scores and every radius the scan reached, so the choice can be argued with."""
     import subprocess
+    from .. import deps
     p = rnd.rel("site_search.json")
     if os.path.exists(p):
         got = json.load(open(p))
-        return {"skipped": "already searched -- the site is a fixture once chosen",
-                "chosen": got.get("chosen"), "attempt": got.get("attempt"),
-                "top": got.get("top", [])[:3], "path": p}
+        # **Reused only where what it was scored against has not moved.** The
+        # architecture audit reproduced this: change a village's spec into a city's and
+        # the stage returned the village's site, because its whole test for "already
+        # done" was that the file exists. The site is still a fixture once chosen -- a
+        # round whose spec is unchanged never re-searches -- but a site chosen for a
+        # different place is stale, and the run says so rather than planning a city on a
+        # village's square. A round with no stamp at all (every round before this one,
+        # and every shipped fixture) is reused exactly as it was.
+        fresh, why = deps.check(rnd, "site_search")
+        # **A fixture is an import, and a search that chose nothing is not a site.** The
+        # closure round's second retained failure: the first run's search failed on a
+        # wrongly-sized footprint and wrote its record; the spec was corrected; and this
+        # branch read "no stamp" as "a shipped fixture" and handed the failed record
+        # back as the chosen site. `deps.legacy` is the question.
+        legacy = deps.legacy(rnd, "site_search")
+        if got.get("chosen") and (fresh or legacy):
+            return {"skipped": ("already searched -- the site is an imported fixture"
+                                if legacy and not fresh else why),
+                    "chosen": got.get("chosen"), "attempt": got.get("attempt"),
+                    "dependencies": "imported" if legacy and not fresh else "warm",
+                    "top": got.get("top", [])[:3], "path": p}
+        os.replace(p, rnd.rel("site_search.stale.json"))
+        deps.invalidate(rnd, "site_search")
+        print(f"   site search: "
+              + (why if got.get("chosen") else "the record on disk chose no site")
+              + "; the stale record is kept beside it and the search is run again",
+              flush=True)
     spec = rnd.place_spec()
     if not spec:
         return {"status": "error", "stop": True,
@@ -1305,6 +2083,8 @@ def stage_site_search(rnd, be, results: dict) -> dict:
                               f"ever read has to be read once, by a session that writes "
                               f"nothing: scripts/find_site.py --fresh"),
                     "squares": got["squares"]}
+        deps.stamp(rnd, "site_search", outputs=["site_search.json"],
+                   note="the dry run's search over the squares out/sites/ holds")
         return {"chosen": got["chosen"], "attempt": got.get("attempt", "dry run"),
                 "squares": got["squares"], "top": got.get("top", []), "path": p,
                 "dry_run": True}
@@ -1357,6 +2137,8 @@ def stage_site_search(rnd, be, results: dict) -> dict:
                           f"{why.get('failures')}")}
     if be.live:
         be.rebind()
+    deps.stamp(rnd, "site_search", outputs=["site_search.json"],
+               note="scored against this spec's needs")
     return {"chosen": got["chosen"], "attempt": got["attempt"],
             "read_by": got.get("read_by"), "squares": got.get("squares"),
             "terraform": got.get("terraform"),
@@ -1416,6 +2198,15 @@ def compound_cut(rnd, spec, site, terra, n: int, x0: int, z0: int, m: dict) -> t
 
 
 def terrace_for(rnd, spec: dict, site: dict) -> dict | None:
+    """**...in the order the sentence's own words ask for**, the design round. A place
+        whose rings carry elevation words -- a hill town's `lower` and `upper` -- means them
+        literally, and the expression round put the dense *lower* ring on the terrace four
+        blocks above the sparse *upper* one because the words were read as ring ranks.
+        `placeplan.terrace_ranks` reads them and `concentric_layout` re-orders the levels on
+        the plan; the **podium** is cut from the record this function writes, before the
+        plan exists, so the ranks are passed here too or the cut is made in the old order.
+        
+    """
     from .. import placeplan, spec as spec_mod
     rings = spec_mod.rings(spec)
     if not rings:
@@ -1427,7 +2218,8 @@ def terrace_for(rnd, spec: dict, site: dict) -> dict | None:
     med = placeplan.site_median(vol, site)
     if med is None:
         return None
-    return placeplan.terrace_levels(med, len(rings))
+    ranks, _why = placeplan.terrace_ranks(rings)
+    return placeplan.terrace_levels(med, len(rings), ranks=ranks)
 
 
 def _centred_window(rnd, X: int, Z: int, S: int, n: int, m: dict,
@@ -1629,9 +2421,40 @@ def _find_site_module():
 
 def _dry_site_search(rnd) -> dict:
     """The site search with no server: every square `out/sites/` holds, ranked."""
+    from .stages_build import UNREADABLE_SITES
     fs = _find_site_module()
     spec = rnd.place_spec()
     got = fs.search_fresh(spec, editor=None, log=lambda *a: None)
+    ref_p = rnd.rel(UNREADABLE_SITES)
+    refused = (json.load(open(ref_p)).get("refused") or []
+               if os.path.exists(ref_p) else [])
+    if refused:
+        # a ranked square says where it is as `x`/`z`; the chosen one says `origin`
+        def _at(row):
+            o = row.get("origin")
+            if o:
+                return (int(o[0]), int(o[1]))
+            if row.get("x") is not None:
+                return (int(row["x"]), int(row["z"]))
+            return None
+
+        bad = {(int(r["origin"][0]), int(r["origin"][1])) for r in refused}
+        ranked = [t for t in (got.get("top") or []) if _at(t) not in bad]
+        got["top"] = ranked
+        got["refused_unreadable"] = refused
+        chosen = got.get("chosen")
+        if chosen and _at(chosen) in bad:
+            nxt = ranked[0] if ranked else None
+            got["chosen"] = ({"origin": list(_at(nxt)), "size": int(nxt["size"]),
+                              "score": nxt.get("score"), "meets": nxt.get("meets", True),
+                              "measures": nxt.get("measures", nxt)}
+                             if nxt and _at(nxt) else None)
+            if not got["chosen"]:
+                got["best_failed"] = {
+                    "origin": list(_at(chosen) or []),
+                    "failures": (f"every square this search ranked has been chosen and "
+                                 f"refused: {len(refused)} of them could not be read off "
+                                 f"this save's region files")}
     got["generated_by"] = "pipeline.stage_site_search --dry-run"
     got["attempt"] = "dry run, off the cached grid"
     return got
@@ -1699,7 +2522,30 @@ def stage_plateau(rnd, be, results: dict) -> dict:
     p = rnd.rel("plateau.json")
     if os.path.exists(p):
         got = json.load(open(p))
-        return {"skipped": "already cut -- ground work is not idempotent", **got}
+        # **Already cut is a fact about the world, and stale is a fact about the
+        # design.** The review's fourth finding reached this stage: the test was the
+        # existence of the JSON file, so a candidate whose spec, site or terrain had
+        # moved under it went on standing on ground that had been levelled for the
+        # design before it -- and said nothing. Ground work genuinely is not idempotent,
+        # so this still does not cut again; what it does now is *say* that the cut it is
+        # reusing was made for another candidate, and route that to the owner who can
+        # decide, rather than reporting a clean skip.
+        from .. import deps as deps_mod
+        fresh, why = deps_mod.check(rnd, "plateau")
+        # **Never stamped is not stale.** A plateau cut before this stage stamped
+        # anything -- every round in the record, and this stage until the line below --
+        # has no stamp at all, and reading that as "made for a different candidate"
+        # would stop every one of them. `recorded` is the question that distinguishes
+        # "this cut says nothing about what it was made from" from "it says, and what it
+        # says has moved".
+        if fresh or not deps_mod.recorded(rnd, "plateau") \
+                or deps_mod.legacy(rnd, "plateau"):
+            return {"skipped": "already cut -- ground work is not idempotent", **got}
+        return {**got, "skipped": "already cut -- ground work is not idempotent",
+                "stale": why, "status": "error", "stop": True,
+                "error": (f"the ground was levelled for a different candidate and a cut "
+                          f"cannot be taken back: {why}. A fresh round directory is the "
+                          f"way to plan this design on unprepared ground")}
     got = rnd.site_search() or {}
     terra = got.get("terraform")
     spec = rnd.place_spec()
@@ -1719,6 +2565,21 @@ def stage_plateau(rnd, be, results: dict) -> dict:
     if not terra:
         return {"skipped": "the site search marked no part for terraforming: the "
                            "ground it chose is flat enough at the footprint"}
+    # **Only a part at the centre, or one that asks for a level square, is levelled
+    # for.** The closure round's held-out hamlet: a shoreline place with no centre part
+    # had its first district marked as the "core" and a 48x48 square cut for it at the
+    # site's edge -- levelled ground nobody asked for, overlapping the shore band. A
+    # district stands on the ground as found.
+    if spec:
+        part = next((q for q in spec.get("defining_parts") or []
+                     if q.get("name") == terra.get("part")), None)
+        if part is not None and part.get("relation") != "centre" \
+                and not (part.get("needs") or {}).get("plateau"):
+            return {"skipped": (f"the search marked {terra.get('part')} for "
+                                f"terraforming and it is a {part.get('relation')} "
+                                f"{part.get('kind')} that asks for no level square; "
+                                f"the ground stands as found"),
+                    "part": terra.get("part")}
     dry = not be.live and getattr(be, "dry_run", False)
     if not be.live and not dry:
         return {"status": "error", "stop": True,
@@ -1788,6 +2649,14 @@ def stage_plateau(rnd, be, results: dict) -> dict:
         out["site_rewritten"] = stage_site(rnd, be, results)
         out["site_before"] = rnd.rel("site.before-plateau.json")
     json.dump(out, open(p, "w"), indent=1)
+    # **What this cut was made for, so the next run can tell.** Ground work is not
+    # idempotent and this stage has always refused to do it twice; what it could not do
+    # was say whether the cut it was reusing belonged to the candidate in hand. It can
+    # now, and the branch at the top of this stage reads it.
+    from .. import deps as deps_mod
+    with contextlib.suppress(ValueError):
+        deps_mod.stamp(rnd, "plateau", outputs=["plateau.json"],
+                       note=str(rec.get("reason") or "the ground was levelled"))
     return out
 
 
@@ -1854,6 +2723,146 @@ def preflight_terraces(vol, layout: dict, reach: int = 2,
     return out
 
 
+def stage_ground(rnd, be, results: dict) -> dict:
+    """**The ground this design asks for -- proposed from the design, applied from the
+        baseline.** The design round's second contract, and the stage `stage_plateau` was
+        doing the job of before there was a design to do it from.
+
+        `stage_plateau` cuts **before** the plan, sized by the site search's demand (a
+        default of 48) and faced in whatever voice the spec carried at the time, and nothing
+        afterwards re-sizes or re-paves it. The expression round's held-out village failed
+        its read on exactly that: a stone chapel standing on twelve cottage footprints of
+        black paving, with `shrink_anchor` tried and rolled back because the re-solve lost
+        nine houses. The cut was not the design's; it was the search's.
+
+        So this runs **after** the plan, when the anchor the layout actually drew exists:
+
+          1. `ground.propose` derives the anchor and its apron from that anchor, the paving
+             from the voice the resolved design gives that ground, the levels from the
+             layout's terrace record, the protected routes from the circulation, and the
+             occupied envelope of every part from the types themselves;
+          2. `ground.evaluate` asks, **before anything is cut**, whether the proposal is of
+             this baseline, inside the site, no larger than the anchor plus its apron, and
+             clear of every protected route and occupied envelope;
+          3. `ground.apply` makes the prepared volume **from the immutable baseline**, so a
+             revision's cut replaces the previous one instead of adding to it.
+
+        A revision therefore re-proposes and re-applies from the baseline, and the terraces
+        below are re-laid because the ground moved under them.
+
+        **Offline only.** The live driver still prepares its ground through `stage_plateau`
+        and `stage_terraces`, which write blocks ring by ring through the backend; this
+        round did not port that path and does not claim it. A live run is untouched and this
+        stage says so rather than pretending.
+        
+    """
+    import shutil
+    from .. import deps as deps_mod, ground as ground_mod
+    plan = rnd.plan()
+    if not plan:
+        return {"skipped": "no plan yet: there is no design to ask the ground for"}
+    dry = not be.live and getattr(be, "dry_run", False)
+    if not dry:
+        return {"skipped": ("the live driver prepares its ground through the plateau "
+                            "and terrace stages; the proposed-ground path is the dry "
+                            "driver's and this round did not port it")}
+    spec = rnd.place_spec() or {}
+    site = pipeline_site(rnd)
+    place = _load_place(rnd) or plan
+    decls = _decls_for(rnd, spec)
+    # **the baseline is the ground as it was found, and it has to exist before a cut.**
+    # `deps.baseline_path` falls back to the working volume where nothing has been cut
+    # yet, and applying a proposal onto that would make the prepared ground the next
+    # run's "baseline" -- which is how cuts accumulate.
+    vp = rnd.rel(rnd.base_volume)
+    before = rnd.rel(rnd.base_volume.replace(".npz", deps_mod.BASELINE))
+    if not os.path.exists(before) and os.path.exists(vp):
+        shutil.copyfile(vp, before)
+    base_p = deps_mod.baseline_path(rnd)
+    # A concentric place carries a podium in its terrace record; a village gathered
+    # about a square carries none, and its centre is still designed ground that has to
+    # be level -- the plateau stage settled one, and what this stage changes is the
+    # *extent* and the *facing*, not the fact that the ground was levelled.
+    rec = plateau_record(rnd) or {}
+    y = ((rec.get("plateau") or {}).get("y") if isinstance(rec.get("plateau"), dict)
+         else rec.get("y"))
+    try:
+        proposal = ground_mod.propose(spec, site, place, base_p,
+                                      allocation=(place.get("layout") or {}).get("allocation"),
+                                      decls=decls,
+                                      anchor_level=int(y) if y is not None else None)
+    except Exception as e:                        # noqa: BLE001 -- the owner reports
+        return {"status": "error", "stop": True,
+                "error": f"the ground proposal could not be made: {type(e).__name__}: {e}"}
+    p = rnd.rel("ground_proposal.json")
+    prev = json.load(open(p)) if os.path.exists(p) else None
+    fresh, why = deps_mod.check(rnd, "ground", plan=plan)
+    if prev and prev.get("print") == proposal.get("print") and fresh:
+        return {"skipped": f"the prepared ground is this design's own: {why}",
+                "print": proposal.get("print"),
+                "pieces": len(proposal.get("pieces") or [])}
+    verdict = ground_mod.evaluate(proposal, place, base_p)
+    if not verdict.get("ok"):
+        json.dump({**proposal, "evaluated": verdict}, open(p, "w"), indent=1)
+        return {"status": "error", "stop": True,
+                "error": ("the ground this design asks for was refused before anything "
+                          "was cut: " + "; ".join(str(w) for w in verdict.get("why") or [])),
+                "conflicts": verdict.get("conflicts"), "written": p}
+    prepared = ground_mod.apply(proposal, offline.load_volume(base_p))
+    offline.save_volume(prepared, vp)
+    if hasattr(be, "refresh"):
+        be.refresh()
+    json.dump({**proposal, "evaluated": verdict}, open(p, "w"), indent=1)
+    # **What was laid on this ground goes with it.** The terraces are cut into the
+    # prepared ground and the lanes are routed over it: a lane stance is a y as well as
+    # an x and a z, and ground remade under a network of them leaves every stance in the
+    # air or under the turf. Found by running the farm: a voice revision re-proposed the
+    # ground, the apply went back to the baseline as it must, and the construction check
+    # came back with 2,663 of 5,243 lane cells whose recorded stance no longer matched
+    # the ground -- 1,060 of them with the surface block simply gone. Both records are
+    # set aside by name so the stages that own them make them again on the ground that
+    # now exists. ...**and the snapshot the lanes are routed from.** `stage_circulation`
+    # keeps `world.before-lanes.npz` -- the ground as it stood before the first lane --
+    # and routes from it every time, so a replan's lanes replace the previous lanes
+    # instead of joining them. That snapshot is of the ground this stage has just
+    # replaced, and saving it back over the base discards the new cut: an independent
+    # reader found the farm's square still paved in the voice its revision had
+    # abandoned, 1,175 apron columns of it, with `ground_proposal.json` truthfully
+    # reporting 11,693 drystone blocks laid from the baseline that never reached the
+    # world. Ground that moved invalidates the snapshot of it.
+    moved = bool(prev and prev.get("print") != proposal.get("print"))
+    dropped = []
+    if moved:
+        for f in ("terraces.json", "network.json", "circulation.json",
+                  rnd.base_volume.replace(".npz", ".before-lanes.npz")):
+            if os.path.exists(rnd.rel(f)):
+                os.replace(rnd.rel(f), rnd.rel(f"stale.ground.{os.path.basename(f)}"))
+                dropped.append(os.path.basename(f))
+    with contextlib.suppress(ValueError):
+        deps_mod.stamp(rnd, "ground", plan=plan,
+                       outputs=["ground_proposal.json", rnd.base_volume],
+                       note=f"{len(proposal.get('pieces') or [])} piece(s) applied from "
+                            f"the baseline")
+    laid = (proposal.get("applied") or {}).get("laid") or []
+    for row in laid:
+        print(f"   ground: {row.get('piece')} {row.get('rect')} at y={row.get('level')} "
+              f"in `{row.get('voice')}`", flush=True)
+    print(f"   ground: {len(laid)} piece(s) laid from the baseline, "
+          f"{(proposal.get('applied') or {}).get('blocks', 0):,} blocks"
+          + (f"; {', '.join(dropped)} set aside because the ground moved under them"
+             if dropped else ""), flush=True)
+    return {"pieces": len(proposal.get("pieces") or []), "laid": len(laid),
+            "refused": (proposal.get("applied") or {}).get("refused"),
+            "print": proposal.get("print"), "from_baseline": base_p,
+            "ground_moved": moved, "dropped": dropped, "written": p,
+            "from": proposal.get("from")}
+
+
+def _load_place(rnd):
+    p = rnd.rel("plan.place.json")
+    return json.load(open(p)) if os.path.exists(p) else None
+
+
 def stage_terraces(rnd, be, results: dict) -> dict:
     """**After the plan and before the circulation**: the rings of a concentric place are
     levelled to the terrace levels the layout recorded, outermost first, each ring one
@@ -1872,6 +2881,34 @@ def stage_terraces(rnd, be, results: dict) -> dict:
     p = rnd.rel("terraces.json")
     if os.path.exists(p):
         got = json.load(open(p))
+        # **The same terraces for a re-laid plan are the same ground.** The closure
+        # round's transfer case: the preview's repair laid the plan out again, `plan`
+        # was invalidated and `ground` with it, and the parts stage refused to build on
+        # ground "cut for a different candidate" whose rings, levels and annuli had not
+        # moved by a column. Ground work is not idempotent, so nothing is cut again;
+        # what is asked is whether the cut on disk is the cut this plan designs, and
+        # where it is the ground is stamped for this plan.
+        from .. import deps as deps_mod
+        fresh, why = deps_mod.check(rnd, "ground", plan=rnd.plan())
+        if not fresh and deps_mod.recorded(rnd, "ground"):
+            lay = (rnd.plan() or {}).get("layout") or {}
+            def _levels(rows):
+                return sorted((str(r.get("name") or r.get("ring")), r.get("level"))
+                              for r in rows or [])
+            same = (got.get("terrace") == lay.get("terrace")
+                    and _levels(got.get("rings")) == _levels(lay.get("rings")))
+            if same:
+                note = _stamp_ground(rnd, rnd.plan(),
+                                     "terraces unchanged across a re-laid plan; the cut "
+                                     "on disk is this plan's and is stamped for it")
+                print(f"   terraces: {note}", flush=True)
+                return {"skipped": "already terraced -- and the terrace design is "
+                                   "unchanged, so the ground is stamped for this plan",
+                        "restamped": note, **got}
+            return {"status": "error", "stop": True, **got,
+                    "error": (f"the ground was terraced for a different design and a cut "
+                              f"cannot be taken back: {why}. A fresh round directory is "
+                              f"the way to plan this design on unprepared ground")}
         return {"skipped": "already terraced -- ground work is not idempotent", **got}
     plan = rnd.plan()
     layout = (plan or {}).get("layout") or {}
@@ -2113,11 +3150,53 @@ def stage_terraces(rnd, be, results: dict) -> dict:
         out["site_rewritten"] = {"path": sp, "relief": s2["stats"]["relief"],
                                  "was": was["stats"]["relief"]}
     json.dump(out, open(p, "w"), indent=1)
+    # **The prepared ground is this design's, and is stamped as such.** The review's
+    # sixth finding, second half: preparation and planning were separate decisions and
+    # the terraces made the plan's own terrain dependency stale -- the plan asked for
+    # the ground work and the ground work invalidated the plan. `terrain` is now the
+    # baseline, which no stage writes, and the worked volume is an *output* stamped
+    # against the plan it was cut for, so `stage_parts` can ask whether the ground it is
+    # about to build on was prepared for this candidate.
+    from .. import deps as deps_mod
+    out["ground_stamp"] = _stamp_ground(rnd, plan, f"terraces: {out['placed']} block(s)")
     if dry:
         # The pieces were laid into the file, not into the backend's cached volume; the
         # circulation after this reads `be.volume` and must read the terraces.
         be.refresh()
     return out
+
+
+def _stamp_ground(rnd, plan: dict | None, note: str) -> str:
+    """Record that the volume on disk is the ground prepared for `plan`."""
+    from .. import deps as deps_mod
+    base = rnd.rel(rnd.base_volume)
+    was = rnd.rel(rnd.base_volume.replace(".npz", deps_mod.BASELINE))
+    if not os.path.exists(was) and os.path.exists(base):
+        # nothing has cut into it yet, so what is here *is* the baseline
+        import shutil
+        shutil.copyfile(base, was)
+    try:
+        deps_mod.stamp(rnd, "ground", outputs=[rnd.base_volume],
+                       plan=plan if plan is not None else rnd.plan(), note=note)
+    except ValueError as e:
+        return f"not stamped: {e}"
+    return note
+
+
+def ground_for_this_design(rnd) -> tuple:
+    """`(ok, why)` -- was the ground under this plan prepared for this plan?
+
+        A round that never prepared any ground answers `(True, ...)`: standing on the site
+        as it was found is a legitimate design and is not a stale artifact. What is refused
+        is ground cut for a *different* candidate, which is what a repaired plan built on
+        the previous plan's terraces would be.
+        
+    """
+    from .. import deps as deps_mod
+    if not deps_mod.recorded(rnd, "ground"):
+        return (True, "the place stands on "
+                      "the site as it was found")
+    return deps_mod.check(rnd, "ground", plan=rnd.plan())
 
 
 def pipeline_site(rnd) -> dict | None:
@@ -2140,12 +3219,20 @@ def stage_site(rnd, be, results: dict) -> dict:
         be a round whose plan was made against a different map from the one on disk.
     """
     p = rnd.rel("site.json")
+    site = rnd.site or rnd.chosen_site()
     if os.path.exists(p):
         s = json.load(open(p))
-        return {"skipped": "already prepared -- the site briefing is a fixture",
-                "path": p, "origin": s["origin"], "size": s["size"],
-                "relief": s["stats"]["relief"]}
-    site = rnd.site or rnd.chosen_site()
+        # the briefing is of the chosen site or it is set aside (the closure round)
+        if site and (list(s.get("origin") or []) != list(site["origin"])
+                     or int(s.get("size") or 0) != int(site["size"])):
+            os.replace(p, rnd.rel("site.stale.json"))
+            print(f"   site: the briefing on disk is of ({s.get('origin')}) "
+                  f"{s.get('size')} and the search chose {site['origin']} "
+                  f"{site['size']}; it is set aside and the site is read again", flush=True)
+        else:
+            return {"skipped": "already prepared -- the site briefing is a fixture",
+                    "path": p, "origin": s["origin"], "size": s["size"],
+                    "relief": s["stats"]["relief"]}
     if not be.live and getattr(be, "dry_run", False):
         if not site:
             return {"status": "error", "stop": True,
@@ -2257,6 +3344,190 @@ def _hand_back_level(rnd, brief: str, answer: str, level: str, attempt: int,
                   pipeline.needs_table(decls), ""]
     with open(brief, "a") as fh:
         fh.write("\n".join(lines) + "\n")
+
+
+#: Where the adopted arrangements are recorded: one row per district, with the ladder.
+ARRANGEMENT_RECORD = "arrangements.json"
+
+#: Which districts have already had their allocation re-asked after a cover shortfall.
+#: One per district per run: a second identical ask is a loop, and the driver's re-entry
+#: bound should not be what stops it.
+COVER_REASK_RECORD = "cover_reasks.json"
+
+
+def _reask_record(rnd) -> dict:
+    p = rnd.rel(COVER_REASK_RECORD)
+    return json.load(open(p)) if os.path.exists(p) else {}
+
+
+def _arrange_districts(rnd, spec: dict, place: dict, site: dict, decls: dict,
+                       types, vol=None) -> dict:
+    """Give every compiled district the arrangement its ground actually holds.
+
+        One pass, before validation and before the resolution is written. For each district
+        the model gave a character, `arrange` compiles the rectangle, climbs the ground and
+        fabric rungs where the result is short of the allocator's proposal, and hands back
+        what it adopted. This writes that arrangement as the district's plan file -- the one
+        the assembler and the builder read -- and moves the district's promise onto it.
+
+        **The promise moves; the request does not.** A place left short of the structures its
+        sentence or its kind asked for is short, `short_total` says by how much, and the
+        capacity finding that reports it belongs to the scale owner. Nothing here is allowed
+        to make a request smaller.
+
+        Idempotent: a district whose plan file is already on disk and current is left alone,
+        so re-entering this stage does not re-lay a place that has not moved.
+        
+    """
+    from .. import (arrange as arrange_mod, contracts as contracts_mod,
+                    deps as deps_mod, placeplan)
+    rows, adopted, short_total = [], False, 0
+    seed = int(rnd.flags.get("seed") or 1)
+    # what was arranged last time, per district, so a changed character is visible
+    by_name = {r.get("district"): r
+               for r in (arrangements(rnd).get("districts") or [])}
+    for d in (place.get("districts") or []):
+        part = placeplan._district_part(spec, d)
+        if not part or spec_mod.character(part) is None:
+            continue
+        dp = rnd.rel(f"plan.district.{d['name']}.json")
+        # **A character its author has revised is taken before the ground is arranged.**
+        # `district_asks` has always done this, and it runs *after* this pass -- so a
+        # revision reached the compiler through that seam with the allocation the old
+        # fabric had been given, and the arrangement, the capacity re-ask and the
+        # recovery ladder were all skipped. The shore village's revision was rolled back
+        # for a cover it missed by forty-two columns while its own rectangle held two
+        # more houses than it had been asked for.
+        if apply_character(rnd, spec, part):
+            for f in (dp, rnd.rel(f"district_{d['name']}_compiled.json")):
+                if os.path.exists(f):
+                    os.remove(f)
+        if os.path.exists(dp):
+            continue
+        role = spec_mod.district_role(spec, d)
+        _t, mine = placeplan.types_card(types, spec.get("form"), role)
+        # **What the allocator asked for, once.** Arranging against the count the last
+        # arrangement *adopted* is not idempotent and it descends: the compiler sizes
+        # its lots from the ask, so asking for the four houses a rectangle gave makes
+        # four bigger houses and the next pass measures three. Found by running the loop
+        # fixture -- the band walked 81, 58, 53, 52 over four repair passes, each one a
+        # true measurement of a district that had been asked for less than the time
+        # before. The proposal is the layout's and is remembered; what moves is the
+        # promise.
+        if d.get("proposed_structures") is None:
+            d["proposed_structures"] = int(d.get("structures") or 0)
+        # **A change of fabric re-asks the allocation.** The allocator's ask is a number
+        # about a rectangle *built a particular way*: halve the lot and the same ground
+        # holds more houses, and holding the old ask fixed means the district covers
+        # less of itself and its own validator refuses it. Found by running the shore
+        # village's revision -- the inspection asked for "more, smaller houses", the
+        # character delivered smaller lots, the count stayed at three, the cover fell to
+        # 14% against a floor of 38% and the revision was rolled back for doing exactly
+        # what it was asked to do. So where the character has moved since the
+        # arrangement on record, the proposal is asked of the construction logic again
+        # -- `arrange.capacity`, the same compiler -- and the district may hold what its
+        # new fabric actually fits. The allocator's own ask is the floor, so a revision
+        # can add houses and never take the programme's distribution away.
+        ch_print = contracts_mod.digest(spec_mod.character(part))
+        was_print = (by_name.get(d["name"]) or {}).get("character_print")
+        asked = int((d.get("reasked") or {}).get("to") or d["proposed_structures"])
+        if was_print is not None and was_print != ch_print and not d.get("exact"):
+            held = arrange_mod.capacity(d, part, place, mine or decls, spec=spec,
+                                        seed=seed)
+            if held > asked:
+                print(f"   arranged {d['name']}: the character changed and this "
+                      f"rectangle now fits {held}; the allocation is re-asked from "
+                      f"{asked}", flush=True)
+                # **The proposal is never rewritten.** The closure round: a re-ask is a
+                # recorded decision beside the allocator's original ask, so regenerating
+                # from the record reproduces the same arrangement and the original is
+                # still readable.
+                d["reasked"] = {"from": asked, "to": int(held),
+                                "why": "the character changed and the rectangle fits more"}
+                asked = int(held)
+        # the district is refused on its count **and** its cover, so the ladder answers
+        # both: `district_target` is the one place either number is derived **The
+        # validator's own number, from the validator's own call.** Computed with the
+        # role-filtered table instead, this came out at 948 where `district_failures`
+        # refused at 1099 -- `district_target`'s `usable_columns` reads the declarations
+        # it is given -- and the ladder therefore stopped on a district it believed
+        # covered its ground and the validator did not. Two derived numbers about the
+        # same thing, disagreeing, which is the defect this whole round is about; the
+        # place-level table is what the refusal uses, so it is what the ladder is
+        # measured against.
+        floor = 0
+        with contextlib.suppress(Exception):
+            floor = int(placeplan.district_target(d, part, place,
+                                                  decls)["min_plot_columns"])
+        extra = ({"intent": contracts_mod.load(rnd, "intent")}
+                 if "intent" in arrange_mod.arrange.__code__.co_varnames else {})
+        got = arrange_mod.arrange(d, part, place, mine or decls, spec=spec, site=site,
+                                  seed=seed, proposed=int(asked),
+                                  cover_floor=floor, **extra)
+        if not got["ok"]:
+            return {"status": "error", "stop": True, "level": f"district/{d['name']}",
+                    "arrangement": {k: got.get(k) for k in
+                                    ("proposed", "realized", "attempts", "limit")},
+                    "error": (f"no arrangement can be laid in {d['name']}: "
+                              f"{got['why']}")}
+        # the rectangle and the pool the ladder settled on become this district's
+        if got.get("adopted_rect"):
+            if got.get("grew"):
+                d.setdefault("extent_from", [int(d["x0"]), int(d["z0"]),
+                                             int(d["x1"]), int(d["z1"])])
+            d["x0"], d["z0"], d["x1"], d["z1"] = [int(v) for v in got["adopted_rect"]]
+        if got.get("adopted_fabric"):
+            d["fabric_types"] = list(got["adopted_fabric"])
+        was = int(d.get("structures") or 0)
+        # **A region the ground fits fewer than a district's worth of houses in is not a
+        # district.** It becomes open ground with an owner: still part of the place,
+        # still counted by the coverage clause, asked for nothing and held to nothing it
+        # cannot meet. The same rule `placesolve` and `placeshore` apply to their own
+        # thin sectors, applied where the measurement actually is.
+        d["structures"] = 0 if got["thin"] else int(got["realized"])
+        if got["thin"]:
+            d["purpose"] = (f"Open ground with an owner: the arrangement holds "
+                            f"{got['realized']} house(s), under the {got['least']} a "
+                            f"district is held to. {d.get('purpose') or ''}").strip()
+        else:
+            json.dump(got["plan"], open(dp, "w"), indent=1)
+            json.dump(got["record"],
+                      open(rnd.rel(f"district_{d['name']}_compiled.json"), "w"), indent=1)
+        _drop_assembled(rnd)
+        adopted = True
+        short_total += int(got["short"])
+        rows.append({**{k: got.get(k) for k in
+                        ("district", "part", "proposed", "realized", "short", "thin",
+                         "grew", "adopted_rect", "adopted_fabric", "types", "lot",
+                         "house", "plot_cover", "ground_cover", "undeveloped_share",
+                         "open_land", "streets", "attempts", "limit",
+                         # **why a region is short, in the compiler's own terms**, with
+                         # a field of its own rather than only at the head of `limit`
+                         "why_short",
+                         "covers", "cover_floor")},
+                     # the fabric this arrangement was made of, so the next pass can
+                     # tell a changed character from an unchanged one
+                     "character_print": ch_print})
+        moved = [a for a in got["attempts"][1:] if a.get("changed")]
+        print(f"   arranged {d['name']}: proposed {was}, realized {got['realized']}"
+              + (f" after {', '.join(a['action'] for a in moved)}" if moved else "")
+              + (f"; open ground with an owner" if got["thin"] else "")
+              + (f"; short {got['short']}" if got["short"] else ""), flush=True)
+    if rows:
+        rec = {"candidate": deps_mod.candidate_id(rnd), "districts": rows,
+               "short_total": int(short_total),
+               "promised": sum(int(d.get("structures") or 0)
+                               for d in place.get("districts") or []),
+               "note": ("each district's promise is the arrangement its own ground "
+                        "holds, laid by the construction logic that builds it; the "
+                        "ladder tried ground and fabric before any number moved")}
+        json.dump(rec, open(rnd.rel(ARRANGEMENT_RECORD), "w"), indent=1)
+    return {"adopted": adopted, "rows": rows, "short_total": int(short_total)}
+
+
+def arrangements(rnd) -> dict:
+    p = rnd.rel(ARRANGEMENT_RECORD)
+    return json.load(open(p)) if os.path.exists(p) else {}
 
 
 def district_asks(rnd, spec: dict, site: dict, place: dict, types, voice) -> dict:
@@ -2466,9 +3737,577 @@ def character_hand_back(rnd, spec: dict, d: dict, part: dict, fails: list,
                              f"once for one that does not"}}
 
 
+#: How many districts one run may re-allocate before it stops and reports what is left.
+#: A bound on a **layout** repair, registered here beside the code that spends it: the
+#: action reconciles a promise with a measured capacity, and a run that has to do it
+#: sixteen times has a layout problem and not sixteen allocation problems.
+LAYOUT_REALLOCATIONS = 8
+
+#: Where the layout owner's re-allocations are recorded, so the bound survives the stage
+#: being re-entered and a reader can see what was moved and why.
+REALLOCATION_RECORD = "layout_repairs.json"
+
+
+def _owner_attempts(rnd, district: str) -> dict:
+    """Every layout action tried on this district, applied and refused."""
+    rec = _reallocations(rnd)
+    return {"applied": [{k: a.get(k) for k in ("action", "from", "to", "candidate")}
+                        for a in rec.get("applied") or []
+                        if a.get("district") == district],
+            "refused": [a.get("why") for a in rec.get("refused") or []
+                        if a.get("district") == district]}
+
+
+def _owner_says(rnd, district: str) -> str:
+    """One clause naming what the owner tried, for the stop's own message."""
+    got = _owner_attempts(rnd, district)
+    if not got["applied"] and not got["refused"]:
+        return ""
+    did = ", ".join(str(a.get("action") or "allocation") for a in got["applied"])
+    return (f". The layout owner "
+            + (f"applied {did}" if did else "had no action it could apply")
+            + (f" and refused {len(got['refused'])} further change(s), the first "
+               f"because {got['refused'][0][:140]}" if got["refused"] else "")
+            + "; the limiting constraint is this district's own ground")
+
+
+def _reallocations(rnd) -> dict:
+    p = rnd.rel(REALLOCATION_RECORD)
+    return json.load(open(p)) if os.path.exists(p) else {"applied": [], "refused": []}
+
+
+#: How far a district may grow into the free ground beside it, as a share of its own
+#: area, and the least free margin worth taking. A bound on an **extent** repair.
+DISTRICT_GROWTH_MAX = 0.5
+DISTRICT_GROWTH_MIN = 4
+
+
+def _occupied(place: dict, mine: str) -> list:
+    """Every rectangle of the place level except `mine`'s: what growth may not take."""
+    out = []
+    for key in ("districts", "compounds"):
+        for r in place.get(key) or []:
+            if r.get("name") != mine and r.get("x1") is not None:
+                out.append([int(r["x0"]), int(r["z0"]), int(r["x1"]), int(r["z1"])])
+    for p in place.get("parts") or []:
+        with contextlib.suppress(Exception):
+            out.append([int(v) for v in _pipeline.part_rect(p)])
+    return out
+
+
+def _grow_into_free_ground(place: dict, d: dict, site: dict) -> list | None:
+    """A larger rectangle for `d` inside the site, touching nothing else. None if none.
+
+        **The spatial alternative the recovery did not have.** The review's fourth finding:
+        the allocation action "does not search alternative region geometry, lot types, site
+        extent or ground works", so a district that could not hold its promise had exactly
+        one answer -- promise less -- and a district promised one house could become zero
+        and take the residential demand with it. A promise that a rectangle cannot keep is
+        as much a question about the rectangle as about the promise.
+
+        Grown one side at a time, each as far as the nearest other region or the site edge,
+        within `DISTRICT_GROWTH_MAX` of its own area. A ring sector is **not** grown: its
+        rectangle is a chord of an annulus and moving it is a decision the ring arithmetic
+        owns, which is a different action from this one and is named as unavailable rather
+        than attempted badly.
+        
+    """
+    if d.get("ring") is not None or (d.get("level") is not None
+                                     and place.get("layout", {}).get("rings")):
+        return None
+    ox, oz = int(site["origin"][0]), int(site["origin"][1])
+    n = int(site["size"])
+    bound = [ox, oz, ox + n - 1, oz + n - 1]
+    x0, z0, x1, z1 = int(d["x0"]), int(d["z0"]), int(d["x1"]), int(d["z1"])
+    area0 = (x1 - x0 + 1) * (z1 - z0 + 1)
+    # **Bounded against the rectangle this district was first laid out as**, not against
+    # the one the last growth produced. The same arithmetic the review found the scale
+    # negotiation getting wrong -- a limit re-applied to its own output is a decay rate
+    # rather than a limit -- and it is the same arithmetic in the opposite direction:
+    # run three times, a half-again bound grows a district to two and a quarter times
+    # its size, which is a different district.
+    was = d.get("extent_from") or [x0, z0, x1, z1]
+    origin = (int(was[2]) - int(was[0]) + 1) * (int(was[3]) - int(was[1]) + 1)
+    most = int(origin * (1.0 + DISTRICT_GROWTH_MAX))
+    if area0 >= most:
+        return None
+    others = _occupied(place, d.get("name"))
+
+    def clear(rect):
+        if not (bound[0] <= rect[0] and rect[2] <= bound[2]
+                and bound[1] <= rect[1] and rect[3] <= bound[3]):
+            return False
+        return not any(rect[0] <= o[2] and o[0] <= rect[2]
+                       and rect[1] <= o[3] and o[1] <= rect[3] for o in others)
+
+    got = [x0, z0, x1, z1]
+    for i, step in ((0, -1), (1, -1), (2, 1), (3, 1)):
+        while True:
+            nxt = list(got)
+            nxt[i] += step
+            if (nxt[2] - nxt[0] + 1) * (nxt[3] - nxt[1] + 1) > most or not clear(nxt):
+                break
+            got = nxt
+    grown = (got[2] - got[0] + 1) * (got[3] - got[1] + 1)
+    return got if grown - area0 >= DISTRICT_GROWTH_MIN * max(
+        got[2] - got[0] + 1, got[3] - got[1] + 1) else None
+
+
+def _smaller_fabric(rnd, spec: dict, d: dict, decls: dict) -> list | None:
+    """A smaller approved plot type for this district's fabric, or None.
+
+        The **capability** alternative. The compiler reaches for the widest-envelope type of
+        the district's role first, which is the right default and the wrong answer in a
+        thirty-column strip: a type whose least footprint is smaller is a different spatial
+        answer to the same promise, and it is one the capability record already approved.
+        
+    """
+    from ..district_compile import _plot_range
+    pool = d.get("fabric_types")
+    if not pool or len(pool) < 2:
+        return None
+    sized = []
+    for name in pool:
+        decl = decls.get(name)
+        if not decl or decl.get("kind", "plot") != "plot":
+            continue
+        with contextlib.suppress(Exception):
+            lo, _hi, _ex = _plot_range(decl)
+            sized.append((lo, name))
+    sized.sort()
+    if len(sized) < 2 or sized[0][1] == pool[0]:
+        return None
+    return [n for _lo, n in sized]
+
+
+def _district_capacity_repair(rnd, spec: dict, place: dict, d: dict, laid: int,
+                              dfails: list, site: dict | None = None,
+                              decls: dict | None = None) -> dict | None:
+    """Reconcile one district's promise with the capacity its own ground gave.
+
+        **The allocation repair, and the general rule behind the city's stop.** A ring
+        sector 30 columns across was promised two lots; compilation laid one and covered
+        693 of 5,670 columns against the validator's floor of 1,149, and the run asked the
+        district's character's author for better adjectives -- twice -- and then stopped. No
+        adjective makes a 30-column strip hold two lots. The promise was wrong, it was made
+        by the allocator from an area estimate, and the allocator is the layer that can move
+        it.
+
+        So: the district's `structures` becomes what the ground actually realized, and a
+        region that realizes fewer than `DISTRICT_MIN_STRUCTURES` becomes **open ground with
+        an owner** -- asked for nothing, still part of its ring, still counted by the
+        coverage clause. That is the rule `placesolve` and `placeshore` have had for their
+        own thin sectors all along; this is the ring layout learning it, at compile time,
+        where the measurement actually is.
+
+        This never touches a sentence's count. What the place promises in total falls, and
+        that surfaces as a `capacity` finding routed to `scale`, which refuses to negotiate
+        an explicit count. Reducing an inferred allocation is not the same act as reducing
+        the request, and the two stay separate records on purpose.
+
+        Returns the change, or None where this is not this owner's finding.
+        
+    """
+    from .. import placeplan
+    kinds = {f.get("check") for f in dfails}
+    # **An exact district over the density's ceiling is the layout's, not the
+    # character's.** The closure round: the count is the sentence's and stands; the
+    # rectangle is what can move. Grow it into free ground; where none is free, refuse
+    # by name rather than asking a model for different adjectives.
+    if "cover_over" in kinds and d.get("exact"):
+        if site:
+            bigger = _grow_into_free_ground(place, d, site)
+            if bigger is not None:
+                return {"refused": False, "district": d["name"], "action": "extent",
+                        "from": int(d.get("structures") or 0),
+                        "to": int(d.get("structures") or 0), "open_ground": False,
+                        "thin": False, "rect": bigger,
+                        "why": (f"{d['name']} holds its exact {d.get('structures')} "
+                                f"house(s) over the density's ceiling; the count is the "
+                                f"sentence's, so the ground grows into the free ground "
+                                f"beside it"),
+                        "failures": [f.get("check") for f in dfails]}
+        return {"refused": True, "district": d["name"], "action": "extent",
+                "why": (f"{d.get('structures')} house(s) cannot be laid as "
+                        f"`{(placeplan._district_part(spec, d) or {}).get('density')}` on "
+                        f"this rectangle and no free ground lies beside it: the count is "
+                        f"the sentence's and the density word cannot be met on this "
+                        f"ground")}
+    if not (kinds & {"cover", "ground_cover", "farmland_cover", "count"}):
+        return None
+    promised = int(d.get("structures") or 0)
+    least = placeplan.DISTRICT_MIN_STRUCTURES
+    #: **A region the ground fits fewer than a district's worth of houses in is not a
+    #: district.** `placesolve` and `placeshore` have had this rule for their own thin
+    #: sectors since v2; the ring layout did not, and the city's 30x189 strip is what
+    #: that costs: promised one house, laid one house, and then held to a *district's*
+    #: plot cover -- 693 of 5,670 columns against a floor of 1,149 -- which one house in
+    #: a strip thirty columns across cannot reach at any density and no adjective can
+    #: change. The strip is not short of houses; it is not a district. It becomes open
+    #: ground with an owner: still part of its ring, still counted by the ring's
+    #: coverage clause, asked for nothing and held to nothing it cannot meet.
+    thin = (laid == promised and 0 < promised < least
+            and bool(kinds & {"cover", "ground_cover", "farmland_cover"}))
+    if laid >= promised and not thin:
+        return None
+    rec = _reallocations(rnd)
+    if len(rec["applied"]) >= LAYOUT_REALLOCATIONS:
+        return {"refused": True,
+                "why": (f"{len(rec['applied'])} district(s) have already been "
+                        f"re-allocated this run, which is the registered bound of "
+                        f"{LAYOUT_REALLOCATIONS}; the layout is wrong at a level this "
+                        f"action cannot reach")}
+    # **What has been tried on *this* district of *this* candidate.** The record
+    # survives the whole run, and a candidate the run has since replaced took its
+    # actions with it: scoping by district alone meant a district whose extent had been
+    # grown on a design that no longer exists was refused the action on the design that
+    # does. The same rule as the plan-level budget, and the reason `candidate` is
+    # stamped on every applied reallocation.
+    from .. import deps as _deps_t
+    here = _deps_t.candidate_id(rnd)
+    tried = {a.get("action", "allocation") for a in rec["applied"]
+             if a.get("district") == d["name"] and a.get("candidate") == here}
+    # **A spatial answer before a smaller promise.** The order is the point: the ground
+    # and the types are what a layout owner can actually change, and moving the promise
+    # is what is left when neither will move. Each action is tried once per district --
+    # a second attempt at the same lever on the same rectangle is a loop.
+    if site and "extent" not in tried:
+        bigger = _grow_into_free_ground(place, d, site)
+        if bigger is not None:
+            w0, d0 = d["x1"] - d["x0"] + 1, d["z1"] - d["z0"] + 1
+            return {"refused": False, "district": d["name"], "action": "extent",
+                    "from": promised, "to": promised, "open_ground": False,
+                    "thin": False, "rect": bigger,
+                    "why": (f"the allocator promised {promised} structure(s) in "
+                            f"{w0}x{d0} columns and the compiler realized {laid}; there "
+                            f"is free ground beside this district and it is taken -- "
+                            f"{bigger[2] - bigger[0] + 1}x{bigger[3] - bigger[1] + 1} "
+                            f"columns, touching no other region and inside the site. "
+                            f"The promise is unchanged: what moves is the ground it was "
+                            f"made about"),
+                    "failures": [f.get("check") for f in dfails]}
+    if decls and "fabric" not in tried:
+        pool = _smaller_fabric(rnd, spec, d, decls)
+        if pool is not None:
+            return {"refused": False, "district": d["name"], "action": "fabric",
+                    "from": promised, "to": promised, "open_ground": False,
+                    "thin": False, "fabric_types": pool,
+                    "why": (f"the allocator promised {promised} structure(s) and the "
+                            f"compiler realized {laid} out of `{d['fabric_types'][0]}`, "
+                            f"the widest type the capability record approved here; the "
+                            f"pool is re-ordered smallest-footprint first (`{pool[0]}`) "
+                            f"and the district is compiled again. The promise is "
+                            f"unchanged and so is what the record approved"),
+                    "failures": [f.get("check") for f in dfails]}
+    to = 0 if (thin or laid < least) else laid
+    # **And a conversion that takes the place below what was accepted is refused.** The
+    # review: "A district that lays its promised one house but fails cover can become
+    # zero-target open ground, removing the residential cover demand. This can be a
+    # legitimate design revision only if the broader programme still holds."
+    if to < promised:
+        from .. import repair as repair_mod
+        rest = sum(int(o.get("structures") or 0) for o in place.get("districts") or []
+                   if o.get("name") != d["name"]) + to
+        band = repair_mod.accepted_band(spec)
+        floor = int(round((band[0] if band else 0) * repair_mod.SCALE_NEGOTIATION_MIN))
+        if floor and rest < floor:
+            return {"refused": True, "district": d["name"], "action": "allocation",
+                    "why": (f"moving {d['name']} from {promised} to {to} would leave "
+                            f"the place promising {rest} structures against the "
+                            f"{floor} that is {repair_mod.SCALE_NEGOTIATION_MIN:.0%} of "
+                            f"the {band[0]} floor this build first accepted for a "
+                            f"{spec.get('kind')}; the district cannot hold its promise "
+                            f"and the place cannot afford to give it up, which is a "
+                            f"layout failure and not an allocation to revise")}
+    w, dep = d["x1"] - d["x0"] + 1, d["z1"] - d["z0"] + 1
+    why = (f"the allocator promised {promised} structure(s) in {w}x{dep} columns, and "
+           + (f"compiling that rectangle with the actual streets, lots and setbacks "
+              f"realized {laid}" if laid < promised else
+              f"the {laid} it realized cannot cover a district's ground in a rectangle "
+              f"this shape"))
+    return {
+        "refused": False, "district": d["name"], "from": promised, "to": to,
+        "open_ground": to == 0, "thin": bool(thin),
+        "why": why + (f"; under {least} structures it is open ground with an owner "
+                      f"rather than a district held to a district's count and cover, "
+                      f"which it can meet neither of"
+                      if to == 0 else "; the promise is moved to the measured capacity"),
+        "failures": [f.get("check") for f in dfails]}
+
+
+def _apply_reallocation(rnd, place: dict, got: dict) -> None:
+    """Write a re-allocation onto the place level and drop what it invalidates."""
+    from .. import deps as deps_mod
+    for d in place.get("districts") or []:
+        if d["name"] == got["district"]:
+            d["structures"] = int(got["to"])
+            d["notes"] = (d.get("notes") or "") + (
+                f" Re-allocated by the layout owner: {got['why']}.")
+            # the spatial and capability alternatives write geometry and a pool; the
+            # allocation action writes a count. All three are this owner's and all three
+            # are recorded in the same place
+            if got.get("rect"):
+                d.setdefault("extent_from",
+                             [int(d["x0"]), int(d["z0"]), int(d["x1"]), int(d["z1"])])
+                d["x0"], d["z0"], d["x1"], d["z1"] = [int(v) for v in got["rect"]]
+            if got.get("fabric_types"):
+                d["fabric_types"] = list(got["fabric_types"])
+            if got["open_ground"]:
+                d["purpose"] = (f"Open ground inside this ring, with an owner. "
+                                f"{d.get('purpose') or ''}")
+    json.dump(place, open(rnd.rel("plan.place.json"), "w"), indent=1)
+    for f in (f"plan.district.{got['district']}.json",
+              f"district_{got['district']}_compiled.json",
+              f"district_{got['district']}_prompt.md",
+              "plan.json", "plots.json", "network.json", "circulation.json"):
+        if os.path.exists(rnd.rel(f)):
+            os.remove(rnd.rel(f))
+    rec = _reallocations(rnd)
+    from .. import deps as _deps_c
+    got = {**got, "candidate": _deps_c.candidate_id(rnd)}
+    rec["applied"].append(got)
+    json.dump(rec, open(rnd.rel(REALLOCATION_RECORD), "w"), indent=1)
+    # **Stamped again, not invalidated.** Found by running it: invalidating `plan` made
+    # the next entry of this stage call the place level stale, move it aside and solve
+    # it again from the spec -- which threw the re-allocation away and produced the same
+    # promise, which failed the same way, three times in a row until the bound stopped
+    # it. Nothing this artifact depends on has moved; the artifact was *deliberately
+    # edited* by its owner, and the stamp has to say so, or the freshness rule that
+    # exists to protect a repair is what undoes it.
+    with contextlib.suppress(ValueError):
+        deps_mod.stamp(rnd, "plan", outputs=["plan.place.json"],
+                       note=f"{got['district']} re-allocated {got['from']} -> "
+                            f"{got['to']} by the layout owner")
+
+
+def _resolve_record(rnd, spec: dict, place: dict, site: dict,
+                    caps: dict | None = None, plan: dict | None = None,
+                    realized: dict | None = None) -> tuple:
+    """Write `resolution.json` and `findings.json` for a laid-out place level.
+
+        Returns the findings record. Never raises: a round whose sentence states no
+        requirement gets an empty findings record, which is a true statement about it.
+        
+    """
+    from .. import contracts, deps, intent as intent_mod, resolve as resolve_mod
+    it = contracts.load(rnd, "intent")
+    if it is None:
+        it = intent_mod.read(spec.get("sentence") or rnd.sentence or "")
+        contracts.save(rnd, "intent", it)
+    from .. import capability as cap_mod
+    reading = contracts.load(rnd, "reading")
+    # **The capability record is reconciled against the place before it is read.**
+    # Matching wrote down which type answers each part; the layout then built the place.
+    # `agreements` makes the record follow the place and turns a type the capability
+    # rules would refuse into a finding instead of a silence.
+    if caps is not None:
+        # **With the assembled tree where there is one.** The review's third finding was
+        # exactly this argument: `agreements` grew a `plan` parameter, the regression
+        # exercised it, and its only production caller went on passing three arguments
+        # -- so the fabric a district was compiled out of and the halls inside a
+        # compound were never reconciled with anything. A helper the production path
+        # does not call with the thing it needs is a helper that has not been connected.
+        caps, cap_rows = cap_mod.agreements(caps, place, _decls_for(rnd, spec),
+                                            plan=plan)
+        contracts.save(rnd, "capabilities", caps)
+    else:
+        cap_rows = []
+    checked, resolution, findings = resolve_mod.findings_for(
+        spec, place, site, it, capabilities=caps, reading=reading, plan=plan,
+        decls=_decls_for(rnd, spec))
+    if realized is not None:
+        resolution, realized_rows = resolve_mod.with_realized(
+            resolution, realized, plan=plan,
+            subject=((spec.get("explicit_count") or {}) or {}).get("what"))
+        # the capacity check runs **again**, against what the ground gave rather than
+        # against what the allocator budgeted; the first answer was about a number that
+        # no longer describes this plan
+        rows = [f for f in findings["findings"]
+                if not f["id"].startswith(("find/capacity/", "find/extent/"))]
+        short = resolve_mod.capacity_findings(spec, place, resolution, checked)
+        rows += short
+        rows += resolve_mod.unclaimed_ground(spec, place, site, short)
+        findings = contracts.make("findings", findings=[*rows, *realized_rows],
+                                  stage="resolve.findings_for+realized",
+                                  note=findings["note"])
+    # **What the districts could not cover, said once, where a reader looks.** A
+    # district at the capacity of its own rectangle is not refused for its cover (see
+    # `_arrange_districts`), and the obligation does not thereby disappear: it becomes a
+    # finding owned by the layout, which is the layer that chose the rectangle.
+    cover_rows = []
+    for d in (place.get("districts") or []):
+        lim = d.get("cover_limited")
+        if not lim:
+            continue
+        cover_rows.append({
+            "id": f"find/cover/{d['name']}", "requirement": None, "part": d["name"],
+            "says": f"{d['name']}: {lim['why']}",
+            # **Fidelity and not feasibility.** The plan can be built -- every house in
+            # it stands on ground that holds it -- and what is short is how much of its
+            # own rectangle the district covers, which is a statement about the place
+            # being less closely built than its density word implies. Blocking
+            # feasibility on it would stop a buildable design for a quality it is
+            # already reporting, and the layout owner's two spatial actions have been
+            # tried and measured by the time this is written.
+            "evidence": dict(lim), "owner": "layout", "blocks": "fidelity",
+            "severity": "warning", "seen_by": "arrange.cover", "fixed": False})
+    if cap_rows or cover_rows:
+        findings = contracts.make("findings",
+                                  findings=[*findings["findings"], *cap_rows,
+                                            *cover_rows],
+                                  stage=findings["stage"], note=findings["note"])
+    # the programme's entities, bound once and carried on the intent record
+    from .. import spec as _spec_e
+    checked["entities"] = _spec_e.entities(spec)
+    contracts.save(rnd, "intent", checked)
+    contracts.save(rnd, "resolution", resolution)
+    contracts.save(rnd, "findings", findings)
+    with contextlib.suppress(ValueError):
+        deps.stamp(rnd, "resolution",
+                   outputs=["resolution.json", "findings.json"],
+                   note=resolution["policy"])
+    print(f"   resolved: {resolve_mod.says(resolution, findings)}", flush=True)
+    for f in findings["findings"][:6]:
+        print(f"     - {f['owner']}/{f['blocks']}: {f['says'][:120]}", flush=True)
+    return caps, findings
+
+
+def _decls_for(rnd, spec: dict) -> dict:
+    from .. import placeplan
+    _t, decls = placeplan.types_card(rnd.flags.get("types"), spec.get("form"))
+    return decls or {}
+
+
+#: Where the plan stage's own repair passes are recorded, and the bound on them. Two:
+#: the point is to close a diagnosis this stage produced, not to search for a place.
+PLAN_REPAIR_RECORD = "plan_repairs.json"
+#: Per **candidate**: how many passes one design gets before its remaining findings are
+#: reported rather than chased.
+PLAN_REPAIR_BUDGET = 2
+#: Per **run**: the cap that bounds the loop, because every applied repair produces a
+#: new candidate and so a fresh per-candidate budget.
+PLAN_REPAIR_TOTAL = 6
+
+
+def _plan_repair(rnd, be, spec: dict, place: dict, found: dict) -> dict | None:
+    """One bounded repair pass over the plan level's own findings, or None.
+
+        Returns a stage result asking the driver to re-enter where something changed, and
+        None where nothing did -- which is the ordinary case and costs one pass over a list.
+        
+    """
+    from .. import repair as repair_mod
+    rows = [f for f in (found or {}).get("findings") or []
+            if f["blocks"] == "feasibility" and f["owner"] in repair_mod.ACTS_ON
+            and not f.get("fixed")]
+    if not rows:
+        return None
+    p = rnd.rel(PLAN_REPAIR_RECORD)
+    was = json.load(open(p)) if os.path.exists(p) else {"passes": []}
+    # **The budget belongs to the candidate, under a cap that belongs to the run.**
+    # Found by running the held-out village: a pass spent on a candidate a crash had
+    # left behind counted against the candidate that replaced it, so the design that was
+    # actually in hand got one repair instead of two and the round stopped with a
+    # finding its own owner had an action for. A budget that cannot say which design it
+    # was spent on is a number a rollback restores to the wrong place -- which is the
+    # round's "repair budgets belong to a candidate identity". The run-wide cap is what
+    # still bounds the loop, because every repair makes a new candidate.
+    from .. import deps as deps_mod
+    now = deps_mod.candidate_id(rnd)
+    #: The lineage in hand. A deliberate revision by the principal opens a new one
+    #: (`stages_media._new_repair_lineage`); everything else shares the run's first.
+    line = int(was.get("lineage") or 0)
+    here = [q for q in was["passes"] if int(q.get("lineage") or 0) == line]
+    mine = [q for q in here if q.get("candidate") == now]
+    if len(mine) >= PLAN_REPAIR_BUDGET:
+        return None
+    if len(here) >= PLAN_REPAIR_TOTAL:
+        print(f"   plan: {len(here)} repair pass(es) on this design is the "
+              f"registered cap of {PLAN_REPAIR_TOTAL}"
+              + (f" ({len(was['passes'])} this run, across {line + 1} lineage(s))"
+                 if len(here) != len(was["passes"]) else ""), flush=True)
+        return None
+    place_p = rnd.rel("plan.place.json")
+    got = repair_mod.apply(rnd, spec, {**found, "findings": rows},
+                           place=place, place_path=place_p)
+    from .. import deps as _deps_c
+    was["passes"].append({"at": time.strftime("%Y-%m-%dT%H:%M:%S"), "lineage": line,
+                          # **whose candidate this pass was spent on.** A budget that
+                          # cannot say which design it was spent repairing is a number a
+                          # rollback restores to the wrong place.
+                          "candidate": _deps_c.candidate_id(rnd),
+                          "findings": [f["id"] for f in rows],
+                          "applied": got["applied"], "refused": got["refused"]})
+    json.dump(was, open(p, "w"), indent=1)
+    if not got.get("changed_plan"):
+        return None
+    from .. import deps as deps_mod
+    # **The place that measured the capacity is the place that is kept.** Found by
+    # running it: a scale repair moved the band's floor down to the capacity the shore
+    # band gave, the place was then solved *again from the smaller target*, the band's
+    # depth negotiation had less to carry, the new place held fewer houses still -- and
+    # the same finding came back one size smaller, three passes running. A repair that
+    # re-derives the thing it was repairing from the repaired value is a descent and not
+    # a fix. What the repair changes is the programme's inferred target; the geometry
+    # that measured it is evidence, and evidence is not re-derived. So the place level
+    # stands and is stamped again -- its `spec` input moved on purpose, by its owner --
+    # and only what is downstream of the target is dropped: the districts, whose lot
+    # sizes come from it, and the plan assembled out of them.
+    with contextlib.suppress(ValueError):
+        deps_mod.stamp(rnd, "plan", outputs=["plan.place.json"],
+                       note=f"kept across a plan-level repair: {repair_mod.says(got)}")
+    for f in ("plan.json", "plots.json", "network.json", "circulation.json"):
+        if os.path.exists(rnd.rel(f)):
+            os.remove(rnd.rel(f))
+    for f in sorted(os.listdir(rnd.state)):
+        if f.startswith(("plan.district.", "district_")) and os.path.isfile(rnd.rel(f)):
+            os.remove(rnd.rel(f))
+    print(f"   plan: {repair_mod.says(got)}; the place is resolved again", flush=True)
+    return {"plan": {"status": "reenter", "level": "place", "repair": got,
+                     "why": (f"a repair changed a planning decision at the place level "
+                             f"({repair_mod.says(got)}); the plan is laid out and "
+                             f"resolved again before anything is compiled")}}
+
+
+def site_capability_facts(rnd, spec: dict, site: dict | None) -> dict:
+    """The site's and this place's facts that matching has to ask `fits` about.
+
+        `ground` is the class the parts stand on, `relief` is how much the ground falls
+        across the place, and `round_boundaries` says whether this place's walls are drawn
+        round -- which needs types that draw a diagonal run. All three are already read
+        somewhere in this module and none of them reached the matcher.
+        
+    """
+    from .. import intent as intent_mod, placeplan
+    facts = intent_mod.site_facts(site)
+    relief = facts["relief"]
+    water = facts["water"]
+    ground = None
+    if relief is not None and water is not None:
+        ground = ground_class(int(relief), float(water) * 100.0)
+    # round where any wall this place declares is described as round: `wall_round_for`
+    # reads the wall part's own words beside the spec's invariants, which is where a
+    # spec that means a ring rather than a rectangle says so
+    walls = [p for p in (spec or {}).get("defining_parts") or []
+             if p.get("family") == "wall"]
+    return {"ground": ground, "relief": relief,
+            "round_boundaries": any(placeplan.wall_round_for(w, spec) for w in walls)}
+
+
+#: What blocks a plan being reported planned. A finding that says it blocks feasibility
+#: blocks feasibility whatever its severity: the review found the city reporting
+#: `planned` with two `blocks: feasibility` district shortfalls open, on the grounds
+#: that both were warnings. Severity is how loudly a finding is said and `blocks` is
+#: what it stops; reading the first as the second is how a warning became a pass.
+def blocking(found: dict | None, state: str = "feasibility") -> list:
+    """The open findings that block `state`. Empty is what a clean plan looks like."""
+    return [f for f in (found or {}).get("findings") or []
+            if f.get("blocks") == state and not f.get("fixed")]
+
+
 def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     """Plan the place, then plan each district. A5."""
-    from .. import pipeline, placeplan, spec as spec_mod
+    from .. import contracts as contracts_mod, pipeline, placeplan, spec as spec_mod
     site = pipeline.settlement_site(rnd)
     if not site:
         return {"plan": {"status": "error", "stop": True,
@@ -2478,8 +4317,24 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     # v2, C3: **the library grows when the spec asks for a form it lacks.** A defining
     # part no committed type builds is a type authored blind, checked and adopted here,
     # before the place is planned -- a run's worth of them and no more.
-    from .. import growth
-    gaps = growth.type_gaps(spec, types)
+    from .. import arrange as arrange_mod, capability, contracts, growth
+    # **What the library can build of this programme, written down before it is used.**
+    # The record is the one `growth` opens its gaps from and the one the findings read
+    # their uncovered capabilities from, so "no type builds this" is one answer with one
+    # reason rather than two rules that can disagree. **With the site's own facts and
+    # this place's own boundaries.** The review's first finding: matching was called
+    # with `names` alone, so `fits` answered "will this type stand here" with the
+    # ground, the relief and the roundness of the boundary all missing -- three of the
+    # constraints the matcher exists to apply. They are facts about the *pair*, not
+    # about the type, and a caller that does not pass them is asking a question with
+    # half its terms absent.
+    facts = site_capability_facts(rnd, spec, site)
+    caps = capability.match(spec, names=types, ground=facts["ground"],
+                            relief=facts["relief"],
+                            round_boundaries=facts["round_boundaries"],
+                            intent=contracts.load(rnd, "intent"))
+    contracts.save(rnd, "capabilities", caps)
+    gaps = growth.type_gaps(spec, types, intent=contracts.load(rnd, "intent"))
     if gaps:
         grown = growth.stage(rnd, be, spec, gaps, types=types, site=site)
         if grown is not None:
@@ -2507,12 +4362,54 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     # writes a coordinate at any level. A place the solver cannot lay out stops here, by
     # name.
     arithmetic = True
+    # **A place level is reused only where what it was laid out from has not moved.**
+    # The same rule the site search and the preview now obey: a plan whose spec, site,
+    # terrain, types or record schema has changed under it is stale, and re-entering
+    # this stage on a plan drawn for a different programme is how a repair silently
+    # fails to land. A round with no stamp -- every round before this one, and every
+    # shipped fixture -- is reused exactly as it was.
+    from .. import deps as deps_mod
+    if os.path.exists(pp):
+        if not deps_mod.legacy(rnd, "plan"):
+            fresh, why = deps_mod.check(rnd, "plan")
+            if not fresh:
+                print(f"   plan: {why}; the place is laid out again", flush=True)
+                os.replace(pp, rnd.rel("plan.place.stale.json"))
+                for f in ("plan.json", "plots.json", "network.json",
+                          "circulation.json"):
+                    if os.path.exists(rnd.rel(f)):
+                        os.remove(rnd.rel(f))
+                for f in sorted(os.listdir(rnd.state)):
+                    if f.startswith(("plan.district.", "district_")) \
+                            and os.path.isfile(rnd.rel(f)):
+                        os.remove(rnd.rel(f))
+                deps_mod.invalidate(rnd, "plan")
     if not os.path.exists(pp):
         from .. import placesolve
         os.makedirs(rnd.state, exist_ok=True)
+        # **The capability record is the authority on which type each part is built as,
+        # and this is where it reaches the thing that decides.** The review's first
+        # finding, in one argument: `caps` was written on the line above, `solve_place`
+        # took a `caps` parameter, and the call did not pass it -- so matching chose a
+        # type, the solver chose another, and `agreements` reconciled the record to
+        # whatever the layout had done afterwards. A reconciliation is not a decision.
+        # **The requirements reach composition.** The closure round: the relation solver
+        # lays an `around` relation's districts on three sides of its object and an
+        # explicit count exactly, because it is handed the intent record and not a lossy
+        # spec of it. **A round may pin a layout choice its own comparison depends on.**
+        # The composition round registers a section around a named gate; the side the
+        # gates stand on is measured from the ground under them and can flip on a few
+        # columns of ring width, which would move the registered section's subject out
+        # from under it. `flags.axis_side` is that pin, and the layout records both the
+        # answer it was given and the one it measured.
+        _alloc = {**(rnd.flags.get("allocation") or {}),
+                  **({"axis_side": rnd.flags["axis_side"]}
+                     if rnd.flags.get("axis_side") else {})} or None
         place, lfails = placesolve.solve_place(spec, site, plateau, decls, voice,
                                                vol=_plan_volume(rnd, be),
-                                               seed=int(rnd.flags.get("seed") or 1))
+                                               seed=int(rnd.flags.get("seed") or 1),
+                                               caps=caps, allocation=_alloc,
+                                               intent=contracts.load(rnd, "intent"), envelope_cache=os.path.join(rnd.state, "envelopes.json"))
         if lfails:
             _record_level(rnd, "place", lfails, ["rings", "centred", "shares",
                                                  "coverage", "type", "relation",
@@ -2546,6 +4443,22 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     # every district brief below can be told where its own road already runs.
     place["arterials"] = _stage_arterials(rnd, place, decls, vol)
     json.dump(place, open(pp, "w"), indent=1)
+    # **What each district actually holds, from the logic that will build it.** The
+    # realization round's second boundary. Until this, the place level promised each
+    # district a count from `spec.structures_for` -- ground divided by what a house of
+    # that density costs, capped by a grid estimate -- and the compiler then laid
+    # whatever the rectangle really held. The two disagreed, the validator refused the
+    # district for the difference, and the run asked a model for better adjectives. Now
+    # the promise *is* the arrangement: `arrange` runs the district compiler, tries the
+    # ground and the fabric before it moves any number, and the file it adopted is the
+    # file that gets built. The count the place carries afterwards is what the ground
+    # gave, and whatever the place is short of its request surfaces as a capacity
+    # finding for the scale owner rather than as a district that cannot pass.
+    arranged = _arrange_districts(rnd, spec, place, site, decls, types, vol)
+    if arranged.get("stop"):
+        return {"plan": arranged}
+    if arranged.get("adopted"):
+        json.dump(place, open(pp, "w"), indent=1)
     fails = placeplan.place_failures(place, spec, site, decls, ground=ground, voice=voice,
                                      plateau=plateau)
     if fails:
@@ -2568,6 +4481,28 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
                                      "compound", "scale", "plateau", "overlap", "leaf"]
                   + (["arithmetic"] if arithmetic else []))
 
+    # **The resolved design, and what is still wrong with it.** The architecture round:
+    # the place level says where everything is, and until now nothing said which
+    # *requirement* each region answers or which stage could move it. `resolution.json`
+    # is that link and `findings.json` is what it turns up -- capacity short of the
+    # band, a requirement the spec dropped, a capability nothing on disk covers -- each
+    # routed to the layer that can repair it. Written here, before the districts are
+    # compiled, because a wall the sentence asked for and the spec omitted should be
+    # found before four hundred buildings and not after them.
+    caps, found = _resolve_record(rnd, spec, place, site, caps)
+    # **Feasibility is repaired here, before four hundred buildings are compiled.** The
+    # review's fourth finding: the only repair pass in the system ran inside
+    # `stage_preview`, which needs a complete plan and a reading, so a place-level
+    # feasibility failure could not reach it at all -- the city stopped, and the pass
+    # that might have acted on it was three stages downstream behind a prerequisite it
+    # had just failed to produce. A finding about the plan is answered at the plan.
+    got = _plan_repair(rnd, be, spec, place, found)
+    if got is not None:
+        return got
+    with contextlib.suppress(ValueError):
+        deps_mod.stamp(rnd, "plan", outputs=["plan.place.json"],
+                       note=(place.get("layout") or {}).get("policy") or "relations")
+
     # --- level 2: each compound ------------------------------------------- A great
     # thing is a place inside the place, planned by a call of its own before the
     # districts are, out of the same kinds of part: its wall, its gates, its halls and
@@ -2585,8 +4520,12 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
             cpart = next((d for d in spec_mod.compounds(spec)
                           if placeplan._answers(c, d)), None)
             _ct, cdecl = placeplan.compound_types(types, spec, cpart or {})
+            # **The capability record's approved types reach the composer.** The closure
+            # round: the palace was laid out of temple and plaza where the record had
+            # approved hall and square, and the reconciliation refused the place for a
+            # disagreement between two choosers.
             laid, why = placeplan.compound_axial(c, cpart, place, cdecl or decls,
-                                                 spec=spec, seed=1)
+                                                 spec=spec, seed=1, caps=caps)
             if laid is not None:
                 json.dump(laid, open(cp, "w"), indent=1)
                 json.dump(why, open(rnd.rel(f"compound_{c['name']}_axial.json"), "w"),
@@ -2654,26 +4593,183 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
                                              form=spec.get("form"), role=role,
                                              part=placeplan._district_part(spec, d),
                                              spec=spec)
+        # **At capacity and short only of cover is not "spread the plots out".** This
+        # clause's own message asks the district to spread its plots over the whole
+        # rectangle rather than into one corner, and a district holding every house its
+        # ground fits at the fabric it was given, evenly, is not in one corner: its
+        # fabric does not fill it, which is a capacity fact and a finding for the layout
+        # owner rather than a refusal of the district. Decided **here** and not at the
+        # arrangement, because the two places compute `district_target` against
+        # different arterials -- a repair re-routes the road between them and
+        # `developable_columns` reads it -- so a floor measured there was 948 where the
+        # refusal here was 1099. One number, taken where the refusal is made. ...and a
+        # district over its ceiling that holds the least a district may hold
+        # (`DISTRICT_MIN_STRUCTURES`) at the smallest lot its types admit cannot be
+        # asked for fewer: the overshoot is the layout's finding (the closure round's
+        # city).
+        least_n = placeplan.DISTRICT_MIN_STRUCTURES
+        laid_over = sum(1 for q in plots if q.get("kind", "plot") == "plot")
+        if dfails and all(f.get("check") == "cover_over" for f in dfails) \
+                and laid_over <= least_n and not d.get("exact"):
+            d["cover_limited"] = {
+                "covered": int((dfails[0] or {}).get("covered") or 0),
+                "ceiling": int((dfails[0] or {}).get("ceiling") or 0),
+                "realized": int(laid_over), "over": True,
+                "why": (f"this district holds {laid_over} house(s), the least a district "
+                        f"may hold, at the smallest lot its types admit, and they cover "
+                        f"more of its ground than its density's ceiling allows; the "
+                        f"count cannot be asked for fewer, so the overshoot is the "
+                        f"layout's finding")}
+            json.dump(place, open(rnd.rel("plan.place.json"), "w"), indent=1)
+            with contextlib.suppress(ValueError):
+                deps_mod.stamp(rnd, "plan", outputs=["plan.place.json"],
+                               note="annotated with a district's cover ceiling")
+            print(f"   district {d['name']}: at the least a district may hold and over "
+                  f"its density's ceiling; carried as a layout finding rather than "
+                  f"refused", flush=True)
+            dfails = []
+        if dfails and all(f.get("check") in ("cover", "farmland_cover") for f in dfails):
+            part_here = placeplan._district_part(spec, d)
+            _t2, mine2 = placeplan.types_card(types, spec.get("form"), role)
+            held = 0
+            with contextlib.suppress(Exception):
+                held = arrange_mod.capacity(d, part_here, place, mine2 or decls,
+                                            spec=spec,
+                                            seed=int(rnd.flags.get("seed") or 1))
+            laid_now = sum(1 for q in plots if q.get("kind", "plot") == "plot")
+            # a district whose allocation has already been re-asked has had this owner's
+            # action, and what came back is what the ground gives: the shortfall is a
+            # finding from here on and not a second refusal
+            spent = d["name"] in _reask_record(rnd)
+            # **An exact count is never asked to be denser than it is.** The closure
+            # round's transfer case: five houses on a ring sector of five thousand
+            # columns cannot cover a dense district's ground, and asking the character's
+            # author for different adjectives is asking the wrong layer. The count is
+            # the sentence's; the rectangle the ring gave it is the layout's; the
+            # shortfall is carried as the layout owner's finding and the density clause
+            # will say what it measures.
+            if d.get("exact") and laid_now >= int(d.get("structures") or 0):
+                held = laid_now
+                d["cover_limited"] = {
+                    "covered": int((dfails[0] or {}).get("covered") or 0),
+                    "floor": int((dfails[0] or {}).get("floor") or 0),
+                    "realized": int(laid_now), "capacity": int(held),
+                    "why": (f"this district lays {laid_now} house(s), which is every "
+                            f"one its rectangle holds at the fabric it was given, and "
+                            f"they cover {(dfails[0] or {}).get('covered')} of the "
+                            f"{(dfails[0] or {}).get('floor')} columns its density asks "
+                            f"for. The plots are not clustered; this fabric does not "
+                            f"fill this ground")}
+                json.dump(place, open(rnd.rel("plan.place.json"), "w"), indent=1)
+                # **An annotation is not a replacement.** The closure round: writing
+                # `cover_limited` onto the place file after its stamp made the plan
+                # "replaced", invalidated the ground with it, and the parts stage then
+                # refused to build on terraces cut for this very design.
+                with contextlib.suppress(ValueError):
+                    deps_mod.stamp(rnd, "plan", outputs=["plan.place.json"],
+                                   note="annotated with a district's cover limit")
+                print(f"   district {d['name']}: at the capacity of its own rectangle "
+                      f"and short of its cover; carried as a layout finding rather than "
+                      f"refused", flush=True)
+                dfails = []
+            elif held and laid_now < held:
+                # **Short of cover and below the capacity of its own ground: ask for the
+                # houses that fit.** The arrangement pass sets a district's promise
+                # once, from the allocator's ask; a district refused here for cover
+                # while its rectangle demonstrably holds more houses is a promise that
+                # was made too small, and the layer that can change it is the one that
+                # made it. The file is dropped so the arrangement lays it again against
+                # the new ask -- the same construction logic, measured, not an estimate.
+                d.pop("cover_limited", None)
+                was_ask = int((d.get("reasked") or {}).get("to")
+                              or d.get("proposed_structures") or d.get("structures") or 0)
+                # **Once per district.** The same rule every recovery action in this
+                # build has: the re-ask raises the promise, the arrangement lays what
+                # the ground gives, and if that is still short the answer is that this
+                # rectangle does not carry this fabric -- not another identical ask. A
+                # place-level re-solve can drop `proposed_structures`, so the fact that
+                # this district has already been re-asked is recorded on the district
+                # itself, where it survives.
+                asked_before = _reask_record(rnd)
+                if held > was_ask and d["name"] not in asked_before \
+                        and not d.get("exact"):
+                    asked_before[d["name"]] = {"from": was_ask, "to": int(held),
+                                               "laid": int(laid_now)}
+                    json.dump(asked_before, open(rnd.rel(COVER_REASK_RECORD), "w"),
+                              indent=1)
+                    # the proposal stands; the re-ask is recorded beside it
+                    d["reasked"] = {"from": was_ask, "to": int(held),
+                                    "why": "short of its cover and the rectangle holds more"}
+                    json.dump(place, open(rnd.rel("plan.place.json"), "w"), indent=1)
+                    for f in (rnd.rel(f"plan.district.{d['name']}.json"),
+                              rnd.rel(f"district_{d['name']}_compiled.json")):
+                        if os.path.exists(f):
+                            os.remove(f)
+                    print(f"   district {d['name']}: short of its cover and its "
+                          f"rectangle holds {held} where {was_ask} was asked for; the "
+                          f"allocation is re-asked and the ground arranged again",
+                          flush=True)
+                    return {"plan": {
+                        "status": "reenter", "level": f"district/{d['name']}",
+                        "why": (f"{d['name']} was asked for {was_ask} house(s), laid "
+                                f"{laid_now} and covers less of its ground than its "
+                                f"density asks; the same construction logic says the "
+                                f"rectangle holds {held}, so the allocation is re-asked")}}
+            else:
+                d.pop("cover_limited", None)
         if dfails:
             n = _record_level(rnd, f"district/{d['name']}", dfails,
                               ["district", "count", "cover", "ground_cover",
-                               "type", "role", "footprint", "ground", "overlap"])
+                               "farmland_cover", "type", "role", "footprint",
+                               "ground", "overlap"])
             # v2, C1 and C5: a **compiled** district is not the district planner's to
             # hand back -- no model drew it -- but the **character** it was compiled
             # from is a model's, and that is who is answerable for a fabric the
             # validator refuses. So the refusal goes back to the character's author,
             # once, with what the compiler laid and what it was short of; refused twice,
-            # the run stops by name.
+            # the run stops by name. **The layout owner gets the finding before the
+            # character's author does.** A compiled district short of its own cover is
+            # first of all a question about the promise the allocator made, and only
+            # after that a question about the fabric it was to be filled with. Asking a
+            # model for a denser character in a 30-column strip is asking the wrong
+            # layer, and it is what this run did twice before stopping.
+            laid = sum(1 for q in plots if q.get("kind", "plot") == "plot")
+            realloc = _district_capacity_repair(rnd, spec, place, d, laid, dfails,
+                                                site=site, decls=decls)
+            if realloc is not None and not realloc["refused"]:
+                _apply_reallocation(rnd, place, realloc)
+                print(f"   layout: {d['name']} "
+                      f"{realloc.get('action', 'allocation')} "
+                      f"{realloc['from']} -> {realloc['to']}; {realloc['why']}",
+                      flush=True)
+                return {"plan": {"status": "reenter",
+                                 "level": f"district/{d['name']}",
+                                 "repair": realloc, "failures": dfails,
+                                 "why": (f"the layout owner changed "
+                                         f"{realloc.get('action', 'allocation')} on "
+                                         f"{d['name']}: {realloc['why'][:160]}")}}
+            if realloc is not None and realloc["refused"]:
+                rec_r = _reallocations(rnd)
+                rec_r["refused"].append({"district": d["name"],
+                                         "why": realloc["why"]})
+                json.dump(rec_r, open(rnd.rel(REALLOCATION_RECORD), "w"), indent=1)
             part = placeplan._district_part(spec, d)
             if spec_mod.character(part) is not None:
                 if n >= 2:
+                    # **What the owner tried, beside what is still wrong.** A stop that
+                    # quotes only the validator reads as "the compiler failed", and what
+                    # actually happened is that every action the layout owner has was
+                    # tried on this district and each was bounded -- which is the
+                    # limiting constraint and is the thing worth reporting.
                     return {"plan": {"status": "error", "stop": True,
                                      "level": f"district/{d['name']}", "attempt": n,
                                      "failures": dfails, "compiled": True,
+                                     "owner_tried": _owner_attempts(rnd, d["name"]),
                                      "error": f"the compiled district {d['name']} fails "
                                               f"its validator twice: " + "; ".join(
                                                   f"{f.get('part')}: {f['why']}"
-                                                  for f in dfails[:6])}}
+                                                  for f in dfails[:6])
+                                              + _owner_says(rnd, d["name"])}}
                 return character_hand_back(rnd, spec, d, part, dfails, n)
             if n >= 2:
                 return {"plan": {"status": "error", "stop": True,
@@ -2718,7 +4814,82 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
                          "error": "every level passed and the assembled plan does not: "
                                   + "; ".join(f"{f['part']}: {f['why']}"
                                               for f in whole[:6])}}
+    # **The resolution is written again, over the plan that exists.** The review's third
+    # finding: `resolution.json` summarised a place level whose districts had not been
+    # compiled -- lot counts were promises, boundaries were null, and the checks that
+    # read it were reading intentions. Now the record is made once before the districts
+    # compile, where it is what catches an omitted wall cheaply, and **again here** over
+    # the assembled tree, where `lots` is what the ground gave and a frontage check has
+    # actual doors to look at.
+    caps2 = contracts_mod.load(rnd, "capabilities")
+    caps2, found2 = _resolve_record(rnd, spec, place, site, caps2, plan=plan,
+                                    realized=_realized_lots(
+                                        plan, [d["name"] for d in
+                                               (place.get("districts") or [])]))
+    again = _plan_repair(rnd, be, spec, place, found2)
+    if again is not None:
+        return again
+    # **A plan with an open feasibility finding is not a planned plan.** The review's
+    # fifth finding: `_plan_repair` returns None both when it has fixed everything and
+    # when its budget is spent or no supported action changes anything, and the caller
+    # wrote the registry and reported `planned` either way. The city's two district
+    # shortfalls sat in `findings.json` as `blocks: feasibility` while the round called
+    # itself planned, because both were `severity: warning` -- but severity is how
+    # loudly a finding is said and `blocks` is what it stops. Exhaustion is an outcome
+    # and it is this one: the plan stands, the record says what is unsolved and who owns
+    # it, and nothing downstream builds it.
+    stuck = blocking(found2)
+    if stuck:
+        spent = _repair_passes(rnd)
+        return {"plan": {
+            "status": "blocked", "stop": True, "level": "assembled",
+            "blocks": "feasibility", "repair_passes": spent,
+            "findings": [{k: f.get(k) for k in ("id", "owner", "says", "severity")}
+                         for f in stuck],
+            "error": (f"the assembled plan carries {len(stuck)} open feasibility "
+                      f"finding(s) after {spent} repair pass(es), the registered cap "
+                      f"being {PLAN_REPAIR_BUDGET} per candidate and "
+                      f"{PLAN_REPAIR_TOTAL} per run: "
+                      + "; ".join(f"{f['owner']}: {f['says'][:100]}"
+                                  for f in stuck[:4]))}}
     return _write_registry(rnd, plan, parts, levels=plan["levels"], voice=voice)
+
+
+def _repair_passes(rnd) -> int:
+    p = rnd.rel(PLAN_REPAIR_RECORD)
+    return len((json.load(open(p)) if os.path.exists(p) else {}).get("passes") or [])
+
+
+def _realized_lots(plan: dict, districts) -> dict:
+    """`{district name: plots the compiler actually laid in it}`.
+
+        Off the assembled tree and off nothing else. This is the number a promise is
+        reconciled against, and the whole reason it exists is that the promise and the
+        realization were being computed by two different rules that never met.
+
+        A leaf's `in` names the **quarter** it is in -- `homes_shore_4_row_0` -- and a
+        district is a level above that. Found by running it: taking the innermost name
+        attributed every lot to a quarter, every district read as zero, and the reconciler
+        raised a shortfall against every region in the place. A count that is wrong in the
+        direction of "nothing was built" is worse than no count, because it looks exactly
+        like the defect it exists to find.
+        
+    """
+    from .. import pipeline as _pipeline
+    names = sorted({str(d) for d in districts}, key=len, reverse=True)
+    out = {n: 0 for n in names}
+    for leaf in _pipeline.plan_parts(plan):
+        if leaf.get("kind", "plot") != "plot":
+            continue
+        where = [w for w in (leaf.get("in") or []) if w]
+        hit = None
+        for w in reversed(where):
+            hit = next((n for n in names if w == n or w.startswith(n + "_")), None)
+            if hit:
+                break
+        if hit:
+            out[hit] += 1
+    return out
 
 
 def plateau_record(rnd) -> dict | None:
@@ -2811,6 +4982,13 @@ def _write_registry(rnd, plan, parts, *, levels=None, voice=None) -> dict:
         q, passage=bool((decls.get(q.get("type")) or {}).get("passage")))
         for q in parts]
     json.dump(rects, open(rnd.rel("plots.json"), "w"), indent=1)
+    from .. import deps as _deps_a
+    with contextlib.suppress(ValueError):
+        # `plan.json` only: the plot registry is the file construction annotates with
+        # the floor each part was sited at, and a registry that grows a fact is not a
+        # replaced output
+        _deps_a.stamp(rnd, "assembled", outputs=["plan.json"],
+                      note=f"{len(parts)} leaves; plots.json beside it")
     kinds: dict = {}
     for q in parts:
         kinds[q.get("kind", "plot")] = kinds.get(q.get("kind", "plot"), 0) + 1
@@ -2901,6 +5079,13 @@ def stage_plan_flat(rnd, be, results: dict) -> dict:
         q, passage=bool((decls.get(q.get("type")) or {}).get("passage")))
         for q in parts]
     json.dump(rects, open(rnd.rel("plots.json"), "w"), indent=1)
+    from .. import deps as _deps_a
+    with contextlib.suppress(ValueError):
+        # `plan.json` only: the plot registry is the file construction annotates with
+        # the floor each part was sited at, and a registry that grows a fact is not a
+        # replaced output
+        _deps_a.stamp(rnd, "assembled", outputs=["plan.json"],
+                      note=f"{len(parts)} leaves; plots.json beside it")
     kinds: dict = {}
     for q in parts:
         kinds[q.get("kind", "plot")] = kinds.get(q.get("kind", "plot"), 0) + 1
@@ -2949,8 +5134,27 @@ def _stage_arterials(rnd, place: dict, decls: dict, vol) -> dict | None:
     import hashlib
     from .. import placeplan
     designed = placeplan.designed_terrace(place)
+    # **Keyed on the geometry the road is routed from, and nothing else.** The closure
+    # round, found by replaying the proof: the key hashed every field of every district,
+    # the arrangement then wrote the adopted count, the pool and the re-ask onto the
+    # districts, and the next invocation called the place "changed", routed a new road
+    # through a district compiled against the old one, and refused that district for a
+    # plot standing on the arterial. A road is routed from where things stand.
+    geometry = {
+        "parts": [{k: v for k, v in (q or {}).items()
+                   if k in ("name", "kind", "type", "x0", "z0", "x1", "z1", "path", "at",
+                            "level", "defines", "half", "rect")}
+                  for q in (place.get("parts") or [])],
+        "districts": [{k: v for k, v in (d or {}).items()
+                       if k in ("name", "x0", "z0", "x1", "z1", "level", "ring", "defines")}
+                      for d in (place.get("districts") or [])],
+        "compounds": [{k: v for k, v in (c or {}).items()
+                       if k in ("name", "x0", "z0", "x1", "z1", "level")}
+                      for c in (place.get("compounds") or [])],
+        "layout": {k: (place.get("layout") or {}).get(k)
+                   for k in ("rings", "wall", "centre", "anchor_path")}}
     key = hashlib.sha256(json.dumps(
-        {"parts": place.get("parts"), "districts": place.get("districts"),
+        {**geometry,
          **({"terrace": designed,
              "approach": [placeplan.TERRACE_REACH, placeplan.GATE_APPROACH,
                           placeplan.GATE_APPROACH_HALF, placeplan.GATE_RAMP_RUN],
@@ -2963,8 +5167,18 @@ def _stage_arterials(rnd, place: dict, decls: dict, vol) -> dict | None:
         if got.get("of_plan") == key:
             return got
         os.replace(p, rnd.rel(f"arterials.{got.get('of_plan', 'unkeyed')}.json"))
-        print(f"   arterials: the place plan changed, so the road is routed again "
-              f"(the one before it is kept beside it)", flush=True)
+        # ...and the districts compiled against the old road go with it: a district laid
+        # beside a road that has moved is laid beside nothing
+        dropped = 0
+        for f in sorted(os.listdir(rnd.state)):
+            if f.startswith(("plan.district.", "district_")) and os.path.isfile(rnd.rel(f)):
+                os.remove(rnd.rel(f))
+                dropped += 1
+        _drop_assembled(rnd)
+        print(f"   arterials: the place plan's geometry changed, so the road is routed "
+              f"again (the one before it is kept beside it"
+              + (f"; {dropped} district file(s) compiled against it are dropped" if dropped
+                 else "") + ")", flush=True)
     if len(place.get("districts") or []) < 2 or vol is None:
         return None
     # `placeplan` imports `pipeline`, so it is imported here rather than at module
@@ -2999,6 +5213,21 @@ def _stage_arterials(rnd, place: dict, decls: dict, vol) -> dict | None:
     print(f"   arterials: {len(got['cells'])} columns joining "
           f"{len(got['nodes'])} nodes", flush=True)
     return got
+
+
+def _drop_assembled(rnd) -> None:
+    """Retire the assembled plan and the lanes routed for it.
+
+        The closure round, found by replaying the proof: a district was laid again and the
+        assembled tree was then validated against `network.json` -- the lanes routed to the
+        plots of the arrangement before it -- and refused for doorsteps the circulation pass
+        had reserved for houses that no longer stood there. A plan and its lanes belong to
+        the districts they were assembled from.
+        
+    """
+    for f in ("plan.json", "plots.json", "network.json", "circulation.json"):
+        if os.path.exists(rnd.rel(f)):
+            os.remove(rnd.rel(f))
 
 
 def _plan_volume(rnd, be):

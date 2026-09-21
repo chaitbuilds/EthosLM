@@ -99,11 +99,24 @@ class Round:
             # only an absent directory then left the round with none of its own state.
             # What a run writes always wins; nothing is written back.
             import shutil
+            took = []
             for f in sorted(os.listdir(seed)):
                 src, dst = os.path.join(seed, f), os.path.join(out, f)
                 if os.path.isfile(src) and not os.path.exists(dst):
                     os.makedirs(out, exist_ok=True)
                     shutil.copyfile(src, dst)
+                    took.append(f)
+            # **An import is a decision and it is recorded here.** `deps.legacy` used to
+            # read a missing dependency stamp as "this predates the contract, reuse it",
+            # which is the same answer it gives a directory a stage crashed half-way
+            # through. This is the one place documents arrive from outside the run, so
+            # this is where "they were adopted on purpose" is written down.
+            if took and not os.path.exists(os.path.join(out, "imported.json")):
+                from .. import deps as _deps
+                _deps.import_legacy(
+                    out, f"seeded from the shipped fixture `fixtures/{self.name}/`; "
+                         f"these documents were not made by this run and are adopted "
+                         f"as given", took)
         return out
 
     def rel(self, *parts) -> str:
@@ -378,6 +391,14 @@ def _report_path(rnd: Round) -> str:
     return rnd.rel("round.json" if stem == rnd.name else f"round.{stem}.json")
 
 
+def _candidate_or_none(rnd) -> str | None:
+    from .. import deps
+    try:
+        return deps.candidate_id(rnd)
+    except Exception:                          # noqa: BLE001 -- a report never fails
+        return None
+
+
 def stage_report(rnd: Round, be, results: dict) -> dict:
     """`<state>/round.json`.
 
@@ -388,12 +409,43 @@ def stage_report(rnd: Round, be, results: dict) -> dict:
     p = _report_path(rnd)
     prev = json.load(open(p)) if os.path.exists(p) else {}
     merged = dict(prev.get("results") or {})
+    # **A merge that keeps every answer keeps the withdrawn ones too.** The review's
+    # fourth finding, at the report: this merged the new results over the old and
+    # nothing retired what the new run had superseded, so the held-out village's report
+    # carried an old *pending preview* and a new *stopped plan* at the same time -- two
+    # statements about two different candidates, in one document, with no way for a
+    # reader to tell which was current. Two rules, and both are about what this
+    # invocation has actually re-decided. A stage that ran again replaces its own entry
+    # (the plain merge below). A stage *downstream* of the earliest one that ran has not
+    # been re-decided and its answer is about the candidate before this pass, so it is
+    # withdrawn by name rather than carried. `pending` and `stopped` are this
+    # invocation's or they are gone: they say what the round is doing now.
+    order = list(default_stages(rnd))
+    ran = [s for s in order if s in results]
+    withdrawn = {}
+    if ran:
+        after = order[order.index(ran[0]):]
+        for name in after:
+            if name in merged and name not in results:
+                withdrawn[name] = (f"withdrawn: {ran[0]} ran again in this invocation "
+                                   f"and {name} is downstream of it, so its answer "
+                                   f"describes the candidate before this pass")
+                merged.pop(name, None)
+    for state in ("pending", "stopped"):
+        if state in merged and state not in results:
+            withdrawn[state] = (f"withdrawn: the round is no longer {state}; this "
+                                f"invocation did not report it")
+            merged.pop(state, None)
     merged.update(results)
+    from .. import deps as _deps_r
     doc = {"round": rnd.name, "config": rnd.path, "intent": rnd.intent,
            "voice": rnd.voice, "flags": rnd.flags, "base_volume": rnd.base_volume,
            "preregistered": prev.get("preregistered") or rnd.preregistered,
            "results": merged,
            "stages_last_run": sorted(results),
+           "withdrawn": withdrawn,
+           # which design these results are about, so two reports can be told apart
+           "candidate": _candidate_or_none(rnd),
            "t": time.strftime("%Y-%m-%dT%H:%M:%S")}
     os.makedirs(rnd.state, exist_ok=True)
     json.dump(doc, open(p, "w"), indent=1)
@@ -415,9 +467,11 @@ def _place_stage(name: str):
 DETERMINISTIC = ("programs", "cards", "judge")
 
 
-PLACE = ("place_spec", "site_search", "site", "plateau", "plan", "terraces",
-         "circulation", "cache", "preview", "parts", "finish", "lint", "render", "cards",
-         "place_check", "judge", "readout")
+PLACE = ("reading", "interpret", "place_spec", "site_search", "site", "plateau", "plan",
+         "ground", "terraces",
+         "circulation", "cache", "preview", "parts", "finish", "lint", "material",
+         "section", "inspect", "improve",
+         "render", "cards", "qualify", "place_check", "judge", "readout")
 
 #: The same place, offline, with the world in a volume. Two differences from `PLACE` and
 #: both are forced: - `cache` runs **before** `plateau`, because offline a plateau is a
@@ -430,14 +484,20 @@ PLACE = ("place_spec", "site_search", "site", "plateau", "plan", "terraces",
 #: (v2, C4, found by looking at one): a building drawn before the lanes are routed has
 #: no way in, so `site()` refuses it and the preview's five buildings are five empty
 #: pads. The stage re-routes the lanes itself where its revision changes the plan.
-PLACE_DRY = ("place_spec", "site_search", "cache", "site", "plateau", "plan",
-             "terraces", "circulation", "preview", "parts", "finish", "lint",
-             "place_check", "readout")
+PLACE_DRY = ("reading", "interpret", "place_spec", "site_search", "cache", "site", "plateau", "plan",
+             "ground", "terraces", "circulation", "preview", "parts", "finish", "lint", "material",
+             "section", "inspect", "improve", "qualify", "place_check", "readout")
 
 
 def default_stages(rnd: Round) -> tuple:
     if rnd.sentence and rnd.flags.get("plan_only"):
-        return PLACE[:PLACE.index("plan") + 1]
+        # **A dry plan-only run is the dry list, cut at the plan.** It took the live
+        # list, which has no `cache` stage, so a dry run that only wanted a plan chose a
+        # site and then stopped because the ground it had just chosen had never been
+        # read. Two flags, one order: `dry_run` decides *which* stages exist and
+        # `plan_only` decides *how many* of them run.
+        got = PLACE_DRY if rnd.flags.get("dry_run") else PLACE
+        return got[:got.index("plan") + 1]
     if rnd.sentence and rnd.flags.get("dry_run"):
         return PLACE_DRY
     return PLACE if rnd.sentence else DETERMINISTIC
@@ -460,9 +520,70 @@ ROUTED_REENTRIES = 64
 
 
 def _needs_model(res: dict) -> list:
-    """Which entries of a stage result are waiting on a model call."""
-    return [k for k, v in res.items()
-            if isinstance(v, dict) and v.get("status") == "needs_model"]
+    """Every agent job this stage result is waiting on, however it was returned.
+
+        **One rule, and it is `model.staged`'s.** This read the result's *entries* only, so
+        a stage that answers flat -- `stage_place_spec`, `stage_reading`'s claims job, the
+        site briefing -- was invisible to the loop that waits for agent work and to the gate
+        that stops the round for it. The Persian case found it in production: the spec job
+        was staged, nothing saw it, and the site search ran next and stopped on the
+        `place.json` the unanswered job was going to write. The router has always looked in
+        all three places; the controller now looks in the same three.
+        
+    """
+    from ..model import staged
+    return list(staged(res))
+
+
+def _reenter(res: dict) -> str | None:
+    """Why this stage has asked to be run again, or None.
+
+        **A state the driver executes, and the reason it exists.** The integration review
+        drove the production return shape of a repaired preview through this very function's
+        caller: the stage returned a dict whose `note` said "the stage re-enters to inspect
+        the plan it produced", the driver read the note as it reads any other string, and
+        the round went on to build a plan nobody had inspected. Prose is not control flow.
+        A stage that has changed the candidate under itself says `status: "reenter"` -- on
+        the result or on one of its entries -- and this is what the loop below asks.
+        
+    """
+    if res.get("status") == "reenter":
+        return str(res.get("why") or "the stage asked to be run again")
+    for k, v in res.items():
+        if isinstance(v, dict) and v.get("status") == "reenter":
+            return f"{k}: {v.get('why') or 'the stage asked to be run again'}"
+    return None
+
+
+def _drive_reentries(rnd: Round, be, results: dict, name: str, res: dict) -> dict:
+    """Run `name` again for as long as it asks to be, recording every pass.
+
+        Bounded by `ROUTED_REENTRIES`, and a stage still asking at the bound is a stage in a
+        loop: the round is stopped by name rather than left to spin. A stage that asks to
+        re-enter and then asks for a model call is answered by the caller's wait loop on the
+        next turn, which is why this returns rather than swallowing that state.
+        
+    """
+    from ..model import router
+    trail = list(res.get("reentries") or [])
+    for _ in range(ROUTED_REENTRIES):
+        why = _reenter(res)
+        if not why:
+            break
+        trail.append(why)
+        print(f"   re-enter {name}: {why}", flush=True)
+        res = _pipeline.STAGES[name](rnd, be, results)
+        for _ in range(ROUTED_REENTRIES):
+            if not router().fulfil(res):
+                break
+            res = _pipeline.STAGES[name](rnd, be, results)
+    else:
+        return {**res, "status": "error", "stop": True, "reentries": trail,
+                "error": (f"{name} asked to be re-entered {ROUTED_REENTRIES} times and "
+                          f"is still asking: {trail[-1] if trail else 'no reason'}")}
+    if trail:
+        res = {**res, "reentries": trail}
+    return res
 
 
 def run(rnd: Round, stages=DETERMINISTIC, backend=None, wait: int = 0,
@@ -501,11 +622,12 @@ def run(rnd: Round, stages=DETERMINISTIC, backend=None, wait: int = 0,
             if not router().fulfil(res):
                 break
             res = _pipeline.STAGES[name](rnd, be, results)
+        res = _drive_reentries(rnd, be, results, name, res)
         while wait and _needs_model(res) and time.time() < deadline:
-            waiting = _needs_model(res)
-            for k in waiting:
-                bl = res[k].get("blinded") or {}
-                print(f"   waiting on {k}: WRITE {bl.get('write', res[k].get('request'))}"
+            for rec in _needs_model(res):
+                bl = rec.get("blinded") or {}
+                print(f"   waiting on {rec.get('role') or 'agent'}: "
+                      f"WRITE {bl.get('write', rec.get('write') or rec.get('request'))}"
                       + (f"  CHECK {bl['check']}" if bl.get("check") else ""),
                       flush=True)
             print(f"   sleeping {poll}s ({int(deadline - time.time())}s of patience "
@@ -516,10 +638,40 @@ def run(rnd: Round, stages=DETERMINISTIC, backend=None, wait: int = 0,
                 if not router().fulfil(res):
                     break
                 res = _pipeline.STAGES[name](rnd, be, results)
+            res = _drive_reentries(rnd, be, results, name, res)
         results[name] = res
         secs = round(time.perf_counter() - t0, 2)
         results[name].setdefault("seconds", secs)
         record("round", name=rnd.name, stage=name, seconds=secs)
+        # **A stage still waiting on an agent is a stage that has not finished.** The
+        # integration review drove this loop: a preview returning an unanswered judge
+        # job was followed by `parts`, because `wait=0` skips the loop above entirely
+        # and nothing after it asked whether the stage was still pending. Every stage
+        # downstream then ran against a candidate nobody had inspected, and the only
+        # thing preventing construction was a person restricting the stage list by hand.
+        # Pending is an **outcome**, like stopping: the round says what it is waiting
+        # for and where to write the answer, and the next invocation resumes at the same
+        # stage with the answer on disk. That is what makes a terminal agent a
+        # sufficient runtime rather than a thing the driver hopes somebody supervises.
+        waiting = _needs_model(res)
+        if waiting:
+            asks = []
+            for rec in waiting:
+                bl = rec.get("blinded") or {}
+                asks.append({"entry": rec.get("level") or rec.get("role") or "agent",
+                             "role": rec.get("role"),
+                             "request": bl.get("request") or rec.get("request"),
+                             "write": bl.get("write") or rec.get("write"),
+                             "check": bl.get("check")})
+            results["pending"] = {"stage": name, "waiting": asks,
+                                  "why": (f"{name} is waiting on {len(asks)} agent "
+                                          f"answer(s); the round resumes at this stage "
+                                          f"when they are written")}
+            for a in asks:
+                print(f"   PENDING {name}/{a['entry']}: WRITE {a['write']}"
+                      + (f"  READ {a['request']}" if a.get("request") else ""),
+                      flush=True)
+            break
         # A stage may declare the round over. A plan that fails validation twice stops
         # the round with the list, and the stages after it would otherwise route lanes
         # to footprints nobody accepted and lint a place nobody built. The only thing a

@@ -74,8 +74,14 @@ RADII = (512, 1024, 1536, 2048, 3072, 4096, 6144, 8192)
 #: How many candidates are measured for gravity blocks and reported with scores.
 SHORTLIST = 12
 
-#: How many go on the record. The spec's number.
-RECORDED = 3
+#: How many go on the record. The spec's number was three, and three is what a reader
+#: wants to see. The realization round raised it because the record is now *used*: a
+#: square whose padded ground the save cannot read is refused at the caching stage and
+#: the search takes the next one it ranked (`stages_plan._dry_site_search`), and with
+#: three on the record a run that hit three unreadable squares had nothing left to try
+#: while a hundred and ninety-two scored squares sat outside the list. A ranking nobody
+#: can walk down is a ranking of one.
+RECORDED = 12
 
 #: The tile the world is read in. 512 is one region file and loads in about five
 #: seconds; smaller costs more round trips and bigger runs the JVM out of heap.

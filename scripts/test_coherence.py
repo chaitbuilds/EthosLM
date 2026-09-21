@@ -325,8 +325,14 @@ class Coherence(unittest.TestCase):
 
     def test_plan_only_round_cannot_reach_a_build_stage(self):
         rnd = pipeline.Round(name="proof", sentence="a place", flags={"plan_only": True})
+        # `reading` is the architecture round's first plan-layer stage: what the
+        # sentence requires outright, and what was found out about it, before the spec
+        # is written. A plan-only round still stops at `plan`. ...and `interpret` is the
+        # realization round's, between them: what the sentence *means*, read by an agent
+        # and cross-checked by the rules, before the programme is designed from it.
         self.assertEqual(pipeline.default_stages(rnd),
-                         ("place_spec", "site_search", "site", "plateau", "plan"))
+                         ("reading", "interpret", "place_spec", "site_search", "site",
+                          "plateau", "plan"))
 
 
 if __name__ == "__main__":

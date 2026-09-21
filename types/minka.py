@@ -15,6 +15,13 @@ FORM = "east_asian"
 #: and a shop-house are both east Asian.
 ROLE = "rural"
 
+#: **What this type is for.** The realization round: a `ROLE` says what work a building
+#: is for and is satisfied by a hall, a barn or a temple alike; a sentence asking for
+#: houses people live in is asking for a `dwelling`. Declared so that the function can
+#: be checked rather than inferred from a label.
+FUNCTION = "dwelling"
+
+
 PARAMS = {
     "storeys": ("int", 1, 3),
     "plan": ("choice", ["hall", "wing", "outshot"]),
@@ -625,16 +632,39 @@ def build(b, part, seed, **params):
     res = None
     used = base
     used_storeys = storeys
-    for (foot, kw, rspec, st, outer) in tries:
+    won_kw, rung = {}, None
+    for i, (foot, kw, rspec, st, outer) in enumerate(tries):
         r = b.building(label, foot[0], foot[1], foot[2], foot[3],
                        storeys=st, roof=rspec, mat=mat, **kw)
         if r and r.get("ok"):
             res = r
             used = outer
             used_storeys = st
+            won_kw, rung = kw, i
             break
     if res is None:
-        return {"ok": False}
+        return {"ok": False,
+                "emitted": {"requested": {"storeys": storeys, "plan": plan},
+                            "storeys": 0, "attempt": None, "fallback": "no shell stood",
+                            "omitted": ["storeys", plan], "features": {}}}
+    # **What survived, said by the type.** The closure round. The ladder gives up the
+    # wing or the lean-to the plan asked for, then the dormers, then the roof, then a
+    # storey; the record says which rung stood and what it gave up.
+    emitted = {
+        "requested": {"storeys": storeys, "plan": plan},
+        "storeys": int(used_storeys), "attempt": int(rung),
+        "fallback": (None if rung == 0 else
+                     f"ladder rung {rung}: " + ("one storey fewer" if used_storeys < storeys
+                                                else "a plainer shell")),
+        "omitted": ([] if used_storeys >= storeys else ["storeys"])
+                   + ([plan] if plan in ("wing", "outshot") and plan not in won_kw else []),
+        "features": {"wing": "wing" in won_kw, "outshot": "outshot" in won_kw,
+                     "dormers": int(won_kw.get("dormers") or 0)},
+        "rects": {"main": list(used),
+                  **({"wing": list(res["wing"])} if res.get("wing") else {}),
+                  **({"outshot": list(res["outshot"])} if res.get("outshot") else {})},
+        "floors": list(res.get("floors") or []),
+    }
 
 
     eave_y = res.get("eave_y") or (fy + 4 * used_storeys)
@@ -694,4 +724,4 @@ def build(b, part, seed, **params):
     sv = b.seal_voids(px0, pz0, px1, pz1, b.block(b.voice["wall"]), max_cells=256)
     cw = b.check_walkable(label)
     ca = b.check_attached()
-    return {"ok": True, "purpose": purpose, "storeys": used_storeys}
+    return {"ok": True, "purpose": purpose, "storeys": used_storeys, "emitted": emitted}

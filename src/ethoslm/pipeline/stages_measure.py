@@ -31,6 +31,45 @@ def stage_lint(rnd: Round, be, results: dict) -> dict:
         region = (X, Z, X + s["size"] - 1, Z + s["size"] - 1)
     plots = json.load(open(rnd.rel("plots.json"))) \
         if os.path.exists(rnd.rel("plots.json")) else []
+    # **A sample is linted over the sample.** The integration review's finding, and it
+    # is a scoping error with a large and misleading output: `stage_parts` builds a
+    # construction sample -- two adjoining quarters and what joins them -- and this
+    # stage then read the whole place's plot registry and the whole place's region, so
+    # every plot of the other thirty-four districts was reported as a room nobody can
+    # walk into and a block held up by nothing. They were not built. A check whose scope
+    # and whose construction disagree is measuring the disagreement.
+    scope = None
+    built_rec = rnd.rel("parts.json")
+    if os.path.exists(built_rec):
+        rec = json.load(open(built_rec))
+        # **Every registry row carries the floor its part was sited at.** The expression
+        # round's rings baseline: `plots.json` on disk had no `y0` on any row (the
+        # construction stage's annotation does not reach the file on the parallel path),
+        # so `room_owner` could not tell a natural cave under the temple court from the
+        # great hall's interior and the whole town blocked on a 340-cell overhang the
+        # plateau had re-skinned. The construction record is authoritative for where
+        # each part stands; the registry the check reads is annotated from it here,
+        # always.
+        from .stages_build import floors_into
+        plots = floors_into(plots, [r for w in rec.get("waves") or []
+                                    for r in (w.get("parts") or [])])
+        if rec.get("sample"):
+            names = {r["part"] for w in rec.get("waves") or []
+                     for r in w.get("parts") or []}
+            plots = [p for p in plots if p.get("label") in names
+                     or p.get("name") in names]
+            r = rec["sample"].get("rect")
+            if r:
+                m = int(rec["sample"].get("margin") or 0)
+                region = (int(r[0]) - m, int(r[1]) - m,
+                          int(r[2]) + m, int(r[3]) + m)
+            scope = {"sample": True, "quarters": rec["sample"].get("quarters"),
+                     "parts": len(names), "plots": len(plots),
+                     "region": list(region) if region else None,
+                     "of_plan": rec["sample"].get("of_plan"),
+                     "why": ("this round built a construction sample, so the registry "
+                             "and the region are the sample's; the rest of the place "
+                             "was not built and is not linted as though it had been")}
     t0 = time.perf_counter()
     net = rnd.network()
     ctx = lint.Context.build(vol, plots, network=net, region=region,
@@ -40,35 +79,279 @@ def stage_lint(rnd: Round, be, results: dict) -> dict:
     counts = rep.to_json()["counts"]
     record("check", name="lint", settlement=rnd.name, errors=len(rep.errors),
            warnings=len(rep.warnings), seconds=secs)
-    return {"errors": len(rep.errors), "warnings": len(rep.warnings),
-            "counts": counts, "seconds": secs,
-            "e002_from_the_lane": _doors_from_the_lane(ctx, net),
-            "findings": [{"code": f.code, "message": f.message, "pos": f.pos}
-                         for f in rep.findings]}
+    access = _doors_from_the_lane(ctx, net, plan_entries(rnd.plan()))
+    out = {"errors": len(rep.errors), "warnings": len(rep.warnings),
+           "counts": counts, "seconds": secs,
+           **({"scope": scope} if scope else {}),
+           "e002_from_the_lane": access,
+           "findings": [{"code": f.code, "message": f.message, "pos": f.pos}
+                        for f in rep.findings]}
+    out["confirmed"] = _confirm_features(rnd, vol, ctx, net)
+    # **...and the built artifact is stamped over the record as it now stands.** The
+    # composition round, found by asking `deps.check(rnd, "built")` on a state that had
+    # just finished: `stage_parts` stamps `built` over `parts.json` and then *this*
+    # stage rewrites `parts.json` with the assembled world's answers, so the stamped
+    # output digest never matched the file again and every later invocation rebuilt 139
+    # parts to reproduce a world it already had. The confirmation is part of what a
+    # built candidate is; the stamp is re-made here, after it, over the same outputs.
+    with contextlib.suppress(Exception):
+        from .. import deps as _deps_l
+        _deps_l.stamp(rnd, "built",
+                      outputs=["parts.json", "world_built.npz"]
+                      + (["surfaces.json"]
+                         if os.path.exists(rnd.rel("surfaces.json")) else []),
+                      plan=rnd.plan(),
+                      note="re-stamped after the assembled-world confirmation rewrote "
+                           "the parts record")
+    # **A construction check that fails is an outcome, not a number in a report.** The
+    # review's fifth finding: "`stage_lint` returns errors and `stage_place_check`
+    # returns `holds: false`, but the driver's stop protocol requires `stop`; these
+    # outputs do not become corresponding controller outcomes." So a place whose
+    # buildings do not stand went on to be read, judged and reported as a finished run
+    # while its own physical check said otherwise. `blocks: construction` is the state
+    # this is: the place is built and it is not soundly built, which is distinct from a
+    # plan that is infeasible and from a place that is not the one asked for. **What
+    # this backend cannot measure is unmeasured, not absent and not harmless.** E005 is
+    # "connective blocks that never joined to their neighbours", and the join is
+    # computed by the *server*, in `Builder.flush`'s second pass with block updates on
+    # -- which `LiveBackend.publish` runs and a dry run, by construction, never does. So
+    # offline every fence, wall and pane in the place reports a missed join, and neither
+    # available answer was honest: blocking calls a place unsound for a pass nobody ran,
+    # and ignoring it is the "declare all errors harmless" the review named. It is
+    # reported by name, with the reason it is not measurable here, and the round says so
+    # rather than deciding.
+    unmeasured = [f for f in rep.errors if f.code in LIVE_ONLY_CODES] \
+        if not getattr(be, "live", False) else []
+    real = [f for f in rep.errors if f not in unmeasured]
+    if unmeasured:
+        out["unmeasured"] = {
+            "codes": sorted({f.code for f in unmeasured}),
+            "findings": len(unmeasured),
+            "why": ("these checks read block states the server computes when it writes "
+                    "the place -- the joins a fence, a wall and a pane make with their "
+                    "neighbours -- and this run built into a cached volume and wrote "
+                    "nothing. They are not measured here and are not evidence either "
+                    "way; a live write-back is what answers them")}
+    if real:
+        out.update({"status": "blocked", "stop": True, "blocks": "construction",
+                    "error": (f"the construction check reports {len(real)} "
+                              f"error(s) over what was built"
+                              + (" (a construction sample)" if scope else "")
+                              + ": " + "; ".join(
+                                  f"{f.code} {f.message}" for f in real[:4]))})
+    elif access.get("status") == "short":
+        out.update({"status": "blocked", "stop": True, "blocks": "construction",
+                    "error": (f"the built place is not one connected network: "
+                              + (access.get("why") or
+                                 f"{access.get('not_walkable_from_the_lane')} door(s) "
+                                 f"cannot be walked to from any entry the plan draws"))})
+    return out
 
 
-def _doors_from_the_lane(ctx, net) -> dict:
-    """E002's question asked from the lane instead of from the edge of the cache.
+def _confirm_features(rnd: Round, vol, ctx, net) -> dict:
+    """**Ask the assembled world what each part actually delivers**, and write it down.
 
-    The lane is the outdoors that a settlement's doors actually front onto, it is
-    walk-only end to end by construction, and it does not move when the cache does. So
-    this is the same check seeded from it. The registered bar still reads E002 as
-    registered; this says how much of the answer was the ground."""
+        The design round's third boundary, at the one point in the pipeline where the whole
+        place stands and the volume is already open. `construction.outcome` measures a
+        part's own emission *before its neighbours are built*, so a courtyard a later wall
+        filled in, a forge a terrace buried and a door the finishing pass paved over were
+        all still recorded as delivered. `construction.confirm` re-reads them here through
+        `ethoslm.usable`'s predicates, mutates `parts.json` where an answer moved, and leaves
+        `usable.json` beside it so a reader can see *how* each answer was got and what was
+        standing when it was read.
+
+        Reported and never raised: a predicate that cannot run leaves the emission record
+        exactly as it was, which is the weaker evidence it always had, and says so.
+        
+    """
+    from .. import construction, contracts, demand, usable
+    rec_p = rnd.rel("parts.json")
+    if not os.path.exists(rec_p):
+        return {"skipped": "no parts record: nothing was built to confirm"}
+    rec = json.load(open(rec_p))
+    # **The predicates this part owes, not a fixed three.** The composition round: the
+    # default ran `entrance_connected`, `equipment_reachable` and `court_accessible` on
+    # everything, so three of the six existed and no part was ever asked about the
+    # features *it* was required to deliver. The demand binding says what is required of
+    # what (`demand.required_by_part`), and `confirm` derives each part's predicate set
+    # from it. With no binding the answer is what it was.
+    binding = {}
+    try:
+        binding = demand.required_by_part(rnd.place_spec(),
+                                          contracts.load(rnd, "intent"), rnd.plan())
+    except Exception as e:                        # noqa: BLE001 -- reported, not raised
+        binding = {}
+        print(f"   confirm: no demand binding ({type(e).__name__}: {e}); the fixed "
+              f"predicate set is asked and nothing is bound per part", flush=True)
+    try:
+        world = usable.World(ctx, [r for w in rec.get("waves") or []
+                                   for r in (w.get("parts") or [])],
+                             digest=_content_print(rnd.rel("world_built.npz")),
+                             state=rnd.state, network=net, registry=ctx.plots)
+        got = construction.confirm(world, rec, required=binding or None)
+    except Exception as e:                        # noqa: BLE001 -- reported, not raised
+        return {"status": "unconfirmed",
+                "why": (f"the assembled-world predicates could not run "
+                        f"({type(e).__name__}: {e}); every feature keeps the evidence "
+                        f"its own emission gave it, which is weaker")}
+    json.dump(rec, open(rec_p, "w"), indent=1)
+    rows = []
+    for w in rec.get("waves") or []:
+        for r in w.get("parts") or []:
+            for want, a in ((r.get("emitted") or {}).get("usable") or {}).items():
+                rows.append({"part": r.get("part"), "type": r.get("type"),
+                             "want": want, "holds": a.get("holds"),
+                             "method": a.get("method"), "why": a.get("why"),
+                             "subjects": a.get("subjects")})
+    json.dump({"candidate": _candidate(rnd), "built_digest": world.digest,
+               "provenance": world.provenance(), "checks": rows,
+               "changed": got.get("changed"), "why": got.get("why")},
+              open(rnd.rel("usable.json"), "w"), indent=1)
+    print(f"   confirmed: {got['why']}", flush=True)
+    return {k: got[k] for k in ("parts", "why")} | {"moved": len(got.get("changed") or []),
+                                                    "written": rnd.rel("usable.json")}
+
+
+def _content_print(path: str):
+    from .. import deps
+    return deps.content_print(path)
+
+
+def _candidate(rnd: Round):
+    from .. import deps
+    try:
+        return deps.candidate_id(rnd)
+    except Exception:                             # noqa: BLE001 -- no plan, no candidate
+        return None
+
+
+#: How far from an entry's own column a lane stance may be and still be that entry's
+#: lane. A gate is a few blocks deep and its threshold is the lane on the inside of it.
+ENTRY_REACH = 12
+
+#: The lint codes whose evidence only a **live write-back** produces. `E005` asks
+#: whether a fence, a wall or a pane joined to its neighbours, and that state is
+#: computed by the server in `Builder.flush`'s block-update pass -- which
+#: `LiveBackend.publish` runs once at the end of a live round and an offline build never
+#: does. Listed here, by code, so that "this backend cannot answer it" is a decision on
+#: the record rather than a silence or a false failure.
+LIVE_ONLY_CODES = ("E005",)
+
+
+def plan_entries(plan: dict | None) -> list:
+    """The columns a place is walked into by: every passage point the plan draws.
+
+        A gate is what justifies a seed. Where a plan draws none there is no justified
+        entry, and `_doors_from_the_lane` says so rather than seeding the whole lane.
+        
+    """
+    from . import stages_media
+    out = []
+    for p in _pipeline.plan_parts(plan or {}):
+        if p.get("kind") == "point" and stages_media._passage(p) and p.get("at"):
+            out.append((int(p["at"][0]), int(p["at"][-1])))
+    return sorted(set(out))
+
+
+def entry_stances(seeds: list, entries) -> list:
+    """The lane stances at the place's own entries: where a walk in actually starts."""
+    out = []
+    for (ex, ez) in entries or []:
+        for (x, z, s) in seeds:
+            if abs(x - ex) <= ENTRY_REACH and abs(z - ez) <= ENTRY_REACH:
+                out.append((x, z, s))
+    return sorted(set(out))
+
+
+def _doors_from_the_lane(ctx, net, entries=None) -> dict:
+    """E002's question asked from the place's **entries** instead of from everywhere.
+
+        The lane is the outdoors that a settlement's doors actually front onto, it is
+        walk-only end to end by construction, and it does not move when the cache does. So
+        this is the same check seeded from it.
+
+        **From the entries, and the whole lane reported beside it.** The review:
+
+          > The sample's zero unreachable-door result does not establish one connected
+          > network: `_doors_from_the_lane` seeds its walk from every lane stance, across
+          > all components. E007 simultaneously reports a disconnected component of 5,922
+          > stances.
+
+        Seeding every stance asks each island whether it can reach itself. So the walk now
+        starts at the gates the plan draws -- `entries`, as `(x, z)` columns -- and the
+        number of lane components is reported whether or not a door is short, because a
+        place whose lanes are in three pieces has not got one network however its doors
+        come out. With no entry given, this says so and does not certify anything.
+        
+    """
     from .. import lint
     if not net:
         return {"note": "no circulation network in this round"}
     seeds = lint.lane_stances(ctx.nav, net)
     if not seeds:
         return {"note": "no lane cell can be stood on"}
-    reach = set(ctx.nav.flood(seeds, max_jumps=0))
+    # the lane's own shape, whatever the doors do: one flood per unvisited stance
+    left, pieces = set(seeds), []
+    while left:
+        start = next(iter(left))
+        got = set(ctx.nav.flood([start], max_jumps=0)) & left
+        pieces.append(len(got) or 1)
+        left -= (got or {start})
+    pieces.sort(reverse=True)
+    at = entry_stances(seeds, entries)
+    entries_from = "the plan's passage points"
+    if not at and not entries:
+        # **An unwalled place is entered where its lanes reach the outside.** The
+        # closure round's proof: a village with no wall draws no gate, so this check had
+        # no justified seed and answered `unresolved` for a place whose lanes were one
+        # piece. The lane stances at the outer edge of the lane network -- within
+        # `ENTRY_REACH` of its own bounding box -- are where a walk in begins, and the
+        # record says that is the rule it used.
+        xs = [x for x, _z, _s in seeds]
+        zs = [z for _x, z, _s in seeds]
+        x0, x1, z0, z1 = min(xs), max(xs), min(zs), max(zs)
+        at = sorted({(x, z, s) for (x, z, s) in seeds
+                     if min(x - x0, x1 - x, z - z0, z1 - z) <= ENTRY_REACH})
+        entries_from = "unwalled: the lane network's outermost stances"
+    if not at:
+        return {"doors": len(ctx.doors), "lane_stances": len(seeds),
+                "lane_components": len(pieces), "component_sizes": pieces[:6],
+                "status": "unresolved",
+                "note": (f"this plan draws no entry within {ENTRY_REACH} columns of a "
+                         f"standable lane cell, so where a walk into the place begins "
+                         f"is not something it says; seeding every lane stance would "
+                         f"only show that each of {len(pieces)} component(s) reaches "
+                         f"itself"),
+                "e002_seeds": ctx.outdoor_seeds}
+    reach = set(ctx.nav.flood(at, max_jumps=0))
     bad = []
     for (x, y, z) in ctx.doors:
         s = ctx.door_stance(x, y, z)
         if s is None or (x, z, s) not in reach:
             bad.append([x, y, z])
+    stranded = len([s for s in seeds if s not in reach])
+    # **One network, not one network per gate.** The review: this returned `connected`
+    # for two disconnected components whenever each of them happened to have an entry
+    # near it -- the flood is seeded from every entry at once, so a place in two pieces
+    # with a gate into each piece reaches every door and strands no stance, and the
+    # number this check exists to produce says the place is joined up. It is not: a
+    # walker cannot get from one piece to the other. So the lane's own connectedness is
+    # a clause of the answer and not a figure printed beside it.
+    one_network = len(pieces) <= 1
     return {"doors": len(ctx.doors), "not_walkable_from_the_lane": len(bad),
-            "lane_stances": len(seeds), "examples": bad[:8],
-            "e002_seeds": ctx.outdoor_seeds}
+            "lane_stances": len(seeds), "entry_stances": len(at),
+            "entries": len(entries or []), "entries_from": entries_from,
+            "lane_components": len(pieces),
+            "component_sizes": pieces[:6], "one_network": one_network,
+            "lane_stances_not_reached_from_an_entry": stranded,
+            "status": ("connected" if not bad and not stranded and one_network
+                       else "short"),
+            "why": ("" if one_network else
+                    f"every door is reachable and the lanes are in {len(pieces)} "
+                    f"pieces ({', '.join(str(n) for n in pieces[:4])} stances): each "
+                    f"piece has an entry of its own, so a walk from one gate reaches "
+                    f"that piece and no other. Connected access is one network"),
+            "examples": bad[:8], "e002_seeds": ctx.outdoor_seeds}
 
 
 def stage_measures(rnd: Round, be, results: dict) -> dict:
@@ -762,7 +1045,8 @@ def _m_e002_from_the_lane(rnd, be, results, bar) -> dict:
     rep = lint.lint(ctx)
     e002 = [f for f in rep.findings if f.code == "E002"]
     return {"got": len(e002), "findings": [f.message for f in e002][:8],
-            "from_the_lane": _doors_from_the_lane(ctx, net)}
+            "from_the_lane": _doors_from_the_lane(ctx, net,
+                                                  plan_entries(rnd.plan()))}
 
 
 def _m_own_lint_errors(rnd, be, results, bar) -> dict:
@@ -1801,9 +2085,243 @@ def built_volumes(rnd) -> tuple:
             offline.load_volume(gp) if os.path.exists(gp) else None)
 
 
+QUALIFY_BRIEF = """# Is what was built the place that was asked for?
+
+> {sentence}
+
+You are the **judge**, and this is the last question the run asks. Every physical fact
+about this place has already been measured; what is left are the obligations no
+measurement can close -- whether the result is recognisably the named place, and whether
+it is actually built in the tradition that was asked for.
+
+Answer from **what was built**, listed below. Do not answer from the sentence, from the
+plan's intentions, or from what the place was supposed to be.
+
+## What was built
+
+{built}
+
+## What was looked at
+
+{looked}
+
+## What the research established
+
+{claims}
+
+## The obligations open at this point
+
+{open}
+
+## Output
+
+Write a single JSON file to {out}:
+
+```json {{"verdicts".
+
+`about` is `identity` or `tradition`; `name` is the name or tradition it is about. Use
+`"holds"` instead of `"recognisable"` for anything that is not an identity. **A verdict
+must cite the claims it rests on**: a judgement with no evidence behind it does not close
+an obligation, and one that cites research the run never did is refused. Say `false` and
+why, plainly, where the result does not carry it. Refusing is a legitimate outcome and it
+is a more useful one than a generous pass.
+"""
+
+
+def _open_obligations(rnd) -> list:
+    """The requirements only a judgment can close, as they stand now.
+
+        `identity` and `tradition`: everything else in this build is measured, and an
+        obligation that a measurement can close is not asked of a judge.
+        
+    """
+    from .. import contracts
+    rec = contracts.load(rnd, "intent") or {}
+    return [r for r in rec.get("requirements") or []
+            if r.get("kind") in ("identity", "tradition")
+            and r.get("status") not in ("satisfied", "unsupported")]
+
+
+def stage_qualify(rnd, be, results: dict) -> dict:
+    """**The inspection that closes what no measurement can**, bound to this candidate.
+
+        The review's fifth finding, both halves of it: this build had an identity evaluator
+        that no production call ever supplied a judgment to, and a final place reader that
+        supplied neither reading, capabilities nor judgment to the requirements -- an
+        isolated false-pass interface beside an unreachable success route. This stage is the
+        production path between them.
+
+        It runs after construction and before the place is read, because the question is
+        about what was built. Its answer is a `judgment` record naming the candidate it is
+        of, the outputs it looked at and the claims each verdict rests on; `stage_place_check`
+        consumes it only where that candidate is the one in hand, so an inspection cannot
+        survive the design it was made of.
+
+        A round with nothing for a judge to close -- no named place, no tradition asked for --
+        skips, and says so.
+        
+    """
+    from .. import contracts, deps
+    if not rnd.sentence:
+        return {"skipped": "this round carries no sentence"}
+    plan = rnd.plan()
+    if not plan:
+        return {"skipped": "no plan.json: there is nothing built to judge"}
+    open_rows = _open_obligations(rnd)
+    if not open_rows:
+        return {"skipped": "this request carries no identity or tradition obligation "
+                           "that a measurement has left open"}
+    here = deps.candidate_id(rnd, plan=plan)
+    got = contracts.load(rnd, "judgment")
+    if got is not None and got.get("candidate") == here:
+        return {"skipped": "already judged, and of this candidate",
+                "verdicts": len(got["verdicts"]), "candidate": here}
+    answer_p = rnd.rel("judgment.answer.json")
+    if got is not None and got.get("candidate") != here:
+        # the candidate moved under a finished inspection: the verdicts are about a
+        # design that is gone and are withdrawn rather than carried forward
+        for f in ("judgment.json", "judgment.answer.json"):
+            if os.path.exists(rnd.rel(f)):
+                os.replace(rnd.rel(f), rnd.rel(f"stale.{here}.{f}"))
+        deps.invalidate(rnd, "judgment",
+                        f"the candidate moved to {here} after this inspection")
+        print(f"   qualify: the judgment on disk is of candidate "
+              f"{got.get('candidate')} and this is {here}; it is withdrawn and the "
+              f"place is judged again", flush=True)
+    job_p = rnd.rel("judgment.job.json")
+    job = json.load(open(job_p)) if os.path.exists(job_p) else None
+    if job is not None and job.get("candidate") != here:
+        # **A pending answer is bound to the candidate it was asked of.** The review's
+        # counterexample through this very stage: a job staged for candidate A, its
+        # answer written, the plan replaced by B, the stage resumed -- and A's answer
+        # was adopted as B's judgment. The job record carries the candidate; an answer
+        # that arrives for a candidate that is gone is set aside by name and the
+        # question is asked again of the design in hand.
+        for f in ("judgment.answer.json", "judgment.job.json", "qualify_prompt.md"):
+            if os.path.exists(rnd.rel(f)):
+                os.replace(rnd.rel(f), rnd.rel(f"stale.{job.get('candidate')}.{f}"))
+        print(f"   qualify: the judge job on disk was asked of candidate "
+              f"{job.get('candidate')} and this is {here}; its answer, if any, is set "
+              f"aside and the place is judged again", flush=True)
+        job = None
+    if not os.path.exists(answer_p):
+        built = _built_says(rnd, plan, results)
+        looked = _looked_at(rnd)
+        # **A plan is not something built.** The review's counterexample through this
+        # stage: `plan.json` alone counted as inspectable output and a judge was asked
+        # about a place nobody had constructed. A judge looks at the built volume or at
+        # pictures of it; with neither, the obligation stays open and says why.
+        if not any(str(x).endswith("world_built.npz") or str(x).endswith(".png")
+                   for x in looked):
+            return {"status": "unresolved", "plan_only": True,
+                    "error": ("nothing has been built or rendered for this candidate -- "
+                              "a plan is not inspectable output -- so there is nothing "
+                              "for a judge to look at; the identity and tradition "
+                              "obligations stay open"),
+                    "obligations": [r["id"] for r in open_rows]}
+        reading = contracts.load(rnd, "reading") or {}
+        claims = [c for c in reading.get("claims") or [] if c.get("says")]
+        brief_p = rnd.rel("qualify_prompt.md")
+        open(brief_p, "w").write(QUALIFY_BRIEF.format(
+            sentence=rnd.sentence, built=built, out=answer_p,
+            looked="\n".join(f"- `{os.path.basename(p)}` -- {p}" for p in looked),
+            claims=("\n".join(f"- `{c.get('id')}` {c['says']}"
+                              + ("" if c.get("source") else "  (inferred, no source)")
+                              for c in claims[:24])
+                    or "(nothing was sourced about this request)"),
+            open="\n".join(f"- `{r['id']}` -- {r['says']}: {r.get('why') or ''}"
+                           for r in open_rows)))
+        json.dump({"candidate": here, "request": brief_p, "write": answer_p,
+                   "obligations": [r["id"] for r in open_rows],
+                   "looked_at": looked, "t": time.strftime("%Y-%m-%dT%H:%M:%S")},
+                  open(job_p, "w"), indent=1)
+        return {"judgment": {
+            "status": "needs_model", "role": "judge", "request": brief_p,
+            "write": answer_p, "candidate": here,
+            "images": [p for p in looked if p.endswith(".png")][:8],
+            "note": (f"{len(open_rows)} obligation(s) no measurement can close, judged "
+                     f"against what was built")}}
+    doc = json.load(open(answer_p))
+    rec = contracts.make("judgment", sentence=rnd.sentence, candidate=here,
+                         looked_at=_looked_at(rnd),
+                         verdicts=list(doc.get("verdicts") or []),
+                         note=str(doc.get("note") or "")
+                              or "an inspection of what was built, bound to the "
+                                 "candidate it looked at")
+    contracts.save(rnd, "judgment", rec)
+    with contextlib.suppress(ValueError):
+        deps.stamp(rnd, "judgment", outputs=["judgment.json"], plan=plan,
+                   note=f"{len(rec['verdicts'])} verdict(s)")
+    for v in rec["verdicts"]:
+        said = v.get("recognisable") if v.get("recognisable") is not None else v.get("holds")
+        print(f"   judged {v.get('about')}/{v.get('name') or '-'}: "
+              f"{'yes' if said else 'NO'} -- {str(v.get('why'))[:110]}", flush=True)
+    return {"verdicts": len(rec["verdicts"]), "candidate": here,
+            "judged": [{"about": v.get("about"), "name": v.get("name"),
+                        "holds": (v.get("recognisable") if v.get("recognisable")
+                                  is not None else v.get("holds"))}
+                       for v in rec["verdicts"]]}
+
+
+def _looked_at(rnd) -> list:
+    """Every output of this candidate a judge can actually look at, in order."""
+    out = []
+    # **The built world's own views first.** The fresh checker: the judge was handed the
+    # preview's type cards and maps and never the inspection stage's pictures of what
+    # was actually built.
+    for rel in ("inspection", "renders", "frames", "preview"):
+        d = rnd.rel(rel)
+        if os.path.isdir(d):
+            out += [os.path.join(d, f) for f in sorted(os.listdir(d))
+                    if f.endswith(".png") and not f.startswith("stale.")]
+    for f in ("world_built.npz", "parts.json", "plan.json"):
+        if os.path.exists(rnd.rel(f)):
+            out.append(rnd.rel(f))
+    return out
+
+
+def _built_says(rnd, plan: dict, results: dict) -> str:
+    """What stands, in the judge's own terms: the parts, the lint and the access."""
+    parts = _pipeline.plan_parts(plan)
+    pr = rnd.rel("parts.json")
+    rec = json.load(open(pr)) if os.path.exists(pr) else (results.get("parts") or {})
+    rows = [r for w in (rec.get("waves") or []) for r in (w.get("parts") or [])]
+    stood = sum(1 for r in rows if r.get("stood", r.get("status") == "built"))
+    # **What stands, by type -- not what the plan names.** The fresh checker: the brief
+    # said "row_house x15, farmstead x7, minka x2" for a sample in which three row
+    # houses and no farmhouse had been built.
+    by_type: dict = {}
+    src = [{"kind": r.get("kind", "plot"), "type": r.get("type")}
+           for r in rows if r.get("stood", r.get("status") == "built")] or parts
+    for p in src:
+        if p.get("kind", "plot") == "plot" and p.get("type"):
+            by_type[p["type"]] = by_type.get(p["type"], 0) + 1
+    sample = rec.get("sample") or {}
+    lint = results.get("lint") or {}
+    lines = [f"- **{len(parts)} leaf/leaves planned**, {stood} standing in the built "
+             f"world" + (f" -- a construction SAMPLE of {sample.get('plots')} plot(s) in "
+                         f"{', '.join(sample.get('quarters') or [])}; the rest of the plan "
+                         f"is not built and cannot be judged" if sample else "")
+             if rec else f"- **{len(parts)} leaf/leaves planned**; no parts "
+             f"record, so nothing is recorded as standing",
+             "- standing, by type: " + (", ".join(f"`{t}` x{n}" for t, n in
+                                                 sorted(by_type.items(), key=lambda kv: -kv[1])[:10])
+                                       or "nothing")]
+    if lint:
+        lines.append(f"- the construction check reports {lint.get('errors', '?')} "
+                     f"error(s) and {lint.get('warnings', '?')} warning(s)")
+        acc = lint.get("e002_from_the_lane") or {}
+        if acc.get("status"):
+            lines.append(f"- access: {acc['status']} -- {acc.get('lane_components')} "
+                         f"lane component(s), "
+                         f"{acc.get('not_walkable_from_the_lane')} door(s) not "
+                         f"reachable from an entry")
+    return "\n".join(lines)
+
+
 def stage_place_check(rnd, be, results: dict) -> dict:
     """`ethoslm.placeread.read`, as a stage, and it runs no model. Its answer is a bar."""
-    from .. import pipeline, placeread
+    from .. import contracts, pipeline, placeread
     spec = rnd.place_spec()
     if spec is None:
         return {"skipped": "this round has no place.json, so there is no spec to read "
@@ -1815,15 +2333,109 @@ def stage_place_check(rnd, be, results: dict) -> dict:
     parts_rec = json.load(open(pr)) if os.path.exists(pr) else (
         results.get("parts") or {})
     built, base = built_volumes(rnd)
+    # **The sentence's own requirements, against the resolved design.** The architecture
+    # round: the `asked/...` clauses check what the request said outright, and two of
+    # them -- the layout policy and what the buildings face -- are facts about the
+    # *resolution* rather than about any one part, so the record that carries them is
+    # read here and handed in. Without it those clauses answer `unresolved`, which is
+    # honest and useless. **The judgment, where there is one of *this* candidate.** See
+    # `stage_qualify`. A verdict about the design before a revision is evidence about a
+    # place that is gone, so the identity it would close stays open and says why --
+    # which is the difference between an inspection bound to a candidate and one merely
+    # stored beside it.
+    from .. import deps as deps_mod
+    judgment = contracts.load(rnd, "judgment")
+    here = deps_mod.candidate_id(rnd, plan=plan)
+    if judgment is not None and judgment.get("candidate") != here:
+        print(f"   place read: the judgment on disk is of candidate "
+              f"{judgment.get('candidate')} and this place is {here}; it is not read "
+              f"against this one", flush=True)
+        judgment = None
     got = placeread.read(spec, plan, parts_rec,
                          voice=rnd.voice_name() or None,
                          site=pipeline.settlement_site(rnd), built=built, base=base,
-                         plateau=pipeline.plateau_record(rnd))
+                         plateau=pipeline.plateau_record(rnd),
+                         intent_rec=contracts.load(rnd, "intent"),
+                         resolution=contracts.load(rnd, "resolution"),
+                         reading=contracts.load(rnd, "reading"),
+                         capabilities=contracts.load(rnd, "capabilities"),
+                         judgment=judgment,
+                         # the solved place's own layout record: where the rings stand
+                         # and how high, which is what `rings/elevation` is asked of
+                         layout=(json.load(open(rnd.rel("plan.place.json"))).get("layout")
+                                 if os.path.exists(rnd.rel("plan.place.json")) else None))
+    # **Open material findings of the built world block completion.** The expression
+    # round: the inspection's findings were a report appended after the fact, and the
+    # farm finished with its square thirteen times its cottages still recorded. The
+    # improve stage writes a disposition for every finding; a material one still open --
+    # no owner action, a refused action, or a spent budget -- is a clause this read
+    # fails on, at built evidence, and says which. Optional findings never block.
+    # **...and the ledger is what is asked, not the last reading.** The design round: a
+    # judged finding and an emitted construction constraint are obligations of one
+    # shape, they survive a reading that omits them, and an applied action that moved
+    # nothing leaves its row owed. `obligations.json` is the record; the dispositions
+    # file beside it is a projection of it for readers that predate the ledger.
+    from .. import obligation as obligation_mod
+    led = obligation_mod.load(rnd.state)
+    disp_p = rnd.rel("inspection", "dispositions.json")
+    ran = bool(led.get("passes")) or os.path.exists(disp_p)
+    if ran:
+        owed = obligation_mod.open_rows(led, material=True)
+        loose = obligation_mod.undisposed(led)
+        got["clauses"].append({
+            "clause": "built/findings", "holds": not owed,
+            "method": "observed",
+            "evidence": "built_sample" if (parts_rec or {}).get("sample") else "built_place",
+            "says": (f"{len(led.get('rows') or {})} obligation(s) of the built world, "
+                     f"{len(owed)} material and open: "
+                     + "; ".join(f"{r.get('id')} ({r.get('owner')}, {r.get('origin')}) "
+                                 f"{str(r.get('says'))[:80]}" for r in owed[:6])
+                     if owed else
+                     f"{len(led.get('rows') or {})} obligation(s) of the built world, "
+                     f"none material and open"
+                     + (f"; {len(loose)} optional row(s) nobody has disposed of"
+                        if loose else "")),
+            "open": [r.get("id") for r in owed],
+            "undisposed": [r.get("id") for r in loose],
+            "ledger": rnd.rel(obligation_mod.RECORD),
+            "dispositions": {r.get("id"): r.get("disposition")
+                             for r in obligation_mod.table(led)}})
+        if owed:
+            got["holds"] = False
+            got["got"] = 0
+            got["failed"] = list(got.get("failed") or []) + ["built/findings"]
+    else:
+        got["clauses"].append({
+            "clause": "built/findings", "holds": None, "evidence": "unobserved",
+            "method": "unsupported",
+            "says": "no obligations of the built world were recorded for this "
+                    "candidate (the improve stage did not run)"})
+    # **Of this candidate and this built world.** The fresh checker: the place read
+    # named neither, so nothing bound it to the parts record it judged.
+    got["candidate"] = here
+    got["built_digest"] = deps_mod.content_print(rnd.rel("world_built.npz"))
+    got["parts_candidate"] = (parts_rec or {}).get("candidate")
     p = rnd.rel("place_read.json")
     json.dump(got, open(p, "w"), indent=1)
+    with contextlib.suppress(ValueError):
+        deps_mod.stamp(rnd, "place_read", outputs=["place_read.json"], plan=plan,
+                       note="holds" if got["holds"] else "fails")
     print(f"  place read: {'HOLDS' if got['holds'] else 'FAILS'}"
           + (f" on {', '.join(got['failed'])}" if got["failed"] else ""), flush=True)
     for c in got["clauses"]:
         print(f"   {'ok  ' if c['holds'] else 'MISS'} {c['clause']:28} {c['says']}",
               flush=True)
-    return {**got, "written": p}
+    out = {**got, "written": p}
+    if not got["holds"]:
+        # **And a place that is not the place asked for says so as an outcome.** The
+        # same finding as `stage_lint` above, at the other end of the run: `holds:
+        # false` was a field and the round went on to its readout reporting a finished
+        # place. `blocks: fidelity` is what this is -- the buildings stand, and the
+        # result is not what the sentence asked for -- and it is deliberately a
+        # different state from an unsound construction and from an infeasible plan.
+        out.update({"status": "blocked", "stop": True, "blocks": "fidelity",
+                    "error": (f"the built place does not answer the request it was "
+                              f"made from: "
+                              + "; ".join(str(c["says"])[:120] for c in got["clauses"]
+                                          if c["holds"] is False)[:600])})
+    return out
