@@ -1455,7 +1455,14 @@ REVISION_FILES = ("plan.", "district_", "place.json", "place.checked.json",
                   # was outside the snapshot for the same reason and is the one file the
                   # terraces pass actually rewrites.
                   "layout_repairs.json", "plan_repairs.json", "reallocations.json",
-                  "world.npz", "world_built.npz", "world.quarters-from.npz")
+                  "world.npz", "world_built.npz", "world.quarters-from.npz",
+                  # **the parent's regional decisions and the markers of what they
+                  # laid** (the fabric reset round): a rolled-back plan beside the
+                  # rejected candidate's strip cut, or without the `.laid` marker that
+                  # tells the next pass its district was already re-laid for its form,
+                  # is two designs at once. The ring levels are the ground those cuts
+                  # were screened at.
+                  "sectors.", "terrace_levels.json")
 
 #: The preview directory is part of the candidate too: a reading and a drawing are
 #: judgments **of a particular plan**, and keeping them across a rollback is how a
@@ -1657,7 +1664,10 @@ def _apply_revision(rnd: Round, be, spec: dict, doc: dict) -> dict:
         # moved -- "the circulation pass reserved no doorstep for this part" for every
         # house in the district. The snapshot puts them back if the revision is refused
         # for a reason of its own.
-        for f in ("plan.json", "plots.json", "network.json", "circulation.json"):
+        from .. import local as _local_r
+        for f in ("plan.json", "plots.json") + (
+                ("network.json", "circulation.json") if _local_r.scope_of(rnd) is None
+                else ()):
             if os.path.exists(rnd.rel(f)):
                 os.remove(rnd.rel(f))
         # **And the districts the revision is about.** A character revision changes what
@@ -1667,11 +1677,9 @@ def _apply_revision(rnd: Round, be, spec: dict, doc: dict) -> dict:
         # allocation the *old* fabric had been given and none of the capacity re-ask or
         # the recovery ladder ran. The shore village's revision was rolled back for a
         # cover it missed by forty-two columns while its own rectangle held two more
-        # houses than it had been asked for.
-        for f in sorted(os.listdir(rnd.state)):
-            if f.startswith(("plan.district.", "district_")) \
-                    and os.path.isfile(rnd.rel(f)):
-                os.remove(rnd.rel(f))
+        # houses than it had been asked for. (under a local scope, not those outside it:
+        # `local.retire_plans`)
+        _local_r.retire_plans(rnd)
         # **A revision the principal asked for is a new design, and it gets the plan
         # stage's budget rather than the remains of the one before it.** The run-wide
         # cap on plan repairs exists to bound a *loop* -- each applied repair makes a
@@ -1764,13 +1772,13 @@ def _repair_pass(rnd: Round, be, spec: dict, rec: dict, site) -> dict:
     # smaller capacity and re-opens the same finding one size down. Found by running
     # both. What is dropped is what is downstream of the target: the districts, whose
     # lot sizes come from it, and the plan assembled out of them.
-    doomed = ["plan.json", "plots.json", "network.json", "circulation.json"]
+    from .. import local as _local_r
+    doomed = ["plan.json", "plots.json"] + (["network.json", "circulation.json"]
+                                            if _local_r.scope_of(rnd) is None else [])
     for f in doomed:
         if os.path.exists(rnd.rel(f)):
             os.remove(rnd.rel(f))
-    for f in sorted(os.listdir(rnd.state)):
-        if f.startswith(("plan.district.", "district_")) and os.path.isfile(rnd.rel(f)):
-            os.remove(rnd.rel(f))
+    _local_r.retire_plans(rnd)
     from .. import deps as _deps
     with contextlib.suppress(ValueError):
         _deps.stamp(rnd, "plan", outputs=["plan.place.json"],

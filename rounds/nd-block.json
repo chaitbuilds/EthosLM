@@ -1,0 +1,73 @@
+{
+ "name": "nd-block",
+ "sentence": "Build Ringed City.",
+ "flags": {
+  "dry_run": true,
+  "seed": 1,
+  "max_new_squares": 0,
+  "workers": 3,
+  "memory_kb": 15000000,
+  "parts_bound_seconds": 3600,
+  "improve": {
+   "cycles_per_candidate": 1,
+   "cycles_per_lineage": 2
+  },
+  "section": {
+   "id": "gate_block",
+   "rect": [
+    -5800,
+    640,
+    -5700,
+    750
+   ],
+   "boundary": "great_wall_middle_ring",
+   "gate": "ring_gate_middle_ring",
+   "sides": {
+    "crowded": "lower_ring",
+    "calm": "middle_ring"
+   },
+   "demonstrate": [
+    "a street of the crowded fabric with building along its frontage rather than grass verges, and the houses standing against each other where the plan said they do",
+    "variation in height, depth or frontage along one terrace, within one architectural language and inside what each lot admits",
+    "the ground between the terraces belonging to somebody: a court the buildings enclose and a person can walk into, or a yard with an owner, and not a leftover lawn",
+    "the ground each side is prepared on being ground its buildings can be founded on, with the earthwork actually performed inside the bound the count was derived under, and the step between the two fabrics a seam a person can walk",
+    "the gate reached on foot from both sides of the boundary it stands in, walked on the assembled blocks"
+   ]
+  },
+  "material": true,
+  "axis_side": "north"
+ },
+ "preregistered": {
+  "written_before": "any new candidate was compiled, anything was built or read",
+  "model": "no API key and no retrieval provider is configured; the terminal agent answers every staged job.",
+  "section_extent": {
+   "registered_as": "a block-sized rectangle spanning the boundary gate and both inhabited fabrics, chosen for its ground",
+   "rect": [
+    -5800,
+    640,
+    -5700,
+    750
+   ],
+   "columns": 11211,
+   "share_of_section": "23.3% of the registered section's 48,051 columns",
+   "why_here": "unchanged from `rounds/sd-block.json`, which measured it on the observed baseline\n`out/nb-city/world.before-plateau.npz` before that round ran: 11,211 columns, 4.7%\nstanding water, bed from y=35 to y=104, and 72% of it within eight blocks of its own\nmedian and dry. The gate `ring_gate_middle_ring` stands at (-5761, 692), 39 columns from\nthe nearest edge, so the selection rule's 16-column clearance is kept. It is the only\ncandidate that carries the gate, both fabrics, the boundary and the grade together.\nKeeping it is deliberate.",
+   "out_of_scope": "everything the section is for: the whole of both fabrics, the market, the continuous route from the outer gate, whole-city identity"
+  },
+  "expectations": {
+   "decision_first": "the attachment, frontage and admitted storeys of each leaf reach construction, so a planned attached terrace stands as a terrace and its party walls meet",
+   "ground_first": "the block's districts are terraced at the level `placeplan.district_ground` chose for them, their counts are derived from `placeplan.developable_columns` over the ground that can carry a building, and the earthwork laid is inside the same bound",
+   "architecture_not_labels": "every functional claim rests on a final-world predicate run on the assembled world after all construction",
+   "outcome": "a built, checked and inspected block whose ground, street, frontage, court and roofline can be looked at and improved cheaply -- or a stop naming what could not be laid and why"
+  },
+  "bounds": {
+   "improve_cycles": "1 per candidate, 2 per lineage",
+   "parts": "3600 s, 15 GB address space, 3 workers",
+   "sites": "cached squares only (max_new_squares 0)"
+  },
+  "seeded_from": "out/nd-city, copied after its plan, ground, terraces and circulation: the block shares the city's plan, its prepared ground and its roads and differs only in which extent is built, which is what makes it cheap enough to be the iteration unit",
+  "commands": {
+   "run": "\"$PY\" scripts/round.py rounds/nd-block.json --dry-run --stage parts,finish,lint,material,section",
+   "views": "\"$PY\" scripts/section_views.py --state out/nd-block --label <label> --out out/nd-views/block-<label> --section -5800,640,-5700,750"
+  }
+ }
+}

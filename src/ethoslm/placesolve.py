@@ -362,6 +362,27 @@ def allocation_of(spec: dict | None, allocation: dict | None = None) -> dict:
     return out
 
 
+def adopted_arrangement(allocation: dict | None, *names) -> dict | None:
+    """**The one adopted arrangement for this subject**, from the allocation, under the
+        first of `names` that carries one; `None` where none does.
+
+        One accessor, and every layer reads it: the ring layout, the relation layout, the
+        district compile's agreement check and the revision that writes it. `names` are tried
+        in order so a caller can ask for a district's own row before its defining part's --
+        a local fabric decision is the district's where one was recorded, and the part's
+        otherwise.
+        
+    """
+    arr = (allocation or {}).get("arrangement") or {}
+    if not isinstance(arr, dict):
+        return None
+    for n in names:
+        got = arr.get(str(n)) if n else None
+        if isinstance(got, dict) and got:
+            return dict(got)
+    return None
+
+
 #: **Where a run's probed envelopes are kept**: `out/<round>/envelopes.json`, set for
 #: the duration of a solve by `solve_place(envelope_cache=)` and written on the place as
 #: `layout.envelope_cache`, which the compiler reads. A module global because the sizing
@@ -478,13 +499,39 @@ def fabric_lot(part: dict, decls: dict, spec: dict | None = None, *,
               else "")]
     house = None
     pool = list((demand or {}).get("types") or part.get("fabric_types") or [])
-    for n2, d in dc.house_types(decls, role, (spec or {}).get("form"),
-                                approved=pool or None):
-        house = (n2, d)
-        break
+    admits = dc.house_types(decls, role, (spec or {}).get("form"), approved=pool or None)
+    # **A district's lot is not sized by the alphabet.** The neighbourhood round, found
+    # by the generator stream while repairing `court_large`: `house_types` ranks a pool
+    # it was *given* by that pool's own order -- which is the layout owner's decision
+    # and is preserved -- and ranks the **unrestricted library** by role and then by
+    # *name*. So the lot of every district with no approved pool was clamped into the
+    # band of whichever admitted type sorts first alphabetically. For role `urban` that
+    # is `court_large`, and when its declared floor rose from 6 to 9 -- an honest
+    # correction: at 6x6 the type raised `empty range in randint` and at 8x8 it
+    # published a 2x2 light well as a court -- the ringed fixture's `lower_ring` lot
+    # went 10x10 to 13x13, its land need 5,495 to 9,286 columns, and a town that had
+    # laid on its own least footprint was refused on the shares check. No decision
+    # anywhere had changed. A lot the fabric's own arithmetic produced is clamped into
+    # the band of the **smallest** admitted type, because that is the type the lot has
+    # to fit *at least* one of; a bigger type's floor is a statement about that type and
+    # not about the district. Where a pool was given, its first entry is the fabric
+    # decision somebody made and it stays authoritative (the review's second finding:
+    # re-ordering an approved pool must reach the compiler).
+    if admits:
+        house = admits[0]
+        if not pool:
+            def _floor(d):
+                lo, hi, _ex = dc._plot_range(d)
+                return (int(lo) * int(lo), int(hi), str(d.get("type") or ""))
+            house = min(admits, key=lambda nd: _floor(nd[1]))
     if house is not None and not ch.get("lot_width"):
         w = dc._clamp_side(w, house[1])
         ld = dc._clamp_side(ld, house[1])
+        if not pool and house[0] != (admits[0][0] if admits else None):
+            src.append(f"clamped into the smallest admitted type's band "
+                       f"(`{house[0]}`) rather than the first by name "
+                       f"(`{admits[0][0]}`): no capability pool was given, so the "
+                       f"library's order carries no fabric decision")
     lots = (allocation or {}).get("lots") or {}
     over = lots.get(part.get("name")) or (lots.get(house[0]) if house else None)
     if over and len(over) == 2:
@@ -3147,7 +3194,25 @@ def _apply_structures(place, allocation: dict | None, spec: dict) -> None:
 #: compiler's own (`arrange.arrangements`), and each is certified by `district_compile`
 #: before it is adopted. They are tried in this order, one per finding, so an action
 #: that moved nothing leaves the next one available rather than ending the selection.
-ARRANGEMENT_ACTIONS = ("row_depth", "bay_width", "frontage", "compound")
+#: **One list, and it is the compiler's.** The neighbourhood round: this was four names
+#: written here by hand while `arrange.ARRANGEMENT_ACTIONS` grew to eight, so the four
+#: operations the spatial stream added -- `compact`, `terrace`, `compact_bay`,
+#: `perimeter` -- existed, were certified, were ranked, and were **unreachable by the
+#: improvement loop**, which routes a finding through this tuple. The crowding answer
+#: for the section is `compact_bay`; a list kept in the module that dispatches and a
+#: list kept in the module that enumerates will drift, and this one had. Read from
+#: `arrange` at import, with the four the loop has always had first so the order a
+#: finding walks is unchanged for every place in the record, and a name `arrange` no
+#: longer offers drops out rather than routing to nothing.
+def _arrangement_actions() -> tuple:
+    from . import arrange as _arrange
+    first = ("row_depth", "bay_width", "frontage", "compound")
+    every = tuple(getattr(_arrange, "ARRANGEMENT_ACTIONS", first))
+    return tuple([a for a in first if a in every]
+                 + [a for a in every if a not in first])
+
+
+ARRANGEMENT_ACTIONS = _arrangement_actions()
 
 #: **The composition round's three additions, and why each is a layout action.**
 #: enlarge_anchor the other direction of `shrink_anchor`. `shrink_anchor` clamped with
@@ -3260,7 +3325,21 @@ def _action_for(finding: dict, place: dict, spec: dict) -> tuple:
         return "grow_land", next((districts[s].get("defines") for s in subjects
                                   if s in districts and districts[s].get("defines") in land),
                                  land[0])
-    if any(w in says for w in ("storey", "storeys", "lot")) and about == "fabric":
+    # **A density finding is not a lot-size finding because it says the word "lots".**
+    # The neighbourhood round, found by routing the section's own `s1`: "the lots cover
+    # 26.3% of the districts' ground against the at least 30% this build calls dense"
+    # contains the word `lot` and `about: fabric`, so it matched the clause below and
+    # was routed to `enlarge_lots` -- which is *precisely* the escape the clause after
+    # it exists to refuse, and which the comment there has argued against since the
+    # design round. Enlarging lots raises allocated cover and lowers built cover. A
+    # finding whose measure or words are about density is a density finding, and the
+    # arrangement branch below gets it first; `enlarge_lots` keeps every finding that is
+    # about the size of a house rather than the crowding of a quarter.
+    _dense = (measure in ("lot_cover", "density") or about == "density"
+              or any(w in says for w in ("cover", "dense", "sparse", "density",
+                                         "crowd", "crowded")))
+    if not _dense and any(w in says for w in ("storey", "storeys", "lot")) \
+            and about == "fabric":
         return "enlarge_lots", next((districts[s].get("defines") for s in subjects
                                      if s in districts), None)
     # **a density finding is an arrangement decision before it is a size decision.**
@@ -3269,8 +3348,7 @@ def _action_for(finding: dict, place: dict, spec: dict) -> tuple:
     # were given, and enlarging empty lots is exactly the answer that would raise the
     # number without making the place denser. The four arrangement actions are tried in
     # order; one per finding, so the next stays available.
-    if measure in ("lot_cover", "density") or about == "density" \
-            or any(w in says for w in ("cover", "dense", "sparse", "density")):
+    if _dense:
         subj = next((districts[s].get("defines") for s in subjects if s in districts),
                     None) or next((s for s in subjects
                                    if s in {p.get("name") for p in
@@ -3292,6 +3370,26 @@ def _action_for(finding: dict, place: dict, spec: dict) -> tuple:
     return None, "this finding names no anchor, ring, land or lot the layout owner sizes"
 
 
+def _fabric_of(place: dict) -> dict:
+    """**What each district's fabric was laid to be**, per district: the arrangement the
+        layout adopted for it and the lot that arrangement asks for.
+
+        Read off the re-solved place itself and not off the comparison that proposed it, so
+        this measures what the layout actually did.
+        
+    """
+    out = {}
+    for d in place.get("districts") or []:
+        arr = d.get("arrangement")
+        lot = ((d.get("target") or {}).get("value") or {}).get("lot")
+        if arr or lot or d.get("lot_min"):
+            out[str(d.get("name"))] = {
+                "arrangement": {k: arr[k] for k in sorted(arr)} if arr else None,
+                "lot": list(lot) if lot else None,
+                "lot_min": list(d["lot_min"]) if d.get("lot_min") else None}
+    return out
+
+
 def _rects_of(place: dict) -> dict:
     out = {}
     for key in ("parts", "districts", "compounds"):
@@ -3307,7 +3405,8 @@ def reallocate(place: dict, spec: dict, finding: dict, *, site: dict | None = No
                decls: dict | None = None, envelopes=None,
                constraints: list | None = None, intent: dict | None = None,
                plateau: dict | None = None, vol=None, seed: int | None = None,
-               caps: dict | None = None, **_kw) -> tuple:
+               caps: dict | None = None, parts_record: dict | None = None,
+               **_kw) -> tuple:
     """**The layout owner's one bounded action on a finding**, and the place laid out
         again from it. Returns `(place, record)`: the re-solved place where the action
         applied, the place handed in where it was refused, and a record either way --
@@ -3328,7 +3427,8 @@ def reallocate(place: dict, spec: dict, finding: dict, *, site: dict | None = No
            "before": None, "after": None}
     got_place, rec = _reallocate(place, spec, finding, rec, site=site, decls=decls,
                                  constraints=constraints, intent=intent, plateau=plateau,
-                                 vol=vol, seed=seed, caps=caps, envelopes=envelopes)
+                                 vol=vol, seed=seed, caps=caps, envelopes=envelopes,
+                                 parts_record=parts_record)
     # the record's contract: `refused` is the reason or None; `before`/`after` the
     # rectangles the action moved
     if rec.get("refused") is True:
@@ -3343,9 +3443,56 @@ def reallocate(place: dict, spec: dict, finding: dict, *, site: dict | None = No
     return got_place, rec
 
 
+def _qualify_scope(scope, on, row, cpart, place, decls, spec, seed, _arrange):
+    """**Does this arrangement hold on every rectangle it will govern?**
+
+        `(qualified, short, why)`: the per-rectangle record, the names it does not hold on,
+        and one sentence. One compile per rectangle, which is what makes it affordable to
+        ask of more than one row (`_reallocate`): the *comparison* stays local and the
+        *qualification* is as wide as the decision.
+        
+    """
+    want = dict(row["arrangement"])
+    qualified, short = [], []
+    for d in scope:
+        if d.get("name") == on[0].get("name"):
+            qualified.append({"district": d.get("name"), "lots": row.get("lots"),
+                              "verdict": row.get("verdict"),
+                              "refuses": [dict(f) for f in (row.get("refuses") or [])],
+                              "from": "the comparison this row was chosen by"})
+            if row.get("refuses"):
+                short.append(d.get("name"))
+            continue
+        try:
+            trial = _arrange.capacity_of(d, cpart, place, decls, want, spec=spec,
+                                         seed=seed, certify=True)
+        except Exception as e:                     # noqa: BLE001 -- reported, not raised
+            qualified.append({"district": d.get("name"), "lots": None,
+                              "verdict": "unavailable",
+                              "why": f"{type(e).__name__}: {e}"})
+            short.append(d.get("name"))
+            continue
+        cert = trial.get("certificate") or {}
+        hard = [dict(f) for f in (cert.get("refuses") or [])]
+        qualified.append({"district": d.get("name"), "lots": trial.get("lots"),
+                          "verdict": str(cert.get("verdict") or "unasked"),
+                          "refuses": hard,
+                          "short_of": sorted(set(cert.get("checks") or ())
+                                             & set(_arrange.NEGOTIABLE_CHECKS)),
+                          "from": "qualified on this rectangle for the scope of the "
+                                  "decision"})
+        if hard or str(cert.get("verdict")) == "unavailable" \
+                or not int(trial.get("lots") or 0):
+            short.append(d.get("name"))
+    why = "; ".join(str((q.get("refuses") or [{}])[0].get("why") or q.get("why")
+                        or "no lot was laid")[:120]
+                    for q in qualified if q.get("district") in short[:2])
+    return qualified, short, why
+
+
 def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
                 decls=None, constraints=None, intent=None, plateau=None, vol=None,
-                seed=None, caps=None, envelopes=None) -> tuple:
+                seed=None, caps=None, envelopes=None, parts_record=None) -> tuple:
     action, subject = _action_for(finding, place, spec)
     if action is None:
         rec.update(refused=True, why=subject)
@@ -3527,36 +3674,238 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
         if not part:
             rec.update(refused=True, why=f"no defining part named `{subject}`")
             return place, rec
+        # **The comparison the round certifies is the one the controller adopts.** The
+        # neighbourhood round's first connected cause, and the review's words: "the
+        # comparison path (`arrange.alternatives`) and controller
+        # (`placesolve._reallocate`) currently choose differently; `bay_width` in the
+        # latter selects the largest lot". What stood here was a private pick over
+        # `arrange.arrangements` -- the *catalogue* of what a fabric offers, which is
+        # uncompiled, uncertified and measured on nothing. `max(lot area)` is not a
+        # density decision: a bigger lot is exactly the move that raises allocated cover
+        # and lowers built cover, which is the escape the whole round exists to refuse.
+        # `arrange.alternatives` compiles each option on the district's **own
+        # rectangle**, puts it through the district validator, and orders by a stated
+        # priority over measured quantities -- reservations kept, the frontage the
+        # character asked for, built occupation, street enclosure, then the count. One
+        # ranking authority; the controller takes its first eligible row of this action
+        # and records what it was measured on.
+        mine = [d for d in place.get("districts") or []
+                if (d.get("defines") == subject or d.get("name") == subject)
+                and int(d.get("structures") or 0) > 0]
+        named = {str(s) for s in (finding.get("subjects") or [])}
+        on = [d for d in mine if d.get("name") in named] or mine
+        if not on:
+            rec.update(refused=True,
+                       why=(f"`{subject}` has no district holding houses: an arrangement "
+                            f"is a decision about a rectangle of fabric and there is "
+                            f"none to certify one on"))
+            return place, rec
+        # **The district the finding is about, and the largest of them otherwise.** An
+        # arrangement is adopted for the part and laid in every district of it, so the
+        # comparison is run on the one the reading named -- the biggest piece of the
+        # fabric it is a finding about -- rather than averaged over rectangles the
+        # finding never mentions. The record says which. **...and the arrangement it
+        # chooses is then qualified on every rectangle it will govern.** The spatial
+        # design round, and the review's words: "`_reallocate` certifies one named
+        # district, then stores the arrangement on its defining part; the recorded
+        # actions refabricate ten lower-ring districts. A local certificate cannot
+        # establish that a ring-wide change is safe." The scope is stated below
+        # (`scope`), qualified below (`qualified`), and a refusal on any rectangle in it
+        # refuses the action. The cost is one compile per rectangle for the chosen
+        # arrangement, not thirteen: the *comparison* stays local and the
+        # *qualification* is as wide as the decision.
+        scope = sorted(mine, key=lambda d: (-int(d.get("structures") or 0),
+                                            str(d.get("name"))))
+        on = sorted(on, key=lambda d: -int(d.get("structures") or 0))[:1]
         pool = next((d.get("fabric_types") for d in place.get("districts") or []
                      if d.get("defines") == subject and d.get("fabric_types")), None)
-        opts = _arrange.arrangements(dict(part, **({"fabric_types": list(pool)}
-                                                   if pool else {})),
-                                     decls, spec=spec, allocation=current)
-        here = [a for a in opts if a.get("action") == action]
-        alive = [a for a in here if not a.get("refused")]
+        cpart = dict(part, **({"fabric_types": list(pool)} if pool else {}))
+        # the seed the re-solve below will use, so the comparison certifies the
+        # arrangement this place will actually be laid out with
+        _seed = int(seed if seed is not None
+                    else ((place.get("layout") or {}).get("seed") or 1))
+        # **the finding, so the comparison can rank for what this trial is for.** The
+        # neighbourhood delivery round: `alternatives` marks each row `helps` where it
+        # can estimate the measure the reading named and the estimate moves the way the
+        # finding asks, and ranks those above the general preferences.
+        rows = _arrange.alternatives(on[0], cpart, place, decls, spec=spec, seed=_seed,
+                                     parts_record=parts_record, finding=finding)
+        # **A finding that names no action takes the comparison's best row, whatever
+        # action it belongs to.** The neighbourhood round's last piece of the same
+        # unification. `_action_for` walks `ARRANGEMENT_ACTIONS` in a fixed order and
+        # returns the first the subject has not tried, which is a *budget* rule -- one
+        # action per finding, so a refusal leaves the rest available -- and it was also
+        # being used as the *selection* rule. Those are different questions. Walking the
+        # list picks `row_depth` on the crowded ring and gets 75 houses. So: where the
+        # finding **names** an action, that action is what is offered and nothing else
+        # -- a reading that asks for a depth decision gets a depth decision. Where it
+        # names none, the action is the one the comparison ranks first, and the record
+        # says which rule chose it. The budget is unaffected either way: the dispatcher
+        # still spends one action per finding per candidate.
+        named = bool(str(finding.get("action") or "") in _arrange.ARRANGEMENT_ACTIONS
+                     and not finding.get("action_routed"))
+        here = [a for a in rows if a.get("action") == action] if named else \
+            [a for a in rows if a.get("action") in _arrange.ARRANGEMENT_ACTIONS]
+        alive = [a for a in here if a.get("arrangement") and not a.get("refused")
+                 and int(a.get("lots") or 0) > 0]
+        # **An alternative that is the fabric already standing is not a proposal.** The
+        # delivery round: the incumbent is now generated into the comparison (it is what
+        # every other row is one move from), so it has to be excluded from the rows this
+        # controller may *adopt* while staying in the ranking a reader sees.
+        alive = [a for a in alive if not a.get("incumbent")] or []
         if not alive:
-            rec.update(refused=True,
-                       why=(f"`{action}` is not a decision this fabric offers: "
-                            + "; ".join(str(a.get("refused")) for a in here)
-                            or f"no alternative of `{action}` for `{subject}`"))
+            rec.update(refused=True, certified_on=on[0].get("name"),
+                       why=(f"`{action}` is not a decision this fabric offers on "
+                            f"`{on[0].get('name')}`: "
+                            + ("; ".join(
+                                str(a.get("refused") or a.get("why") or "refused")
+                                for a in here)
+                               or f"no alternative of `{action}` for `{subject}`")))
             return place, rec
-        # the alternative of this kind that puts most ground under buildings: fewest
-        # rows for a depth decision, the largest lot for a bay decision, and the other
-        # frontage or the court for the two that are a choice between two things
-        pick = max(alive, key=lambda a: (a["lot"][0] * a["lot"][1], -int(a["rows"])))
-        if action == "row_depth":
-            pick = min(alive, key=lambda a: (int(a["rows"]), int(a["depth"])))
-        have = (current.get("arrangement") or {}).get(subject) or {}
+        # **A proposal has to be able to help the finding it is offered for.** The
+        # neighbourhood delivery round, and the audit's fifth cause: "naming an owner
+        # and an action does not establish that the action can affect the subject".
+        # Where the comparison could estimate the reading's own measure, only the rows
+        # whose estimate moves it the way the finding asks are eligible; where none
+        # does, the action is refused **before** the build budget is spent, with the
+        # estimates on the record so the next decision is about the mechanism rather
+        # than about another rebuild. Where the reading names no measure this comparison
+        # can estimate, every row is eligible and the order is the standing one -- which
+        # is what it has always been.
+        _knew = [a for a in alive if a.get("helps") is not None]
+        _help = [a for a in _knew if a.get("helps")]
+        if _knew and not _help:
+            key = next((a.get("finding_measure") for a in _knew), None)
+            was = next((a.get("finding_incumbent_estimate") for a in _knew), None)
+            rec.update(refused=True, certified_on=on[0].get("name"),
+                       considered=[{"action": a.get("action"),
+                                    "arrangement": a.get("arrangement"),
+                                    "estimate": a.get("finding_estimate"),
+                                    "why": a.get("helps_why")} for a in alive[:8]],
+                       why=(f"no arrangement this fabric offers can move `{key}` the way "
+                            f"this finding asks: the incumbent estimates {was} and the "
+                            f"{len(alive)} alternative(s) estimate "
+                            f"{sorted({a.get('finding_estimate') for a in _knew})}. "
+                            f"Rebuilding on one of them would spend a full production "
+                            f"cycle to change something else. The cause is not this "
+                            f"owner's arrangement; it wants a change of capability, of "
+                            f"the composition, or an explicit staged design job"))
+            return place, rec
+        if _help:
+            alive = _help
+        # `alternatives` is already in the order it argues for; the first eligible row
+        # is the choice, and no second ordering is applied here. **...and where the
+        # first will not hold over the whole scope, the next is offered.** The
+        # neighbourhood delivery round, found by running the loop on the delivered
+        # section: the comparison ranked `compact_bay` first for every arrangement
+        # action the dispatcher offered, the ring-wide qualification below refused it on
+        # four of the traders' ring's seven rectangles, and the controller answered
+        # *"`row_depth` is not a decision this fabric offers"* -- four times, about four
+        # different actions, none of which had been tried. A local comparison ranking a
+        # proposal first is not a finding that the rest of the ring can carry it, and
+        # the qualification exists to say so; what it may not do is take the whole
+        # action list down with one row. So the rows are qualified in the order the
+        # comparison argues for and the first that holds everywhere is adopted, with the
+        # ones that did not on the record (`passed_over`). The cost is one compile per
+        # rectangle per row tried, which is the same cost the single row already paid,
+        # and it is paid before any build.
+        pick, passed_over = None, []
+        for _row in alive:
+            _short = _qualify_scope(scope, on, _row, cpart, place, decls, spec, _seed,
+                                    _arrange)
+            if not _short[1]:
+                pick, qualified = _row, _short[0]
+                break
+            passed_over.append({"action": _row.get("action"),
+                                "arrangement": _row.get("arrangement"),
+                                "lots": _row.get("lots"),
+                                "short_on": _short[1][:4],
+                                "why": _short[2]})
+        if pick is None:
+            rec.update(refused=True, certified_on=on[0].get("name"),
+                       scope=[d.get("name") for d in scope],
+                       passed_over=passed_over,
+                       why=(f"none of the {len(alive)} arrangement(s) this fabric offers "
+                            f"holds on all {len(scope)} rectangle(s) `{subject}` governs. "
+                            + "; ".join(f"{q['action']} fails on {q['short_on']}"
+                                        for q in passed_over[:3])
+                            + ". A ring-wide decision needs ring-wide feasibility; the "
+                              "place stands as it was"))
+            return place, rec
+        if not named and pick.get("action") != action:
+            # the comparison chose a different operation from the one the walk offered;
+            # the record is of what was adopted, not of what was asked for
+            rec.update(action=pick["action"], action_from=(
+                f"the certified comparison's first eligible row on "
+                f"`{on[0].get('name')}`; the finding named no action, and the walk over "
+                f"`ARRANGEMENT_ACTIONS` would have offered `{action}`"))
+            action = pick["action"]
+        elif named:
+            rec["action_from"] = "named by the finding"
+        have = adopted_arrangement(current, subject) or {}
         want = dict(pick["arrangement"])
         if all(have.get(k) == v for k, v in want.items()):
             rec.update(refused=True,
                        why=f"`{action}` for `{subject}` is already what the allocation "
                            f"says: {have}")
             return place, rec
+        # (the chosen row was qualified over its whole scope above; `qualified` is its
+        # per-rectangle record and `passed_over` the rows that did not hold)
         to = {"arrangement": {subject: {**have, **want}}}
+        # **The estimate, under the name the comparison now gives it.** `alternatives`
+        # reports `pad_cover` -- the compiler's pad arithmetic, labelled as the estimate
+        # it is -- and keeps `built_cover` for the figure read off a parts record where
+        # one exists, which for a *hypothetical* arrangement matches almost no leaf. The
+        # estimate is what this row was chosen on, so the estimate is what is recorded.
+        rec["certified"] = {
+            "on": on[0].get("name"), "action": action,
+            # **the scope of the decision and the qualification of the whole of it**
+            "scope": [d.get("name") for d in scope],
+            "scope_why": (f"an arrangement is adopted for the part `{subject}` and laid "
+                          f"in every district of it; the comparison was run on "
+                          f"`{on[0].get('name')}` and the chosen arrangement was "
+                          f"qualified on all {len(scope)}"),
+            "qualified": qualified,
+            # the rows the comparison ranked above this one that the whole scope could
+            # not carry, so a reader sees what a ring-wide decision cost
+            "passed_over": passed_over,
+            "lots": pick.get("lots"), "asked": pick.get("asked"),
+            "built_cover_estimate": (pick.get("pad_cover")
+                                     if pick.get("pad_cover") is not None
+                                     else pick.get("built_cover")),
+            "continuity": pick.get("continuity"),
+            "frontage_length": pick.get("frontage_length"),
+            "allocated_cover": pick.get("allocated_cover"),
+            "enclosure": pick.get("enclosure"),
+            "frontage_length": pick.get("frontage_length"),
+            "verdict": pick.get("verdict"),
+            "reservations": [pick.get("reservations_kept"),
+                             pick.get("reservations_required")],
+            # **what this row was chosen to move, and what it estimates for it**
+            "for_finding": {"id": finding.get("id"),
+                            "measure": pick.get("finding_measure"),
+                            "incumbent_estimate": pick.get("finding_incumbent_estimate"),
+                            "estimate": pick.get("finding_estimate"),
+                            "helps": pick.get("helps"), "why": pick.get("helps_why")},
+            "ranked_over": [{"action": a.get("action"),
+                             "arrangement": a.get("arrangement"),
+                             "lots": a.get("lots"),
+                             "built_cover_estimate": a.get("built_cover"),
+                             "enclosure": a.get("enclosure"),
+                             "incumbent": bool(a.get("incumbent")),
+                             "helps": a.get("helps"),
+                             "verdict": a.get("verdict")}
+                            for a in rows[:8]],
+            "by": "arrange.alternatives: compiled on this district's own rectangle and "
+                  "certified by placeplan.district_failures; the cover figures are the "
+                  "compiler's pad estimate and are compared with emitted geometry after "
+                  "the build"}
         why = (f"the built reading finds `{subject}` short of the density its own word "
                f"asks; `{action}` is the layout owner's bounded answer -- {pick['why']} "
-               f"-- and the place is laid out again with it"
+               f"-- chosen by the certified comparison on `{on[0].get('name')}`'s own "
+               f"rectangle ({pick.get('lots')} lots, {pick.get('enclosure')} street "
+               f"enclosure, validator `{pick.get('verdict')}`), and the place is laid "
+               f"out again with it"
                + (f" (this revises the district brief's {', '.join(pick['revises'])})"
                   if pick.get("revises") else ""))
     elif action == "regroup":
@@ -3712,11 +4061,37 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
         {"what": "allocation", "from": current, "to": to, "why": why,
          "finding": finding.get("id"), "action": action}]
     core = spec_mod.core(spec) or {}
-    if plateau is None and (place.get("layout") or {}).get("plateau_rect"):
-        plateau = {"part": core.get("name"), "rect": list(place["layout"]["plateau_rect"])}
-    elif plateau is None and (place.get("layout") or {}).get("compound_rect") \
-            and spec_mod.compound(core):
-        plateau = {"part": core.get("name"), "rect": list(place["layout"]["compound_rect"])}
+    lay = place.get("layout") or {}
+    if plateau is None and lay.get("plateau_rect"):
+        plateau = {"part": core.get("name"), "rect": list(lay["plateau_rect"])}
+    elif plateau is None and lay.get("compound_rect") and spec_mod.compound(core):
+        plateau = {"part": core.get("name"), "rect": list(lay["compound_rect"])}
+    # **...and the ground this place was designed on goes with it.** The spatial design
+    # round's first finding, and it is the same rule one line above applied to the one
+    # field that was left out of it. `concentric_layout` takes the ring terraces off
+    # `plateau["terrace"]` where the plateau stage wrote one and off `site_median(vol,
+    # site)` otherwise. The stub built above carries a rectangle and nothing else, and
+    # `pipeline/improve.py` hands this function no volume -- so **both** sources were
+    # absent on every revision, `terrace` came back None, and every ring's `level` with
+    # it. Measured on the retained neighbourhood section: the baseline candidate
+    # `60c62ebbdb32933b` was laid with ring terraces at y 71 / 79 / 67 / 75 and its
+    # first revision `90b26d9c3f075492` with `terrace: null` and four `level: null`
+    # rings. Nothing asked for that. The ground proposal then had no terrace piece to
+    # lay (`ground.propose` reads `layout.terrace`), so the revised candidates' rings
+    # were **never levelled at all** and their houses were founded on the ground as
+    # found -- which on this section runs from y 16 to y 127 and is 9.7% standing water.
+    # The 57 refused row houses, the 973 unreachable lane stances and the great wall
+    # overtopped by the calm side's mesa are all downstream of a field that was dropped
+    # rather than decided. A terrace is a *ground* decision. No action in
+    # `REALLOCATE_ACTIONS` is about it, so it is carried, like the axis, rather than
+    # measured again from a volume this caller may not have.
+    if lay.get("terrace") and not (plateau or {}).get("terrace"):
+        plateau = dict(plateau or {"part": core.get("name")},
+                       terrace=dict(lay["terrace"]))
+        plateau.setdefault("y", (lay["terrace"] or {}).get("podium"))
+        rec["carried_ground"] = {"terrace": dict(lay["terrace"]),
+                                 "why": "the ring terraces this place was designed on; "
+                                        "no reallocation action is about them"}
     # **A revision is laid out with what this place was approved for.** Read off the
     # place itself (`approved_from_place`) and not from the caller: the improve stage
     # has no capability record to hand in, and without one the re-solve resolved its
@@ -3743,7 +4118,23 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
     # the sentence's own that is not a trade the layout owner may make, and until now
     # nothing checked: the place came back, the rectangles had moved, and the number was
     # whatever the arithmetic gave. An action that would lose a counted structure under
-    # an exact count is refused, by name, with both numbers.
+    # an exact count is refused, by name, with both numbers. **A revision may not
+    # silently lose the ground the place was designed on.** The guard that would have
+    # caught the terrace defect above the moment it happened, and the general form of
+    # it: a re-solve that comes back with *no* ground design where the place being
+    # revised had one has not revised an allocation, it has thrown a decision away.
+    # Refused by name, with both records, rather than returned as a place.
+    was_t = (place.get("layout") or {}).get("terrace")
+    now_t = (got.get("layout") or {}).get("terrace")
+    if was_t and not now_t:
+        rec.update(refused=True, invariant="ground",
+                   ground={"was": dict(was_t), "now": now_t}, allocation=to,
+                   why=(f"laid out again with {to} the place carries no terrace record "
+                        f"where the place being revised stood on rings at "
+                        f"{[int(v) for v in (was_t.get('rings') or [])]}: a reallocation "
+                        f"revises an inferred allocation and may not drop the ground "
+                        f"design. `{action}` is refused and the place stands as it was"))
+        return place, rec
     exact_count = bool((spec.get("explicit_count") or {}).get("n")
                        and not (spec.get("explicit_count") or {}).get("about"))
     was_n = sum(int(d.get("structures") or 0) for d in place.get("districts") or [])
@@ -3767,13 +4158,54 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
               for d in place.get("districts") or []}
     recounted = {n: [was_by.get(n), counted[n]] for n in sorted(counted)
                  if was_by.get(n) != counted[n]}
-    if not moved and not recounted:
+    # **An internal rearrangement is a change.** See `_fabric_of`: an arrangement action
+    # revises the fabric inside a rectangle it deliberately does not move, under a count
+    # it deliberately does not move, so asking only "did a rectangle or a count move"
+    # reported every one of them as having changed nothing.
+    was_fab, now_fab = _fabric_of(place), _fabric_of(got)
+    refabricated = {n: {"from": was_fab.get(n), "to": now_fab.get(n)}
+                    for n in sorted(set(was_fab) | set(now_fab))
+                    if was_fab.get(n) != now_fab.get(n)}
+    # **What this action changed outside the scope it declared.** The spatial design
+    # round's second connected cause: the re-solve is global, so an arrangement adopted
+    # for one ring re-derives every other district's count as well -- and the
+    # neighbourhood round's retained reading reports the traders' side losing houses to
+    # a decision that was about the crowded side. The scope is declared above; what
+    # falls outside it is measured here, reported always, and **refused where an
+    # unrelated district lost structures**, because losing a house somebody else was
+    # promised is not a side effect a local fabric decision is allowed to have.
+    in_scope = set((rec.get("certified") or {}).get("scope") or ()) \
+        | {str(d.get("name")) for d in place.get("districts") or []
+           if d.get("defines") == subject or d.get("name") == subject}
+    out_of_scope = {n: v for n, v in recounted.items() if str(n) not in in_scope}
+    lost = {n: v for n, v in out_of_scope.items()
+            if v[0] is not None and int(v[1]) < int(v[0])}
+    if in_scope and lost:
+        rec.update(refused=True, invariant="scope",
+                   scope=sorted(in_scope), out_of_scope=out_of_scope,
+                   allocation=to,
+                   why=(f"`{action}` is a decision about `{subject}` and laying the place "
+                        f"out again with it takes "
+                        + ", ".join(f"`{n}` from {v[0]} to {v[1]} structure(s)"
+                                    for n, v in sorted(lost.items())[:3])
+                        + f" -- district(s) the action is not about. A revision preserves "
+                          f"the adopted decisions it is not revising; the place stands as "
+                          f"it was"))
+        return place, rec
+    if out_of_scope:
+        rec["out_of_scope"] = {
+            "districts": out_of_scope,
+            "why": ("these districts are outside the action's declared scope and their "
+                    "counts moved; none of them lost structures, so the change is "
+                    "recorded rather than refused")}
+    if not moved and not recounted and not refabricated:
         # **`changed: False`, honestly.** An action that ran and produced the same
         # geometry says so; it is not reported as a refusal of the action's premise and
         # it is not repeated.
         rec.update(refused=True, changed=False, allocation=to,
-                   why=f"laid out again with {to} the place is the same geometry and the "
-                       f"same counts: the action changed nothing and is not repeated")
+                   why=f"laid out again with {to} the place is the same geometry, the "
+                       f"same counts and the same fabric in every district: the action "
+                       f"changed nothing and is not repeated")
         return place, rec
     spec.setdefault("negotiated", []).append(spec2["negotiated"][-1])
     # **Every action states the finding's subject, the direction it moved and the hard
@@ -3787,6 +4219,13 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
                districts=[{"district": n, "from": m["from"], "to": m["to"]}
                           for n, m in moved.items()],
                moved=len(moved),
+               # what the action changed **inside** the rectangles it did not move
+               refabricated=refabricated or None,
+               changed_what=sorted(
+                   ([f"{len(moved)} rectangle(s)"] if moved else [])
+                   + ([f"{len(recounted)} district count(s)"] if recounted else [])
+                   + ([f"the fabric of {len(refabricated)} district(s)"]
+                      if refabricated else [])),
                counts={"was": int(was_n), "now": int(now_n), "exact": bool(exact_count),
                        "per_district": recounted or None},
                subject_of_finding=str((finding.get("subjects") or [subject])[0]),
@@ -3802,8 +4241,23 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
                        str(d.get("name")) for d in got.get("districts") or []
                        if d.get("exact")),
                    "parts_unmoved": sorted(str(n) for n in kept),
-                   "why": (f"the place holds {now_n} counted structure(s), the same "
-                           f"{was_n} it held; "
+                   # **Say which of the two it is.** The prose read "the place holds N
+                   # counted structure(s), the same M it held" whatever N and M were, so
+                   # a reallocation that moved the number said it had not. The two sides
+                   # are also not the same kind of number where the place being revised
+                   # has been through `_arrange_districts`: that pass rewrites each
+                   # district's `structures` to what its ground actually held, and a
+                   # freshly solved place carries the allocator's proposal. Both are
+                   # reported, and what they are is said.
+                   "counted_now": int(now_n), "counted_before": int(was_n),
+                   "why": ((f"the place holds {now_n} counted structure(s), the same "
+                            f"{was_n} it held; " if now_n == was_n else
+                            f"the place is laid out for {now_n} counted structure(s) "
+                            f"against the {was_n} the place being revised carried -- "
+                            f"both inferred, and the second is what its ground was "
+                            f"measured to hold rather than what it was proposed; the "
+                            f"count is not the sentence's own and no exact count is "
+                            f"touched; ")
                            + (f"{len(kept)} standing part(s) are where they were; "
                               if kept else "")
                            + f"the action revised {to and list(to)} and nothing else")})

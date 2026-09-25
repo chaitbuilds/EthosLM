@@ -30,6 +30,18 @@ needs on a plane; a slope, a lane on two sides or a neighbour's clearance can ta
 and construction's emitted outcome remains authoritative. What this closes is the other
 half: a lot the type cannot use on *any* ground is never drawn on purpose.
 
+**The probe builds the lot the question is about, attachment and all.** The neighbourhood
+delivery round. `context["attached"]` was keyed and recorded and changed nothing: every
+probe stood on a lot with four free sides, and `Builder._insets` insets a free side by
+`SITE_INSET` and an attached one by nothing. So a 6x13 terrace lot was probed as the
+4x11 pad a detached lot of that size gives, while the real lot gives a 6x9 pad -- and
+`types/row_house.py` declares its `STOREY_PAD` in **pad** columns, needing 5x9 for two
+storeys. Two storeys were refused for every attached lot in the delivered section, and
+every house in the crowded ring stood one storey on a lot deep enough for two. `flanks()`
+resolves the context to the number of attached flanks, `probe`/`_stands` build the lot
+with that many, and the count is what the key carries: an answer measured with two flanks
+attached is never served to a question about a free-standing lot, or the other way round.
+
 Feature tokens are the names `construction.outcome` reports under `emitted.features`
 (`outshot`, `courtyard`, `chimney`, `stalls`, `forge`, `hearth`, ...) plus one marker,
 `storeys`, meaning "the storeys in `params` must actually stand". A token the type never
@@ -62,8 +74,13 @@ STOREYS = "storeys"
 
 #: **What a stored certificate is a certificate of.** Bumped when the key's meaning
 #: changes; entries written under another version are read and dropped. The design
-#: round's version is the first that binds an answer to the generator that produced it.
-CACHE_VERSION = "envelopes-v2-demand"
+#: round's version is the first that binds an answer to the generator that produced it;
+#: this one is the first whose `attached` slot is the number of flanks the probe was
+#: actually built against rather than a word nothing read. Every `envelopes.json` on
+#: disk -- `out/nd-city/envelopes.json` among them -- is therefore read and dropped,
+#: which is the designed behaviour and not a loss: those entries answer a question ("how
+#: big a lot, with four free sides") that is no longer the one being asked.
+CACHE_VERSION = "envelopes-v3-flanks"
 
 #: The modules that execute a type file, and whose content therefore decides what the
 #: type emits. A type imports nothing of this project (they take `b` and the stdlib), so
@@ -218,13 +235,59 @@ def _deps_print(type_name: str, voice: str | None) -> str:
 
 
 #: The physical context a probe was run under, in the order it is keyed. A probe builds
-#: on flat ground with no neighbour, and naming that here is what stops a flat-ground
-#: certificate from being read as an answer about a terrace on a slope.
+#: on flat ground, and naming that here is what stops a flat-ground certificate from
+#: being read as an answer about a terrace on a slope. `attached` is no longer one of
+#: those unread words: it is the flank count `flanks()` resolves and `probe` builds.
 CONTEXT_KEYS = ("ground", "clearance", "attached", "frontage")
+
+#: The most flanks a lot has. A leaf in a row has a party wall on each side of it and
+#: nothing else: `Builder._insets` reads the same two names.
+FLANKS_MAX = 2
+
+#: Which two sides of a lot are its **flanks**, by the side it fronts: the pair
+#: perpendicular to the front, which is where the next house in the row stands. The
+#: front and the back are the street and the rear strip and are never party walls.
+FLANK_SIDES = {"north": ("west", "east"), "south": ("west", "east"),
+               "east": ("north", "south"), "west": ("north", "south")}
+
+
+def flanks(context: dict | None) -> int:
+    """How many attached flanks the question in `context` is about: 0, 1 or 2.
+
+        A leaf carries the sides themselves (`part["attached"] == ["west", "east"]`), a
+        caller that has counted them carries the number, and a **character** carries a bare
+        `attached: true`.
+
+        That last one resolves to **0**, deliberately. `attached: true` is a sentence about
+        a fabric -- this district is terraced -- and not about a lot: a row's middle lot has
+        two flanks, each of its two ends has one, and a row of one has none. The free-standing
+        pad is the smallest pad any lot of that fabric gets, so it is the floor a sizing
+        question must be answered against, and a caller that knows a particular lot's flanks
+        says so with the number. Under-claiming attachment costs a slightly larger lot;
+        over-claiming it hands a row's end lot a pad it does not have.
+        
+    """
+    v = (context or {}).get("attached")
+    if v is None or v is False or v is True:
+        return 0
+    if isinstance(v, int):
+        return max(0, min(FLANKS_MAX, int(v)))
+    if isinstance(v, (list, tuple, set, frozenset)):
+        return max(0, min(FLANKS_MAX, len(v)))
+    return 0
 
 
 def _context_print(context: dict | None) -> list:
-    return [(k, _norm({k: (context or {}).get(k)}).get(k)) for k in CONTEXT_KEYS]
+    """The context as it is keyed: every slot normalized, and `attached` as the **flank
+    count the probe was built with**, so that one key means one measurement. `True` and
+    `0` name the same probe and print the same, and `2` prints as a different question."""
+    out = []
+    for k in CONTEXT_KEYS:
+        if k == "attached":
+            out.append((k, flanks(context)))
+        else:
+            out.append((k, _norm({k: (context or {}).get(k)}).get(k)))
+    return out
 
 
 def _key(type_name: str, params: dict, features, voice, seed,
@@ -308,10 +371,17 @@ def declared_needs(type_name: str) -> dict:
         return dict(pipeline.NEEDS_DEFAULT)
 
 
-def _row_answers(row: dict, params: dict, features) -> bool:
+def _row_answers(row: dict, params: dict, features, n_flanks: int = 0) -> bool:
     """Does a declared row cover the question? Its parameters must equal the asked ones
-    it names (a row naming fewer covers more), and its features must include every one
-    asked for."""
+    it names (a row naming fewer covers more), its features must include every one asked
+    for, and it must have been measured **with the same flanks attached**.
+
+    A row carrying no `flanks` was measured on a lot with four free sides, which is what
+    every `ENVELOPE` block committed before the neighbourhood delivery round was: it is
+    the answer to the 0-flank question and to no other, so an attached question falls
+    through to the probe rather than being served a detached certificate."""
+    if int(row.get("flanks") or 0) != int(n_flanks):
+        return False
     rp = _norm(row.get("params") or {})
     want = _norm(params)
     for k, v in rp.items():
@@ -362,12 +432,16 @@ def _delivered(got: dict, params: dict, features, said: dict | None = None,
 
 
 def _stands(type_name: str, w: int, d: int, params: dict, features, seed: int,
-            voice) -> tuple:
-    """(True where the request survives on a w x d lot, the delivered map)."""
+            voice, n_flanks: int = 0) -> tuple:
+    """(True where the request survives on a w x d lot, the delivered map).
+
+    `n_flanks` is built, not recorded: `probe_build` hands `site()` a lot with that many
+    of its flanks attached, so `_insets` gives the pad a real terrace lot gives and the
+    type is asked about the ground it will actually get."""
     from . import construction
     try:
         b, sited, res = construction.probe_build(type_name, w, d, params, seed=seed,
-                                                 voice=voice)
+                                                 voice=voice, attached=n_flanks)
     except Exception:                          # noqa: BLE001 -- a probe reports
         return False, {}
     if not res.get("ok"):
@@ -388,7 +462,8 @@ def _cands(w0: int, d0: int, k: int) -> list:
 
 
 def probe(type_name: str, params: dict, features=(), *, seed: int = 1,
-          voice: str | None = None, start: tuple | None = None) -> dict:
+          voice: str | None = None, start: tuple | None = None,
+          n_flanks: int = 0) -> dict:
     """Find the least lot on which the request survives, inside the type's declared band.
 
         Squares first from the declared minimum up to the declared maximum plus `GROWTH`,
@@ -397,6 +472,10 @@ def probe(type_name: str, params: dict, features=(), *, seed: int = 1,
         `seed`; `lot_pref` the least lot at which it survives at every seed in `PREF_SEEDS`.
         A request nothing in the band delivers answers `None` for both, with the features
         that never appeared named.
+
+        `n_flanks` is how many of the lot's flanks the probe stands it against. It is a
+        property of the **lot**, not of the type: the same 6x13 plot is a 4x11 pad free on
+        all four sides and a 6x9 pad between two party walls, and `why` says which was built.
         
     """
     needs = declared_needs(type_name)
@@ -408,9 +487,11 @@ def probe(type_name: str, params: dict, features=(), *, seed: int = 1,
     tried = [0]
     delivered_last: dict = {}
 
+    n_flanks = max(0, min(FLANKS_MAX, int(n_flanks or 0)))
+
     def stands(w, d, s):
         tried[0] += 1
-        ok, dl = _stands(type_name, w, d, params, features, s, voice)
+        ok, dl = _stands(type_name, w, d, params, features, s, voice, n_flanks)
         if dl:
             delivered_last.update(dl)
         return ok
@@ -445,15 +526,18 @@ def probe(type_name: str, params: dict, features=(), *, seed: int = 1,
         if lot_pref[0] * lot_pref[1] < lot_min[0] * lot_min[1]:
             lot_pref = lot_min
     never = [f for f, v in delivered_last.items() if not v] if not lot_min else []
+    on = (f" on a lot with {n_flanks} flank(s) attached" if n_flanks
+          else " on a lot with free flanks")
     return {"lot_min": list(lot_min) if lot_min else None,
             "lot_pref": list(lot_pref) if lot_pref else None,
-            "source": "probed",
+            "source": "probed", "flanks": n_flanks,
             "features": ({f: True for f in features} if lot_min else delivered_last),
             "probes": tried[0],
             "why": (f"{type_name} delivers {_norm(params)} with {list(features)} from "
-                    f"{lot_min[0]}x{lot_min[1]} at seed {seed}, and at seeds "
+                    f"{lot_min[0]}x{lot_min[1]} at seed {seed}{on}, and at seeds "
                     f"{list(PREF_SEEDS)} from {lot_pref[0]}x{lot_pref[1]}" if lot_min else
-                    f"{type_name} delivers no lot up to {hi}x{hi} with {_norm(params)} and "
+                    f"{type_name} delivers no lot up to {hi}x{hi}{on} with "
+                    f"{_norm(params)} and "
                     f"{list(features)}: " + (f"{never} never appeared" if never
                                               else "no shell stood"))}
 
@@ -463,14 +547,17 @@ def lot_for(type_name: str, params: dict | None, *, features=(), voice: str | No
     """The lot a type needs to deliver `params` with `features`. See the module.
 
         `context` is the physical context the answer is about -- the ground, the clearance,
-        whether the house is attached and which way it fronts. It is keyed and recorded and
-        it does not yet change the probe, which builds on flat ground with free flanks: what
-        it buys today is that a flat-ground certificate cannot be read as an answer about a
-        terrace on a slope once one of them can be measured. `ethoslm.demand` fills it.
+        whether the house is attached and which way it fronts. `context["attached"]` now
+        **changes the probe**: `flanks()` resolves it to 0, 1 or 2 and the lot is built with
+        that many party walls, which is the pad `Builder._insets` will actually hand the
+        type. The rest of the context is still keyed and recorded rather than built, so a
+        flat-ground certificate cannot be read as an answer about a slope once one of those
+        can be measured. `ethoslm.demand` fills it.
         
     """
     params = dict(params or {})
     features = tuple(f for f in (features or ()) if f)
+    n_flanks = flanks(context)
     key = _key(type_name, params, features, voice, seed, context)
     if key in _MEM:
         return dict(_MEM[key])
@@ -478,12 +565,15 @@ def lot_for(type_name: str, params: dict | None, *, features=(), voice: str | No
     if key in disk:
         _MEM[key] = disk[key]
         return dict(disk[key])
+    on = (f"flat ground, {n_flanks} flank(s) attached" if n_flanks
+          else "flat ground, free flanks")
     for row in declared_table(type_name):
-        if _row_answers(row, params, features) and row.get("lot_min"):
+        if _row_answers(row, params, features, n_flanks) and row.get("lot_min"):
             got = {"lot_min": [int(v) for v in row["lot_min"]],
                    "lot_pref": [int(v) for v in (row.get("lot_pref") or row["lot_min"])],
                    "source": "declared", "features": {f: True for f in features},
-                   "context": _context_print(context), "tested_on": "flat ground",
+                   "flanks": n_flanks,
+                   "context": _context_print(context), "tested_on": on,
                    "why": (f"{type_name}'s ENVELOPE table: {row.get('params')} with "
                            f"{row.get('features')} from {row['lot_min'][0]}x"
                            f"{row['lot_min'][1]}" + (f" ({row['why']})" if row.get("why")
@@ -492,21 +582,32 @@ def lot_for(type_name: str, params: dict | None, *, features=(), voice: str | No
             disk[key] = got
             _save_cache(cache, disk)
             return dict(got)
-    got = probe(type_name, params, features, seed=seed, voice=voice)
+    got = probe(type_name, params, features, seed=seed, voice=voice, n_flanks=n_flanks)
     got["context"] = _context_print(context)
-    got["tested_on"] = "flat ground"
+    got["tested_on"] = on
     _MEM[key] = got
     disk[key] = got
     _save_cache(cache, disk)
     return dict(got)
 
 
-def fits(lot, need: dict) -> bool:
-    """Does a `(w, d)` lot hold what `lot_for` said is needed?"""
+def fits(lot, need: dict, *, oriented: bool = False) -> bool:
+    """Does a `(w, d)` lot hold what `lot_for` said is needed?
+
+    Either way round by default: a type that needs 5x9 gets it from a 9x5 lot, because
+    nothing in a detached answer says which axis is which.
+
+    `oriented=True` refuses the rotation, and is what a caller asking about an
+    **attached** lot must pass. A probe builds its lot fronting north, so `lot_min[0]`
+    is the frontage and `lot_min[1]` the depth, and the flanks are the two sides
+    perpendicular to that front. Turning such an answer ninety degrees makes the party
+    walls the street and the rear, which is a different building on a different lot."""
     if not need or not need.get("lot_min") or not lot:
         return False
     w, d = int(lot[0]), int(lot[1])
     mw, md = need["lot_min"]
+    if oriented:
+        return w >= mw and d >= md
     return (w >= mw and d >= md) or (w >= md and d >= mw)
 
 
@@ -522,22 +623,29 @@ def _feature_sets(type_name: str, params: dict) -> list:
 
 
 def table(type_name: str, seeds=PREF_SEEDS, *, params_list: list | None = None,
-          voice: str | None = None) -> list:
+          voice: str | None = None, n_flanks: int = 0) -> list:
     """Measure the ENVELOPE rows for a type: every parameter combination its `PARAMS`
     declares (or `params_list`) crossed with the feature sets, each probed from the
-    type's declared minimum. This is what `scripts/type_needs.py --envelope` runs."""
+    type's declared minimum. This is what `scripts/type_needs.py --envelope` runs.
+
+    `n_flanks` is carried onto every row it measures, because it is half of what the row
+    is a measurement *of*; a row written before the flanks were built carries none and
+    `_row_answers` reads that as the free-flank measurement it was."""
     from . import construction, pipeline
     ns = construction._type_ns(type_name)
     combos = params_list or pipeline.param_combinations(ns.get("PARAMS") or {}, most=64)
+    n_flanks = max(0, min(FLANKS_MAX, int(n_flanks or 0)))
+    extra = {"flanks": n_flanks} if n_flanks else {}
     rows = []
     for params in combos:
         for feats in _feature_sets(type_name, params):
-            got = probe(type_name, params, feats, seed=int(seeds[0]), voice=voice)
+            got = probe(type_name, params, feats, seed=int(seeds[0]), voice=voice,
+                        n_flanks=n_flanks)
             if not got.get("lot_min"):
-                rows.append({"params": _norm(params), "features": list(feats),
+                rows.append({"params": _norm(params), "features": list(feats), **extra,
                              "lot_min": None, "lot_pref": None, "why": got["why"]})
                 continue
-            rows.append({"params": _norm(params), "features": list(feats),
+            rows.append({"params": _norm(params), "features": list(feats), **extra,
                          "lot_min": got["lot_min"], "lot_pref": got["lot_pref"],
                          "why": f"probed at seeds {list(seeds)}"})
     return rows

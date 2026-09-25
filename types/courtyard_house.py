@@ -35,6 +35,7 @@ KIND = "plot"
 FORM = "east_asian"
 ROLE = "urban"
 FUNCTION = "dwelling"
+ATTACHED = True
 #: The features this type can be asked to deliver, for `envelope.table`.
 FEATURES = ("courtyard", "gate", "main_hall", "screen")
 
@@ -48,21 +49,38 @@ PARAMS = {
     # then the type declares what stands.
     "storeys": ("int", 1, 1),
     "screen": ("choice", ["wall", "planted", "none"]),
+    # **The least court the design asks for** (the fabric reset round): 0 is the type's
+    # own proportion (`_range_depth`); a number is the court's least side, and the
+    # ranges are made shallower -- never under 3 -- until the court is at least that.
+    # Set by the district's character (`court_least`), never drawn at random.
+    "court": ("int", 0, 15),
 }
 
 NEEDS = {
-    # measured by scripts/type_needs.py; a yard of 3 inside ranges of 3 is 9 across
-    "footprint": (9, 9, 17, 17),
+    # measured by scripts/type_needs.py; a yard of 3 inside ranges of 3 is 9 across. The
+    # fabric reset round re-swept it (square pads on the plane and the bank, both seeds,
+    # every parameter): clean 9 to 22, broken from 24 (an E002 door at 24, 28 and 32),
+    # so the ceiling moved from 17 to 22. The square sweep builds no neighbour;
+    # **attached**, `scripts/test_attached_forms.py` and a sweep of 40 runs of four
+    # (lots 13-19 wide x 15-21 deep, all four fronts, plane and bank, mixed screens and
+    # seeds) stood every house lint-clean with no party-line gap and nothing over the
+    # plot line once `site()` is kept off the attached side (see that script). The court
+    # a lot gives, from `_range_depth` unchanged (ranges of 4 on pads 13-17): a 15x17
+    # lot is a 13x13 pad at a row's end and a 5x5 court, 15x13 between two neighbours
+    # and a 7x5 court; 15x19 between neighbours is 7x7, 17x19 is 9x7.
+    "footprint": (9, 9, 22, 22),
     "frontage": "lane",
     "ground": "any",
     "clearance": 2,
 }
 
-#: **The lots this type needs, measured** by `$PY scripts/type_needs.py --envelope
-#: --transcribe courtyard_house`: each row is the least lot on which the parameters
-#: stand with the features named, at one seed (`lot_min`) and at seeds [1, 2, 3]
-#: (`lot_pref`). Read by `ethoslm.envelope.lot_for` before a lot is drawn; the outcome
-#: construction measures afterwards remains authoritative.
+#: **The lots this type needs, measured** by `envelope.table('courtyard_house',
+#: n_flanks=k) for k in 0, 1, 2 (the instrument `scripts/type_needs.py --envelope` runs,
+#: which measures k=0 only; driver kept at out/fr-work-types/envelope_flanks.py)`: each
+#: row is the least lot on which the parameters stand with the features named, at one
+#: seed (`lot_min`) and at seeds [1, 2, 3] (`lot_pref`). Read by
+#: `ethoslm.envelope.lot_for` before a lot is drawn; the outcome construction measures
+#: afterwards remains authoritative.
 ENVELOPE = [
  {
   "params": {
@@ -386,11 +404,771 @@ ENVELOPE = [
   ],
   "lot_min": None,
   "lot_pref": None,
-  "why": "courtyard_house delivers no lot up to 29x29 with {'screen': 'none', 'storeys': 1} and ['storeys', 'screen']: ['screen'] never appeared"
+  "why": "courtyard_house delivers no lot up to 34x34 on a lot with free flanks with {'screen': 'none', 'storeys': 1} and ['storeys', 'screen']: ['screen'] never appeared"
+ },
+ {
+  "params": {
+   "screen": "wall",
+   "storeys": 1
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "wall",
+   "storeys": 1
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "wall",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "courtyard"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "wall",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "gate"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "wall",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "main_hall"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "wall",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "screen"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   17,
+   15
+  ],
+  "lot_pref": [
+   17,
+   15
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "planted",
+   "storeys": 1
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "planted",
+   "storeys": 1
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "planted",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "courtyard"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "planted",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "gate"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "planted",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "main_hall"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "planted",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "screen"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   17,
+   15
+  ],
+  "lot_pref": [
+   17,
+   15
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "none",
+   "storeys": 1
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "none",
+   "storeys": 1
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "none",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "courtyard"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "none",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "gate"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "none",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "main_hall"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   11,
+   13
+  ],
+  "lot_pref": [
+   11,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "none",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "screen"
+  ],
+  "flanks": 1,
+  "lot_min": None,
+  "lot_pref": None,
+  "why": "courtyard_house delivers no lot up to 34x34 on a lot with 1 flank(s) attached with {'screen': 'none', 'storeys': 1} and ['storeys', 'screen']: ['screen'] never appeared"
+ },
+ {
+  "params": {
+   "screen": "wall",
+   "storeys": 1
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "wall",
+   "storeys": 1
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "wall",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "courtyard"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "wall",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "gate"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "wall",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "main_hall"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "wall",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "screen"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   15,
+   15
+  ],
+  "lot_pref": [
+   15,
+   15
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "planted",
+   "storeys": 1
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "planted",
+   "storeys": 1
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "planted",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "courtyard"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "planted",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "gate"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "planted",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "main_hall"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "planted",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "screen"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   15,
+   15
+  ],
+  "lot_pref": [
+   15,
+   15
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "none",
+   "storeys": 1
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "none",
+   "storeys": 1
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "none",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "courtyard"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "none",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "gate"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "none",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "main_hall"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   9,
+   13
+  ],
+  "lot_pref": [
+   9,
+   13
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "screen": "none",
+   "storeys": 1
+  },
+  "features": [
+   "storeys",
+   "screen"
+  ],
+  "flanks": 2,
+  "lot_min": None,
+  "lot_pref": None,
+  "why": "courtyard_house delivers no lot up to 34x34 on a lot with 2 flank(s) attached with {'screen': 'none', 'storeys': 1} and ['storeys', 'screen']: ['screen'] never appeared"
  }
 ]
 
 OPP = {"north": "south", "south": "north", "east": "west", "west": "east"}
+
+#: **The rooms come first** (the design resolution round). The clear depth, wall to
+#: wall, each range needs for what it is used for: the main hall opposite the gate is
+#: the principal room and is deeper (a bed or a table and a way past it); the wings and
+#: the gate range are rooms of one bay (a bed along the wall and a way beside it). A
+#: range is this plus its outer and its court wall. The fabric reset round's court
+#: revision thinned every range to a clear depth of one -- a corridor -- because the
+#: court was sized first and the rooms took what was left; here the court is what the
+#: rooms leave, and a lot that cannot give both is refused with the lot it would need.
+ROOM_CLEAR = {"hall": 4, "wing": 3, "gate": 3}
+#: How deep the hall may grow where the pad has depth to spare, and how deep a wing.
+ROOM_CLEAR_MAX = {"hall": 5, "wing": 4, "gate": 3}
+#: The court this type makes where the design asks for none: a court of five is a yard a
+#: person crosses in four steps with a well in one corner; smaller is a light well.
+COURT_LEAST = 5
+#: A court longer than it is wide by more than this gives the extra to the hall, and one
+#: wider than it is long by more than this gives it to the wings: the proportion the
+#: rooms keep, so a large lot is a larger house and not only a larger yard.
+COURT_SLACK = 2
+
+
+def form_plan(pad_w: int, pad_d: int, *, params: dict | None = None,
+              front: str = "north", attached=()) -> dict:
+    """**The house this pad holds, decided before a block is laid.**
+
+        `pad_w` is the pad along the lane, `pad_d` from the lane back. Returns
+        `{"ok", "court": [w, d], "clear": {range: depth}, "depths": {world side: depth},
+          "need": [pad_w, pad_d], "why"}` -- `need` the least pad that holds these rooms
+        round the asked court. The one calculation admission (`ethoslm.formplan`) and
+        construction (`build`) both read, so a lot the compiler admits is the house the
+        builder lays.
+        
+    """
+    params = dict(params or {})
+    court = max(COURT_LEAST, int(params.get("court") or 0))
+    wall2 = 2
+    gate = ROOM_CLEAR["gate"] + wall2
+    hall = ROOM_CLEAR["hall"] + wall2
+    wing = ROOM_CLEAR["wing"] + wall2
+    need = [court + 2 * wing, court + gate + hall]
+    cw, cd = pad_w - 2 * wing, pad_d - gate - hall
+    base = {"need": need, "asked_court": court,
+            "rooms": {k: v for k, v in ROOM_CLEAR.items()}}
+    if cw < court or cd < court:
+        return {**base, "ok": False, "court": [cw, cd],
+                "why": (f"a {pad_w}x{pad_d} pad holds a court of {cw}x{cd} round rooms "
+                        f"of {ROOM_CLEAR['hall']} (hall), {ROOM_CLEAR['wing']} (wings) and "
+                        f"{ROOM_CLEAR['gate']} (gate range) clear; a court of {court} "
+                        f"needs a pad of {need[0]}x{need[1]}")}
+    # the spare, shared between the court and the rooms in proportion
+    while cd > cw + COURT_SLACK and hall < ROOM_CLEAR_MAX["hall"] + wall2:
+        hall += 1
+        cd -= 1
+    while cw > cd + COURT_SLACK + 1 and wing < ROOM_CLEAR_MAX["wing"] + wall2:
+        wing += 1
+        cw -= 2
+    back = OPP.get(front, "south")
+    flank = ("west", "east") if front in ("north", "south") else ("north", "south")
+    depths = {front: gate, back: hall, flank[0]: wing, flank[1]: wing}
+    return {**base, "ok": True, "court": [cw, cd], "depths": depths,
+            "clear": {"hall": hall - wall2, "wing": wing - wall2, "gate": gate - wall2},
+            "why": (f"a {pad_w}x{pad_d} pad: gate range {gate - wall2}, wings "
+                    f"{wing - wall2}, hall {hall - wall2} clear round a {cw}x{cd} court")}
+
+
+def _ranges_clear(res: dict, entrance: str, far: str) -> dict:
+    """The clear depth of each range the shell laid, by use (gate, hall, wings)."""
+    court = ((res.get("extras") or {}).get("courtyard") or {})
+    depths = court.get("depths") or {}
+    if not depths:
+        return {}
+    out = {}
+    for side, d in depths.items():
+        use = "gate" if side == entrance else "hall" if side == far else f"wing_{side}"
+        out[use] = int(d) - 2
+    return out
 
 
 def _range_depth(side_len: int, storeys: int) -> int:
@@ -453,14 +1231,33 @@ def build(b, part, seed, **params):
         screen = "wall"
     asked = {"storeys": asked_storeys, "screen": screen}
 
-    rw, rd = _range_depth(W, storeys), _range_depth(D, storeys)
-    yard = (W - 2 * rw, D - 2 * rd)
-    attempts = [(1, yard), (1, (W - 6, D - 6))]
+    want_court = int(params.get("court") or 0)
+    if want_court:
+        asked["court"] = want_court
+    # **the rooms first, the court what they leave** (`form_plan`): the same answer the
+    # compiler admitted this lot on. The front is the side the door is on.
+    ddx, ddz = (part.get("door") or [None, None])[0], (part.get("door") or [None, None])[-1]
+    front = (part.get("front") or ("west" if ddx == px0 else "east" if ddx == px1
+                                   else "north" if ddz == pz0 else "south"))
+    along_x = front in ("north", "south")
+    fp = form_plan(W if along_x else D, D if along_x else W, params=params, front=front,
+                   attached=part.get("attached") or ())
+    if fp["ok"]:
+        attempts = [(1, {"depths": fp["depths"]})]
+    else:
+        # **a lot the plan did not admit** -- a retained plan drawn before rooms were
+        # sized, or a court asked beyond the lot. The house still stands on the type's
+        # old proportion, and the record says the rooms are short rather than hiding it.
+        rw, rd = _range_depth(W, storeys), _range_depth(D, storeys)
+        if want_court:
+            rw = max(3, min(rw, (W - want_court) // 2))
+            rd = max(3, min(rd, (D - want_court) // 2))
+        attempts = [(1, (W - 2 * rw, D - 2 * rd)), (1, (W - 6, D - 6))]
     res, used_st = None, None
     rung = None
     main = (px0, pz0, px1, pz1)
     for i, (st, yd) in enumerate(attempts):
-        if yd[0] < 3 or yd[1] < 3:
+        if not isinstance(yd, dict) and (yd[0] < 3 or yd[1] < 3):
             continue
         r = b.building(label, *main, st, "hip", mat=dict(voice), courtyard=yd,
                        openings="rhythm", stair="auto")
@@ -479,6 +1276,31 @@ def build(b, part, seed, **params):
     far = OPP[entrance]
     door = res.get("door")
     dx, dz = (int(door[0]), int(door[2])) if door and len(door) == 3 else (part["door"][0], part["door"][-1])
+
+    # ---- blank to the lane and to the neighbours -------------------------------------
+    # The fabric reset round. A siheyuan looks inward: from the hutong one sees a grey
+    # wall and a gate, and the rooms take their light from the court. `building()` lays
+    # windows on a rhythm along every outside face, so the lane face read as a row of
+    # windows, and on a side the plan says is **attached** they were windows in a party
+    # wall looking into the next house's wall a block away. So the openings the shell
+    # cut in the gate's face and in every attached face are closed again with the wall;
+    # the court-side openings, and those on a free flank or the rear, stand.
+    attached = sorted({str(v).strip().lower() for v in (part.get("attached") or ())}
+                      & {"north", "south", "east", "west"})
+    blank = set(attached) | {entrance}
+    on_face = {"north": lambda x, z: z == pz0, "south": lambda x, z: z == pz1,
+               "west": lambda x, z: x == px0, "east": lambda x, z: x == px1}
+    wall_blk = b.block(voice["wall"])
+    blanked = 0
+    for lt in res.get("lights") or ():
+        if not (isinstance(lt, (list, tuple)) and len(lt) == 3):
+            continue
+        lx, ly, lz = (int(v) for v in lt)
+        if (lx, lz) == (dx, dz) or not any(on_face[s](lx, lz) for s in blank):
+            continue
+        for yy in (ly + 1, ly + 2):
+            b.place_block(lx, yy, lz, wall_blk)
+        blanked += 1
 
     # ---- the ranges, from the record the shell wrote --------------------------------
     rooms = [tuple(r) for r in (res.get("rooms") or []) if len(r) == 5]
@@ -696,7 +1518,19 @@ def build(b, part, seed, **params):
                      "wings": len(wings), "screen": bool(screen_rect), "chimney": False},
         "rects": rects,
         "floors": list(res.get("floors") or []),
-        "court": {"yard": [yx0, yz0, yx1, yz1], "entrance": entrance, "hall": far},
+        "court": {"yard": [yx0, yz0, yx1, yz1], "entrance": entrance, "hall": far,
+                  "asked": want_court or None,
+                  "held": (None if not want_court else
+                           min(yx1 - yx0 + 1, yz1 - yz0 + 1) >= want_court)},
+        # the rooms the plan decided and the ranges the shell laid: the clear depth of
+        # each range, wall to wall, by its use -- measured again on the blocks by
+        # `ethoslm.formplan.measure_courtyard`
+        "form_plan": {k: fp.get(k) for k in ("ok", "court", "clear", "need", "why")},
+        "ranges_clear": _ranges_clear(res, entrance, far),
+        "rooms_short": (not fp["ok"]),
+        # what the plan said about the lot's flanks, and the windows closed for it
+        "attached": attached,
+        "blanked_openings": blanked,
     }
     if door and len(door) == 3:
         b.check_door(door[0], door[1], door[2])

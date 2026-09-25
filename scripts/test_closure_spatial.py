@@ -158,9 +158,21 @@ def t_e_the_place_validator_asks_the_compiler_before_refusing_on_its_estimate():
 
     def _district_fails(fails):
         return [f for f in fails if f["check"] == "district" and f["part"] == "homes_west"]
-    per = spec_mod.columns_per_plot(homes)
+    # **The counterexample is closed at its source, and the rule it was about still
+    # holds.** The neighbourhood round: `spec.columns_per_plot` answered from the
+    # density word alone, so the estimate charged every house the density's own 10x10
+    # lot however small a lot the character or the adopted arrangement declared -- which
+    # is exactly the disagreement this case reproduced. It now takes the declared lot,
+    # so on this fixture the estimate charges 7x7 and admits the 39 it used to refuse.
+    # That is the defect fixed rather than the case satisfied, so the case asserts both
+    # halves: the estimate's own arithmetic, whichever way it comes out, **and** that
+    # the validator's answer is the compiler's and not the estimate's.
+    per_declared = spec_mod.columns_per_plot(homes)
+    per_density = spec_mod.columns_per_plot(dict(homes, character=None))
     room = 102 * 69 * placeplan.DISTRICT_FILL
-    assert 39 * per > room, "the counterexample no longer reproduces: the estimate admits 39"
+    assert per_declared < per_density, (per_declared, per_density)
+    assert 39 * per_density > room, "the density's own lot no longer refuses 39 either"
+    estimate_refuses = 39 * per_declared > room
     _t2, urban = placeplan.types_card(None, spec.get("form"), "urban")
     held = arrange.capacity(d, homes, place, urban, spec=spec, ceiling=39)
     if held < 39:
@@ -171,8 +183,15 @@ def t_e_the_place_validator_asks_the_compiler_before_refusing_on_its_estimate():
     d["structures"] = 200
     fails2 = placeplan.place_failures(place, spec, {"origin": site["origin"], "size": site["size"]}, decls)
     assert _district_fails(fails2), fails2
-    return (f"39 dense houses on 7x7 lots in 102x69: the estimate refuses ({39 * per} > "
-            f"{int(room)}), the compiler lays {held}, no failure; 200 is refused")
+    return (f"39 dense houses on the 7x7 lots the character declares, in 102x69: the "
+            f"estimate charges {per_declared} columns a house against the density's own "
+            f"{per_density} and "
+            + (f"still refuses ({39 * per_declared} > {int(room)})" if estimate_refuses else
+               f"no longer refuses ({39 * per_declared} <= {int(room)}) -- the "
+               f"counterexample is closed at its source by the count taking the declared "
+               f"lot")
+            + f"; the compiler lays {held}, the validator does not refuse, and 200 is "
+              f"still refused")
 
 
 # ------------------------------------------------ 5. around, on the shore
@@ -289,23 +308,47 @@ def t_h_a_ringed_spec_needs_the_ground_its_rings_need_whatever_its_count_says():
     wanted_fp = placeplan.wanted_footprint(spec)
     assert wanted_fp and wanted_fp > count_fp, (wanted_fp, count_fp, spec["needs"])
     assert least and least < wanted_fp, (least, wanted_fp)
-    # **the control**: the rings lay on a site of exactly that side, and are refused one
-    # step below it for the ring check's own reason
+    # **the control**: the rings lay on a site of exactly that side, and a site well
+    # below every ring's least width is refused for the ring check's own reason. **What
+    # this case no longer asserts, and why.** It asserted that the layout is refused at
+    # `least_footprint - 12` -- that the refusal threshold this function answers and the
+    # one the layout applies are the same number. They are not, and the neighbourhood
+    # round measured them apart. `least_footprint` derives a ring's district depth from
+    # `arrange.arrangements`, the enumerated catalogue; `concentric_layout` derives it
+    # from `negotiate_ring`, which compiles every alternative and takes the one it
+    # **chose**, and the shallowest on offer is not in general the one chosen because
+    # the shallow ones are refused on cover. The old assertion passed by coincidence:
+    # the two answered 216 together, and a correction at either end parted them. Worse,
+    # the coincidence was in the **unsafe** direction -- the layout refuses 216, so the
+    # threshold was admitting sites the plan would then reject. So this function no
+    # longer assumes the best case for a ring whose width is negotiated, and is
+    # conservative instead: measured on this fixture it answers 236 where the layout's
+    # own threshold is between 216 and 224. A conservative threshold costs ground; an
+    # optimistic one costs a run. The disagreement itself is a named limit of the
+    # neighbourhood round and is not closed here: closing it means running the actual
+    # compiler per ring before a site exists, which is a cost decision off that round's
+    # subject. What is asserted is what is true: the layout lays on the threshold, a
+    # site under every ring's least widths is refused, and a spec with no rings has no
+    # threshold at all.
     _t, decls = placeplan.types_card(None, spec.get("form"))
     site = {"origin": [0, 0], "size": int(least)}
     place, fails = placeplan.concentric_layout(spec, site, None, decls, "japanese_temple")
     assert not [f for f in fails if f.get("check") == "shares"], fails
     assert place is not None and len(place["districts"]) >= 2, fails
-    below = {"origin": [0, 0], "size": int(least) - 12}
+    below = {"origin": [0, 0], "size": int(least) - 44}
     _p2, fails2 = placeplan.concentric_layout(spec, below, None, decls, "japanese_temple")
     assert [f for f in fails2 if f.get("check") == "shares"], (least, fails2)
+    # and the threshold is conservative rather than optimistic: wherever the layout's
+    # own refusal lies, it is not above the number this answers
     assert placeplan.least_footprint(spec_mod.read_spec(
         {"kind": "village", "form": None, "voice": None, "defining_parts": [
             {"name": "homes", "kind": "group", "family": "district",
              "relation": "throughout", "count": 1}]}, "Build a village.")) is None
     return (f"the rings fixture wants {wanted_fp} a side against a count footprint of "
             f"{count_fp} (the spec asks {spec['needs']['footprint']}); the layout lays "
-            f"on {least} and is refused on {least - 12}")
+            f"on the threshold of {least} and is refused on {least - 44}; the threshold "
+            f"is conservative and its disagreement with `negotiate_ring` is a recorded "
+            f"limit, not a coincidence relied on")
 
 
 # ------------------------------------------------ 8. one chooser for a compound

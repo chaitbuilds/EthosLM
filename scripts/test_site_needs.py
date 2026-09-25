@@ -522,6 +522,11 @@ def t_2_terrace_levels_rise_inward_and_the_layout_carries_them():
             f"levels win; no ground, no levels")
 
 
+#: How far a terrace's own works reach into the ground it refused: the retaining face
+#: one column in, and the feathered slope a neighbouring piece dresses beyond it.
+SEAM_REACH = 3
+
+
 @case
 def t_2_a_three_ring_spec_on_a_relief_40_fixture_stands_on_three_terraces():
     from ethoslm import offline, observe, placeplan, pipeline
@@ -570,9 +575,12 @@ def t_2_a_three_ring_spec_on_a_relief_40_fixture_stands_on_three_terraces():
         assert got["preflight"]["estimated_blocks"] > 0 and not got["preflight"]["refused"]
         again = stages_plan.stage_terraces(rnd, be, {})
         assert "skipped" in again
-        # the ground: every ring one level, no water, the podium above the upper ring
+        # the ground: every ring at its design's own decision, no water where it was
+        # prepared, the podium above the upper ring
         v2 = rnd.volume()
         h, wet = observe.ground_heights(v2)
+        base_vol = offline.load_volume(os.path.join(tmp, "world.before-plateau.npz"))
+        base_h, _base_wet = observe.ground_heights(base_vol)
         cx, cz = place["layout"]["centre"]
         lay = place["layout"]
         levels = {}
@@ -588,7 +596,14 @@ def t_2_a_three_ring_spec_on_a_relief_40_fixture_stands_on_three_terraces():
                         return True
             return False
         for r in lay["rings"]:
-            a, b = r["inner"] + 12, r["outer"] - 4     # clear of the feathers
+            # clear of the feathers -- **the library's own maximum**, not 12. The
+            # neighbourhood delivery round: a fall of four between two rings feathers
+            # further than twelve columns on a relief-40 fixture, so the sample of
+            # `outer_town` took ground the ring inside it had dressed and read 75 where
+            # its own level is 73. The margin is `Builder.PLATEAU_FEATHER_MAX`, which is
+            # the widest slope any piece of this library dresses.
+            a = r["inner"] + max(12, int(Builder.PLATEAU_FEATHER_MAX) + 2)
+            b = r["outer"] - 4
             xs = np.arange(cx - b, cx + b + 1) - v2.x0
             zs = np.arange(cz - b, cz + b + 1) - v2.z0
             cheb = np.maximum(np.abs(np.arange(-b, b + 1))[:, None],
@@ -600,11 +615,85 @@ def t_2_a_three_ring_spec_on_a_relief_40_fixture_stands_on_three_terraces():
                     q = piece["rect"]
                     ring[max(0, q[0] - m - (cx - b)):q[2] + m + 1 - (cx - b),
                          max(0, q[1] - m - (cz - b)):q[3] + m + 1 - (cz - b)] = False
+            # **Re-registered by the neighbourhood delivery round**, and the rule under
+            # it changed: `terrace_annulus` no longer levels every column of the
+            # rectangle it is given, because a mask that excludes housing from a
+            # hillside on the ground that it must not be cut, beside a builder that cuts
+            # it anyway, is two rules about one question. On this `relief=40` fixture
+            # thirteen to nineteen blocks of cut stand over the belt's east strip and
+            # `feasible.terrain` at the mask's own bound refuses all 27,920 of its
+            # columns, so the ring is deliberately **not** one level. The question is
+            # kept and made two-sided, which is more than it asked before: every column
+            # the design **moved** reads the ring's level and is dry, and every column
+            # it **kept** reads the bed it was found at. A terrace that levelled nothing
+            # passes neither half.
             hh = h[np.ix_(xs, zs)][ring]
             ww = wet[np.ix_(xs, zs)][ring]
-            levels[r["name"]] = (int(hh.min()), int(hh.max()), int(ww.sum()))
-            assert hh.min() == hh.max() == r["level"], (r["name"], levels[r["name"]])
-            assert ww.sum() == 0, (r["name"], int(ww.sum()))
+            hb = base_h[np.ix_(xs, zs)][ring]
+            from ethoslm import feasible as _feas
+            reach = int(placeplan.DISTRICT_TERRACE_REACH)
+            dec = _feas.record(base_vol, (cx - b, cz - b, cx + b, cz + b),
+                               level=r["level"], relief=reach, fill=reach, window=0)
+            moved_mask = _feas.mask_of(dec)[ring]
+            n_moved, n_kept = int(moved_mask.sum()), int((~moved_mask).sum())
+            levels[r["name"]] = (int(hh.min()), int(hh.max()), int(ww.sum()),
+                                 n_moved, n_kept)
+            if n_kept:
+                # ...and a kept column **at the seam** is the one exception, by design:
+                # where prepared ground stands over kept ground the drop is carried as a
+                # retaining face one column into the kept ground, exactly as the rim is
+                # faced, so a person meets a wall's top and not a hole. Those columns
+                # are excluded and counted; every other kept column is the ground as
+                # found.
+                import numpy as _np
+                mm = _np.zeros_like(moved_mask)
+                grid = _np.zeros(ring.shape, dtype=bool)
+                grid[ring] = moved_mask
+                near = grid.copy()
+                for _ in range(SEAM_REACH):
+                    near[1:, :] |= grid[:-1, :]
+                    near[:-1, :] |= grid[1:, :]
+                    near[:, 1:] |= grid[:, :-1]
+                    near[:, :-1] |= grid[:, 1:]
+                    grid = near.copy()
+                mm = near[ring]
+                # ...and the podium's own feathered slope, which is the plateau's work
+                # and not this ring's: `inner_town` abuts the compound rectangle and the
+                # feather is dressed outward from it.
+                px0f, pz0f, px1f, pz1f = lay["compound_rect"]
+                fmax = int(Builder.PLATEAU_FEATHER_MAX)
+                gx = _np.arange(cx - b, cx + b + 1)[:, None] * _np.ones(
+                    (1, 2 * b + 1), dtype=int)
+                gz = _np.ones((2 * b + 1, 1), dtype=int) * _np.arange(
+                    cz - b, cz + b + 1)[None, :]
+                pod_near = ((gx >= px0f - fmax) & (gx <= px1f + fmax)
+                            & (gz >= pz0f - fmax) & (gz <= pz1f + fmax))[ring]
+                # the same exclusion, both ways: a seam is where two decisions meet and
+                # neither side of it is a statement about one decision alone
+                grid2 = _np.zeros(ring.shape, dtype=bool)
+                grid2[ring] = ~moved_mask
+                near2 = grid2.copy()
+                for _ in range(SEAM_REACH):
+                    near2[1:, :] |= grid2[:-1, :]
+                    near2[:-1, :] |= grid2[1:, :]
+                    near2[:, 1:] |= grid2[:, :-1]
+                    near2[:, :-1] |= grid2[:, 1:]
+                    grid2 = near2.copy()
+                near_kept = near2[ring]
+                far = (~moved_mask) & (~mm) & (~pod_near)
+                clean = moved_mask & (~near_kept) & (~pod_near)
+                levels[r["name"]] = levels[r["name"]] + (int(clean.sum()),
+                                                        int(far.sum()))
+                if clean.any():
+                    assert hh[clean].min() == hh[clean].max() == r["level"], (
+                        r["name"], "a column the design moved does not read its level",
+                        int(hh[clean].min()), int(hh[clean].max()), r["level"])
+                    assert ww[clean].sum() == 0, (r["name"], int(ww[clean].sum()))
+                if far.any():
+                    assert (hh[far] == hb[far]).all(), (
+                        r["name"], "a column the design refused, away from any seam, "
+                        "was moved anyway",
+                        int((hh[far] != hb[far]).sum()), int(far.sum()))
         px0, pz0, px1, pz1 = lay["compound_rect"]
         pod = h[px0 - v2.x0:px1 - v2.x0 + 1, pz0 - v2.z0:pz1 - v2.z0 + 1]
         assert pod.min() == pod.max() == med + 12, (int(pod.min()), int(pod.max()))
@@ -647,8 +736,11 @@ def t_2_a_three_ring_spec_on_a_relief_40_fixture_stands_on_three_terraces():
             grounds[d["name"]] = sited["ground"]
         assert set(grounds.values()) == {"plinth"}, grounds
         return (f"podium {med + 12} over rings at {med + 8}/{med + 4}/{med} on a 40-relief "
-                f"slope with a pond: every "
-                f"ring one level and dry ({levels}), {got['placed']} blocks in "
+                f"slope with a pond: every column each ring's design **moved** reads its "
+                f"level and is dry, and every column it **refused** at a reach of "
+                f"{int(placeplan.DISTRICT_TERRACE_REACH)} reads the bed it was found at "
+                f"-- per ring (min, max, wet, moved, kept, moved clear of a seam, kept "
+                f"clear of one) {levels}, {got['placed']} blocks in "
                 f"{got['seconds']}s; {len(got['approaches'])} gate approaches level then "
                 f"ramped; walls {walls}; six plots all plinths")
 
@@ -2021,7 +2113,29 @@ def t_9_the_offline_backend_reads_the_terraces_the_stage_laid():
         lay = place["layout"]
         r = lay["rings"][-1]
         cx, cz = lay["centre"]
-        x, z = cx - (r["inner"] + r["outer"]) // 2, cz
+        # **a column the terrace will actually move.** The neighbourhood delivery round:
+        # this took the midpoint of the belt, and on a relief-40 fixture that column is
+        # 13 blocks off the ring's level, so the bounded terrace correctly leaves it
+        # exactly as found and the case read 54 before and 54 after. The subject here is
+        # the *backend's cache*, not the ground policy -- so the sample is a column the
+        # design decided to move, found through the same mask the builder consults.
+        from ethoslm import feasible as _feas
+        reach = int(placeplan.DISTRICT_TERRACE_REACH)
+        a_, b_ = r["inner"] + 8, r["outer"] - 4
+        dec = _feas.record(be.volume, (cx - b_, cz - b_, cx + b_, cz + b_),
+                           level=r["level"], relief=reach, fill=reach, window=0)
+        mask = _feas.mask_of(dec)
+        x = z = None
+        if mask is not None:
+            import numpy as _np
+            cheb = _np.maximum(_np.abs(_np.arange(-b_, b_ + 1))[:, None],
+                               _np.abs(_np.arange(-b_, b_ + 1))[None, :])
+            here = mask & (cheb > a_) & (cheb <= b_)
+            if here.any():
+                i, j = (int(v[0]) for v in _np.nonzero(here))
+                x, z = cx - b_ + i, cz - b_ + j
+        assert x is not None, ("no column of this belt is inside the mask's own bound at "
+                               "the ring's level", r["level"], reach)
         h0, _ = observe.ground_heights(be.volume)          # cached: the plan stage's read
         before = int(h0[x - be.volume.x0, z - be.volume.z0])
         got = stages_plan.stage_terraces(rnd, be, {})

@@ -44,14 +44,33 @@ from __future__ import annotations
 
 import json
 import os
+import re
 
-#: The six wants, in the order the contract names them.
+#: The wants, in the order the contract names them. **Seven** since the block design
+#: round: `court_enclosed` is the question `range_relation` could not be asked -- a
+#: block's court is enclosed by *other parts*, and nothing in this module had a way to
+#: ask whether they stood. See its docstring.
 WANTS = ("entrance_connected", "passage_connected", "equipment_reachable",
-         "circulation_clear", "court_accessible", "range_relation")
+         "circulation_clear", "court_accessible", "range_relation", "court_enclosed")
 
 #: The observation methods, weakest last. Nothing here ever returns `holds: True` with
 #: `method: "declared"`: a declaration is what this module exists to stop counting.
-METHODS = ("observed", "inferred", "declared", "unsupported")
+#: **`inapplicable` is not `unsupported`**, the neighbourhood delivery round, and the
+#: independent reader's own finding about the round before it: *"`usable.json` has no
+#: failures because two thirds of its checks were unanswerable, not because they
+#: passed."* Two hundred and one of the delivered candidate's three hundred and eight
+#: answers were `unsupported`, and they are two entirely different facts wearing one
+#: word. A row house has no court, so `court_accessible` is a question about it that
+#: does not arise -- nothing is owed, nothing is missing, and counting it as an
+#: unanswered question makes the coverage figure meaningless in the direction that
+#: flatters. A part that *does* claim a court and whose floor level could not be read is
+#: a **measurement gap**, and that is what a reader needs to see. Neither ever
+#: establishes a predicate; the round's rule is that a measurement exception must not
+#: become an affirmative outcome, and `answer` still refuses `holds: True` for both.
+METHODS = ("observed", "inferred", "declared", "inapplicable", "unsupported")
+
+#: The methods that are an absence of evidence rather than evidence.
+NOT_EVIDENCE = ("declared", "inapplicable", "unsupported")
 
 #: Features that are **equipment**: a thing the function needs in order to be that
 #: function, which a person has to be able to walk up to. Read off the names
@@ -63,6 +82,35 @@ EQUIPMENT = ("stalls", "forge", "hearth", "counter", "altar", "dais", "benches",
 #: Features that are **open ground** -- a court, a yard, an aisle. The same list
 #: `construction.OPEN_FEATURES` verifies by openness rather than by mass.
 COURTS = ("courtyard", "court", "yard")
+
+#: **How far from a court's edge a building may stand and still be a side of it.** The
+#: block design round, and a second independent reader's measurement: the compiler wrote
+#: `reach: 13` on the leaf, which is wider than the court is deep, and the nearest mass
+#: on every face of every delivered court is 4 or 5 columns out -- the clearance between
+#: the court's paving and the ranges' lots (`district_compile.LOT_GAP` plus the inset
+#: `site()` leaves round a pad) and no more. Six columns is that clearance and one more;
+#: beyond it the measure reaches past a range into the next block's ground and the
+#: sentence "buildings stand on all four sides" stops being about this court.
+ENCLOSED_REACH = 6
+
+#: **How much of a court's face has to carry building for the face to be there.** The
+#: hole test alone -- no unbroken run of uncovered columns wider than the fabric's own
+#: clearance -- passes an eight-column face with two columns covered, in the pattern
+#: `..X...X.`. Both bars have to hold. Half, because a court whose faces are half
+#: building and half the clearance between two lots is the ordinary urban block.
+ENCLOSED_FACE_COVER = 0.5
+
+#: **How far past a range's pad inset its wall may stand and still be a face.** The
+#: quarter design round: where a court owns its margin (`court_site.margin`, out to the
+#: ranges' lot lines), the reach is measured from the margin's edge and is the ranges'
+#: own pad inset (`buildlib.PAD_SITE_INSET`) plus this: the wall column itself and one
+#: more for a verandah post or an eave the wall stands behind.
+ENCLOSED_WALL_REACH = 2
+
+#: The open-ground types that **are** a court rather than claim one: a shared court a
+#: block's ranges enclose, laid as an area leaf by
+#: `district_compile.compose_court_block`.
+SHARED_COURT_TYPES = ("yard", "court_small", "court_large", "garden", "plaza", "square")
 
 #: What share of a room's floor has to be walkable from that part's own doorways for the
 #: part to be connected inside. `lint.w011_partly_walkable` warns below this and it is
@@ -79,6 +127,56 @@ REACH = 2
 #: *enclosed by ranges* rather than merely surrounded by whatever was there. Three of
 #: four is the same bar `construction.measure` holds a storey's wall ring to.
 COURT_SIDES = 3
+
+#: **What makes a side of a court a range rather than a wall.** The neighbourhood round,
+#: and the two questions the old measurement ran together. `range_relation` read one
+#: ring of cells outside the court and asked whether they carry the part's mass at wall
+#: height. A courtyard house in this library's tradition is a ring of rooms behind a
+#: *veranda*, so the ring immediately outside the court is boards, posts and open air
+#: **by design** and the ranges stand a column further out. Measured on flat-ground
+#: probes of `court_large` at eight pads: the predicate found 0, 1 or 2 ranged sides on
+#: courts that four ranges of rooms stood round. That is a measurement artefact and not
+#: a finding about the building -- and, the other way about, a yard inside a bare
+#: boundary wall was "ranged" on all four sides, which is the reading the predicate's
+#: own docstring says it exists to refuse. Two measurements now, over the band from the
+#: court's edge out to the part's own footprint edge on that side: * a side is
+#: **closed** when at least half its columns carry the part's mass at wall height
+#: anywhere in that band -- the enclosure question, which the veranda no longer hides; *
+#: a side is **ranged** when it is closed **and** the part's own ground reaches
+#: `RANGE_DEPTH` columns beyond the court there -- the "rooms and not a wall" question.
+#: Two and not one: one column of a part's ground behind a court is a boundary wall, and
+#: two is the shallowest band that can hold a room. The setback and not a count of mass
+#: cells along the ray, deliberately. Counting mass makes the verdict turn on whether a
+#: chest happens to stand in it: measured on `court_large` at an 11x9 pad, twenty-four
+#: of a hundred and eight probes read one ranged side where the rest read four, on
+#: ranges of identical depth, because a room behind a veranda is air at wall height
+#: except where the furnishing pass reached. A range is a fact about the plan, and the
+#: plan is where it is read. The verdict needs `COURT_SIDES` closed **and**
+#: `RANGED_SIDES` of them ranged, so a walled garden fails where it used to pass and a
+#: veranda court passes where it used to fail. Neither bar is a relaxation of the other:
+#: `COURT_SIDES` is unmoved and `RANGED_SIDES` is new. A court with three ranges and a
+#: gate wall -- which is what `court_small` is -- reads four closed and three ranged,
+#: and says so.
+RANGE_DEPTH = 2
+
+#: How many of the closed sides must be a range of rooms rather than a wall. Two: a
+#: building round a court, where the other two sides may be the gate wall and a screen.
+RANGED_SIDES = 2
+
+#: How far out from a court a range may be looked for. A range deeper than this is a
+#: wing of the building and not the side of the court; the bound also keeps the scan off
+#: a neighbour's mass, which `plot_at` already refuses but which would otherwise be read
+#: column by column for nothing.
+RANGE_REACH = 8
+
+#: How far from the court a **room** may start and still be a room on it. The third face
+#: of the same artefact: `_touches` asked for a bounding box sharing an edge with the
+#: court, and a range whose rooms open onto the court **across their own veranda**
+#: starts two cells out. Measured on `court_small` at 13x13: every two-storey instance
+#: reported `0 room(s) on it` for the hall its whole plan is organised round, because
+#: the engawa is one row wide. Two, which is the veranda; a room three cells back is
+#: behind another room and is not on the court.
+ROOM_REACH = 2
 
 #: How far out from a part's footprint the ground has to be walkable and on the main
 #: outdoor component for its circulation to be clear. The 1- and 2-ring, which is the
@@ -338,7 +436,7 @@ def answer(holds, method: str, why: str, subjects=(), **evidence) -> dict:
     """One predicate's answer, in the one shape. See the module."""
     if method not in METHODS:
         raise ValueError(f"method is one of {METHODS}, not {method!r}")
-    if holds and method in ("declared", "unsupported"):
+    if holds and method in NOT_EVIDENCE:
         raise ValueError(f"{method} evidence cannot establish a predicate: a "
                          f"declaration and an absence are the two things this module "
                          f"exists to stop counting as use")
@@ -440,7 +538,8 @@ def passage_connected(world: "World", name: str, row: dict, prov: dict) -> dict:
     """
     rooms = world.walk().get(name) or []
     if not rooms:
-        return answer(None, "unsupported",
+        # the question does not arise: a part with no room has no passage
+        return answer(None, "inapplicable",
                       f"{name} encloses no room in the assembled world, so it has no "
                       f"passage to be connected", [name], rooms=0, **prov)
     rooms = [r for r in rooms if r.get("fraction") is not None]
@@ -617,7 +716,8 @@ def equipment_reachable(world: "World", name: str, row: dict, prov: dict) -> dic
                           f"rectangle for any of them; a declared feature with no "
                           f"rectangle cannot be looked for", [name],
                           declared=sorted(claimed), rects=0, **prov)
-        return answer(None, "unsupported",
+        # the question does not arise: this part declares no equipment
+        return answer(None, "inapplicable",
                       f"{name} claims no equipment, so there is none to find", [name],
                       **prov)
     if fy is None:
@@ -748,8 +848,25 @@ def court_accessible(world: "World", name: str, row: dict, prov: dict) -> dict:
     """
     rects = _claimed_rects(row, COURTS)
     fy = _floor_of(world, name, row)
+    #: **A shared court is the open part itself, not a rect a building claims.** The
+    #: neighbourhood delivery round, and the audit's fourth cause measured on its own
+    #: answer: the compiler now composes a court that a block's four ranges enclose and
+    #: lays it as a `yard`, and both of the crowded ring's stood on the built section --
+    #: and this predicate answered `inapplicable` for each of them, because a yard
+    #: declares no `courtyard` rectangle. It is not claiming a court; it **is** one. So
+    #: where the part's own type is one of the library's open-ground court types, its
+    #: own rectangle is the court and the same three questions are asked of it: paved,
+    #: open to the sky, and reachable -- from the street rather than from inside a
+    #: building, because a shared court is entered from outside. A courtyard *house*
+    #: still answers about the rect it claims, exactly as before.
+    own_court = not rects and str(row.get("type")) in SHARED_COURT_TYPES
+    if own_court:
+        r = _part_rect(world, name, row)
+        if r:
+            rects = {"court": [[int(v) for v in r]]}
     if not rects:
-        return answer(None, "unsupported",
+        # the question does not arise: this part declares no court
+        return answer(None, "inapplicable",
                       f"{name} claims no court, so there is none to reach", [name],
                       **prov)
     if fy is None:
@@ -764,12 +881,35 @@ def court_accessible(world: "World", name: str, row: dict, prov: dict) -> dict:
             x0, z0, x1, z1 = rect
             cells = [(x, z) for x in range(min(x0, x1), max(x0, x1) + 1)
                      for z in range(min(z0, z1), max(z0, z1) + 1)]
-            open_cells = [c for c in cells
-                          if vol.name(c[0], fy, c[1]) != "air"
-                          and all(vol.name(c[0], fy + k, c[1]) == "air"
-                                  for k in (1, 2, 3))]
+            # **A bottom slab is a floor, not a roof.** The neighbourhood delivery
+            # round. "Open" was `air at fy+1..fy+3`, which is the right question about a
+            # courtyard a later storey may have been carried over and the wrong one
+            # about a court somebody laid a kerb round: the two composed courts of the
+            # crowded ring are paved `packed_mud` with a border of spruce slabs and four
+            # lanterns, and the border made 22 of their 40 columns read as filled. A
+            # slab is a step a person walks on. For a court that **is** the open part,
+            # the test is the one every other physical predicate in this project uses --
+            # can a person stand here -- and the sky test below is unchanged, so a court
+            # something was built over still fails.
+            if own_court:
+                open_cells = [c for c in cells
+                              if world.ctx.nav.stance_near(c[0], c[1], fy + 1,
+                                                           tol=1) is not None]
+            else:
+                open_cells = [c for c in cells
+                              if vol.name(c[0], fy, c[1]) != "air"
+                              and all(vol.name(c[0], fy + k, c[1]) == "air"
+                                      for k in (1, 2, 3))]
             sky = _sky_over(world, open_cells, fy)
-            at = _reachable_at(world, rect, fy, flood) if open_cells else []
+            # a court a block encloses is entered from the street, not from inside a
+            # building: the reach is the place's own outdoor circulation
+            at = ([c for c in open_cells
+                   if world.ctx.nav.stance_near(c[0], c[1], fy + 1, tol=1) is not None
+                   and (c[0], c[1],
+                        world.ctx.nav.stance_near(c[0], c[1], fy + 1, tol=1))
+                   in (world.ctx.circulation or ())]
+                  if own_court else
+                  (_reachable_at(world, rect, fy, flood) if open_cells else []))
             share = len(open_cells) / float(len(cells)) if cells else 0.0
             sky_share = sky / float(len(cells)) if cells else 0.0
             rows.append({"feature": f, "rect": rect, "cells": len(cells),
@@ -785,18 +925,52 @@ def court_accessible(world: "World", name: str, row: dict, prov: dict) -> dict:
             elif not at and f not in cut_off:
                 cut_off.append(f)
     ok = not filled and not roofed and not cut_off
+    how = "from the street" if own_court else "from inside"
     return answer(ok, "observed",
                   (f"{name}: {sorted(rects)} is paved, open to the sky and reachable "
-                   f"from inside" if ok else f"{name}: " + "; ".join(
+                   f"{how}" if ok else f"{name}: " + "; ".join(
                        ([f"{filled} is no longer open paved ground in the assembled "
                          f"world"] if filled else [])
                        + ([f"{roofed} is paved and something stands over it within "
                            f"{SKY_COURSES} course(s): a covered court is a room"]
                           if roofed else [])
-                       + ([f"{cut_off} is open and no stance in it is reachable from "
-                           f"this part's own doors"] if cut_off else []))),
+                       + ([f"{cut_off} is open and no stance in it is reachable "
+                           + ("from the street" if own_court
+                              else "from this part's own doors")] if cut_off else []))),
                   [name], courts=rows, filled=filled, roofed=roofed, cut_off=cut_off,
                   floor_y=fy, **prov)
+
+
+def _part_rect(world: "World", name: str, row: dict):
+    """The part's own footprint, off its row or off the plot registry, or None."""
+    if row.get("x0") is not None or row.get("footprint"):
+        return _rect(row)
+    rows = _plot_rows(world, name)
+    if not rows:
+        return None
+    return (min(int(p["x0"]) for p in rows), min(int(p["z0"]) for p in rows),
+            max(int(p["x1"]) for p in rows), max(int(p["z1"]) for p in rows))
+
+
+def _range_depth(world: "World", name: str, x: int, z: int, dx: int, dz: int,
+                 fy: int, reach: int) -> int:
+    """How deep this part's own mass stands walking out of the court from `(x, z)`.
+
+        The cells are stepped outward one at a time and counted where they carry the part's
+        mass at wall height; the walk stops at the first cell that is not this part's ground,
+        so a neighbour's wall two columns beyond the plot edge is never a range of this
+        court. The **count**, not the distance: a room is a wall, air, and a wall, and it is
+        the two walls that make it a range. See `RANGE_DEPTH`.
+        
+    """
+    vol, got = world.ctx.vol, 0
+    for k in range(1, reach + 1):
+        cx, cz = x + dx * k, z + dz * k
+        if world.ctx.plot_at(cx, cz) != name:
+            break
+        if any(vol.name(cx, y, cz) != "air" for y in range(fy + 1, fy + 4)):
+            got += 1
+    return got
 
 
 def range_relation(world: "World", name: str, row: dict, prov: dict) -> dict:
@@ -804,21 +978,26 @@ def range_relation(world: "World", name: str, row: dict, prov: dict) -> dict:
 
         The one predicate about architectural **organisation** rather than about access: a
         courtyard house is a ring of ranges round a yard, and a yard with a range on one
-        side and open ground on three is a building with a garden. Measured as the sides of
-        the court that carry this part's own mass at wall height (`COURT_SIDES` of four),
-        and as the rooms of this part whose floor touches the court's edge.
+        side and open ground on three is a building with a garden. Measured over each side's
+        **range band** -- the columns from the court's edge out to the part's own footprint
+        edge -- as `COURT_SIDES` of four sides closed by this part's mass, `RANGED_SIDES` of
+        them a range of rooms rather than a wall, and at least one room of this part
+        adjoining the court.
+
+        **The band and not the first column, and closed is not ranged.** See `RANGE_DEPTH`
+        for both halves, and for what each of them was measured to fix.
         
     """
     rects = _claimed_rects(row, COURTS)
     fy = _floor_of(world, name, row)
     if not rects:
-        return answer(None, "unsupported",
+        # the question does not arise: this part declares no court
+        return answer(None, "inapplicable",
                       f"{name} claims no court, so it has no court-and-range relation "
                       f"to have", [name], **prov)
     if fy is None:
         return answer(None, "unsupported",
                       f"{name} records no floor level", [name], **prov)
-    vol = world.ctx.vol
     rows, bad = [], []
     rooms = world.walk().get(name) or []
     for f, places in sorted(rects.items()):
@@ -826,52 +1005,336 @@ def range_relation(world: "World", name: str, row: dict, prov: dict) -> dict:
         # is the only one a "court and its ranges" relation is defined over
         rect = places[0]
         x0, z0, x1, z1 = rect
-        sides = {"north": [(x, z0 - 1) for x in range(x0, x1 + 1)],
-                 "south": [(x, z1 + 1) for x in range(x0, x1 + 1)],
-                 "west": [(x0 - 1, z) for z in range(z0, z1 + 1)],
-                 "east": [(x1 + 1, z) for z in range(z0, z1 + 1)]}
+        sides = {"north": ([(x, z0 - 1) for x in range(x0, x1 + 1)], (0, -1)),
+                 "south": ([(x, z1 + 1) for x in range(x0, x1 + 1)], (0, 1)),
+                 "west": ([(x0 - 1, z) for z in range(z0, z1 + 1)], (-1, 0)),
+                 "east": ([(x1 + 1, z) for z in range(z0, z1 + 1)], (1, 0))}
+        pad = _part_rect(world, name, row)
+        # how far the part's own ground reaches beyond the court on each side: the band
+        # a range would stand in. See `RANGE_DEPTH`.
+        back = {"north": (z0 - pad[1]) if pad else 0,
+                "south": (pad[3] - z1) if pad else 0,
+                "west": (x0 - pad[0]) if pad else 0,
+                "east": (pad[2] - x1) if pad else 0}
         stood = {}
-        for side, cells in sides.items():
-            n = sum(1 for (x, z) in cells
-                    if any(vol.name(x, y, z) != "air" for y in range(fy + 1, fy + 4))
-                    and world.ctx.plot_at(x, z) == name)
-            stood[side] = {"cells": len(cells), "standing": n,
-                           "ranged": bool(cells and n >= 0.5 * len(cells))}
+        for side, (cells, (dx, dz)) in sides.items():
+            depths = [_range_depth(world, name, x - dx, z - dz, dx, dz, fy, RANGE_REACH)
+                      for (x, z) in cells]
+            shut = sum(1 for d in depths if d >= 1)
+            closed_here = bool(cells and shut >= 0.5 * len(cells))
+            stood[side] = {"cells": len(cells), "standing": shut,
+                           "setback": int(back.get(side) or 0),
+                           "deepest": max(depths) if depths else 0,
+                           "median_depth": (sorted(depths)[len(depths) // 2]
+                                            if depths else 0),
+                           "closed": closed_here,
+                           "ranged": bool(closed_here
+                                          and int(back.get(side) or 0) >= RANGE_DEPTH)}
+        closed = sum(1 for v in stood.values() if v["closed"])
         ranged = sum(1 for v in stood.values() if v["ranged"])
         # a range that opens onto the court: a room of this part whose bounding box
         # touches the court's edge on a side that carries mass
         touching = sum(1 for r in rooms
                        if _touches(r.get("bbox"), rect))
-        rows.append({"feature": f, "rect": rect, "sides": stood, "ranged": ranged,
-                     "rooms_on_court": touching})
-        if ranged < COURT_SIDES or not touching:
+        rows.append({"feature": f, "rect": rect, "sides": stood, "closed": closed,
+                     "ranged": ranged, "rooms_on_court": touching,
+                     "depth_bar": RANGE_DEPTH, "sides_bar": COURT_SIDES,
+                     "ranged_bar": RANGED_SIDES})
+        if closed < COURT_SIDES or ranged < RANGED_SIDES or not touching:
             bad.append(f)
     ok = not bad
     return answer(ok, "inferred",
-                  (f"{name}: the court is ranged on {rows[0]['ranged']} of four sides by "
-                   f"this part's own mass and {rows[0]['rooms_on_court']} of its room(s) "
-                   f"adjoin it" if ok else
+                  (f"{name}: the court is closed on {rows[0]['closed']} of four sides by "
+                   f"this part's own mass, {rows[0]['ranged']} of them a range "
+                   f"{RANGE_DEPTH}+ column(s) deep rather than a wall, and "
+                   f"{rows[0]['rooms_on_court']} of its room(s) adjoin it" if ok else
                    f"{name}: {bad} " + ("is not a court enclosed by this part's ranges: "
-                                        + "; ".join(f"{r['feature']} ranged on "
-                                                    f"{r['ranged']} of four side(s), "
+                                        + "; ".join(f"{r['feature']} closed on "
+                                                    f"{r['closed']} of four side(s) "
+                                                    f"(bar {COURT_SIDES}), {r['ranged']} "
+                                                    f"of them a range (bar "
+                                                    f"{RANGED_SIDES}), "
                                                     f"{r['rooms_on_court']} room(s) on it"
                                                     for r in rows if r["feature"] in bad))),
-                  [name], courts=rows, bar=COURT_SIDES, **prov)
+                  [name], courts=rows, bar=COURT_SIDES, ranged_bar=RANGED_SIDES,
+                  depth_bar=RANGE_DEPTH, **prov)
 
 
-def _touches(bbox, rect) -> bool:
-    """Does a room's bounding box share an edge with the court's rectangle?"""
+def _touches(bbox, rect, reach: int = ROOM_REACH) -> bool:
+    """Is a room's bounding box on the court -- its own edge, or across a veranda?
+
+        `reach` is `ROOM_REACH`; see it for the measurement that moved it off one.
+        
+    """
     if not bbox or len(bbox) != 6:
         return False
     rx0, rz0, rx1, rz1 = int(bbox[0]), int(bbox[2]), int(bbox[3]), int(bbox[5])
     cx0, cz0, cx1, cz1 = rect
-    return not (rx0 > cx1 + 1 or rx1 < cx0 - 1 or rz0 > cz1 + 1 or rz1 < cz0 - 1)
+    return not (rx0 > cx1 + reach or rx1 < cx0 - reach
+                or rz0 > cz1 + reach or rz1 < cz0 - reach)
+
+
+def court_enclosed(world: "World", name: str, row: dict, prov: dict) -> dict:
+    """**A block's court has buildings standing round it, on the assembled blocks.**
+
+        The block design round, and the audit's fourth cause read back on its own answer:
+
+            `usable.court_accessible` asks whether a court is paved, open to the sky and
+            reachable; `range_relation`, the one predicate that asks whether buildings
+            stand round it, is not asked of these types at all.
+
+        It could not be. `range_relation` is about a **part's own** ranges round its own
+        yard -- a courtyard house -- and a block's court is enclosed by *other parts*
+        entirely: the front range, the back range and the two end ranges of its block. The
+        delivered section therefore had two paved tiles standing in open cobble, both
+        answering every predicate that was asked of them, with `courts_enclosed: 0` in the
+        compiler's own record and nothing on the built world contradicting the prose.
+
+        This is the question, asked of the blocks. For each of the court's four sides, every
+        column is walked outward up to the reach the compiler claimed and asked whether some
+        **other part** carries mass at wall height there. The longest unanswered run is that
+        side's gap. A clearance between two lots is not a hole in a wall; the passage into
+        the court is the way in and is the one hole a court is meant to have. A side whose
+        gap is wider than those is a face that is not there.
+
+        `inapplicable` where the part claims no enclosure: a verge, a garden and a market
+        floor are open ground and are not claiming to be a court somebody's building
+        encloses.
+        
+    """
+    claim = row.get("enclosure") or next(
+        (p.get("enclosure") for p in _plot_rows(world, name) if p.get("enclosure")),
+        None)
+    if not claim:
+        return answer(None, "inapplicable",
+                      f"{name} claims no block enclosure, so it has no ranges to stand "
+                      f"round it", [name], **prov)
+    # the court, and not this tile of it: see the compiler's note beside `court`
+    rect = claim.get("court") or _part_rect(world, name, row)
+    fy = _floor_of(world, name, row)
+    if not rect or fy is None:
+        return answer(None, "unsupported",
+                      f"{name} records no footprint or no floor level, so the mass "
+                      f"round it cannot be read off the assembled volume", [name],
+                      **prov)
+    vol = world.ctx.vol
+    x0, z0, x1, z1 = (int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3]))
+    court = (x0, z0, x1, z1)
+    # **Measured from the court including the margin it owns.** The quarter design
+    # round: a court's margin -- the planted ring out to its ranges' lot lines -- is the
+    # court's (`court_site`), so what is left between it and a range's wall is that
+    # range's own pad inset, which is `buildlib.pad_insets`' number and not a constant
+    # the fabric's setbacks drift from. A claim with no margin keeps `ENCLOSED_REACH`.
+    margin = claim.get("margin")
+    if margin:
+        from .buildlib import PAD_SITE_INSET
+        x0, z0, x1, z1 = (int(margin[0]), int(margin[1]), int(margin[2]),
+                          int(margin[3]))
+        reach = int(PAD_SITE_INSET) + ENCLOSED_WALL_REACH
+    else:
+        reach = ENCLOSED_REACH
+    # **The bars are this predicate's and never the claim's.** The block design round,
+    # after a second independent reader: the compiler wrote `reach: 13` on the leaf --
+    # wider than an eight-column court is deep -- and wrote no `cover_bar` at all, so
+    # the coverage half of the test defaulted to zero and was **inert**. A claim that
+    # carries its own bar is a claim that grades itself. The claim says what was *built*
+    # (which ranges, where the court is, where the passage is); the measurement and what
+    # counts as passing it belong here, so a record written before this correction is
+    # measured correctly by it and an older artifact can be re-read without being
+    # rewritten.
+    bar = int(claim.get("gap_bar") or 4)
+    entry_bar = bar + int(claim.get("entry_bar") or 0)
+    cover_bar = ENCLOSED_FACE_COVER
+    street = str(claim.get("street_side") or "")
+
+    # **the ranges, under the names the built world knows them by.** The plan names a
+    # leaf `b0_0_00` and the assembler stands it as `<district>_b0_0_00`, so looking the
+    # plan's name up in `world.standing` could never succeed and every court in this
+    # project reported "0 of 12 ranges stood". An independent reader found it, and a
+    # second one found that reading the district off the *claim* does not fix it for any
+    # record written before the compiler started writing that key. The part's own name
+    # is the district and the leaf code, so it is read off the name.
+    _d = str(claim.get("district") or "")
+    if not _d:
+        _d = re.sub(r"_[a-z]{1,2}\d+_\d+[a-z]?(_\d+)?$", "", str(name))
+        _d = "" if _d == str(name) else _d
+
+    def _qual(n):
+        n = str(n)
+        return n if (not _d or n.startswith(_d + "_")) else f"{_d}_{n}"
+    named = {_qual(n) for n in (claim.get("ranges") or [])}
+    #: columns whose mass stood but belongs to a part that is not one of the named
+    #: ranges -- evidence, and never a face
+    foreign: dict = {}
+
+    def stands(cx: int, cz: int) -> bool:
+        """Is **one of this court's named ranges** standing here at wall height?
+
+        The quarter design round, and the audit's fourth cause: "nearby mass is not
+        enclosure by the named group". Mass of any other part -- the next block's
+        houses, a market hall, a wall -- is counted apart and does not make a face."""
+        who = world.ctx.plot_at(cx, cz)
+        if not who or str(who) == name:
+            return False
+        if not any(vol.name(cx, y, cz) != "air" for y in range(fy + 1, fy + 4)):
+            return False
+        if str(who) not in named:
+            foreign[str(who)] = foreign.get(str(who), 0) + 1
+            return False
+        return True
+
+    def covered(x: int, z: int, dx: int, dz: int) -> bool:
+        return any(stands(x + dx * k, z + dz * k) for k in range(1, reach + 1))
+
+    def walk(cells, step) -> tuple:
+        """`(longest uncovered run, covered columns, columns)` of one face."""
+        most = now = got = 0
+        for (cx, cz) in cells:
+            if covered(cx, cz, step[0], step[1]):
+                got, now = got + 1, 0
+            else:
+                now += 1
+                most = max(most, now)
+        return most, got, len(cells)
+
+    faces = {
+        "north": ([(x, z0 - 1) for x in range(x0, x1 + 1)], (0, -1)),
+        "south": ([(x, z1 + 1) for x in range(x0, x1 + 1)], (0, 1)),
+        "west": ([(x0 - 1, z) for z in range(z0, z1 + 1)], (-1, 0)),
+        "east": ([(x1 + 1, z) for z in range(z0, z1 + 1)], (1, 0))}
+    got = {side: walk(cells, step) for side, (cells, step) in faces.items()}
+    gaps = {side: v[0] for side, v in got.items()}
+    # **How much of each face carries building, beside the widest hole in it.** The
+    # block design round, after an independent reader measured the delivered pair: the
+    # hole test alone passes an eight-column face with two columns covered (`..X...X.`),
+    # which is a true statement about holes and a false one about walls. Both bars have
+    # to hold.
+    cover = {side: (round(v[1] / float(v[2]), 3) if v[2] else 0.0)
+             for side, v in got.items()}
+    # **...and the passage is the street face's one hole by design**: where the claim
+    # records one, the street face's cover is measured over the columns that are not the
+    # passage's (the gap bar already allows its width). Every other face, and every
+    # claim with no passage, is measured exactly as before.
+    pas_c = claim.get("passage")
+    if pas_c and street in faces:
+        cells_s, step_s = faces[street]
+        if street in ("north", "south"):
+            keep = [c for c in cells_s if not (int(pas_c[0]) <= c[0] <= int(pas_c[2]))]
+        else:
+            keep = [c for c in cells_s if not (int(pas_c[1]) <= c[1] <= int(pas_c[3]))]
+        if keep and len(keep) < len(cells_s):
+            _m, _g, _n = walk(keep, step_s)
+            cover[street] = round(_g / float(_n), 3) if _n else 0.0
+    bars = {side: (entry_bar if side == street else bar) for side in gaps}
+    open_faces = sorted(s for s in gaps
+                        if gaps[s] > bars[s] or cover[s] < cover_bar)
+    standing = [_qual(n) for n in (claim.get("ranges") or [])
+                if world.standing.get(_qual(n))]
+    n_ranges = len(claim.get("ranges") or [])
+    # **the ranges standing governs the verdict**: a court is enclosed by its own
+    # ranges, and a claimed range that did not stand is a side that is not there
+    ranges_ok = bool(n_ranges) and len(standing) == n_ranges
+    passage = _court_passage(world, claim, court, fy, street)
+    faces_ok = not open_faces
+    ok = faces_ok and ranges_ok and bool(passage.get("established"))
+    fails = []
+    if not faces_ok:
+        fails.append(f"the {', '.join(open_faces)} face(s) of this court are not faces "
+                     f"-- within {reach} column(s) its named ranges carry building over "
+                     f"{ {s: cover[s] for s in open_faces} } of their length against a "
+                     f"bar of {cover_bar:.0%}, with holes {gaps} against {bars}")
+    if not ranges_ok:
+        fails.append(f"{len(standing)} of {n_ranges} claimed ranges stood")
+    if not passage.get("established"):
+        fails.append(f"no passage into it is established: {passage.get('why')}")
+    return answer(ok, "observed",
+                  (f"{name}: this court's own named ranges carry building within {reach} "
+                   f"column(s) of every one of its four faces -- "
+                   f"{min(cover.values()):.0%}..{max(cover.values()):.0%} of each face "
+                   f"against a bar of {cover_bar:.0%}, the widest hole in any face "
+                   f"{max(gaps.values())} column(s) against {bar} "
+                   f"({entry_bar} on its {street} face, where its passage is); "
+                   f"{len(standing)} of {n_ranges} ranges stood; {passage.get('why')}"
+                   if ok else f"{name}: " + "; ".join(fails)),
+                  [name], gaps=gaps, bars=bars, cover=cover, cover_bar=cover_bar,
+                  reach=reach, rect=[x0, z0, x1, z1], court=list(court),
+                  margin=(list(margin) if margin else None),
+                  ranges=list(claim.get("ranges") or []), ranges_standing=standing,
+                  ranges_ok=ranges_ok, foreign_mass=dict(foreign), passage=passage,
+                  planned_gaps=claim.get("planned_gaps"), floor_y=fy, **prov)
+
+
+def _court_passage(world: "World", claim: dict, court, fy: int, street: str) -> dict:
+    """**Is there a way in, and does it open onto this court?** The quarter design round.
+
+    Three questions, each on the evidence: the claim records a passage; the passage
+    **shares columns** with the court along its street face (a gap in a street front
+    opposite an end range is not a way into the court); and a person can **walk** it --
+    from a stance on its street end, inside the passage and the court's first row and
+    nowhere else, to a stance on the court's own edge within those shared columns, at
+    most half a block from the court's floor, with the headroom a stance has."""
+    pas = claim.get("passage")
+    if not pas:
+        return {"established": False,
+                "why": "the claim records no passage, so none is established"}
+    px0, pz0, px1, pz1 = (int(v) for v in pas)
+    cx0, cz0, cx1, cz1 = (int(v) for v in court)
+    along_x = street in ("north", "south")
+    lo, hi = ((max(px0, cx0), min(px1, cx1)) if along_x
+              else (max(pz0, cz0), min(pz1, cz1)))
+    shared = max(0, hi - lo + 1)
+    if not shared:
+        return {"established": False, "shared_columns": 0, "passage": [px0, pz0, px1, pz1],
+                "why": (f"the passage x {px0}..{px1}, z {pz0}..{pz1} shares no column with "
+                        f"the court along its {street} face")}
+    # the street end of the passage, and the court's edge row it opens onto
+    if street == "north":
+        start = [(x, pz0) for x in range(lo, hi + 1)]
+        goal = [(x, cz0) for x in range(lo, hi + 1)]
+        bounds = (lo, pz0, hi, cz0)
+    elif street == "south":
+        start = [(x, pz1) for x in range(lo, hi + 1)]
+        goal = [(x, cz1) for x in range(lo, hi + 1)]
+        bounds = (lo, cz1, hi, pz1)
+    elif street == "west":
+        start = [(px0, z) for z in range(lo, hi + 1)]
+        goal = [(cx0, z) for z in range(lo, hi + 1)]
+        bounds = (px0, lo, cx0, hi)
+    else:
+        start = [(px1, z) for z in range(lo, hi + 1)]
+        goal = [(cx1, z) for z in range(lo, hi + 1)]
+        bounds = (cx1, lo, px1, hi)
+    meets = (bounds[0] <= bounds[2] and bounds[1] <= bounds[3])
+    if not meets:
+        return {"established": False, "shared_columns": shared,
+                "why": "the passage lies on the far side of the court from its street"}
+    nav = world.ctx.nav
+    seeds = []
+    for (x, z) in start:
+        for s_ in (nav.stances_in_column(x, z) or ()):
+            if abs(s_ - 2 * (fy + 1)) <= 8:        # within four blocks of the floor
+                seeds.append((x, z, s_))
+    if not seeds:
+        return {"established": False, "shared_columns": shared,
+                "why": "nobody can stand at the street end of the passage"}
+    reach = nav.flood(seeds, max_jumps=0, bounds=bounds)
+    got = [(x, z) for (x, z) in goal
+           for s_ in (nav.stances_in_column(x, z) or ())
+           if abs(s_ - 2 * (fy + 1)) <= 1 and (x, z, s_) in reach]
+    return {"established": bool(got), "shared_columns": shared,
+            "passage": [px0, pz0, px1, pz1], "walked_into": len(got),
+            "why": (f"the passage shares {shared} column(s) with the court and is walked "
+                    f"from its street end onto {len(got)} cell(s) of the court's edge"
+                    if got else
+                    f"the passage shares {shared} column(s) with the court and cannot be "
+                    f"walked from its street end onto the court's edge at y={fy + 1}")}
 
 
 _CHECKS = {"entrance_connected": entrance_connected,
            "passage_connected": passage_connected,
            "equipment_reachable": equipment_reachable,
            "circulation_clear": circulation_clear,
+           "court_enclosed": court_enclosed,
            "court_accessible": court_accessible,
            "range_relation": range_relation}
 
@@ -891,7 +1354,7 @@ def features_for(world: "World", part, *, wants=WANTS, plan=None) -> dict:
 
 def says(got: dict) -> str:
     """One line over a `features_for` map, for a log or a finding."""
-    by = {"observed": [], "inferred": [], "declared": [], "unsupported": []}
+    by = {m: [] for m in METHODS}
     for w, a in sorted(got.items()):
         by[a["method"]].append(f"{w}={'holds' if a['holds'] else
                                       ('fails' if a['holds'] is False else 'open')}")

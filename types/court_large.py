@@ -22,6 +22,17 @@ FORM = "east_asian"
 #: and a shop-house are both east Asian.
 ROLE = "urban"
 
+#: **What this building is for.** The neighbourhood round, found by reading a built
+#: section: this type declared no `FUNCTION`, so `district_compile.type_use` fell back
+#: to its `ROLE` and recorded its use as `unstated` -- an inference, said to be one on
+#: the record. A quarter's own fabric is drawn from the types whose *declared* function
+#: is the quarter's use, so an inferred `unstated` ranked below `row_house`'s declared
+#: `dwelling`, and the traders' ring of a city whose sources say in as many words that
+#: "its houses are courtyard houses" came out as thirty row houses and no courtyard
+#: house at all. A courtyard house is a dwelling; the file says so now, and the
+#: inference is retired for this type.
+FUNCTION = "dwelling"
+
 #: What this type delivers, by name, so a requirement can ask for it and the assembled
 #: world can be asked whether it is there. The yard is the point of the building.
 FEATURES = ("courtyard",)
@@ -31,13 +42,51 @@ PARAMS = {
     "yard": ("choice", ["garden", "well", "orchard"]),
 }
 
+#: **The least a court may be and still be one.** Three columns on each axis: a person
+#: standing in the middle of it has open ground on every side, and the ring of ranges
+#: has something to stand round rather than a light well. The neighbourhood round
+#: measured the alternative on the retained build -- eight `court_large` instances whose
+#: courts came out 2x2, 3x2 and 3x3, six of which the assembled world then refused as
+#: courts -- and a 2x2 court is not a court that one well fills, it is a court that one
+#: well **is**.
+COURT_MIN = 3
+
+#: What share of a court's own cells its furnishing may take. `construction.OPEN_STANDS`
+#: is 0.8: four fifths of a court's cells have to be open paved ground for the assembled
+#: world to answer that it is a court at all, so a fifth is the whole of what a well, a
+#: trough or a lantern may spend, and the yard pass below is held to it by count. The
+#: type used to plant a 3x3 wellhead in a 6-cell yard and publish `courtyard: True` over
+#: the top of it.
+COURT_SPEND = 1.0 - 0.8
+
+#: **The least a range may be and still be one**: an outer wall, a row of room behind
+#: it, and the boarded veranda facing the court. Two columns is a wall with a veranda
+#: against it and no room at all -- which is what this type built on the retained
+#: section's 7x7 and 8x8 pads, and it is why `usable.range_relation` could find no range
+#: on those sides. A light well between four walls is not a courtyard house.
+RANGE_MIN = 3
+
+#: The **least pad** this type will lay four ranges and a court on: a court of
+#: `COURT_MIN` with a range of `RANGE_MIN` on each side of it. Below this the honest
+#: answer is that `court_large` is the wrong type for the lot -- `court_small` is the
+#: same idea with three ranges and a wall, and takes the small ones. See `NEEDS`.
+PAD_MIN = COURT_MIN + 2 * RANGE_MIN
+
 NEEDS = {
     # The band `scripts/type_needs.py` measured, on a plane and on a bank: clean at
     # every size from 6x6 to the 32x32 the sweep reaches, with no broken size between.
     # It read 6-9 and 19-32 with nine sizes broken in the middle until the stair defects
     # below were closed; those nine were one defect and the `except` list is empty now.
-    # rounds/type-needs.json is what this line is held to.
-    "footprint": (6, 6, 32, 32),
+    # rounds/type-needs.json is what this line is held to. **The floor is `PAD_MIN` and
+    # not the sweep's 6, because the sweep asks whether the type stands and this type's
+    # whole point is what it stands *round*.** The neighbourhood round measured what 6
+    # bought: on the retained section's 7x7 and 8x8 pads `court_large` laid four walls
+    # round a 2x2 light well with no room in any of the four ranges, published
+    # `courtyard: True` over it, and the assembled world refused six of the eight. A
+    # declared band that admits a lot the type cannot deliver the feature on is the same
+    # defect as a declared feature with no rectangle, one level up. `court_small` is the
+    # same idea for the small lots and its band starts below this.
+    "footprint": (PAD_MIN, PAD_MIN, 32, 32),
     "frontage": "lane",
     "ground": "any",
     "clearance": 2,
@@ -52,16 +101,26 @@ STAND_ON = ("rug",)
 
 
 def _bands(size, rng):
-    """Depths of the two ranges that face each other across the yard."""
-    hi = min(size - 4, size // 3 + 2)
-    lo = max(2, min(hi, size // 3))
+    """Depths of the two ranges that face each other across the yard.
+
+        **The court is taken first and never falls below `COURT_MIN`; each range keeps
+        `RANGE_MIN`.** This computed `hi = min(size - 4, size // 3 + 2)` and `lo = max(2, ...)`
+        against it, so on a pad of 5 it asked `randint(2, 1)` and raised -- which is what a
+        `court_large` on a 9x9 **lot** is, once `site()` has inset it -- and on a pad of 8 it
+        left a 2x2 yard between two ranges with no rooms in them. Both were inside the band
+        the file declared. `size` here is one axis of the pad; the caller is responsible for
+        not calling it below `PAD_MIN`.
+        
+    """
+    tot = min(size - COURT_MIN, 2 * 6)         # what the two ranges may have
+    hi = max(COURT_MIN, min(size - 2 * RANGE_MIN, size // 3 + 2))
+    lo = max(COURT_MIN, min(hi, size // 3))
     yard = rng.randint(lo, hi)
-    tot = size - yard
-    a = min(6, tot - tot // 2)
-    c = min(6, tot - a)
-    if c < 2:
-        c = 2
-        a = min(6, tot - 2)
+    tot = max(2 * RANGE_MIN, min(tot, size - yard))
+    a = min(6, max(RANGE_MIN, tot - tot // 2))
+    c = min(6, max(RANGE_MIN, tot - a))
+    # the 6-column cap on a range hands whatever is over back to the court, which is the
+    # one direction this function is allowed to round in
     return a, c
 
 
@@ -121,6 +180,20 @@ def build(b, part, seed, **params):
     x1, z1 = part["x1"], part["z1"]
     fy = part["floor_y"]
     W, D = x1 - x0 + 1, z1 - z0 + 1
+
+    # **A pad this type cannot put a court on is refused, and says so.** Not a smaller
+    # house built anyway: a courtyard house owes a court, and the lot that cannot hold
+    # one is a lot for another type. The refusal is the same shape the shell's is, so
+    # `construction.probe_build`, `envelope.probe` and the plan validator all read it.
+    if min(W, D) < PAD_MIN:
+        return {"ok": False,
+                "reason": (f"the pad is {W}x{D} and four ranges of {RANGE_MIN} round a "
+                           f"court of {COURT_MIN} need {PAD_MIN} on each axis; on less "
+                           f"than that this type builds a light well between four walls "
+                           f"with no room in any range, which is not a courtyard house"),
+                "emitted": {"features": {"courtyard": False}, "rects": {},
+                            "omitted": ["courtyard"],
+                            "fallback": f"pad {W}x{D} under PAD_MIN {PAD_MIN}"}}
 
     wall_b = b.block(v["wall"], "full")
     frame_b = b.block(v["frame"], "full")
@@ -277,8 +350,17 @@ def build(b, part, seed, **params):
     psp = rng.choice([2, 3])
     posts = [c for c in ((ex0, ez0), (ex1, ez0), (ex0, ez1), (ex1, ez1))]
     if yard_w >= 4 and yard_d >= 4:
-        for (px, pz) in _ring_cells(yx0, yz0, yx1, yz1):
-            if (abs(px - yx0) + abs(pz - yz0)) % (psp + 1) == 0:
+        # **The posts that carry the eave stand on the veranda, not in the court.** The
+        # neighbourhood round, measured on a 16x16 probe: this walked `_ring_cells(yx0,
+        # yz0, yx1, yz1)` -- the **yard's** own edge, one cell inside the engawa -- and
+        # planted a column of the voice's masonry every third cell of it. Seven of a
+        # 36-cell court's cells went to posts standing in open ground, and
+        # `usable.court_accessible` then answered "no longer open paved ground" on a
+        # court this type had itself filled in. A veranda post belongs on the veranda:
+        # the engawa ring is where the plate above it already runs (see the loop just
+        # above).
+        for (px, pz) in _ring_cells(ex0, ez0, ex1, ez1):
+            if (abs(px - ex0) + abs(pz - ez0)) % (psp + 1) == 0:
                 posts.append((px, pz))
     for c in posts:
         if build_on([c]):
@@ -393,16 +475,28 @@ def build(b, part, seed, **params):
     # the next, which reads as a broken pitch and is not one. So every rect is pulled in
     # by the overhang it is going to throw, and each roof ends up covering its own
     # range, the lane outside it and nothing else: the long ranges hold the outward
-    # eave, the side ranges the one over the yard.
+    # eave, the side ranges the one over the yard. **...and the eave comes down over the
+    # veranda, not over the court.** The other half of the sky-clearance failure the
+    # round measured. The two side roofs were drawn to `ex0`/`ex1` -- the engawa ring
+    # itself -- and then thrown a block of overhang on top of that, so the first column
+    # of open ground on each side of the court stood under a roof. On a 6-wide court
+    # that is a third of its sky, and `middle_ring_north_west_b1_0_10` failed the
+    # assembled world on exactly that: paved, reachable, and "something stands over it
+    # within 24 courses". Drawn to the last **room** column instead, the overhang lands
+    # on the engawa, which is what an engawa is: a boarded walk under the eave. The
+    # court keeps its own sky.
     oh_x = 1 if yard_w >= 3 and yard_d >= 3 else 0
     kw_side = _roof_kw(part, ("hip", "hip"), oh_x, "upturned")
     kw_main = _roof_kw(part, ("irimoya", "irimoya"), 1, "upturned")
     rz0, rz1 = (yz0 + 1, yz1 - 1) if oh_x else (yz0, yz1)
+    # where there is an overhang to throw, the roof stops one short of the veranda and
+    # the eave covers it; with no overhang the roof itself has to reach it
+    wx1, ex_0 = (ex0 - 1, ex1 + 1) if oh_x else (ex0, ex1)
     low = fy + wall_h + 1
     high = fy + storey * (ns - 1) + wall_h + 1
     ridge = {}
-    ridge["west"] = b.roof(x0, rz0, ex0, rz1, low, v["roof"], axis="x", **kw_side)
-    ridge["east"] = b.roof(ex1, rz0, x1, rz1, low, v["roof"], axis="x", **kw_side)
+    ridge["west"] = b.roof(x0, rz0, max(x0, wx1), rz1, low, v["roof"], axis="x", **kw_side)
+    ridge["east"] = b.roof(min(x1, ex_0), rz0, x1, rz1, low, v["roof"], axis="x", **kw_side)
     ridge["south"] = b.roof(x0, ez1 + 1, x1, z1, low, v["roof"], axis="z", **kw_main)
     ridge["north"] = b.roof(x0, z0, x1, ez0 - 1, high, v["roof"], axis="z",
                             **kw_main)
@@ -627,36 +721,62 @@ def build(b, part, seed, **params):
         furnish(cells, "light", "south", v["trim"], room="house", y=fys + 1,
                 test=up_shut, mark=up_mark)
 
-    # ---- the yard: planted ground, not a paved through-way ------------------
+    # ---- the yard: planted ground, not a paved through-way ------------------ **A
+    # court is open ground, and what is put in it is held to a budget.** The
+    # neighbourhood round: `court_accessible` asks whether `construction.OPEN_STANDS`
+    # (four fifths) of the court's cells are paved and clear, and this pass planted a
+    # wellhead -- which is a 3x3 curb round a shaft, not one cell -- a trough or three
+    # and a lantern in whatever yard it was given, without ever asking how big the yard
+    # was. In a 6-cell court a well **is** the court. `yard_room` is what a fifth of
+    # this court comes to, less whatever the ranges have already taken out of it, and
+    # nothing is laid that would overrun it. A court too small to spend anything gets
+    # nothing, which is the right answer and not a failure: an empty 3x3 court is still
+    # a court.
     plot = [c for c in yard if c not in blocked and c not in passage]
     plot.sort(key=lambda c: (abs(c[0] - (yx0 + yx1) / 2.0)
                              + abs(c[1] - (yz0 + yz1) / 2.0), rng.random()))
+    yard_room = [int(len(yard) * COURT_SPEND) - len([c for c in yard if c in blocked
+                                                     or c in passage])]
+
+    def yard_shut(cells):
+        """Refuse a piece the court cannot afford, before the walk test."""
+        want = [c for c in cells if c in yard and c not in blocked]
+        if len(want) > yard_room[0]:
+            return True
+        return would_shut(cells)
+
+    def mark_yard(took):
+        yard_room[0] -= len([t for t in took if t in yard and t not in blocked])
+        mark_ground(took)
+
     kind = params.get("yard", "garden")
     if kind == "well":
         furnish(plot, "well", INWARD[gate], v["footing"], room="courtyard",
-                test=would_shut, mark=mark_ground)
+                test=yard_shut, mark=mark_yard)
         furnish(plot, "trough", "north", v["trim"], room="courtyard",
-                test=would_shut, mark=mark_ground)
+                test=yard_shut, mark=mark_yard)
     elif kind == "orchard":
         for i in range(0, 3):
             furnish(plot, "fodder", "north", v["trim"], room="courtyard",
-                    test=would_shut, mark=mark_ground)
+                    test=yard_shut, mark=mark_yard)
         furnish(plot, "trough", "east", v["trim"], room="courtyard",
-                test=would_shut, mark=mark_ground)
+                test=yard_shut, mark=mark_yard)
     else:
         for i in range(0, 2):
             furnish(plot, "trough", "north", v["trim"], room="courtyard",
-                    test=would_shut, mark=mark_ground)
+                    test=yard_shut, mark=mark_yard)
         furnish(plot, "trough", INWARD[gate], v["trim"], room="courtyard",
-                test=would_shut, mark=mark_ground)
+                test=yard_shut, mark=mark_yard)
     furnish(plot, "light", "north", v["trim"], room="courtyard",
-            test=would_shut, mark=mark_ground)
-    # a yard with nothing in it is a yard nobody gardens: if none of that took, work
-    # down what a yard can hold until something does
-    if not [c for c in yard if c in standing]:
-        for kind in ("well", "trough", "fodder", "store", "table", "rug"):
+            test=yard_shut, mark=mark_yard)
+    # a yard with nothing in it is a yard nobody gardens: if none of that took **and the
+    # court can still afford one cell**, work down what a yard can hold until something
+    # does. The second half of that condition is the round's: a court that cannot afford
+    # anything is left as open ground rather than furnished anyway on the way out.
+    if yard_room[0] > 0 and not [c for c in yard if c in standing]:
+        for kind in ("trough", "fodder", "store", "table", "rug", "well"):
             if furnish(plot, kind, INWARD[gate], v["footing"],
-                       room="courtyard", test=would_shut, mark=mark_ground,
+                       room="courtyard", test=yard_shut, mark=mark_yard,
                        limit=40) is not None:
                 break
 

@@ -72,6 +72,16 @@ def stage_lint(rnd: Round, be, results: dict) -> dict:
                              "was not built and is not linted as though it had been")}
     t0 = time.perf_counter()
     net = rnd.network()
+    if scope and scope.get("sample") and net is not None:
+        # **...and its doorways are the sample's** (the design resolution round): the
+        # lanes are laid for the whole local scope, and a threshold reserved for a house
+        # outside the sample -- not built, so its doorway is bare ground -- is not a
+        # doorway this build obstructed. Only the sample's own parts' thresholds are
+        # checked; the lane cells stay whole, so connectivity is still the scope's.
+        import copy as _copy
+        _names = {p.get("label") for p in plots} | {p.get("name") for p in plots}
+        net = _copy.copy(net)
+        net.thresholds = [t for t in (net.thresholds or []) if t.id in _names]
     ctx = lint.Context.build(vol, plots, network=net, region=region,
                              base=_prebuild(rnd))
     rep = lint.lint(ctx)
@@ -202,9 +212,49 @@ def _confirm_features(rnd: Round, vol, ctx, net) -> dict:
                 rows.append({"part": r.get("part"), "type": r.get("type"),
                              "want": want, "holds": a.get("holds"),
                              "method": a.get("method"), "why": a.get("why"),
-                             "subjects": a.get("subjects")})
+                             "subjects": a.get("subjects"),
+                             # **the evidence, not only the verdict.** The block design
+                             # round, and an independent reader's finding: every
+                             # predicate returns what it measured -- the gaps round a
+                             # court, the share of each face that carries building,
+                             # which ranges stood -- and this serializer kept the
+                             # sentence and threw the numbers away, so checking a claim
+                             # meant rebuilding the world. The reader did; it should not
+                             # have been necessary.
+                             **({"evidence": a["evidence"]}
+                                if isinstance(a.get("evidence"), dict) and a["evidence"]
+                                else {})})
+    # **What was asked, what was answered, and what did not arise.** The neighbourhood
+    # delivery round, and the independent reader's finding about the round before it:
+    # "`usable.json` has no failures because two thirds of its checks were unanswerable,
+    # not because they passed." The document listed three hundred and eight answers and
+    # published no count of how many of them were answers. It does now, and a question
+    # that does not arise (a row house has no court) is counted apart from a question
+    # the library could not answer about a part that does claim one, which is a gap in
+    # the instrument and is the number a reader needs.
+    by_method: dict = {m: 0 for m in usable.METHODS}
+    for r in rows:
+        by_method[str(r.get("method"))] = by_method.get(str(r.get("method")), 0) + 1
+    decided = sum(1 for r in rows if r.get("holds") is not None)
+    gaps = [{"part": r["part"], "want": r["want"], "why": str(r.get("why"))[:160]}
+            for r in rows if str(r.get("method")) == "unsupported"]
+    coverage = {
+        "checks": len(rows), "decided": decided,
+        "held": sum(1 for r in rows if r.get("holds") is True),
+        "failed": sum(1 for r in rows if r.get("holds") is False),
+        "by_method": by_method,
+        "inapplicable": by_method.get("inapplicable", 0),
+        "unanswered": by_method.get("unsupported", 0),
+        "gaps": gaps[:40],
+        "why": (f"{decided} of {len(rows)} predicate(s) were answered on the assembled "
+                f"world; {by_method.get('inapplicable', 0)} did not arise (the part "
+                f"declares no such thing) and {by_method.get('unsupported', 0)} are "
+                f"questions the library could not answer about a part that does. "
+                f"Neither establishes anything: a measurement exception is not an "
+                f"affirmative outcome, and `failed: 0` over an unanswered set is not a "
+                f"pass")}
     json.dump({"candidate": _candidate(rnd), "built_digest": world.digest,
-               "provenance": world.provenance(), "checks": rows,
+               "provenance": world.provenance(), "coverage": coverage, "checks": rows,
                "changed": got.get("changed"), "why": got.get("why")},
               open(rnd.rel("usable.json"), "w"), indent=1)
     print(f"   confirmed: {got['why']}", flush=True)

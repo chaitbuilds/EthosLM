@@ -409,20 +409,33 @@ def t6c_a_feature_is_not_certified_by_the_floor_above_it():
 @case
 def t7_the_six_predicates_decide_a_courtyard_house():
     """The positive control for the whole predicate set, and the two predicates only a
-    court has. All six are `observed` or `inferred`, none `declared`."""
+        court has. All six that apply are `observed` or `inferred`, none `declared`.
+
+        **The seventh does not apply to a house, and that is the point of it.** The block
+        design round added `usable.court_enclosed`, which asks whether the buildings of a
+        *block* stand round a court that block's ranges claim to enclose. A courtyard house's
+        yard is enclosed by its own ranges and `range_relation` is the predicate for it; this
+        part claims no block enclosure, so the new question does not arise and is answered
+        `inapplicable` -- which this module keeps apart from `unsupported` on purpose.
+        
+    """
     b, part, got = _probe("courtyard_house", 26, 26, {"storeys": 1})
     w = usable.World.of_builder(b, part)
     ans = usable.features_for(w, "courtyard_house")
     assert set(ans) == set(usable.WANTS), sorted(ans)
-    weak = [k for k, a in ans.items() if a["method"] in ("declared", "unsupported")]
-    assert not weak, {k: ans[k]["why"] for k in weak}
-    assert all(a["holds"] for a in ans.values()), usable.says(ans)
+    assert ans["court_enclosed"]["method"] == "inapplicable" and \
+        ans["court_enclosed"]["holds"] is None, ans["court_enclosed"]
+    mine = {k: a for k, a in ans.items() if k != "court_enclosed"}
+    weak = [k for k, a in mine.items() if a["method"] in ("declared", "unsupported")]
+    assert not weak, {k: mine[k]["why"] for k in weak}
+    assert all(a["holds"] for a in mine.values()), usable.says(mine)
     court = ans["court_accessible"]["evidence"]["courts"][0]
     rel = ans["range_relation"]["evidence"]["courts"][0]
     assert rel["ranged"] >= usable.COURT_SIDES and rel["rooms_on_court"] > 0, rel
-    return (f"all six hold on the built courtyard house: the court is {court['open']}/"
-            f"{court['cells']} open and ranged on {rel['ranged']} of four sides by "
-            f"{rel['rooms_on_court']} room(s)")
+    return (f"all six that apply hold on the built courtyard house: the court is "
+            f"{court['open']}/{court['cells']} open and ranged on {rel['ranged']} of four "
+            f"sides by {rel['rooms_on_court']} room(s); `court_enclosed` -- a block's "
+            f"ranges round a shared court -- does not arise for a house and says so")
 
 
 @case

@@ -29,22 +29,1324 @@ ROLE = "urban"
 #: be checked rather than inferred from a label.
 FUNCTION = "dwelling"
 
+#: **A shop house stands in a terrace.** The fabric reset round: a market street is a
+#: continuous frontage of shop houses, lot against lot, and the district compiler lays a
+#: row of party walls only of a type that declares this. The plan says which sides a
+#: neighbour stands on (`part["attached"]`, world sides); on those the house reaches the
+#: plot line, keeps no veranda, cuts no window and lets no eave oversail, and its roof
+#: ends in a verge on the party wall -- see "the terrace" in `build()`.
+ATTACHED = True
+
 
 PARAMS = {
-    "storeys": ("int", 2, 3),
+    # One storey is admitted since the fabric reset round: a terrace of shops of one
+    # height is a wall, and the shop under the full height of its own roof is what this
+    # file has always built where no flight fits -- now it can also be asked for.
+    "storeys": ("int", 1, 3),
     "trade": ("choice", ["grain", "cloth", "tea", "smith"]),
 }
 
 NEEDS = {
-    # Cut to the band `scripts/type_needs.py` measured -- measured 10x10 to 14x14 by the
-    # sweep; its author declared 6x8 because a 6x6 pad takes the shop with no floor over
-    # it, and the sweep says that instance is not clean.
+    # Cut to the band `scripts/type_needs.py` measured. The fabric reset round re-swept
+    # it with one storey admitted (square pads, plane and bank, both seeds, 12 parameter
+    # sets): clean at every size 3 to 17 -- the old broken sizes 5, 6, 8 and 9 stand --
+    # and E010 from 18 up. Attached lots are not squares and the sweep builds no
+    # neighbour: `scripts/test_attached_forms.py` and a sweep of 64 runs of four (lots
+    # 6-9 wide x 11-15 deep, all four fronts, plane and bank) stood every shop lint-
+    # clean with no party-line gap and nothing over the plot line once `site()` is kept
+    # off the attached side. What stands two storeys, measured through `probe_build`
+    # (flat, seeds 1-3, grain and tea): between two neighbours a lot 8-10 wide at any
+    # depth from 10, and 6-7 wide from 12 deep; at a row's end 7-9 wide from 12 deep (6
+    # and 10 at any depth from 10). Three stand where the flights run front to back --
+    # 6-7 wide between neighbours, 6-9 at an end, from 12 deep; an attached lot whose
+    # flight runs across the plan stands two when asked three (the door's row is kept
+    # for the way in).
     "footprint": (3, 3, 17, 17),
-    "except": (5, 6, 8, 9),
     "frontage": "lane",
     "ground": "any",
     "clearance": 2,
 }
+
+#: **The lots this type needs, measured** by `envelope.table('shop_house', n_flanks=k)
+#: for k in 0, 1, 2 (out/fr-work-types/envelope_flanks.py; `scripts/type_needs.py
+#: --envelope` measures k=0 only)`: each row is the least lot on which the parameters
+#: stand with the features named, at one seed (`lot_min`) and at seeds [1, 2, 3]
+#: (`lot_pref`). Read by `ethoslm.envelope.lot_for` before a lot is drawn; the outcome
+#: construction measures afterwards remains authoritative.
+ENVELOPE = [
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "grain"
+  },
+  "features": [],
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "grain"
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "cloth"
+  },
+  "features": [],
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "cloth"
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "tea"
+  },
+  "features": [],
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "tea"
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "smith"
+  },
+  "features": [],
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "smith"
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   5,
+   5
+  ],
+  "lot_pref": [
+   5,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "grain"
+  },
+  "features": [],
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "grain"
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   7,
+   10
+  ],
+  "lot_pref": [
+   7,
+   10
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "cloth"
+  },
+  "features": [],
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "cloth"
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   7,
+   10
+  ],
+  "lot_pref": [
+   7,
+   10
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "tea"
+  },
+  "features": [],
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "tea"
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   7,
+   10
+  ],
+  "lot_pref": [
+   7,
+   10
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "smith"
+  },
+  "features": [],
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "smith"
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   7,
+   10
+  ],
+  "lot_pref": [
+   7,
+   10
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "grain"
+  },
+  "features": [],
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "grain"
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   19,
+   6
+  ],
+  "lot_pref": [
+   19,
+   6
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "cloth"
+  },
+  "features": [],
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "cloth"
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   19,
+   6
+  ],
+  "lot_pref": [
+   19,
+   6
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "tea"
+  },
+  "features": [],
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "tea"
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   19,
+   6
+  ],
+  "lot_pref": [
+   19,
+   6
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "smith"
+  },
+  "features": [],
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "smith"
+  },
+  "features": [
+   "storeys"
+  ],
+  "lot_min": [
+   19,
+   6
+  ],
+  "lot_pref": [
+   19,
+   6
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "grain"
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "grain"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   4,
+   5
+  ],
+  "lot_pref": [
+   4,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "cloth"
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "cloth"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   4,
+   5
+  ],
+  "lot_pref": [
+   4,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "tea"
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "tea"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   4,
+   5
+  ],
+  "lot_pref": [
+   4,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "smith"
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "smith"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   4,
+   5
+  ],
+  "lot_pref": [
+   4,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "grain"
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "grain"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   10,
+   7
+  ],
+  "lot_pref": [
+   10,
+   7
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "cloth"
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "cloth"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   10,
+   7
+  ],
+  "lot_pref": [
+   10,
+   7
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "tea"
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "tea"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   10,
+   7
+  ],
+  "lot_pref": [
+   10,
+   7
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "smith"
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "smith"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   10,
+   7
+  ],
+  "lot_pref": [
+   10,
+   7
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "grain"
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "grain"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   17,
+   6
+  ],
+  "lot_pref": [
+   17,
+   6
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "cloth"
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "cloth"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   17,
+   6
+  ],
+  "lot_pref": [
+   17,
+   6
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "tea"
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "tea"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   17,
+   7
+  ],
+  "lot_pref": [
+   17,
+   7
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "smith"
+  },
+  "features": [],
+  "flanks": 1,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "smith"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 1,
+  "lot_min": [
+   17,
+   6
+  ],
+  "lot_pref": [
+   17,
+   6
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "grain"
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "grain"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   5
+  ],
+  "lot_pref": [
+   3,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "cloth"
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "cloth"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   5
+  ],
+  "lot_pref": [
+   3,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "tea"
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "tea"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   5
+  ],
+  "lot_pref": [
+   3,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "smith"
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 1,
+   "trade": "smith"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   5
+  ],
+  "lot_pref": [
+   3,
+   5
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "grain"
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "grain"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   8,
+   7
+  ],
+  "lot_pref": [
+   8,
+   7
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "cloth"
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "cloth"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   8,
+   7
+  ],
+  "lot_pref": [
+   8,
+   7
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "tea"
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "tea"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   8,
+   7
+  ],
+  "lot_pref": [
+   8,
+   7
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "smith"
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 2,
+   "trade": "smith"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   8,
+   7
+  ],
+  "lot_pref": [
+   8,
+   7
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "grain"
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "grain"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   14,
+   6
+  ],
+  "lot_pref": [
+   14,
+   6
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "cloth"
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "cloth"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   14,
+   6
+  ],
+  "lot_pref": [
+   14,
+   6
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "tea"
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "tea"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   14,
+   6
+  ],
+  "lot_pref": [
+   14,
+   6
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "smith"
+  },
+  "features": [],
+  "flanks": 2,
+  "lot_min": [
+   3,
+   3
+  ],
+  "lot_pref": [
+   3,
+   3
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ },
+ {
+  "params": {
+   "storeys": 3,
+   "trade": "smith"
+  },
+  "features": [
+   "storeys"
+  ],
+  "flanks": 2,
+  "lot_min": [
+   14,
+   6
+  ],
+  "lot_pref": [
+   14,
+   6
+  ],
+  "why": "probed at seeds [1, 2, 3]"
+ }
+]
 
 _OPP = {"north": "south", "south": "north", "east": "west", "west": "east"}
 
@@ -115,6 +1417,230 @@ def _runs(lo, hi, keep_out):
     return out
 
 
+def _massing(W, D, ud, part, fr, storeys, seed, rnd):
+    """**The shop's massing and its flights, decided before a block is laid.** The design
+    resolution round: this was the first half of `build()`, and it is what says how many
+    storeys a plot carries. `form_plan` asks it about a pad before the lot is drawn and
+    `build()` lays what it answers, so the storeys the compiler admits are the storeys
+    that stand."""
+    # ---- massing --------------------------------------------------------- The veranda
+    # takes a strip off the flank furthest from the door, so the doorway keeps a jamb on
+    # both sides and the eave has something to cover.
+    inset = 2 if W >= 12 else (1 if W >= 6 else 0)
+    # The flight runs across the plan, from one flank wall to the other, and that wants
+    # six clear cells between the walls. Where the veranda strip would take the sixth,
+    # the veranda goes to the back of the plot instead and the building keeps the full
+    # width of the frontage.
+    eng_axis = "flank"
+    if W - inset - 2 < 6 and W - 2 >= 6:
+        inset = 0
+        eng_axis = "rear"
+    # **The terrace.** The fabric reset round. A flank the plan says is attached has the
+    # next shop against it: the house reaches the plot line there, because a veranda
+    # strip on a party wall is a slot one column wide between two houses, roofed by both
+    # eaves -- the `E003`/`E011` pocket `row_house` measured and closed the same way.
+    # Between two party walls the veranda goes to the back, as it already does where the
+    # frontage is wanted for the stair; with one, it goes on the free flank whatever
+    # side the door is on.
+    party = {str(v).strip().lower() for v in (_key(part, "attached") or ())}
+    att_lo, att_hi = fr["lo"] in party, fr["hi"] in party
+    if att_lo and att_hi:
+        inset = 0
+        eng_axis = "rear"
+    elif (att_lo or att_hi) and inset and W - inset < 7:
+        # A row's end: its free flank already has the pad's inset beside it, open
+        # ground, and a veranda column taken off a pad six wide leaves a body of five
+        # whose whole front is door and corner posts -- a shop house with no shop.
+        inset = 0
+        eng_axis = "rear"
+    if att_lo and not att_hi:
+        eng_side = 1
+        bu0, bu1 = 0, W - 1 - inset
+    elif att_hi and not att_lo:
+        eng_side = -1
+        bu0, bu1 = inset, W - 1
+    elif ud <= (W - 1) / 2.0:
+        eng_side = 1
+        bu0, bu1 = 0, W - 1 - inset
+    else:
+        eng_side = -1
+        bu0, bu1 = inset, W - 1
+    if ud <= bu0:
+        bu0 = max(0, ud - 1)
+    if ud >= bu1:
+        bu1 = min(W - 1, ud + 1)
+    if eng_side > 0:
+        eng_u0, eng_u1 = bu1 + 1, W - 1
+    else:
+        eng_u0, eng_u1 = 0, bu0 - 1
+    if inset == 0:
+        eng_u0, eng_u1 = 1, 0
+
+    depth = D
+    if D > 17:
+        depth = 13 + (seed % 5)
+    if (att_lo or att_hi) and eng_axis == "rear" and storeys >= 2 \
+            and bu1 - bu0 - 1 < 6 and depth - 3 < 6 <= depth - 2:
+        # a terrace shop too narrow to climb across and one row short of climbing front
+        # to back with the veranda taken off its depth: the stair is worth more than the
+        # veranda (a 7-wide lot 12 deep stood one storey for that one row)
+        eng_axis = None
+    if eng_axis == "rear" and depth >= 8:
+        depth -= 1
+    elif eng_axis == "rear":
+        eng_axis = None
+    bv0, bv1 = 0, depth - 1
+    eng_rear = bv1 + 1 if eng_axis == "rear" else None
+    yard = (D - depth) >= 4 and eng_axis != "rear"
+
+    iu0, iu1 = bu0 + 1, bu1 - 1
+    iv0, iv1 = bv0 + 1, bv1 - 1
+    iw = iu1 - iu0 + 1
+    idp = iv1 - iv0 + 1
+
+    # A storey is four high. Three leaves two blocks of headroom on the shop floor, and
+    # a flight climbing out of a room that low is one the library will not certify as
+    # walkable -- every one of them was refused.
+    sh = 4
+
+    part_v = None
+
+    def inside(u, v):
+        return iu0 <= u <= iu1 and iv0 <= v <= iv1
+
+    def free(cells):
+        """Cells a flight may have: inside, off the doorstep, and clear of the
+        line the upper floor is divided on."""
+        for (u, v) in cells:
+            if not inside(u, v):
+                return False
+            if (u, v) == (ud, iv0) or (u, v) == (ud, iv0 + 1):
+                return False
+            if part_v is not None and v == part_v:
+                return False
+        return True
+
+    def straight_options(n):
+        """A straight flight wants n+2 cells in a line: a cell to stand in at
+        the foot, n treads, and the landing on the floor above. Anything less
+        and the library refuses it, and rightly: nobody could start up it."""
+        out = []
+        if iw >= n + 2:
+            out.append((iu1 - n, iv1, 1, 0))
+            out.append((iu0 + n, iv1, -1, 0))
+            out.append((iu1 - n, iv0, 1, 0))
+            out.append((iu0 + n, iv0, -1, 0))
+        keep = []
+        for o in out:
+            su, sv, cu, cv = o
+            if free([(su + cu * i, sv + cv * i) for i in range(-1, n + 1)]):
+                keep.append(o)
+        if not keep and iw >= 3 and idp >= n + 2:
+            # **Along a flank wall, where the frontage is too narrow to climb across.**
+            # The fabric reset round: a terrace shop is seven or eight columns to the
+            # street and deep, and a flight across the plan wants six clear between the
+            # flanks -- so every 7-wide shop stood one storey. The same flight laid
+            # front to back against a flank wall (a party wall, in a terrace) takes one
+            # column of the shop's width and leaves the rest of it open; offered only
+            # where no flight across fits, so a lot that had one keeps it.
+            for o in ((iu1, iv1 - n, 0, 1), (iu0, iv1 - n, 0, 1),
+                      (iu1, iv0 + n, 0, -1), (iu0, iv0 + n, 0, -1)):
+                su, sv, cu, cv = o
+                if su == ud:
+                    continue
+                if free([(su + cu * i, sv + cv * i) for i in range(-1, n + 1)]):
+                    keep.append(o)
+        return keep
+
+    # Where the upper floor is divided, on a line that still leaves the plan a place to
+    # put the flight: a partition that takes the last of them away is a partition that
+    # costs the building its stair.
+    if idp >= 7 and iw >= 3:
+        for cand_v in (iv0 + max(2, idp // 3), iv1 - 2, iv0 + 2, iv1 - 3):
+            if iv0 < cand_v < iv1 - 1:
+                part_v = cand_v
+                if straight_options(sh):
+                    break
+                part_v = None
+
+    # How many flights the plan will actually carry, decided before anything is built,
+    # because it is what says how many storeys this plot can have.
+    opts = straight_options(sh)
+    rnd.shuffle(opts)
+    picks = []
+    taken = set()
+    for o in opts:
+        cells = set((o[0] + o[2] * i, o[1] + o[3] * i)
+                    for i in range(-1, sh + 2))
+        if cells & taken:
+            continue
+        picks.append(o)
+        taken |= cells
+        if len(picks) >= storeys - 1:
+            break
+    # Where no line inside is long enough for a flight, the stair starts out on the
+    # veranda instead and climbs in through a tall opening in the flank -- which is what
+    # a shop-house does when the shop takes the whole ground floor and there is nowhere
+    # inside to begin a flight. A plot that cannot carry a flight cannot carry a floor
+    # over the shop: it gets the shop alone, under the full height of the roof.
+    if len(picks) < storeys - 1:
+        storeys = len(picks) + 1
+    return {k: v for k, v in locals().items() if k in _MASSING_KEYS}
+
+
+_MASSING_KEYS = ("inset", "eng_axis", "party", "att_lo", "att_hi", "eng_side", "bu0", "bu1", "eng_u0", "eng_u1", "depth", "bv0", "bv1", "eng_rear", "yard", "iu0", "iu1", "iv0", "iv1", "iw", "idp", "sh", "part_v", "inside", "free", "straight_options", "opts", "picks", "taken", "storeys")
+
+
+#: The least clear width of the shop floor, wall to wall across the front: a counter and
+#: somebody standing behind it, beside the flight. A two-storey shell on a five-wide pad
+#: stands, and its shop is a corridor.
+SHOP_CLEAR = 3
+
+
+def form_plan(pad_w: int, pad_d: int, *, params: dict | None = None,
+              front: str = "north", attached=()) -> dict:
+    """**The shop this pad holds**: how many storeys its flights carry, with the door in
+    the middle of the street face as the compiled site puts it. The same `_massing`
+    `build()` lays, so a lot admitted at two storeys stands two storeys.
+
+    `{"ok", "storeys", "asked", "clear_width", "need", "why"}`; `ok` is whether the
+    asked storeys stand. `need` is the least pad (along, deep) found for the ask."""
+    params = dict(params or {})
+    asked = max(1, min(3, int(params.get("storeys") or 2)))
+    lohi = ("west", "east") if front in ("north", "south") else ("north", "south")
+    part = {"attached": list(attached or ())}
+    fr = {"lo": lohi[0], "hi": lohi[1]}
+
+    def stands(w, d):
+        if w < 3 or d < 3:
+            return 0, 0
+        ud = max(1, min(w - 2, w // 2))
+        m = _massing(w, d, ud, part, fr, asked, 1, random.Random(1))
+        clear = int(m["bu1"] - m["bu0"] - 1)
+        # a flight laid front to back against a flank wall takes a column of the shop
+        if any(int(o[2]) == 0 for o in (m["picks"] or [])[:max(0, int(m["storeys"]) - 1)]):
+            clear -= 1
+        return int(m["storeys"]), clear
+
+    got, clear = stands(int(pad_w), int(pad_d))
+    need = None
+    for dd in range(max(6, int(pad_d) - 2), int(pad_d) + 6):
+        for ww in range(3, int(pad_w) + 6):
+            s_, c_ = stands(ww, dd)
+            if s_ >= asked and c_ >= SHOP_CLEAR:
+                need = [ww, dd]
+                break
+        if need:
+            break
+    return {"ok": got >= asked and clear >= SHOP_CLEAR, "storeys": got, "asked": asked,
+            "clear_width": clear,
+            "need": need,
+            "why": (f"a {pad_w}x{pad_d} pad with {len(part['attached'])} party wall(s) "
+                    f"carries {got} storey(s) of the {asked} asked"
+                    + (f"; {need[0]}x{need[1]} carries them" if need and got < asked
+                       else ""))}
+
+
 def build(b, part, seed, **params):
     rnd = random.Random(seed)
     voice = part["voice"]
@@ -124,7 +1650,7 @@ def build(b, part, seed, **params):
     storeys = 2
     if "storeys" in params and params["storeys"]:
         storeys = int(params["storeys"])
-    storeys = max(2, min(3, storeys))
+    storeys = max(1, min(3, storeys))
     asked_storeys = storeys
     trade = "grain"
     if "trade" in params and params["trade"]:
@@ -177,123 +1703,9 @@ def build(b, part, seed, **params):
         ud = W // 2
     ud = max(1, min(W - 2, ud))
 
-    # ---- massing --------------------------------------------------------- The veranda
-    # takes a strip off the flank furthest from the door, so the doorway keeps a jamb on
-    # both sides and the eave has something to cover.
-    inset = 2 if W >= 12 else (1 if W >= 6 else 0)
-    # The flight runs across the plan, from one flank wall to the other, and that wants
-    # six clear cells between the walls. Where the veranda strip would take the sixth,
-    # the veranda goes to the back of the plot instead and the building keeps the full
-    # width of the frontage.
-    eng_axis = "flank"
-    if W - inset - 2 < 6 and W - 2 >= 6:
-        inset = 0
-        eng_axis = "rear"
-    if ud <= (W - 1) / 2.0:
-        eng_side = 1
-        bu0, bu1 = 0, W - 1 - inset
-    else:
-        eng_side = -1
-        bu0, bu1 = inset, W - 1
-    if ud <= bu0:
-        bu0 = max(0, ud - 1)
-    if ud >= bu1:
-        bu1 = min(W - 1, ud + 1)
-    if eng_side > 0:
-        eng_u0, eng_u1 = bu1 + 1, W - 1
-    else:
-        eng_u0, eng_u1 = 0, bu0 - 1
-    if inset == 0:
-        eng_u0, eng_u1 = 1, 0
-
-    depth = D
-    if D > 17:
-        depth = 13 + (seed % 5)
-    if eng_axis == "rear" and depth >= 8:
-        depth -= 1
-    elif eng_axis == "rear":
-        eng_axis = None
-    bv0, bv1 = 0, depth - 1
-    eng_rear = bv1 + 1 if eng_axis == "rear" else None
-    yard = (D - depth) >= 4 and eng_axis != "rear"
-
-    iu0, iu1 = bu0 + 1, bu1 - 1
-    iv0, iv1 = bv0 + 1, bv1 - 1
-    iw = iu1 - iu0 + 1
-    idp = iv1 - iv0 + 1
-
-    # A storey is four high. Three leaves two blocks of headroom on the shop floor, and
-    # a flight climbing out of a room that low is one the library will not certify as
-    # walkable -- every one of them was refused.
-    sh = 4
-
-    part_v = None
-
-    def inside(u, v):
-        return iu0 <= u <= iu1 and iv0 <= v <= iv1
-
-    def free(cells):
-        """Cells a flight may have: inside, off the doorstep, and clear of the
-        line the upper floor is divided on."""
-        for (u, v) in cells:
-            if not inside(u, v):
-                return False
-            if (u, v) == (ud, iv0) or (u, v) == (ud, iv0 + 1):
-                return False
-            if part_v is not None and v == part_v:
-                return False
-        return True
-
-    def straight_options(n):
-        """A straight flight wants n+2 cells in a line: a cell to stand in at
-        the foot, n treads, and the landing on the floor above. Anything less
-        and the library refuses it, and rightly: nobody could start up it."""
-        out = []
-        if iw >= n + 2:
-            out.append((iu1 - n, iv1, 1, 0))
-            out.append((iu0 + n, iv1, -1, 0))
-            out.append((iu1 - n, iv0, 1, 0))
-            out.append((iu0 + n, iv0, -1, 0))
-        keep = []
-        for o in out:
-            su, sv, cu, cv = o
-            if free([(su + cu * i, sv + cv * i) for i in range(-1, n + 1)]):
-                keep.append(o)
-        return keep
-
-    # Where the upper floor is divided, on a line that still leaves the plan a place to
-    # put the flight: a partition that takes the last of them away is a partition that
-    # costs the building its stair.
-    if idp >= 7 and iw >= 3:
-        for cand_v in (iv0 + max(2, idp // 3), iv1 - 2, iv0 + 2, iv1 - 3):
-            if iv0 < cand_v < iv1 - 1:
-                part_v = cand_v
-                if straight_options(sh):
-                    break
-                part_v = None
-
-    # How many flights the plan will actually carry, decided before anything is built,
-    # because it is what says how many storeys this plot can have.
-    opts = straight_options(sh)
-    rnd.shuffle(opts)
-    picks = []
-    taken = set()
-    for o in opts:
-        cells = set((o[0] + o[2] * i, o[1] + o[3] * i)
-                    for i in range(-1, sh + 2))
-        if cells & taken:
-            continue
-        picks.append(o)
-        taken |= cells
-        if len(picks) >= storeys - 1:
-            break
-    # Where no line inside is long enough for a flight, the stair starts out on the
-    # veranda instead and climbs in through a tall opening in the flank -- which is what
-    # a shop-house does when the shop takes the whole ground floor and there is nowhere
-    # inside to begin a flight. A plot that cannot carry a flight cannot carry a floor
-    # over the shop: it gets the shop alone, under the full height of the roof.
-    if len(picks) < storeys - 1:
-        storeys = len(picks) + 1
+    _m = _massing(W, D, ud, part, fr, storeys, seed, rnd)
+    (inset, eng_axis, party, att_lo, att_hi, eng_side, bu0, bu1, eng_u0, eng_u1, depth, bv0, bv1, eng_rear, yard, iu0, iu1, iv0, iv1, iw, idp, sh, part_v, inside, free, straight_options, opts, picks, taken, storeys) = (
+        _m[k] for k in _MASSING_KEYS)
 
     eave_y = fy + storeys * sh
     top_y = min(fy + 56, eave_y + 12)
@@ -431,8 +1843,11 @@ def build(b, part, seed, **params):
             band_openings(bu0 + 1, bv0, bu1 - 1, bv0, yy, fr["front"], wide, 4)
             band_openings(bu0 + 1, bv1, bu1 - 1, bv1, yy, fr["back"], 2, 5)
         if bv1 - bv0 >= 3:
-            band_openings(bu0, bv0 + 1, bu0, bv1 - 1, yy, fr["lo"], 2, 5)
-            band_openings(bu1, bv0 + 1, bu1, bv1 - 1, yy, fr["hi"], 2, 5)
+            # never in a party wall: the window would look into the next house's wall
+            if not att_lo:
+                band_openings(bu0, bv0 + 1, bu0, bv1 - 1, yy, fr["lo"], 2, 5)
+            if not att_hi:
+                band_openings(bu1, bv0 + 1, bu1, bv1 - 1, yy, fr["hi"], 2, 5)
 
     # ---- the roof, by far the biggest thing about it ----------------------
     ax, az = P(bu0, bv0)
@@ -440,6 +1855,21 @@ def build(b, part, seed, **params):
     rx0, rx1 = min(ax, cx), max(ax, cx)
     rz0, rz1 = min(az, cz), max(az, cz)
     axis = "z" if (rx1 - rx0) >= (rz1 - rz0) else "x"
+    if att_lo or att_hi:
+        # **In a terrace the ridge runs along the street** and the roof stops at the
+        # party wall. `roof()` oversails its rectangle by `overhang` on all four sides,
+        # so the rectangle is pulled in by that much on an attached flank and the eave
+        # lands on the wall line rather than a column into the next house's ground; the
+        # end it leaves there is closed to a gable below (the verge). Ridges parallel to
+        # the lane are also what makes a row of shops read as one roofscape from the
+        # street rather than a row of hipped boxes.
+        ru0 = bu0 + (1 if att_lo else 0)
+        ru1 = bu1 - (1 if att_hi else 0)
+        ax, az = P(ru0, bv0)
+        cx, cz = P(ru1, bv1)
+        rx0, rx1 = min(ax, cx), max(ax, cx)
+        rz0, rz1 = min(az, cz), max(az, cz)
+        axis = "z" if dux else "x"
     rk = _key(part, "roof")
     kw = {"overhang": 1}
     if isinstance(rk, dict):
@@ -472,6 +1902,49 @@ def build(b, part, seed, **params):
                      style="hip", axis=axis, **kw)
     if not isinstance(ridge_y, int):
         ridge_y = eave_y + 4
+
+    # ---- the verge: a gable on the party wall ----------------------------- Whatever
+    # end the voice gives the ridge (`TypeBuilder` writes the voice's `ends` over this
+    # file's), a hipped end falling toward a party wall leaves a trough between it and
+    # the next house -- the pocket `row_house` measured as `E003` with `E011` beside it
+    # and the channel it measured as `E004`. So on an attached flank every column of the
+    # end that lies below the roof's own section at that depth is brought up to it, and
+    # the flank column itself is masonry from the wall head up: the gable wall a terrace
+    # has between its roofs. Read before anything is laid, so nothing cascades.
+    verge = 0
+    if att_lo or att_hi:
+        roof_full = b.block(voice["roof"], "full")
+
+        def top_at(u, v):
+            px, pz = P(u, v)
+            for yy in range(ridge_y + 3, eave_y - 2, -1):
+                if b.get_block(px, yy, pz) != "air":
+                    return yy
+            return None
+
+        plan = []
+        for v in range(bv0 - 1, bv1 + 2):
+            tops = {u: top_at(u, v) for u in range(bu0, bu1 + 1)}
+            have = [t for t in tops.values() if t is not None]
+            if not have:
+                continue
+            hv = max(have)
+            for on, uf, step in ((att_lo, bu0, 1), (att_hi, bu1, -1)):
+                if not on:
+                    continue
+                u = uf
+                while bu0 <= u <= bu1:
+                    t = tops[u]
+                    if t is not None and t >= hv:
+                        break
+                    wall_col = (u == uf and bv0 <= v <= bv1)
+                    lo_y = eave_y if wall_col else (t + 1 if t is not None else eave_y)
+                    plan.append((u, v, lo_y, hv, wall_full if wall_col else roof_full))
+                    u += step
+        for (u, v, y0_, y1_, blk) in plan:
+            for yy in range(y0_, y1_ + 1):
+                put(u, v, yy, blk)
+                verge += 1
     # The rooms are the rooms: whatever the roof brought down inside the top storey
     # comes back out, or the flight lands in a room half full of thatch.
     for s in range(storeys):
@@ -507,6 +1980,7 @@ def build(b, part, seed, **params):
                 b.place_block(px, py, pz, floor_slab)
 
     stair_u = iu1
+    spine_u = None
     spent = set()
     laid = 0
     for s in range(storeys - 1):
@@ -538,6 +2012,11 @@ def build(b, part, seed, **params):
         reserved.add((land[0] + cu, land[1] + cv))
         if s == 0:
             stair_u = land[0]
+            if cu == 0:
+                # a flight laid front to back stands in the column the spine would run
+                # down, and its well is a hole there upstairs: the way along the floor
+                # is the column beside it
+                spine_u = min(iu1, max(iu0, su + (1 if su == iu0 else -1)))
             for v in range(min(iv0, foot[1]), max(iv0, foot[1]) + 1):
                 reserved.add((ud, v))
             for u in range(min(ud, foot[0]), max(ud, foot[0]) + 1):
@@ -575,6 +2054,8 @@ def build(b, part, seed, **params):
     # room walled off by its own furniture is a room the walk cannot get into.
     for v in range(iv0, iv1 + 1):
         reserved.add((stair_u, v))
+        if spine_u is not None:
+            reserved.add((spine_u, v))
     if part_v is not None:
         for u in range(iu0, iu1 + 1):
             if part_v - 1 >= iv0:
@@ -617,10 +2098,14 @@ def build(b, part, seed, **params):
             continue
         px, pz = P(u, v)
         for s in range(storeys):
-            yy = fy + s * sh + 1
-            if b.get_block(px, yy, pz) == "air":
-                b.place_block(px, yy, pz, wall_full)
-                marks.append((px, yy, pz))
+            # **Head height too.** The fabric reset round: a tea shop's hearth, offered
+            # the wall cell beside the way in, hung its hood over that cell a course up,
+            # and the shop behind the door read `E003`/`E011` -- a person's head is the
+            # second course of the way, and the mark only held the first.
+            for yy in (fy + s * sh + 1, fy + s * sh + 2):
+                if b.get_block(px, yy, pz) == "air":
+                    b.place_block(px, yy, pz, wall_full)
+                    marks.append((px, yy, pz))
 
     def open_side(u, v):
         if u == iu1:
@@ -671,8 +2156,10 @@ def build(b, part, seed, **params):
         place_fit("anvil", ws + ms, mat=voice["footing"], room="store")
         place_fit("store", ws, mat=voice["trim"], extent=2, room="store")
     elif trade == "tea":
-        place_fit("hearth", ws, mat=voice["footing"], room="store",
-                  flue_to=ridge_y)
+        # never against the shop front: the flue goes up the wall behind the hearth, and
+        # on a narrow terrace front that wall is the one opening onto the lane
+        place_fit("hearth", [c for c in ws if c[1] > iv0], mat=voice["footing"],
+                  room="store", flue_to=ridge_y)
         place_fit("bench", ws, mat=voice["trim"], room="store")
         place_fit("store", ws, mat=voice["trim"], extent=2, room="store")
     elif trade == "cloth":
@@ -754,5 +2241,13 @@ def build(b, part, seed, **params):
                                      if storeys < asked_storeys else None),
                         "omitted": [] if storeys >= asked_storeys else ["storeys"],
                         "features": {"shopfront": True},
-                        "rects": {"main": [part["x0"], part["z0"], part["x1"], part["z1"]]},
+                        # what the plan said about the flanks, and what closed them
+                        "attached": sorted(party & {"north", "south", "east", "west"}),
+                        "verge": int(verge),
+                        # the walled body, not the pad: the veranda and the yard are
+                        # open ground beside it (the fabric reset round; it was the pad)
+                        "rects": {"main": [min(P(bu0, bv0)[0], P(bu1, bv1)[0]),
+                                           min(P(bu0, bv0)[1], P(bu1, bv1)[1]),
+                                           max(P(bu0, bv0)[0], P(bu1, bv1)[0]),
+                                           max(P(bu0, bv0)[1], P(bu1, bv1)[1])]},
                         "floors": [fy + sh * i for i in range(storeys)]}}

@@ -337,7 +337,13 @@ def t_4_the_arterial_is_a_street_and_a_standing_wall_keeps_its_clearance():
     plots = [p for p in _leaves(got) if p["kind"] == "plot"]
     assert any(p["z1"] < ROAD_Z[0] for p in plots) and any(p["z0"] > ROAD_Z[-1]
                                                              for p in plots)
-    assert rec["dropped"] == {"arterial": 0, "standing": 0}, rec["dropped"]
+    # `ground` is the third unavailable ground the compiler counts (the spatial-design
+    # round, `district_compile.GROUND_FOUNDED`), `entrance` the fourth and `pad` the
+    # fifth (the block design round, `district_compile.ENTRY_RUN` and `PAD_INSET`): this
+    # fixture carries no terrain reading, so none of the three rules runs and all three
+    # counts are zero. The comparison stays exact.
+    assert rec["dropped"] == {"arterial": 0, "standing": 0, "ground": 0,
+                              "entrance": 0, "pad": 0}, rec["dropped"]
     # ...and a road crossing the district any other way is a band the lots keep off
     diag = _place(spec, d, road=False)
     diag["arterials"]["cells"] = [[RECT[0] + i, RECT[1] + int(i * 110 / 150)]
@@ -564,7 +570,16 @@ def t_7_a_row_of_party_walls_is_admitted_sited_built_lint_clean_and_walkable():
     assert not pipeline.party_wall(row[0], over, decls)
     assert any(f["check"] == "overlap" for f in pipeline.plan_failures(
         [row[0], over], decls))
-    apart = dict(row[1], front="south")
+    # **a front that is actually different from this row's**, and not the literal
+    # "south". The neighbourhood delivery round: this line hard-coded the other front,
+    # and once the compiler composed a court block the first run of three adjacent lots
+    # became the *south*-fronting back range -- so `apart` was `row[1]` unchanged,
+    # `party_wall` correctly answered True about two lots that really do share one, and
+    # the case failed on a counterexample it had not built. The question is unchanged:
+    # two touching lots fronting different streets are not a party wall.
+    other = "north" if str(row[0].get("front")) != "north" else "south"
+    apart = dict(row[1], front=other)
+    assert apart["front"] != row[0]["front"], (apart["front"], row[0]["front"])
     assert not pipeline.party_wall(row[0], apart, decls)
     detached = dict(row[1], type="court_small")
     assert not pipeline.party_wall(row[0], detached, decls)

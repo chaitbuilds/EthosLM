@@ -253,7 +253,29 @@ RING_FIELDS = ("ring", "share", "walled", "voice")
 #: is the compiler's to clamp into what the type admits and not to grow, which is the
 #: rule `lot_depth` has always had.
 CHARACTER_FIELDS = ("frontage", "block", "lot_width", "lot_depth", "attached",
-                    "courtyard_share", "open_share", "landmarks", "variety", "storeys")
+                    "courtyard_share", "open_share", "landmarks", "variety", "storeys",
+                    "layout", "court_least", "forms")
+
+#: **What each use's buildings owe, adopted as a minimum** (the design resolution
+#: round): `forms` is `{use: {parameter: value}}` -- `{"trade": {"storeys": 2},
+#: "dwelling": {"court": 7}}` -- and it is resolved against the type the compiler
+#: selects **for that use**, before any lot is sized. The district's `storeys` band is
+#: an inference about how a skyline varies; a form's value is what every building of
+#: that use must reach, and a lot that cannot hold it is refused or enlarged, never
+#: built lower.
+FORM_USES = ("dwelling", "trade", "work", "worship", "civic", "store")
+FORM_PARAMS = {"storeys": (1, 4), "court": (3, 15)}
+
+#: **Character fields that govern a type parameter** (the fabric reset round): the
+#: compiler sets the parameter from the character on every leaf of a type that declares
+#: it, instead of drawing it, and admits only lots on which the value can be delivered.
+CHARACTER_PARAMS = {"court_least": "court"}
+
+#: How a district's plan is made (the fabric reset round): `grid`, the block grid the
+#: compiler has always cut, or `street`, composed from its streets first -- principal
+#: streets and their fronts, the anchor and the fronts facing it, lanes, then lots
+#: (`ethoslm.streetplan`). Absent is `grid`.
+LAYOUTS = ("grid", "street")
 
 FRONTAGES = ("street", "open")
 
@@ -948,6 +970,32 @@ def read_character(got, out: dict, where: str) -> None:
             if isinstance(v, bool) or not isinstance(v, int) or not 3 <= v <= 256:
                 raise SpecError(f"{where}: {k} is a whole number of columns, 3 to 256, "
                                 f"not {v!r}", field="character", part=out["name"])
+        elif k == "court_least":
+            if isinstance(v, bool) or not isinstance(v, int) or not 3 <= v <= 15:
+                raise SpecError(f"{where}: court_least is a whole number of columns, "
+                                f"3 to 15, not {v!r}", field="character",
+                                part=out["name"])
+        elif k == "forms":
+            if not isinstance(v, dict):
+                raise SpecError(f"{where}: forms is {{use: {{parameter: value}}}}, not "
+                                f"{v!r}", field="character", part=out["name"])
+            for use, fp in v.items():
+                if use not in FORM_USES or not isinstance(fp, dict):
+                    raise SpecError(f"{where}: forms names a use of {list(FORM_USES)} "
+                                    f"and its parameters, not {use!r}: {fp!r}",
+                                    field="character", part=out["name"])
+                for pn, pv in fp.items():
+                    rng_ = FORM_PARAMS.get(pn)
+                    if rng_ is None or isinstance(pv, bool) or not isinstance(pv, int) \
+                            or not rng_[0] <= pv <= rng_[1]:
+                        raise SpecError(f"{where}: forms.{use}.{pn} is one of "
+                                        f"{list(FORM_PARAMS)} in its range, not {pv!r}",
+                                        field="character", part=out["name"])
+            v = {u: dict(fp) for u, fp in v.items()}
+        elif k == "layout":
+            if v not in LAYOUTS:
+                raise SpecError(f"{where}: layout is one of {list(LAYOUTS)}, not {v!r}",
+                                field="character", part=out["name"])
         elif k == "attached":
             if not isinstance(v, bool):
                 raise SpecError(f"{where}: attached is true or false, not {v!r}",
@@ -1113,11 +1161,33 @@ def read_density(got, where: str) -> str | None:
     return str(got)
 
 
-def columns_per_plot(part: dict) -> int:
-    """The **lot** one structure of this defining part stands on, its density applied."""
+def columns_per_plot(part: dict, arrangement: dict | None = None) -> int:
+    """The **lot** one structure of this defining part stands on, its density applied,
+        and **the arrangement's own lot where one has been adopted**.
+
+        The neighbourhood round's fourth place where the adopted arrangement did not govern,
+        and the one that decided the round's own deliverable. This answered from the density
+        word alone -- 100 columns for `dense`, the library's measured dense lot -- whatever
+        fabric the district was actually laid with. `concentric_layout` divides a sector's
+        ground by this to cap its count (`caps`), so a ring that had adopted 6x6 lots was
+        still capped as though it were standing 10x10 ones: `lower_ring_north_2` held 69
+        houses on 12,696 columns, one every 184, and no arrangement in the catalogue could
+        reach past that number because the number was not about the arrangement.
+
+        **The lot, and only the lot.** `plot_share` carries the same warning and it is the
+        same circle: `open_share` and `courtyard_share` are levers the compiler *moves* to
+        reach its count, so feeding them back into the count is a loop with no fixed point. A
+        lot is a thing a character or an arrangement **declares** and the compiler honours,
+        so it is safe to derive a count from, and it is the one this reads.
+    """
     from .placeplan import density_lot, DENSITY_ROLE
     d = part.get("density") or "medium"
-    return int(density_lot(d, part.get("role") or DENSITY_ROLE.get(d))["columns"])
+    got = int(density_lot(d, part.get("role") or DENSITY_ROLE.get(d))["columns"])
+    ch = {**(part.get("character") or {}), **(arrangement or {})}
+    w, ld = ch.get("lot_width"), ch.get("lot_depth")
+    if w and ld:
+        return max(9, int(w) * int(ld))
+    return got
 
 
 def plot_share(part: dict) -> float:

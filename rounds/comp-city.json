@@ -1,0 +1,89 @@
+{
+ "name": "comp-city",
+ "sentence": "Build Ringed City.",
+ "flags": {
+  "dry_run": true,
+  "seed": 1,
+  "max_new_squares": 0,
+  "workers": 3,
+  "memory_kb": 15000000,
+  "parts_bound_seconds": 3600,
+  "improve": {
+   "cycles_per_candidate": 1,
+   "cycles_per_lineage": 2
+  },
+  "section": {
+   "id": "north_gate",
+   "rect": [
+    -5900,
+    596,
+    -5620,
+    766
+   ],
+   "boundary": "great_wall_middle_ring",
+   "gate": "ring_gate_middle_ring",
+   "sides": {
+    "crowded": "lower_ring",
+    "calm": "middle_ring"
+   },
+   "demonstrate": [
+    "two adjoining inhabited fabrics whose difference is visible as geometry -- grain, lot size, attachment, court share, street rhythm -- with the boundary between them inside the section and complete fabric on both sides of it",
+    "a working market or civic anchor holding usable space of its own, reserved before ordinary housing consumed the ground, verified on the built blocks",
+    "courts that are enclosed and entered, not spent to fit a lot count",
+    "one continuous street route from the outer gate, through the boundary gate, to the anchor, walkable end to end on the built world",
+    "the required features of every part in scope preserved through whatever revision the round applies"
+   ]
+  },
+  "material": true,
+  "axis_side": "north",
+  "allocation": {
+   "arrangement": {
+    "lower_ring": {
+     "rows": 1,
+     "lot_width": 6,
+     "lot_depth": 6,
+     "frontage": "street",
+     "courtyard_share": 0.05
+    }
+   }
+  }
+ },
+ "preregistered": {
+  "written_before": "the section was selected, any arrangement was compiled, anything was built or read",
+  "model": "no API key and no retrieval provider is configured; the terminal agent answers every staged job.",
+  "replayed": "the research claims, the interpretation and the place spec are copied from fixtures/comp-city-answers, which are the design round's own answers to the same sentence over the same sources. Re-interpreting a sentence that has not changed is work the round forbids for a local architectural edit. Every reading of THIS build, every disposition and every revision answer is fresh.",
+  "section_extent": {
+   "registered_as": "a rectangle and the relationships it must demonstrate, not a part count",
+   "rect": [
+    -5900,
+    596,
+    -5620,
+    766
+   ],
+   "columns": 48051,
+   "share_of_city": "8.1% of the 589,824-column city footprint",
+   "selected": "145 leaves of 1282: 96 lower-ring row houses outside the wall, 23 middle-ring plots inside it, two market floors, two ring gates, two clipped wall runs of 281 columns, and the courts, yards, gardens and groves of both sides",
+   "out_of_scope": "whole-city identity and recognition, tradition/chinese, the palace and its processional sequence, the agrarian belt, the upper ring, whole-city extent, the resource cost of the full build, and the final live world. These are neither blocked by this section nor satisfied by it.",
+   "axis": "the section is registered around `ring_gate_middle_ring` on the city's north axis. The side the gates stand on is measured from the ground under them (`placeplan._axis_side`) and this site is flat plains, so the four sides score within a whisker of each other and a few columns of ring width flip it: the first candidate measured `north`, and a fabric change that moved no wall by more than a handful of columns measured `south`. `flags.axis_side` pins it to the answer the section was registered against, and the layout records both that and what it would have measured. Pinning a whole-city tie-break is what keeps a before/after pair about composition rather than about which side the gates fell on that run."
+  },
+  "expectations": {
+   "architecture_not_labels": "every functional claim about the section rests on a final-world predicate run on the assembled world after all construction; a FUNCTION label, an occupied bounding box, a generator assertion or a hand-written list of demonstrated relationships establishes nothing",
+   "contrast_is_geometry": "the two fabrics' difference must be visible in a frame of the built world, not asserted from two type names",
+   "honest_scope": "clauses about parts outside the section are `unobserved` and hold nothing; a clause measured on the plan is `plan` evidence however much of the section stood",
+   "outcome": "a built, checked, inspected connected section demonstrating the five relationships with a consequential composition finding repaired and re-inspected -- or a stop naming which relationship could not be demonstrated and why"
+  },
+  "bounds": {
+   "improve_cycles": "1 per candidate, 2 per lineage",
+   "parts": "3600 s, 15 GB address space, 3 workers -- the host has 23 GB and three other agents are running suites on it",
+   "sites": "cached squares only (max_new_squares 0)",
+   "material": "the restrained recipe the round's own comparison judged `enable_it, bounded` (out/comp-material/comparison.json): wall and footing only, damp and runoff only, declared figures refused. It writes world_finished.npz beside world_built.npz; every check and every section measurement is taken against the built volume, so enabling it cannot make a physical check pass.",
+   "allocation": "the arrangement the section's own certified comparison chose for the crowded ring (`bay_width`, 6x6 in one row: 86 houses against 69, built cover 22.7% -> 28.3%, street enclosure 9.1% -> 13.1%, every alternative compiled on the district's own rectangle and put through the district validator). It is written into the allocation -- the same seam `placesolve.reallocate` writes when the improvement loop applies an arrangement action -- because the loop could not apply it: every layout action was refused by the compound gate/road check on the re-solved place, which is a defect of the re-solve and not of the action. The loop's attempt and its refusal are on the ledger; this is how the change was got into blocks so it could be built, inspected and judged."
+  },
+  "commands": {
+   "cold": "rm -rf out/comp-city && \"$PY\" scripts/round.py rounds/comp-city.json --dry-run",
+   "replay": "fresh",
+   "views": "\"$PY\" scripts/section_views.py --state out/comp-city --label <label> --section -5900,596,-5620,766",
+   "accept": "\"$PY\" scripts/check_composition.py"
+  }
+ }
+}

@@ -69,8 +69,25 @@ ACTIONS = ("fill", "extent", "fabric")
 #: which stays the capacity authority. Nothing in this list is a second estimator.
 #: compact the same lots on a longer block: fewer street-ends between the houses, which
 #: is the only lever that turns the ground *between* blocks into frontage without
-#: enlarging a lot (the composition round).
-ARRANGEMENT_ACTIONS = ("row_depth", "bay_width", "frontage", "compound", "compact")
+#: enlarging a lot (the composition round). **The neighbourhood round's three**, added
+#: because the five above could not shape the street the round is about. Each is one
+#: decision, named, and certified like the rest: terrace party walls or none: an
+#: attached row where the fabric declares a type that can stand against its neighbours,
+#: a detached street where it already does. It is the one thing in `ARRANGEMENT_FIELDS`
+#: no action proposed -- the field was carried through `character_of` and nothing ever
+#: wrote it -- and it is the difference between a continuous street wall and buildings
+#: with gaps between them. compact_bay the narrowest bay the fabric admits, one row to a
+#: block, on the longest block: all three compaction levers at once. Every action above
+#: moves one lever from the character's own declaration, so the best crowded street any
+#: of them could offer was the best *single* move -- and a crowded quarter is not one
+#: move from a loose one. Composed deliberately and named as a composition. perimeter
+#: lots on all four faces of a block with the court in the middle: a perimeter block.
+#: `compound` raises the courtyard share, which makes the *back row* of a block its
+#: court -- open on two sides, fronting nothing, and no lot has ever been laid along the
+#: short faces of a block in this compiler. This is the arrangement that puts building
+#: on the cross streets and encloses a court on four sides.
+ARRANGEMENT_ACTIONS = ("row_depth", "bay_width", "frontage", "compound", "compact",
+                       "terrace", "compact_bay", "perimeter")
 
 
 def _rect_of(d: dict) -> list:
@@ -119,6 +136,22 @@ def compile_once(district: dict, part: dict, place: dict, decls: dict, *,
         # first and leaves the second where it was
         "allocated_columns": rec.get("allocated_columns"),
         "footprint_columns": rec.get("footprint_columns"),
+        # **the pad figure under the name it earns** (the neighbourhood round): the same
+        # number as `footprint_columns`, marked as the estimate it is, so a caller that
+        # wants the plan's own answer and a caller that wants what stands are asking two
+        # different questions rather than the same ambiguous one
+        "pad_columns": rec.get("pad_columns"),
+        "footprint_estimate": rec.get("footprint_estimate"),
+        "footprint_basis": rec.get("footprint_basis"),
+        # **what this quarter holds and why** (`district_compile.use_mix`): the inferred
+        # programme, so a caller comparing arrangements can see that one of them lost
+        # the quarter's work and another kept it
+        "programme": (got.get("programme") if isinstance(got, dict) else None),
+        "courts": rec.get("courts"),
+        "perimeter_blocks": rec.get("perimeter_blocks"),
+        # ...and how many of them actually closed on four sides, which is the number the
+        # arrangement's claim is about
+        "perimeter_shut": rec.get("perimeter_shut"),
         "lot_refused": rec.get("lot_refused"),
         # **What the arrangement could not hold, and what it held instead.** The
         # composition round's first change: a required market that did not fit became a
@@ -140,21 +173,51 @@ def compile_once(district: dict, part: dict, place: dict, decls: dict, *,
     }
 
 
-def _lot_for(decl: dict, side: int, depth: int | None, *, attached: bool) -> tuple | None:
-    """`(w, d)` of a lot of about `side` this type admits, attached or not. None where
-    nothing does -- which is the honest answer and not a smaller lot."""
+def _lot_for(decl: dict, side: int, depth: int | None, *, attached: bool,
+             area: int | None = None, shape: tuple | None = None) -> tuple | None:
+    """`(w, d)` of a lot of about `side` (or of about `area` columns) this type admits,
+        attached or not. None where nothing does -- which is the honest answer and not a
+        smaller lot.
+
+        **A depth the caller named is honoured or refused**, the neighbourhood round. This
+        took `_attached_lot`'s answer, tried the asked depth at *that width only*, and
+        returned the other depth where it did not stand -- so `arrangements` offered lots the
+        compiler would never lay, and the row was then ranked on the cover and the enclosure
+        of a fabric it did not lay. Measured on the retained section: `compact_bay` asked for
+        8x6 at one row and the compiler laid 64 lots of 8x8.
+
+        **`shape` is the (frontage, depth) the density asked for**, the neighbourhood
+        delivery round, and it is the same argument `district_compile._compile_once` has
+        passed `_attached_lot` since the spatial design round. The audit's second cause is
+        that this function did not: the fresh compiler asked for the shape
+        `placeplan.fabric` resolves a dense attached fabric to and got **6x13**, and
+        `arrangements` rebuilt its base through this call without it and got **10x10** -- so
+        the incumbent and every alternative offered against it were fabrics of two different
+        lot models, and a nominal row-count change silently changed the building's geometry
+        as well. Two rules about one question, on the two sides of one comparison.
+        
+    """
     from . import district_compile as dc
+    atts = (("west", "east"), ("west",), ("east",), ())
     if attached:
-        got = dc._attached_lot(decl, int(side), ("west", "east"), True)
-        if got is None:
-            return None
-        w, ld = got
         if depth:
             d2 = int(depth)
-            if all(dc._admits(decl, w, d2, att, True)
-                   for att in (("west", "east"), ("west",), ("east",), ())):
-                ld = d2
-        return int(w), int(ld)
+            lo_w, _lo_d, hi_w, _hi_d = decl["needs"]["footprint"]
+            i = 2 * dc.Builder.SITE_INSET
+            # the width nearest the frontage the shape asked for, where one was given,
+            # and nearest the area otherwise: the same preference order the compiler's
+            # `_attached_lot` ranks by, so the two answer the same question
+            ws = sorted(range(max(3, lo_w), hi_w + i + 1),
+                        key=lambda v: ((abs(v - int(shape[0])),) if shape else ())
+                        + (abs(v * d2 - int(area or side * side)), v))
+            w2 = next((w for w in ws
+                       if all(dc._admits(decl, w, d2, att, True) for att in atts)), None)
+            # no width of this type's band stands at the depth that was asked for: the
+            # caller refuses the option by name rather than offering another lot
+            return None if w2 is None else (int(w2), d2)
+        got = dc._attached_lot(decl, int(side), ("west", "east"), True, area=area,
+                               shape=shape)
+        return None if got is None else (int(got[0]), int(got[1]))
     w = dc._clamp_side(int(side), decl)
     ld = dc._clamp_side(int(depth or side), decl)
     if not dc._admits(decl, w, ld, None, True):
@@ -162,8 +225,51 @@ def _lot_for(decl: dict, side: int, depth: int | None, *, attached: bool) -> tup
     return int(w), int(ld)
 
 
+def _depth_band(decl: dict) -> tuple:
+    """`(lo, hi)` of a lot's **depth** in plot columns, off the type's declared
+    footprint: `needs.footprint` is `(lo_w, lo_d, hi_w, hi_d)` and the two axes are not
+    the same question for a type written narrow to the street and deep into the plot.
+
+    `district_compile._plot_range` collapses them (`min(hi_w, hi_d)`) because it is
+    answering "what *square* plot does this stand on", which is the right question for a
+    clamp and the wrong one for a depth."""
+    from .buildlib import Builder
+    try:
+        lo_w, lo_d, hi_w, hi_d = decl["needs"]["footprint"]
+    except (KeyError, TypeError, ValueError):
+        return (3, 3)
+    i = 2 * Builder.SITE_INSET
+    return (max(3, int(lo_d)), int(hi_d) + i)
+
+
+def _tight_lot(decl: dict, side: int, *, attached: bool) -> tuple | None:
+    """**The smallest lot this type admits**: the narrowest bay at the band's own floor,
+        and then the shallowest depth that stands at that bay.
+
+        `_lot_for` answers "a lot of about `side`", and for an attached type `_attached_lot`
+        orders its candidates by distance from `side` on **both** axes -- so asked for the
+        floor of `row_house`'s 8..10 band it returns 6x8, because 8 is nearer 8 than 6 is.
+        That is right for a bay question and wrong for a compaction one: the lot that puts
+        the most houses on a rectangle is the narrowest *and* the shallowest the type stands
+        on, which for `row_house` is 6x6 -- the arrangement the composition round certified
+        and could not get into blocks.
+        
+    """
+    from . import district_compile as dc
+    got = _lot_for(decl, int(side), None, attached=attached)
+    if got is None:
+        return None
+    w0 = int(got[0])
+    atts = ([("west", "east"), ("west",), ("east",), ()] if attached else [()])
+    for d in range(3, int(got[1]) + 1):
+        if all(dc._admits(decl, w0, d, att, True) for att in atts):
+            return (w0, int(d))
+    return (w0, int(got[1]))
+
+
 def arrangements(part: dict, decls: dict, *, spec: dict | None = None,
-                 pool: list | None = None, allocation: dict | None = None) -> list:
+                 pool: list | None = None, allocation: dict | None = None,
+                 district: dict | None = None) -> list:
     """**The child arrangements this district's fabric really admits**, in order.
 
         One entry per alternative: the arrangement to write on a district record, the lot it
@@ -173,6 +279,17 @@ def arrangements(part: dict, decls: dict, *, spec: dict | None = None,
 
         Nothing here is a capacity claim. `capacity` -- the actual compiler -- answers how
         many houses each one holds, on the ground the parent proposes for it.
+
+        **Every alternative is generated from the design that was adopted.** The
+        neighbourhood delivery round, and the audit's second cause. This read
+        `character_of(part)` with no district, so the base fabric it varied was the *brief's*
+        fabric and not the one the layout had negotiated for this rectangle -- and the
+        `allocation` argument it already took was never used for anything. So the incumbent
+        laid 6x13 lots while `compound` and `row_depth` were both offered at **10x10**, and a
+        trial that named a row count changed the building as well as the number of rows.
+        `district` carries the adopted arrangement (`character_of` puts it over the brief and
+        says that it did); `allocation` answers the same question for a caller that has the
+        spec's allocation and not the district record.
         
     """
     from . import district_compile as dc, placeplan, spec as spec_mod
@@ -181,47 +298,79 @@ def arrangements(part: dict, decls: dict, *, spec: dict | None = None,
                             approved=list(pool or part.get("fabric_types") or []) or None)
     if not houses:
         return []
-    ch = dc.character_of(part)
+    here = district
+    adopted = dict((district or {}).get("arrangement") or {})
+    if not adopted and allocation:
+        from . import placesolve as _ps
+        got = _ps.adopted_arrangement(allocation, part.get("name"))
+        adopted = dict(got or {})
+        here = {"arrangement": adopted} if adopted else None
+    ch = dc.character_of(part, here)
     density = part.get("density") or "medium"
     declared = {k for k, v in (part.get("character") or {}).items() if v is not None}
     attached = bool(ch.get("attached"))
     name, decl = houses[0]
     if attached:
-        pick = next(((n, d) for n, d in houses if d.get("attached")), None)
+        # the compiler's terrace (`district_compile.terrace_order`), not the table's
+        # order, which made the comparison's base a courtyard house once that type could
+        # stand attached (the fabric reset round)
+        pick = next(iter(dc.terrace_order([(n, d) for n, d in houses
+                                           if d.get("attached")])), None)
         if pick is None:
             attached = False
         else:
             name, decl = pick
     lo_side, hi_side, _ex = dc._plot_range(decl)
     own = int(ch.get("lot_width") or dc._lot_side(density))
-    base = _lot_for(decl, own, ch.get("lot_depth"), attached=attached)
+    # **The shape the density asks for, where nobody declared one** -- the same call
+    # `district_compile._compile_once` makes before it asks `_attached_lot`, so the base
+    # this comparison varies is the fabric the compiler would lay and not another one.
+    shape = None
+    if not (ch.get("lot_width") and ch.get("lot_depth")):
+        with contextlib.suppress(Exception):
+            shape = tuple(int(v) for v in placeplan.fabric(density, role, ch)["lot"])[:2]
+    base = _lot_for(decl, own, ch.get("lot_depth"), attached=attached, shape=shape)
     if base is None:
         return []
     out, seen = [], set()
 
-    def add(action, rows, lot, frontage, courtyard, why, refused=None, block=None):
+    def add(action, rows, lot, frontage, courtyard, why, refused=None, block=None,
+            attach=None, house=None, perimeter=None):
+        """One row of the list. `attach`, `house` and `perimeter` are the neighbourhood
+        round's additions: an alternative may change which type the fabric is built of
+        (a terrace is a type that declares `ATTACHED`) and whether the lots stand against
+        each other, and both of those are already fields `district_compile` reads."""
+        who = house or name
         if refused is not None or lot is None:
-            out.append({"action": action, "house": name, "arrangement": None,
+            out.append({"action": action, "house": who, "arrangement": None,
                         "refused": refused or "this type admits no such lot",
                         "why": why})
             return
         w, ld = lot
-        gap = placeplan.PLOT_LANE if frontage == "open" else dc.LOT_GAP
+        att = bool(attached if attach is None else attach)
+        gap = 0 if att else (placeplan.PLOT_LANE if frontage == "open" else dc.LOT_GAP)
         arr = {"rows": int(rows), "lot_width": int(w), "lot_depth": int(ld),
                "frontage": frontage, "courtyard_share": round(float(courtyard), 2),
-               **({"block": int(block)} if block else {})}
+               **({"block": int(block)} if block else {}),
+               **({"attached": att} if attach is not None else {}),
+               **({"perimeter": True} if perimeter else {})}
         key = (int(w), int(ld), int(rows), frontage, arr["courtyard_share"],
-               int(block or 0))
+               int(block or 0), att, bool(perimeter))
         if key in seen:
             return
         seen.add(key)
-        out.append({"action": action, "house": name, "attached": bool(attached),
+        out.append({"action": action, "house": who, "attached": att,
                     "arrangement": arr, "lot": [int(w), int(ld)], "rows": int(rows),
                     "depth": dc.district_depth(ld, rows, gap), "frontage": frontage,
                     # which words of the district brief this alternative overrules, so a
                     # revision of an inferred choice is visible as one
                     "revises": sorted(k for k in arr if k in declared
                                       and ch.get(k) != arr[k]),
+                    # **is this the fabric that is standing?** The delivery round: the
+                    # incumbent has to be *in* the comparison, on the same ruler, or
+                    # "the best alternative" is a claim about a field of one.
+                    "incumbent": bool(adopted) and all(
+                        adopted.get(k) == v for k, v in arr.items() if k in adopted),
                     "refused": None, "why": why})
 
     front0 = str(ch.get("frontage") or "street")
@@ -256,8 +405,17 @@ def arrangements(part: dict, decls: dict, *, spec: dict | None = None,
     # width is fixed by its party walls is not a fabric with one lot: the expression
     # round read "the attached row house is a fixed six-wide bay" as the end of the
     # question, and six wide by ten deep is sixty columns of ground a house against
-    # forty-eight, on the same length of street.
-    for depth in sorted({int(hi_side), int(lo_side)}, reverse=True):
+    # forty-eight, on the same length of street. **...over the type's own depth band and
+    # not over `_plot_range`'s square one.** `_plot_range` answers "what square plot
+    # does this type stand on", so its top is `min(hi_w, hi_d)` -- and a type written
+    # narrow to the street and deep into the plot has its whole depth thrown away by
+    # that `min`. Measured the day the library's row house went from a 6x6 band to
+    # 4x4..6x12: every depth this loop could ask for was capped at 10 plot columns and
+    # the 16 the type had just been given was unreachable from any arrangement. The
+    # depth candidates come off the declared band.
+    _lo_d, _hi_d = _depth_band(decl)
+    for depth in sorted({int(hi_side), int(lo_side), int(_lo_d), int(_hi_d)},
+                        reverse=True):
         lot = _lot_for(decl, base[0], depth, attached=attached)
         if lot is None or lot == base or lot[0] != base[0]:
             continue
@@ -313,6 +471,108 @@ def arrangements(part: dict, decls: dict, *, spec: dict | None = None,
             f"{base[0]}x{base[1]} lots with {lots_per - here} fewer street-end(s) "
             f"between them, a block {blk} columns long",
             block=blk)
+
+    # Each moves exactly one value of the character, so the best any of them can offer
+    # is the best single move from a fabric the brief already called loose -- and on the
+    # retained section's crowded ring the best single move (`bay_width` 6x6, one row) is
+    # 82 houses at a 28.4% pad cover, still with a lane across the end of every
+    # 40-column block and a verge beyond the last one. None of them has ever put a
+    # building on a cross street, none of them can make a street wall out of a fabric
+    # the character declares detached, and `compound`'s court is open on two sides.
+
+    # **`terrace`: party walls, or none.** `attached` has been an `ARRANGEMENT_FIELD`
+    # since the design round and no action ever wrote one, so the single most
+    # consequential thing about a street -- whether the buildings touch -- was settled
+    # once by the district brief's author and was never a decision the layout could
+    # revise. Both directions: a detached fabric with an `ATTACHED` type in its pool can
+    # become a terrace, and a terrace can become a detached street.
+    terraced = dc.terrace_order([(n2, d2) for n2, d2 in houses if d2.get("attached")])
+    if not attached and terraced:
+        t_name, t_decl = terraced[0]
+        t_lot = _lot_for(t_decl, own, ch.get("lot_depth"), attached=True, shape=shape)
+        for rows in (1, dc.BLOCK_ROWS):
+            add("terrace", rows, t_lot, front0, court0,
+                f"a terrace: `{t_name}` declares party walls, so its lots stand against "
+                f"each other with no clearance between them and the street has a "
+                f"continuous front -- {t_lot[0]}x{t_lot[1]} lots, {rows} row(s) to a "
+                f"block" if t_lot else "a terrace of party walls",
+                refused=(None if t_lot else
+                         f"`{t_name}` declares `ATTACHED` and admits no lot with its "
+                         f"flanks against its neighbours' at any side of its band"),
+                attach=True, house=t_name)
+    elif attached:
+        d_lot = _lot_for(decl, own, ch.get("lot_depth"), attached=False, shape=shape)
+        add("terrace", dc.BLOCK_ROWS, d_lot, front0, court0,
+            f"the same fabric detached: `{name}`'s lots a clearance apart rather than "
+            f"against each other, which costs the street its continuous front and buys "
+            f"each house light on both flanks"
+            + (f" -- {d_lot[0]}x{d_lot[1]} lots" if d_lot else ""),
+            attach=False)
+    else:
+        add("terrace", dc.BLOCK_ROWS, None, front0, court0,
+            "party walls between the houses",
+            refused="no committed type this district's role admits declares `ATTACHED`")
+
+    # **`compact_bay`: the narrowest bay, one row, on the longest block.** Composed on
+    # purpose, and named as a composition so a reader can see that it is one. A crowded
+    # quarter is not one move from a loose one: the narrowest lot the fabric admits puts
+    # more doors on the same length of street, one row to a block halves the depth the
+    # street costs, and the longest block removes the lanes between them -- and each of
+    # those is already an action here, offered alone, so the only thing new is taking
+    # all three. The stop on each is the same registered stop it has alone: the type's
+    # own plot band and `BLOCK_LOTS_MAX`.
+    tight = _tight_lot(decl, int(lo_side), attached=attached)
+    if tight is None:
+        add("compact_bay", 1, None, front0, court0,
+            "the narrowest bay on the longest block",
+            refused=f"`{name}` admits no lot at the {lo_side} its band starts at")
+    else:
+        gap1 = (0 if attached else
+                (placeplan.PLOT_LANE if front0 == "open" else dc.LOT_GAP))
+        blk1 = dc.BLOCK_LOTS_MAX * tight[0] + (dc.BLOCK_LOTS_MAX - 1) * gap1
+        for rows in (1, dc.BLOCK_ROWS):
+            add("compact_bay", rows, tight, front0, court0,
+                f"the narrowest bay `{name}` admits ({tight[0]}x{tight[1]}), {rows} "
+                f"row(s) to a block, on a block of {dc.BLOCK_LOTS_MAX} lots "
+                f"({blk1} columns): the three compaction levers together rather than one "
+                f"at a time",
+                block=blk1)
+
+    # **`perimeter`: a block built round its court.** `compound` raises the courtyard
+    # share, and a courtyard block in this compiler is a block whose *back row* is the
+    # court -- so the court is open along both short faces of the block, the cross
+    # streets have nothing standing on them, and the enclosure the arrangement's own
+    # name promises is not there. A perimeter block lays lots on all four faces with the
+    # court inside them, which is the ordinary urban block of most cities that have one
+    # and the only arrangement here that builds a corner. It needs a deeper block than
+    # two rows back to back: front row, court, back row, and the side faces' own depth
+    # at each end. Three rows' depth is what that comes to, and `district_compile` is
+    # still the authority on whether it fits -- an alternative that does not is refused
+    # by the certificate like any other.
+    if dc.area_types(decls, role, (spec or {}).get("form")):
+        for lot_p in ([base] if base == tight or tight is None else [base, tight]):
+            gap2 = (0 if attached else
+                    (placeplan.PLOT_LANE if front0 == "open" else dc.LOT_GAP))
+            # **the least block that holds one**, and the character's own where it is
+            # longer. Asking for four lots' length instead made the retained middle
+            # ring's 190-column sector three 61-column blocks, none of which was clear
+            # of the ring wall and the arterial -- so the reservation had nowhere to
+            # stand and the alternative was refused for a reason that was about the
+            # block size this function chose rather than about perimeter blocks.
+            blk2 = max(int(ch.get("block") or 0),
+                       2 * lot_p[1] + 2 * dc.LOT_GAP + 3, 2 * lot_p[0] + gap2)
+            # the character's own courtyard share stands: a perimeter block lays its own
+            # court from its own four faces and does not need a share to be one
+            add("perimeter", 3, lot_p, front0, court0,
+                f"a perimeter block: {lot_p[0]}x{lot_p[1]} lots on all four faces with "
+                f"the court inside them, on a block {blk2} columns long and three rows "
+                f"deep -- building on the cross streets and a court enclosed on four "
+                f"sides rather than two",
+                block=blk2, perimeter=True)
+    else:
+        add("perimeter", 3, None, front0, court0,
+            "a perimeter block round a court",
+            refused="this role admits no area type a court could be laid as")
     return out
 
 
@@ -330,7 +590,20 @@ def arrangements(part: dict, decls: dict, *, spec: dict | None = None,
 #: the arrangement is **invalid or loses something the request required**: a plot
 #: outside its own district, a plot on the arterial routed to it, a reservation the
 #: demand requires, a type or footprint the library refuses. Those are refusals, and an
-#: alternative carrying one is not offered.
+#: alternative carrying one is not offered. **`ground` is a refusal and not a band, and
+#: it took one round to earn that.** The spatial design round adds a terrain clause to
+#: `placeplan.district_failures`: a leaf most of whose columns are ground the design
+#: cannot prepare is named, and so is the district that lays them. A lot with nothing
+#: under it is invalid in exactly the way a lot standing on the arterial is. and while
+#: that was true, **every** arrangement on the section's wet and sloped districts put
+#: lots on ground that could not be prepared, so refusing them would have left the ring
+#: unlayable and reported nothing, which is the failure mode the paragraph above exists
+#: to avoid. The compiler reads the mask now
+#: (`district_compile.LAYS_ON_FEASIBLE_GROUND`), so the clause is one an arrangement can
+#: answer and a refusal is a refusal. Measured on the section's own districts at their
+#: chosen levels: `lower_ring_north_2` lays 88 lots with the mask against 96 without and
+#: refuses 9 for ground; `middle_ring_north_west` lays 3 against 14, and the 14 leaves
+#: that stood mostly on ground nothing could prepare become **0**.
 NEGOTIABLE_CHECKS = frozenset(("cover", "cover_over", "ground_cover", "count",
                                "farmland_cover"))
 
@@ -412,9 +685,87 @@ def capacity_of(district: dict, part: dict, place: dict, decls: dict, arrangemen
     return got
 
 
+#: **What a comparison row can say about a finding's own measure.** The neighbourhood
+#: delivery round, and the audit's fifth cause: "before an expensive rebuild, establish
+#: that the proposed change affects the finding's subjects, survives replanning and has
+#: a plausible beneficial effect". A reading names the measure it is a finding about
+#: (`pipeline/inspect.MEASURES`, and the section's own `section.<side>.<measure>`); this
+#: is the estimate of that measure each compiled alternative already carries, so the
+#: comparison can be asked which rows could move the number the finding is about. `(key,
+#: direction)`, direction being the way the measure has to go to be better. A measure
+#: that is not here has no estimate at this level and the comparison says so rather than
+#: guessing: the ranking then falls back to its standing priority, which is what it
+#: always did.
+FINDING_ESTIMATE = {
+    "court_share": ("courts", "up"),
+    "courts": ("courts", "up"),
+    "undeveloped_share": ("undeveloped_share", "down"),
+    "structures": ("lots", "up"),
+    "plots": ("lots", "up"),
+    "lots": ("lots", "up"),
+    "built_cover": ("built_cover", "up"),
+    "plot_cover": ("built_cover", "up"),
+    "median_neighbour_gap": ("neighbour_gap", "down"),
+    "enclosure": ("enclosure", "up"),
+    "street_enclosure": ("enclosure", "up"),
+    "continuity": ("continuity", "up"),
+    "frontage_length": ("frontage_length", "up"),
+    "median_built_footprint": ("median_footprint", "up"),
+}
+
+
+def finding_measure(finding: dict | None) -> tuple:
+    """`(key, direction)` of the comparison estimate a finding is about, or `(None, None)`.
+
+        The measure name is the reading's, and a section measure carries its side with it
+        (`section.crowded.court_share`); only the last word names the quantity.
+        
+    """
+    if not isinstance(finding, dict):
+        return None, None
+    name = str((finding.get("target") or {}).get("measure")
+               or finding.get("measure") or "")
+    if not name:
+        return None, None
+    got = FINDING_ESTIMATE.get(name.split(".")[-1])
+    if not got:
+        return None, None
+    key, way = got
+    said = str((finding.get("target") or {}).get("direction") or "").lower()
+    return key, (said if said in ("up", "down") else way)
+
+
+def _estimate_of(row: dict, key: str):
+    """One comparison row's estimate of `key`, or None where it carries none."""
+    if key == "neighbour_gap":
+        # a row of party walls has no gap between neighbours; anything else has its own
+        # clearance or its lane, which is what the arrangement already states
+        arr = row.get("arrangement") or {}
+        if not arr:
+            return None
+        if row.get("attached") or arr.get("attached"):
+            return 0.0
+        return float(LOT_GAP_ESTIMATE)
+    if key == "median_footprint":
+        lots = int(row.get("lots") or 0)
+        return (float(row.get("pad_columns") or 0) / lots) if lots else None
+    v = row.get(key)
+    try:
+        return None if v is None else float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+#: The clearance a detached fabric leaves between neighbours, as the estimate of a
+#: neighbour gap. The compiler's own `LOT_GAP`; read here rather than imported at module
+#: scope because `district_compile` imports this module.
+LOT_GAP_ESTIMATE = 3
+
+
 def alternatives(district: dict, part: dict, place: dict, decls: dict, *,
                  spec: dict | None = None, seed: int = 1, ceiling: int | None = None,
-                 parts_record: dict | None = None, most: int | None = None) -> list:
+                 parts_record: dict | None = None, most: int | None = None,
+                 finding: dict | None = None) -> list:
     """**A few genuinely different arrangements for one district's own rectangle, each
         certified by the district validator and measured on what it would build.**
 
@@ -428,11 +779,31 @@ def alternatives(district: dict, part: dict, place: dict, decls: dict, *,
           `action`, `arrangement`  what it is, and the field the layout writes to adopt it
           `lots`                   houses the compiler actually laid
           `allocated_columns`      the lots' ground
-          `built_columns`          the mass those lots admit -- the two apart, always, because
-                                   a figure improved only by enlarging empty lots moves the
-                                   first and leaves the second (the design round's E2)
+          `pad_columns`            **the estimate**: the mass those lots admit, which is the
+                                   pad `site()` will hand `build()` for each plot, summed
+                                   (`district_compile.pad_columns`). The two apart, always,
+                                   because a figure improved only by enlarging empty lots
+                                   moves the first and leaves the second (the design round's
+                                   E2)
+          `built_columns`          the mass that **stands**, where a `parts_record` was given
+                                   and construction reported rectangles for these leaves; the
+                                   pad estimate where it was not. `built_from` says which --
+                                   `emitted` or `planned pads` -- and `built_estimate` is the
+                                   same fact as a boolean.
+
+                                   The neighbourhood round's instruction, and the defect it
+                                   names: "Alternative 'built cover' is currently pad area,
+                                   not construction. Label estimates honestly and compare them
+                                   with emitted geometry after building." This function
+                                   already *took* a `parts_record` and already called
+                                   `region_columns` with it -- and then read the pad figure
+                                   off the compile record anyway and called it built, so the
+                                   emitted path it was given was computed and discarded. It is
+                                   read now, and `pad_columns` is beside it so the estimate
+                                   and the observation can be compared on the same row.
           `allocated_cover`,
-          `built_cover`            each over the district's developable ground
+          `pad_cover`, `built_cover`
+                                   each over the district's developable ground
           `enclosure`,
           `frontage_length`,
           `mean_setback`           `placeplan.street_enclosure`: how much of the district's own
@@ -445,12 +816,70 @@ def alternatives(district: dict, part: dict, place: dict, decls: dict, *,
                                    ineligible (`NEGOTIABLE_CHECKS`)
           `demand_short`           the required reservations it could not hold
 
+        The disagreement is real and the numbers it turns on are kept here rather than
+        settled quietly. On `lower_ring_north_2`, the retained section's crowded ring, under
+        the committed `row_house` band:
+
+            as declared  6x8, 2 rows   69 lots   pad cover 23.9%   frontage 414   enclosure 23.3%
+            compact_bay  6x6, 2 rows   94 lots   pad cover 21.7%   frontage 564   enclosure 27.0%
+
+        Built cover first keeps the declaration: the fabric the composition round shipped and
+        the user read as "terraces separated by voids as wide as the terraces". Enclosure
+        first takes the second, which is 36% more houses and 36% more frontage on an unmoved
+        rectangle with lots that did not grow. A reader who thinks mass is the subject should
+        swap these two keys back; the round's own finding `s1` names both halves ("covers
+        16.8% of its ground with building **and** its houses stand in terraces separated by
+        voids"), and this is a judgement about which half a *comparison* should lead with.
+
         `most` bounds the list; the default is the whole of `arrangements`.
         
     """
-    from . import placeplan
-    opts = arrangements(part, decls, spec=spec,
+    # **imported here, and it was a latent `NameError`.** `want_front` below reads
+    # `dc.character_of` and nothing in this module bound `dc` at all -- every other
+    # function imports it locally. The line only runs when the part's own character
+    # declares no `frontage`, which the retained city's parts all do, so the whole
+    # composition round exercised this function without ever reaching it.
+    from . import district_compile as dc, placeplan, spec as spec_mod
+    # **the district, so the base every alternative varies is the adopted design** --
+    # the audit's second cause, and the reason `arrangements` took an `allocation` it
+    # never read. `as_declared` is the incumbent where one was adopted, and every other
+    # row is one move from it rather than one move from the brief.
+    opts = arrangements(part, decls, spec=spec, district=district,
                         pool=list(district.get("fabric_types") or []) or None)
+    # **An arrangement is asked for the count its own lot earns**, not for the count the
+    # incumbent fabric earned. The neighbourhood round's last seam: every option was
+    # compiled at `district["structures"]`, which is a number derived from the lot the
+    # district already had -- so an arrangement of smaller lots, whose whole claim is
+    # that the rectangle then holds more houses, was measured at the old ceiling and
+    # came back with the old count. Measured on the retained crowded ring: 6x6 asked at
+    # the baseline's 69 lays 82 and asked at its own band's number lays 94. **Except
+    # where the count is the sentence's own.** An `exact` district, or a spec carrying
+    # an explicit count that is not an approximation, lays the number it was given and
+    # nothing here moves it.
+    exact = bool(district.get("exact")) or bool(
+        (spec or {}).get("explicit_count")
+        and not ((spec or {}).get("explicit_count") or {}).get("about"))
+
+    def _ask_for(arrangement):
+        """`(ask, band, columns_per_plot)` for one arrangement, or the caller's own
+        ceiling where the count is fixed or the arithmetic cannot answer."""
+        if exact:
+            return ceiling, None, None
+        per = band = None
+        with contextlib.suppress(Exception):
+            per = int(spec_mod.columns_per_plot(part, arrangement))
+        with contextlib.suppress(Exception):
+            band = placeplan.count_band(district, part, place, decls,
+                                        arrangement=arrangement)
+        if not per or not band:
+            return ceiling, band, per
+        got = None
+        with contextlib.suppress(Exception):
+            cols = int(placeplan.developable_columns(district, place, decls))
+            got = int(cols * placeplan.DISTRICT_FILL // per)
+        ask = min(int(got), int(band["mid"])) if got else int(band["mid"])
+        return max(1, int(ask)), band, per
+
     out = []
     for a in opts:
         if a.get("refused"):
@@ -458,35 +887,125 @@ def alternatives(district: dict, part: dict, place: dict, decls: dict, *,
                         "refused": a["refused"], "why": a["why"], "lots": None,
                         "verdict": "unavailable"})
             continue
+        ask, band, per = _ask_for(a["arrangement"])
         got = capacity_of(district, part, place, decls, a["arrangement"], spec=spec,
-                          seed=seed, ceiling=ceiling, certify=True)
+                          seed=seed, ceiling=ask, certify=True)
         leaves = [p for q in ((got.get("plan") or {}).get("quarters") or [])
                   for p in (q.get("plots") or [])
                   if p.get("kind", "plot") == "plot"]
         cert = got.get("certificate") or {}
+        # **Every proposal is measured on its own geometry.** The spatial design round,
+        # and the review's words: "`arrange.alternatives` passes the previous
+        # candidate's `parts_record` into `region_columns` and `street_enclosure` for
+        # hypothetical newly compiled leaves. Both match emitted measurements by part
+        # name, without proving unchanged geometry. A reused leaf name can therefore
+        # attach the old footprint to a new arrangement." The compiler's leaf names are
+        # positional -- `b2_0_06` is block 2, row 0, lot 6 -- so a *different*
+        # arrangement of the same rectangle re-uses almost every one of them for a lot
+        # of a different size in a different place. Joining the previous build's emitted
+        # footprints to those names does not reuse an observation; it mislabels an
+        # estimate. There is no test available at this level that the relevant
+        # construction inputs agree, because the parts record does not carry the plot
+        # each part was laid on -- so none is reused here, and every row is the
+        # compiler's own pad arithmetic, uniformly, which is what makes the ranking a
+        # comparison of like with like. The observation has a place and it is after the
+        # build: `improve._estimate_vs_built` writes the estimate this row was chosen on
+        # beside what construction emitted over the same ground, per district the action
+        # refabricated. `parts_record` is still taken -- callers pass it and a later
+        # reader may want the incumbent's figures -- and it is recorded as unused rather
+        # than silently ignored.
         cols = placeplan.region_columns(district, place, decls,
                                         record=got.get("record"), leaves=leaves,
-                                        parts_record=parts_record)
+                                        parts_record=None)
         over = float(cols.get("developable_columns")
                      or cols.get("scope_columns") or 0) or 1.0
-        street = placeplan.street_enclosure(district, place, leaves,
-                                            parts_record=parts_record)
+        # **the street this arrangement's own grid was cut with**, not the default lane:
+        # `street_enclosure`'s reach is a lane's width from a built face and an
+        # arrangement that widened its streets is otherwise measured against somebody
+        # else's (the coordinator's correction, neighbourhood round)
+        street = placeplan.street_enclosure(
+            district, place, leaves, parts_record=None,
+            street_width=((got.get("record") or {}).get("street")))
+        # **the estimate and the observation, apart and both named.** `pad_columns` is
+        # always the plan's own pads; `built_columns` is the emitted extent where
+        # `region_columns` found one on this district's leaves and the pad estimate
+        # where it did not, and `built_from`/`built_estimate` say which was read.
+        pad = int(got.get("footprint_columns") or 0)
+        built = cols.get("built_columns")
+        built = pad if built is None else int(built)
+        how = str(cols.get("built_from") or "planned pads")
+        # the record says outright that this is a prediction and why no observation was
+        # joined to it, so a reader never has to infer it from `built_estimate` alone
+        predicted_why = (
+            "this row is a prediction: the compiler's pad arithmetic on leaves that do "
+            "not exist yet. The previous build's emitted footprints are not joined to "
+            "them -- the compiler's leaf names are positional and a different "
+            "arrangement re-uses them for different lots -- so the comparison ranks "
+            "every option on its own geometry and the observation is taken after the "
+            "build (`improve._estimate_vs_built`)")
         out.append({
             "action": a["action"], "arrangement": dict(a["arrangement"]),
             "lot": list(a["lot"]), "rows": int(a["rows"]),
             "house": a.get("house"), "revises": a.get("revises") or [],
             "lots": int(got["lots"]),
+            # **the count this row was measured at, and where it came from.** Rows may
+            # be measured at different counts -- that is the point, an arrangement's
+            # count is part of what it proposes -- and a row that was must say so.
+            "asked": (None if ask is None else int(ask)),
+            "asked_from": ("the district's own `structures`, which the sentence fixed"
+                           if exact else
+                           f"this arrangement's own lot: {per} column(s) a plot over the "
+                           f"district's developable ground, capped at the density band's "
+                           f"{band['mid']}" if per and band else
+                           "the caller's ceiling; the count arithmetic could not answer"),
+            "count_band": (dict(band) if band else None),
+            "columns_per_plot": per,
             "allocated_columns": got.get("allocated_columns"),
-            "built_columns": got.get("footprint_columns"),
+            "pad_columns": pad,
+            "built_columns": built,
+            "built_from": how,
+            "built_estimate": not how.startswith("emitted"),
+            "predicted": True, "observation_reused": None,
+            "predicted_why": predicted_why,
             "allocated_cover": round(float(got.get("allocated_columns") or 0) / over, 4),
-            "built_cover": round(float(got.get("footprint_columns") or 0) / over, 4),
+            "pad_cover": round(pad / over, 4),
+            "built_cover": round(built / over, 4),
             "enclosure": street.get("enclosure"),
             "frontage_length": street.get("frontage_length"),
             "mean_setback": street.get("mean_setback"),
             "street_columns": street.get("street_columns"),
+            # the corrected measure's own new keys, carried through so a caller ranking
+            # or reporting an alternative sees continuity and not only a ratio
+            "continuity": street.get("continuity"),
+            "longest_enclosed_run": street.get("longest_enclosed_run"),
+            "longest_street_run": street.get("longest_street_run"),
+            "unclaimed_columns": street.get("unclaimed_columns"),
+            # the lot that was **laid**, beside the lot that was asked for: a row ranked
+            # on a fabric it did not lay is the defect `placeplan.arrangement_failures`
+            # refuses, and this is the number that refusal is about
+            "lot_laid": (got.get("record") or {}).get("lot_laid"),
+            "lot_asked": (got.get("record") or {}).get("lot_asked"),
+            # the compiler's own share of ground nobody owns, which is what a finding
+            # about leftover ground is a finding about
+            "undeveloped_share": (got.get("record") or {}).get("undeveloped_share"),
+            "incumbent": bool(a.get("incumbent")),
+            "attached_note": (got.get("record") or {}).get("attached_note"),
             "reservations_kept": got.get("reservations_kept"),
             "reservations_required": got.get("reservations_required"),
             "demand_short": [dict(x) for x in (got.get("demand_short") or [])],
+            # what this arrangement made of the quarter's programme, and its courts
+            "programme": got.get("programme"),
+            "courts": got.get("courts"),
+            "perimeter_blocks": got.get("perimeter_blocks"),
+            "perimeter_shut": got.get("perimeter_shut"),
+            # **how much of this arrangement's fabric stands on ground the design cannot
+            # prepare**, off the certificate's own terrain clause. A key and not a
+            # footnote.
+            "off_ground_leaves": sum(1 for f in (cert.get("failures") or [])
+                                     if str(f.get("check")) == "ground"),
+            "off_ground_share": (round(sum(1 for f in (cert.get("failures") or [])
+                                           if str(f.get("check")) == "ground")
+                                       / float(len(leaves)), 4) if leaves else None),
             "verdict": str(cert.get("verdict") or "unasked"),
             "refuses": [dict(f) for f in (cert.get("refuses") or [])],
             "short_of": sorted(set(cert.get("checks") or ())
@@ -496,15 +1015,84 @@ def alternatives(district: dict, part: dict, place: dict, decls: dict, *,
                         f"the district validator refuses this arrangement on "
                         f"{', '.join(sorted({str(f.get('check')) for f in cert['refuses']}))}"),
         })
-    want_front = str((part.get("character") or {}).get("frontage")
+    declared_ch = part.get("character") or {}
+    want_front = str(declared_ch.get("frontage")
                      or dc.character_of(part, district).get("frontage") or "street")
+    want_att = declared_ch.get("attached")
+
+    def keeps_kind(r) -> bool:
+        """**Does this alternative keep the kind of street its character declared?**
+
+                `frontage` and `attached` are the two character values that say what a street
+                *is* -- lots on a lane or buildings in their own ground, a continuous front or
+                gaps between neighbours. Everything else in `ARRANGEMENT_FIELDS` is a dimension
+                the layout exists to negotiate, which is why `block` or `rows` moving is not
+                counted here: an alternative is demoted for contradicting the brief about the
+                kind of place, not for being a different size of it.
+
+                Earned by a measurement, with the enclosure key above it: a terrace measures more
+                enclosure than anything else can, because a party wall is a continuous front. On
+                the retained middle ring -- "courtyard houses again, on a tighter grain", with
+                `attached: false` declared -- the terrace alternative therefore ranked **first**
+                and turned the traders' quarter into 48 row houses with no shops in it. A
+                declaration is still the principal's and an arrangement is still an inference
+                about one rectangle, in that order; `revises` says which word was overruled
+                wherever a caller chooses one anyway.
+                
+        """
+        arr = r.get("arrangement") or {}
+        if str(arr.get("frontage") or want_front) != want_front:
+            return False
+        return want_att is None or bool(arr.get("attached", want_att)) == bool(want_att)
+
     # an arrangement that lays no house is last whatever else it measures: a rectangle
-    # with nothing on it has no cover, no frontage and no fabric to compare
+    # with nothing on it has no cover, no frontage and no fabric to compare **...and the
+    # ground, above the street.** The spatial design round's one addition to this order,
+    # and it is above enclosure deliberately: a terrace of houses on a lake measures
+    # frontage exactly as a terrace of houses on land does, and the retained section's
+    # denser revision is what that looks like built -- 128 houses, 31.8% mass, decks
+    # over water and a walk network with 973 unreachable stances. A street nobody can
+    # stand in is not a better street. The share, not the count, so an arrangement is
+    # not punished for laying more lots. **...and, above the standing priority, whether
+    # this row can move the number the finding is about.** The neighbourhood delivery
+    # round, and the audit's fifth cause. The order below is a stated priority over
+    # measured quantities and it is about a fabric in general; a *trial* is applied for
+    # one finding, and a proposal that cannot affect that finding's own measure is a
+    # rebuild spent on something else. Measured on the spatial design round: three
+    # actions were spent resizing the palace in answer to a question about the crowded
+    # ring's courtyards. It sits **below** the obligations -- the reservations, the kind
+    # of street the brief declared, and the ground -- because helping one finding at the
+    # cost of a required reservation is not help; and **above** enclosure and mass,
+    # because those are the comparison's general preferences and this is what the trial
+    # is for. Where the reading names no measure this comparison can estimate, `helps`
+    # is None on every row and the order is exactly what it was.
+    want_key, want_way = finding_measure(finding)
+    incumbent = next((r for r in out if r.get("incumbent")), None)
+    base_est = _estimate_of(incumbent, want_key) if (incumbent and want_key) else None
+    for r in out:
+        r["finding_measure"] = want_key
+        r["finding_estimate"] = _estimate_of(r, want_key) if want_key else None
+        r["finding_incumbent_estimate"] = base_est
+        if want_key is None or r.get("finding_estimate") is None or base_est is None:
+            r["helps"] = None
+            r["helps_why"] = (
+                "this reading names no measure the comparison can estimate"
+                if want_key is None else
+                f"no estimate of `{want_key}` for "
+                + ("this row" if r.get("finding_estimate") is None
+                   else "the incumbent") + ", so whether this row helps is not known")
+            continue
+        est, was = float(r["finding_estimate"]), float(base_est)
+        r["helps"] = (est > was) if want_way == "up" else (est < was)
+        r["helps_why"] = (f"`{want_key}` {was:g} -> {est:g}, and the finding asks for it "
+                          f"to go {want_way}")
     out.sort(key=lambda r: (
         int(r.get("lots") or 0) > 0 and not r.get("refused"),
         int(r.get("reservations_kept") or 0) >= int(r.get("reservations_required") or 0),
-        str((r.get("arrangement") or {}).get("frontage") or want_front) == want_front,
-        float(r.get("built_cover") or 0.0), float(r.get("enclosure") or 0.0),
+        keeps_kind(r),
+        -float(r.get("off_ground_share") if r.get("off_ground_share") is not None else 0.0),
+        bool(r.get("helps")),
+        float(r.get("enclosure") or 0.0), float(r.get("built_cover") or 0.0),
         int(r.get("lots") or 0)), reverse=True)
     return out[:most] if most else out
 
@@ -719,6 +1307,13 @@ def arrange(district: dict, part: dict, place: dict, decls: dict, *,
     best, chosen = first, dict(base)
     attempts[0]["covers"] = _covers(first, cover_floor)
     if first["ok"] and first["lots"] >= want and _covers(first, cover_floor):
+        return _result(best, chosen, want, attempts, part, cover_floor)
+    # **A street-composed district is its own arrangement search** (the fabric reset
+    # round): `ethoslm.streetplan` tried its proposal families and judged them on their
+    # relationships; the ladder below re-cuts a grid's lots and rectangle, which would
+    # trade the composed streets for a count.
+    if first["ok"] and (first.get("record") or {}).get("composition") is not None:
+        attempts[0]["composition"] = first["record"]["composition"]["why"]
         return _result(best, chosen, want, attempts, part, cover_floor)
     for action in actions:
         if best["lots"] >= want and _covers(best, cover_floor):

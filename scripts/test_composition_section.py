@@ -264,28 +264,83 @@ def t_an_anchor_needs_an_observed_answer():
 
 @case
 def t_a_required_feature_with_no_evidence_is_owed():
+    """**A required feature with no affirmative evidence is owed, whatever is missing.**
+
+        The composition round registered this rule against one escape -- a feature the
+        emission did not claim reading as absent rather than as owed. The neighbourhood round
+        moved `section._features` onto the production binding (`emitted.required` and
+        `construction.evidence_for`), which closes a second escape the old rule let through
+        and makes a third distinction the rule needs. All three are asserted here now:
+
+          1. a required feature the part did not deliver is **owed**, and owed is `failed`;
+          2. a part that **claims** the feature and carries no assembled-world answer for it
+             is **also owed**, with `reason: declared` or `unmeasured`. The old rule read
+             `emitted.features[tok] is True` with an `inferred` method and called that
+             demonstrated -- which is the type's own word at emission, and the growth brief
+             this project has been running on since says in so many words that a declared
+             feature with no rectangle is not evidence;
+          3. only an affirmative answer from the assembled world demonstrates it.
+
+        And the category question the third case decides: "nothing was ever asked" is **owed**
+        and not a status of its own. `held + owed == subjects` always; `failed` and `unknown`
+        split `owed` by whether a predicate ran, so an undecided answer is never read as a
+        measured failure or as a pass, and a relationship all of whose subjects were unasked
+        cannot report anything but a failure. See `section._features`.
+        
+    """
     import tempfile
     sample = {"section": "t", "rect": [0, 0, 100, 100], "registered": SECTION,
               "quarters": [], "margin": 0, "joining_parts": [], "boundary_runs": []}
     plan = {"districts": [{"kind": "district", "name": "south_1", "x0": 0, "z0": 52,
                            "x1": 100, "z1": 100,
                            "demand": {"required": ["courtyard"]}}], "parts": []}
-    short = [_row("south_1_h0", "courtyard_house", [2, 60, 14, 72],
-                 features={"courtyard": False})]
-    with tempfile.TemporaryDirectory() as d:
-        rec = section.record(_state(d, _built(short, sample=sample), plan=plan),
-                            registered=SECTION)
-    f = [r for r in rec["relationships"] if r["id"] == "features"][0]
+
+    def read(rows):
+        with tempfile.TemporaryDirectory() as d:
+            rec = section.record(_state(d, _built(rows, sample=sample), plan=plan),
+                                 registered=SECTION)
+        return [r for r in rec["relationships"] if r["id"] == "features"][0]
+
+    def house(**em):
+        r = _row("south_1_h0", "courtyard_house", [2, 60, 14, 72])
+        r["emitted"].update(em)
+        return [r]
+
+    # 1. not delivered, and not claimed
+    f = read(house(features={"courtyard": False}, features_method={}))
     assert f["status"] == "failed", f
-    assert f["measured"]["owed"] and f["measured"]["owed"][0]["feature"] == "courtyard"
-    ok = [_row("south_1_h0", "courtyard_house", [2, 60, 14, 72],
-               features={"courtyard": True})]
-    with tempfile.TemporaryDirectory() as d:
-        rec2 = section.record(_state(d, _built(ok, sample=sample), plan=plan),
-                             registered=SECTION)
-    g = [r for r in rec2["relationships"] if r["id"] == "features"][0]
-    assert g["status"] == "demonstrated", g
-    return "a required courtyard that construction did not emit is owed, not passed"
+    m = f["measured"]
+    assert m["held"] + m["owed"] == m["subjects"] == 1, m
+    assert m["failed"] + m["unknown"] == m["owed"] == 1, m
+    assert m["owed_"][0]["feature"] == "courtyard", m["owed_"]
+
+    # 2. claimed by the type at emission, with nothing asked of the assembled world
+    said = read(house(features={"courtyard": True},
+                      features_method={"courtyard": "inferred"},
+                      rects={"courtyard": [6, 64, 10, 68]}))
+    assert said["status"] == "failed", said
+    ms = said["measured"]
+    assert ms["owed"] == 1 and ms["unknown"] == 1, ms
+    assert ms["owed_"][0]["reason"] in ("unmeasured", "declared", "unsupported"), ms
+
+    # 3. the assembled world's own affirmative answer, which is the only thing that
+    # holds
+    ok = read(house(features={"courtyard": True},
+                    required=["courtyard"],
+                    rects={"courtyard": [6, 64, 10, 68]},
+                    usable={"court_accessible": {
+                        "holds": True, "method": "observed", "subjects": ["south_1_h0"],
+                        "why": "paved, open to the sky and reachable from inside",
+                        "evidence": {"courts": [{"feature": "courtyard",
+                                                 "rect": [6, 64, 10, 68], "cells": 25,
+                                                 "open": 25, "share": 1.0, "sky": 25,
+                                                 "sky_share": 1.0, "stances": 9}],
+                                     "filled": [], "roofed": [], "cut_off": []}}}))
+    assert ok["status"] == "demonstrated", ok
+    assert ok["measured"]["held"] == 1 and ok["measured"]["owed"] == 0, ok["measured"]
+    return ("a required courtyard the part did not emit is owed; one it *claims* with no "
+            "assembled-world answer is owed too, with the reason on the row; only the "
+            "world's own affirmative answer demonstrates it")
 
 
 # ------------------------------------------------------------------ 7-8, intent

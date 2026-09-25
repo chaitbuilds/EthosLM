@@ -47,10 +47,20 @@ class Threshold:
     y: int                  # lane surface block; you stand at y+1
     facing: str             # from the lane cell into the plot
     door: tuple             # where the building pass must put its door leaf
+    #: **How far this doorstep stands from the ground its building is on.** The block
+    #: design round. `_threshold_for` has ranked a level doorstep first since the
+    #: delivery round and still returned the best bad candidate where no good one
+    #: existed, silently -- and `Builder._decide_rect` then sank the house to follow it.
+    #: The number is written down instead: 0 or 1 is a doorstep, more is an entrance
+    #: over a step, which `Builder.approach` lays as a flight and which siting refuses
+    #: to take its floor from (`Builder.PLANNED_STEP`). `None` where no ground reading
+    #: was available to measure it against.
+    step: int | None = None
 
     def to_json(self):
         return {"id": self.id, "x": self.x, "z": self.z, "y": self.y,
-                "facing": self.facing, "door": list(self.door)}
+                "facing": self.facing, "door": list(self.door),
+                "step": (int(self.step) if self.step is not None else None)}
 
 
 @dataclass
@@ -99,7 +109,8 @@ class Network:
     def from_json(cls, d: dict) -> "Network":
         cells = {(int(x), int(z)): {"y": int(y), "rank": int(r), "face": f}
                  for x, z, y, r, f in d["cells"]}
-        th = [Threshold(t["id"], t["x"], t["z"], t["y"], t["facing"], tuple(t["door"]))
+        th = [Threshold(t["id"], t["x"], t["z"], t["y"], t["facing"], tuple(t["door"]),
+                        step=(int(t["step"]) if t.get("step") is not None else None))
               for t in d["thresholds"]]
         return cls(cells, th, d.get("nodes", []), d.get("edges", []), d.get("notes", {}))
 
@@ -449,9 +460,59 @@ def parts_to_routing(parts: list, passage=()) -> dict:
                 "x1": max(p["x0"], p["x1"]), "z1": max(p["z0"], p["z1"])}
         if p.get("front"):
             site["front"] = p["front"]           # v2, C2: the way in is on this side
+        # **The compiled way in, taken verbatim.** The quarter design round: a leaf
+        # whose district compiler chose its pad, door and landing together (`site`) is
+        # approached at that landing and nowhere else, and its threshold's door is the
+        # compiled door at the compiled floor -- `_approach_candidates` and
+        # `_threshold_for` choosing again is how the pad and the way in came apart.
+        way = site_way(p)
+        if way:
+            site.update(way)
+        cs = p.get("court_site") if isinstance(p.get("court_site"), dict) else None
+        if cs and cs.get("margin"):
+            # **a court's margin is the court's**: no through-lane crosses it. The
+            # passage's columns through it are the court's one way in.
+            mx0, mz0, mx1, mz1 = (int(v) for v in cs["margin"])
+            pas = cs.get("passage")
+            for x in range(mx0, mx1 + 1):
+                for z in range(mz0, mz1 + 1):
+                    if site["x0"] <= x <= site["x1"] and site["z0"] <= z <= site["z1"]:
+                        continue
+                    if pas and pas[0] <= x <= pas[2] and pas[1] <= z <= pas[3]:
+                        continue
+                    obstacles.add((x, z))
         sites.append(site)
     return {"sites": sites, "obstacles": obstacles - passable,
             "passable": passable}
+
+
+#: Walk-in facing (from the lane into the part) for each street side a site names.
+_WALK_IN = {"north": "south", "south": "north", "east": "west", "west": "east"}
+
+
+def site_way(p: dict) -> dict | None:
+    """The compiled way in of a leaf, as the router takes it, or None.
+
+    `{"landing": (x, z), "face": walk-in facing, "door": (x, z), "door_y": int}` from a
+    plot's `site` (the lane cell outside the plot on its street side, the door on its
+    pad's edge) or a court's `court_site` (the inner end of its passage, the court's
+    edge cell). The quarter design round; a leaf with neither keeps the old path."""
+    st = p.get("site") if isinstance(p.get("site"), dict) else None
+    if st and st.get("landing") and st.get("door") and st.get("facing") in _WALK_IN:
+        return {"landing": (int(st["landing"][0]), int(st["landing"][1])),
+                "face": _WALK_IN[st["facing"]],
+                "door": (int(st["door"][0]), int(st["door"][1])),
+                "door_y": (int(st["floor"]) + 1 if st.get("floor") is not None
+                           else None)}
+    cs = p.get("court_site") if isinstance(p.get("court_site"), dict) else None
+    if cs and cs.get("approach") and cs.get("door") and \
+            cs.get("street_side") in _WALK_IN:
+        return {"landing": (int(cs["approach"][0]), int(cs["approach"][1])),
+                "face": _WALK_IN[cs["street_side"]],
+                "door": (int(cs["door"][0]), int(cs["door"][1])),
+                "door_y": (int(cs["floor"]) + 1 if cs.get("floor") is not None
+                           else None)}
+    return None
 
 
 #: How much dearer open ground is than a column already carrying an **arterial**, in the
@@ -522,9 +583,28 @@ def plan_network(heights: np.ndarray, x0: int, z0: int, sites: list, *,
                 avoid[i, j] = 0.0
     notes["arterial_cells"] = len(art_cells)
 
-    cand = {s["id"]: _approach_candidates(h, x0, z0, (s["x0"], s["z0"], s["x1"], s["z1"]),
-                                          front=s.get("front"))
-            for s in sites}
+    cand = {}
+    fixed, fell_back = 0, []
+    for s in sites:
+        lx, lz = s["landing"] if s.get("landing") else (None, None)
+        if lx is not None and 0 <= lx - x0 < sx and 0 <= lz - z0 < sz \
+                and np.isfinite(avoid[lx - x0, lz - z0]):
+            # the compiled landing is this site's one approach (`site_way`)
+            cand[s["id"]] = [{"x": int(lx), "z": int(lz), "face": s["face"],
+                              "rough": 0, "door": s.get("door"),
+                              "door_y": s.get("door_y"), "compiled": True}]
+            fixed += 1
+            continue
+        if lx is not None:
+            fell_back.append(s["id"])
+        cand[s["id"]] = _approach_candidates(h, x0, z0,
+                                             (s["x0"], s["z0"], s["x1"], s["z1"]),
+                                             front=s.get("front"))
+    notes["compiled_landings"] = fixed
+    if fell_back:
+        # a compiled landing outside the routed ground or on an avoided column: the old
+        # candidates, and the record names every one
+        notes["compiled_landing_refused"] = fell_back[:40]
     ids = [s["id"] for s in sites if cand[s["id"]]]
     flat = [(sid, c) for sid in ids for c in cand[sid]]
     src_idx = [(c["x"] - x0) * sz + (c["z"] - z0) for _, c in flat]
@@ -704,7 +784,11 @@ def plan_network(heights: np.ndarray, x0: int, z0: int, sites: list, *,
     for a in range(n):
         chosen = [flat[choice[a]][1]] + [c for c in cand[ids[a]]
                                          if c is not flat[choice[a]][1]]
-        t = _threshold_for(ids[a], chosen, cells)
+        t = _threshold_for(ids[a], chosen, cells,
+                           ground=lambda gx, gz: (
+                               int(h[gx - x0, gz - z0])
+                               if 0 <= gx - x0 < h.shape[0] and 0 <= gz - z0 < h.shape[1]
+                               else None))
         if t:
             thresholds.append(t)
 
@@ -792,15 +876,87 @@ def _hub(ids: list, edges: list, centre: str | None) -> str | None:
     return ids[max(deg, key=lambda k: deg[k])]
 
 
-def _threshold_for(sid: str, cands: list, cells: dict):
-    """The lane cell this structure is entered from, and which way its door faces."""
-    for c in cands:
+def _threshold_for(sid: str, cands: list, cells: dict, ground=None):
+    """The lane cell this structure is entered from, and which way its door faces.
+
+        **...and a doorway does not open onto a four-block face either.** The neighbourhood
+        delivery round, found by building the block once the earthwork was bounded. A lane
+        is graded -- `_solve_heights` cuts and fills it into a walkable profile -- and the
+        ground a plot stands on is its district's terrace, and where a lane ramps past a
+        plot the two are at different levels. Measured on `middle_ring_north_east_b0_0_02`:
+        the district's terrace brought its ground to y=64, the lane outside it was cut to
+        y=60 for a ramp, the doorstep was reserved on the ramp, and `E008` said the reserved
+        doorway could not be walked into off its own threshold -- of a house standing on
+        ground that was prepared exactly as designed, entered from a lane laid exactly as
+        planned. Neither pass is wrong; the choice of cell is, again.
+
+        `ground(x, z)` is the ground under a cell as this pass found it, which for a plot on
+        a terrace is the terrace's level. A candidate whose lane level is **level with the
+        ground its door cell stands on** is preferred over one that is not, above every
+        other rank below, because a doorstep a person cannot step onto is not a way in
+        whatever else is right about it.
+
+        **A doorway does not open onto a stair.** The spatial design round, found by
+        building the block on the gate's own ground. The door cell is one step in from the
+        threshold's lane cell, and on a lane that turns -- or on a gate's approach ramp --
+        that cell can itself be a lane cell. Where it is a *step*, the two passes want two
+        different things from one block: the lane wants a riser at its own level and the
+        threshold wants a flat doorstep at the lane's. Whichever ran last won, and both
+        answers are refused by a check: levelling it broke the ramp (`E007`, one lane cell
+        of 44,726 that could not be stood on, at the middle ring's gate) and leaving it a
+        stair broke the door (`E008`, the doorway reserved for `ring_gate_upper_ring` cannot
+        be walked into off its own threshold).
+
+        Neither pass is wrong; the *choice of cell* is. A candidate whose door cell is off
+        the lane is preferred, then one whose door cell is a lane **landing** at the same
+        level -- a flat cell, which a doorstep can be -- and only then whatever is left, so
+        a structure with one way in still gets it and the check still says what is wrong.
+        
+    """
+    def door_of(c):
+        dx, dz = {v: k for k, v in FACING.items()}[c["face"]]
+        return (c["x"] + dx, c["z"] + dz), (dx, dz)
+
+    def step(c) -> int:
+        """How far the lane stands from the ground its door cell is on."""
+        if ground is None:
+            return 0
         p = (c["x"], c["z"])
-        if p in cells:
-            dx, dz = {v: k for k, v in FACING.items()}[c["face"]]
-            y = cells[p]["y"]
+        d, _ = door_of(c)
+        g = ground(d[0], d[1])
+        return 0 if g is None else abs(int(cells[p]["y"]) - int(g))
+
+    def rank(c):
+        p = (c["x"], c["z"])
+        d, _ = door_of(c)
+        # **the step first**: a doorstep is a place to stand, and one a person cannot
+        # step onto from the ground the building is on is not one
+        lift = 0 if step(c) <= 1 else 1
+        if d not in cells:
+            return (lift, 0)                        # the doorstep is the lane's to make
+        got = cells[d]
+        if not got.get("face") and int(got["y"]) == int(cells[p]["y"]):
+            return (lift, 1)                        # a landing level with its own lane
+        return (lift, 2)                            # a stair, or a lane cell at a step
+    for c in sorted((c for c in cands if (c["x"], c["z"]) in cells), key=rank):
+        p = (c["x"], c["z"])
+        (dx, dz) = door_of(c)[1]
+        y = cells[p]["y"]
+        if c.get("door") is not None:
+            # **the compiled door, at the compiled floor** (`site_way`): the door is on
+            # the pad's edge, a few columns in from the landing, and the approach
+            # between them is `Builder.approach`'s to lay
+            cd = c["door"]
+            dy = int(c["door_y"]) if c.get("door_y") is not None else y + 1
+            st = None
+            if ground is not None:
+                g = ground(int(cd[0]), int(cd[1]))
+                st = None if g is None else abs(int(y) - int(dy - 1))
             return Threshold(sid, p[0], p[1], y, c["face"],
-                             (p[0] + dx, y + 1, p[1] + dz))
+                             (int(cd[0]), dy, int(cd[1])), step=st)
+        return Threshold(sid, p[0], p[1], y, c["face"],
+                         (p[0] + dx, y + 1, p[1] + dz),
+                         step=(None if ground is None else int(step(c))))
     return None
 
 
@@ -840,7 +996,7 @@ def arterial_cells(art: dict, heights, x0: int, z0: int) -> dict:
     return out
 
 
-def walk_check(net: Network) -> dict:
+def walk_check(net: Network, within=None) -> dict:
     """Re-derive reachability over the planned lane graph under the movement rules.
 
         Deliberately does not trust the construction. A rise of one block is passable only
@@ -875,9 +1031,19 @@ def walk_check(net: Network) -> dict:
                 seen.add(n)
                 stack.append(n)
     unreached = sorted(set(y) - seen)
-    return {"cells": len(y), "reached": len(seen),
-            "unreachable": [list(c) for c in unreached[:20]],
-            "unreachable_n": len(unreached)}
+    out = {"cells": len(y), "reached": len(seen),
+           "unreachable": [list(c) for c in unreached[:20]],
+           "unreachable_n": len(unreached)}
+    if within is not None:
+        # the same walk, counted over the stances inside one rectangle: a section asks
+        # whether *its* lanes join the network, not whether the city's do
+        x0, z0, x1, z1 = (int(v) for v in within)
+        inside = [c for c in y if x0 <= c[0] <= x1 and z0 <= c[1] <= z1]
+        bad = [c for c in unreached if x0 <= c[0] <= x1 and z0 <= c[1] <= z1]
+        out.update(within=[x0, z0, x1, z1], cells_within=len(inside),
+                   unreachable_within_n=len(bad),
+                   unreachable_within=[list(c) for c in bad[:20]])
+    return out
 
 
 # ---------------------------------------------------------------------- building
@@ -975,9 +1141,33 @@ def emit(builder, net: Network, mat: str = "cobblestone", *,
     # cell is not that. a threshold that fails the test it exists to guarantee. The door
     # cell is levelled to the lane and cleared to head height, and the building pass
     # puts its floor at that level.
+    over_lane = 0
     for t in net.thresholds:
         dx, dz = {v: k for k, v in FACING.items()}[t.facing]
         px, pz = t.x + dx, t.z + dz
+        # **...and it does not re-level a cell the lane has already laid.** The spatial
+        # design round, found by building the block on the gate's own ground. A door
+        # cell can *be* a lane cell -- a threshold on a lane that turns, or on the
+        # gate's own approach -- and this pass then put a full block at the threshold's
+        # `y` and cleared three courses above it, which on a lane **step** is the step.
+        # Measured at the middle ring's gate: the network records (-5761, 768) at y=71
+        # with a south-facing stair, the world came out flat cobblestone at y=70, and
+        # `E007` refused the build for a lane cell that cannot be stood on -- one cell
+        # out of 44,726, the first riser of the ramp into the gate, removed by the pass
+        # that exists to make doors reachable. A gate is a fixed opening in a wall and
+        # its approach ramps up to it, so for four of this city's 872 thresholds the
+        # choice above has nowhere better to go. There the doorstep wins -- a doorway
+        # that cannot be walked into is not a way in -- and **the network record is
+        # corrected to say what was laid**: the cell becomes a landing at the
+        # threshold's own level. Levelling the world and leaving the record claiming a
+        # stair is what made `E007` refuse a build for a cell that was, in fact, exactly
+        # where the design meant it to be.
+        if (px, pz) in net.cells:
+            over_lane += 1
+            was = dict(net.cells[(px, pz)])
+            net.cells[(px, pz)] = {**was, "y": int(t.y), "face": None,
+                                   "landing_for": str(t.id),
+                                   "was": {"y": was.get("y"), "face": was.get("face")}}
         builder.place_block(px, t.y, pz, full)
         g = builder.get_height(px, pz)
         for yy in range(max(g + 1, t.y - max_fill), t.y):
@@ -985,6 +1175,7 @@ def emit(builder, net: Network, mat: str = "cobblestone", *,
         for yy in range(t.y + 1, min(max(t.y + 3, g), t.y + max_cut) + 1):
             builder.place_block(px, yy, pz, "air")
     stats["thresholds"] = len(net.thresholds)
+    stats["thresholds_on_lane"] = over_lane
 
     # What this pass has already reserved and may not build on: the doorstep of every
     # structure, the lane cell it comes off, and any way in an earlier pass wrote down.

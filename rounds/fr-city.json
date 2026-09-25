@@ -1,0 +1,72 @@
+{
+ "name": "fr-city",
+ "sentence": "Build Ringed City.",
+ "flags": {
+  "dry_run": true,
+  "seed": 1,
+  "max_new_squares": 0,
+  "workers": 3,
+  "memory_kb": 15000000,
+  "parts_bound_seconds": 3600,
+  "improve": {
+   "cycles_per_candidate": 5,
+   "cycles_per_lineage": 6,
+   "raised": "trial 4 was then refused as a reproduction of trial 1's design. One more cycle is raised\nso that design is judged once under the corrected guard. Every spent attempt stays in\ntrials.json. Then 4/6 -> 5/6: the raised cycle was spent on `enlarge_lots` reproducing\ntrial 2's design (refused without building), because the retry guard refused trial 1's\nrevision as an unchanged retry although what judged it had changed; the guard now lets a\nrevision rejected only on the corrected totals be tried once more."
+  },
+  "section": {
+   "id": "market_quarter",
+   "rect": [
+    -5800,
+    640,
+    -5640,
+    766
+   ],
+   "unit": "block",
+   "boundary": "great_wall_middle_ring",
+   "gate": "ring_gate_middle_ring",
+   "sides": {
+    "crowded": "lower_ring",
+    "calm": "middle_ring"
+   },
+   "demonstrate": [
+    "two adjoining inhabited fabrics whose difference is visible as geometry: the crowded lower ring's party-walled rows and the middle ring's walled courtyard compounds joined along lanes, both reading as streets rather than objects on open ground",
+    "a market at the street the gate opens on, with building fronts facing it on its other edges and approaches from the gate and from the lanes",
+    "every courtyard house enclosing its own court with its own ranges; no shared court claimed that its buildings do not enclose",
+    "one continuous street route from the crowded frontage through the boundary gate to the market and along the lanes, walked on the final assembled blocks",
+    "the required features and the adopted forms' obligations of every part in scope preserved through the revision"
+   ]
+  },
+  "local": {
+   "rect": [
+    -5964,
+    698,
+    -5558,
+    766
+   ],
+   "margin": 3,
+   "why": "Its sectors, district ground, terraces, lanes and buildings are made again from the\nobserved baseline. Outside it -- the crowded lower ring, the ring wall and gate at z\n691..693, the upper ring -- the delivered candidate's plans, prepared ground, terraces\nand lanes are boundary conditions, kept and connected to."
+  },
+  "material": true,
+  "axis_side": "north"
+ },
+ "preregistered": {
+  "model": "no API key and no retrieval provider is configured; the terminal agent answers every staged job.",
+  "seeded_from": "out/qd-city (delivered 42a36bc9693badc9, built digest 5c90b4eb0c4f7bd8e73393ec93a62103), copied whole; the place-spec answer's middle_ring part revised (kept as place.qd-answer.json)",
+  "section_extent": {
+   "registered_as": "the gate, the wall, a slice of the crowded lower ring north of it and the whole gate-side market neighbourhood south of it",
+   "rect": [
+    -5800,
+    640,
+    -5640,
+    766
+   ],
+   "unit": "block",
+   "old_section": "north_gate x -5900..-5620, z 596..766, kept for matched comparison views.",
+   "out_of_scope": "whole-city identity and recognition, the palace, the agrarian belt, the upper ring, whole-city extent, the final live world"
+  },
+  "commands": {
+   "run": "\"$PY\" scripts/round.py rounds/fr-city.json --dry-run --stage plan,ground,terraces,circulation,parts,finish,lint,material,section,inspect",
+   "views": "\"$PY\" scripts/section_views.py --state out/fr-city --label <label> --out out/fr-views/<label> --section -5800,640,-5640,766"
+  }
+ }
+}

@@ -1,73 +1,50 @@
 # EthosLM
 
-**One sentence in, a finished place out.** Type "Build a walled town with a market and a
-keep," or "Build a fishing village," and a complete settlement gets planned, placed, built
-and checked inside a Minecraft world, with no person involved at any step. You give no
-coordinates, no size and no style, and you answer no follow-up questions. Nothing is left
-for you to fix afterwards. The system picks where to build, how big to make it, what palette
-of blocks to use, and lays every block itself.
+**One sentence in, a finished place out** is the goal. EthosLM is an open research project
+building a general architecture for creating convincing Minecraft places from natural
+language. A request such as “Build a walled city” or “Build a fishing village” should lead
+to a complete place whose organisation, buildings and landscape emerge from the request,
+references and reusable capabilities.
 
-What this project delivers is the **architecture** behind that. It is general. The towns it
-builds are tests of the architecture, not the product.
+The immediate target is an expansive, beautiful city, followed by smaller contrasting
+examples. The system is under development; reliable autonomous composition and finished
+city quality remain open work.
 
-## Why Minecraft
+## Architecture
 
-Minecraft is predictable and built from whole units: a fixed set of blocks, a grid of round
-numbers, known physics, and lighting you can work out in advance. Everything that normally
-makes 3D modelling hard, like curved surfaces, texture mapping, materials and shading, does
-not exist here. What is left is deciding which block goes where, and that is the real
-problem.
+**The model composes; the library builds.** Interpretation and references produce a
+programme of requirements and relationships. Capability selection, spatial design and
+ground preparation turn that programme into buildable parts. Generators construct the
+buildings, boundaries and open spaces; inspection feeds findings back to the decisions
+that can address them. Terminal agents can answer staged jobs without a model API.
 
-## How it works
+A place is hierarchical: regions contain streets, buildings and open land, and a large
+compound can contain smaller parts. Types supply reusable forms; voices supply material
+and roof profiles. Compiled building sites carry pad, floor, orientation, entrance and
+landing decisions into routing and construction.
 
-**The model writes the plan, the library does the building.** A model reads your sentence
-and the shape of the ground, then writes short programs that call a building library. The
-library turns those programs into blocks. The model decides *what*: the location, the
-layout, the kinds of buildings, the palette. The library decides *how*: every physical
-rule, and the buildings themselves.
+Physical checks measure emitted blocks, access and required features. Visual inspection
+evaluates composition and character. A feasible plan or a passing proxy does not establish
+a convincing place. Revisions need current evidence, explicit dependencies and recoverable
+candidates. Local rebuilds reuse unaffected work.
 
-**A bug stays fixed once the library owns it.** If the library builds something correctly
-every time, that kind of bug can never come back. If you only check for it afterwards, it
-keeps returning. Stair direction, doors, entrances, indoor staircases, building on uneven
-ground, water, outer walls, the monument, and the route up to an upper floor were all repeat
-offenders until the library took charge of them, and none has come back since. The library
-grows by admitting what it cannot do yet, and that becomes the next thing to add.
-
-**A place is a tree of parts, and a type is a shape.** A plan is a hierarchy: a city holds
-rings, rings hold districts, districts hold plots. Walls are the edges, gates are the
-openings, and squares and fields are the open areas. Every leaf of that tree is an instance
-of a *type*, which is a generator for one kind of part. You write a type once, test it
-across different random seeds, sizes, ground and palettes, and after that you can place
-it anywhere for free. A type states what ground it needs and what it is for, but never names
-a material. It takes its palette from the settlement's *voice*. A monument is not simply a
-large type. It is a place in its own right, planned recursively into halls, courtyards, an
-inner wall and gates, which is also how a castle works.
-
-**The builder can check its own work, and the library is verified offline.** Every call the
-model makes carries the real checker with it: the linter and the walking model, running on
-the actual cached ground. The model can run that checker as often as it likes before it
-finishes. The library itself is verified with no model involved: a hand-written reference
-type is built across a bank of saved ground, producing hundreds of buildings in a few
-minutes and making zero model calls. Model calls are for questions about the model, never
-for finding a bug in the library.
-
-**Two ways of reviewing, and neither gives a score.** Automatic checks catch what is
-*broken*, never what is *ugly*, and they are a fixed minimum standard. Separately, a judge
-compares two builds side by side, without being told which is which or which came first, and
-says which one is better made. Only a person decides whether something is *good*, and that
-is a diagnosis of what the checks cannot see. It is never a stage in the automated loop.
-
-**The harness is predictable, and only the content varies.** A run is one config file and
-one command. Every stage, camera angle, decision and record is code. A `--dry-run` builds
-the whole place in memory with no server, so "prove it before you write it" is a rule a run
-can actually follow.
+Shared finishing can add contextual materials and detail over owned surfaces. Its value
+must be demonstrated in built views alongside the larger architectural decisions.
 
 ## Where it stands
 
-A city now stands, built from a single sentence: concentric ring walls, gates, buildings
-that get denser as you move from the farmland to the wealthy centre, a grand palace
-district, all on green ground the system chose, in a palette it wrote itself. It is built,
-checked, walkable and rendered. What is left is polish.
+The production path reaches whole small builds and city sections. Courtyard and shop
+houses now share constructive geometry across lot admission and construction: usable
+rooms, courts, storeys and row-end conditions determine what fits. Built inspection and
+production revisions improve access and ground while protecting working buildings.
+
+The latest evaluated section has usable courtyard homes, two-storey shops and a market
+with built fronts. It still reads as separate clusters rather than a complete neighbourhood.
+Parent allocation retains older land budgets, and composition checks can exempt missing
+frontage. Current work connects complete architectural and spatial demand to parent layout,
+so streets, district dimensions and site choices can change before construction.
+
+City hierarchy, connected transitions, expansion, shared finishing and demo capture remain.
 
 ## Layout
 
@@ -138,14 +115,3 @@ them. `ETHOSLM_LIBRARY_PATH`, `ETHOSLM_PYTHON` and `ETHOSLM_JAVA` override the r
 ## Licence
 
 MIT. See `LICENSE`.
-
-<!-- PRINCIPAL: decisions to make before this is published.
-     1. The clone line and any badges: no repository URL is written anywhere in this file.
-     2. Asset and corpus licensing is unread and is a hard gate: Mojang's EULA, and the
-        block-registry data in src/ethoslm/data/blocks_*.json, which was dumped from a
-        server jar. Decide whether that file may ship as it is, be regenerated by the
-        reader, or be replaced.
-     3. Whether to publish the cached worlds and renders as a download, and under what
-        terms; fixtures/ ships the small ones the suites need and nothing else.
-     4. Whether to name the demo the system was built against anywhere in the public repo.
--->

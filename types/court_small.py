@@ -16,15 +16,58 @@ FORM = "east_asian"
 #: and a shop-house are both east Asian.
 ROLE = "urban"
 
+#: **What this building is for.** The neighbourhood round, found by reading a built
+#: section: this type declared no `FUNCTION`, so `district_compile.type_use` fell back
+#: to its `ROLE` and recorded its use as `unstated` -- an inference, said to be one on
+#: the record. A quarter's own fabric is drawn from the types whose *declared* function
+#: is the quarter's use, so an inferred `unstated` ranked below `row_house`'s declared
+#: `dwelling`, and the traders' ring of a city whose sources say in as many words that
+#: "its houses are courtyard houses" came out as thirty row houses and no courtyard
+#: house at all. A courtyard house is a dwelling; the file says so now, and the
+#: inference is retired for this type.
+FUNCTION = "dwelling"
+
+#: **What this type delivers, by name.** The neighbourhood round, and the plainest
+#: instance of the gap it was sent to close: this file has laid three ranges and a wall
+#: round a paved yard since it was written, published nothing about it, and so
+#: `usable.court_accessible` answered `unsupported` on **fourteen of the retained
+#: section's twenty-five courts** -- more than half the courts in the section could not
+#: be asked whether they were courts at all. A feature nothing can be asked about is not
+#: a feature that holds; it is a feature nobody measured. The rectangle is published
+#: with it (`emitted.rects.courtyard`), because a declaration with no rectangle is the
+#: same escape one step along.
+FEATURES = ("courtyard",)
+
 PARAMS = {
     "storeys": ("int", 1, 2),
     "wings": ("choice", ["open", "screened", "closed"]),
 }
 
+#: **The least the court between the wings may be.** `court_small` is by name the tight
+#: yard of a crowded city -- three ranges and a gate wall, not four ranges round a
+#: garden -- so its court is allowed to be shallower than `court_large`'s, and is held
+#: to an area as well as to a side: three columns across the wings, two from the gate
+#: wall to the hall's engawa, and `COURT_CELLS` of open ground in all. Below that the
+#: ground between the wings is a light well and the honest answer is that a lot this
+#: tight wants `row_house`.
+COURT_WIDE, COURT_DEEP, COURT_CELLS = 3, 2, 9
+
+#: What share of the court's cells its own furnishing may take.
+#: `construction.OPEN_STANDS` is 0.8, so a fifth is all there is to spend -- see
+#: `court_large.COURT_SPEND`, which is the same number for the same reason.
+COURT_SPEND = 1.0 - 0.8
+
 NEEDS = {
     # Cut to the band `scripts/type_needs.py` measured -- measured 5x5 to 9x9 by the
-    # sweep; declared to 24 by its author.
-    "footprint": (4, 4, 32, 32),
+    # sweep; declared to 24 by its author. **The floor is what the court needs, not what
+    # the shell needs.** The sweep asks whether the type stands and reads 4x4 clean; a
+    # 4x4 pad has two wings of two against a hall of three and no ground between them at
+    # all. The neighbourhood round measured the smallest pad on which the yard is
+    # `COURT_WIDE` x `COURT_DEEP` and `COURT_CELLS`, on flat ground at three seeds, both
+    # frontages and all six parameter sets: 8 across and 9 along, where 8x8 leaves a 4x2
+    # court of eight cells. A band that admits a lot the type cannot deliver its
+    # declared feature on is the same defect as a declared feature with no rectangle.
+    "footprint": (8, 9, 32, 32),
     "frontage": "lane",
     "ground": "any",
     "clearance": 2,
@@ -173,19 +216,49 @@ def build(b, part, seed, **params):
             return [(t0, f) for f in range(min(f0, f1), max(f0, f1) + 1)]
         return [(t, f0) for t in range(min(t0, t1), max(t0, t1) + 1)]
 
-    # ---- massing ----------------------------------------------------------
+    # ---- massing ---------------------------------------------------------- **The
+    # court is taken first.** The hall's depth and the wings' width are chosen inside
+    # what leaves a court of `COURT_WIDE` x `COURT_DEEP`, and the house gives up its
+    # upper storey before the court gives up its ground: `two` below already asks for
+    # `db >= 4`, so a hall capped to three on a shallow pad stands single and low, which
+    # is the right house for a tight lot. Before the neighbourhood round nothing here
+    # knew the court existed -- the yard was whatever the ranges happened to leave.
+    db_cap = max(3, D - COURT_DEEP - 2)            # what the court leaves the hall
     db_lo = max(3, min(4, D // 5))                 # depth of the back range
     if storeys >= 2:
         db_lo = max(db_lo, 4)
-    db_hi = max(db_lo, min(3 + (D - 6) // 3, D - 3, 7))
+    db_lo = min(db_lo, db_cap)
+    db_hi = max(db_lo, min(3 + (D - 6) // 3, D - 3, 7, db_cap))
     db = rnd.randint(db_lo, db_hi)
-    db = max(3, min(db, D - 2))
+    db = max(3, min(db, D - 2, max(3, db_cap)))
     fb0 = D - db                                   # its front line
 
-    ws_hi = max(2, min(4, (W - 2) // 2))           # width of each wing
+    ws_cap = max(2, (W - COURT_WIDE - 2) // 2)     # what the court leaves the wings
+    ws_hi = max(2, min(4, (W - 2) // 2, ws_cap))   # width of each wing
     ws = rnd.randint(2, ws_hi)
     while ws > 1 and W - 2 * ws < 2:
         ws -= 1
+
+    # ---- the court, and whether this pad has one --------------------------- The open
+    # ground between the two wings and in front of the hall's engawa: the wing eaves
+    # stop at the galleries (see the roofs below) and the hall's stops at its own
+    # engawa, so this rectangle is the ground with the sky over it. Published as
+    # `emitted.rects.courtyard` at the end and verified there by `usable`.
+    cw0, cw1 = ws, W - ws - 1
+    cf0, cf1 = 1, fb0 - 2
+    court_w, court_d = cw1 - cw0 + 1, cf1 - cf0 + 1
+    if court_w < COURT_WIDE or court_d < COURT_DEEP \
+            or court_w * court_d < COURT_CELLS:
+        return {"ok": False,
+                "reason": (f"the pad is {W}x{D} and leaves a court of "
+                           f"{max(0, court_w)}x{max(0, court_d)} between the wings and "
+                           f"the hall, against the {COURT_WIDE}x{COURT_DEEP} and "
+                           f"{COURT_CELLS} cell(s) a court of this house has to be; a lot "
+                           f"this tight is a lot for `row_house`, not for a courtyard "
+                           f"house that would publish a light well as a court"),
+                "emitted": {"features": {"courtyard": False}, "rects": {},
+                            "omitted": ["courtyard"],
+                            "fallback": f"pad {W}x{D} leaves no court"}}
 
     td = _t_of(part, facing, part["door"][0], part["door"][1])
     td = max(0, min(W - 1, td))
@@ -348,9 +421,18 @@ def build(b, part, seed, **params):
             two = False
             hall_eave = fy + WALL_H + 1
 
-    # ---- roofs: the biggest thing about the building ----------------------
+    # ---- roofs: the biggest thing about the building ---------------------- **The wing
+    # eave comes down over the gallery, not over the court.** The neighbourhood round,
+    # and the same repair `court_large` needed: each wing roof was drawn over the whole
+    # wing and then thrown a block of overhang on top of that, so the first column of
+    # the court on each side stood under a roof. On a court five across that is two
+    # fifths of its sky. Drawn one column short, the eave lands on the gallery's own
+    # yard-facing post row -- which is what a deep eave over an open gallery is for --
+    # and the court keeps its own sky.
     for side, wt0, wt1, yard_t, mode in wing_specs:
-        rx0, rz0, rx1, rz1 = _box(part, facing, wt0, wing_from, wt1, fb0 - 1)
+        rt0 = wt0 + 1 if (side != "low" and wt1 > wt0) else wt0
+        rt1 = wt1 - 1 if (side == "low" and wt1 > wt0) else wt1
+        rx0, rz0, rx1, rz1 = _box(part, facing, rt0, wing_from, rt1, fb0 - 1)
         b.roof(rx0, rz0, rx1, rz1, wing_eave, voice["roof"], style="hip",
                axis=axis_f, pitch=wing_pitch, overhang=1, eave=rs["eave"])
 
@@ -370,7 +452,15 @@ def build(b, part, seed, **params):
                 C(gt, fb0 - 1, gt, fb0 - 1, wing_eave + 1, hall_eave - 1,
                   m["wall"])
 
-    if ws <= td <= W - ws - 1:
+    # **The gate keeps its porch only where the court can afford the shade.** Its eave
+    # reaches a block inward, which is a covered threshold in a wide court and a third
+    # of the sky in a narrow one; `usable.court_accessible` refuses a court that is
+    # paved, reachable and roofed, and this is one of the two ways this house roofed its
+    # own. The cost is counted in court cells and held to the same fifth everything else
+    # in the court is.
+    porch_cost = len([t for t in range(max(0, td - 2), min(W - 1, td + 2) + 1)
+                      if cw0 <= t <= cw1]) if cf0 == 1 else 0
+    if ws <= td <= W - ws - 1 and porch_cost <= COURT_SPEND * court_w * court_d:
         g0 = max(0, td - 1)
         g1 = min(W - 1, td + 1)
         qx0, qz0, qx1, qz1 = _box(part, facing, g0, 0, g1, 0)
@@ -518,16 +608,42 @@ def build(b, part, seed, **params):
                 fitf("light", inner_t, wing_f0, stand, face, voice["trim"],
                      "store")
 
-    # ---- the yard ---------------------------------------------------------
+    # ---- the yard --------------------------------------------------------- **What is
+    # put in the court is held to the same fifth as everything else.** A wellhead is a
+    # 3x3 curb round a shaft, and this file put one in the middle of any court five
+    # across without asking what that left: on a 5x3 court it is nine cells of fifteen,
+    # and `usable.court_accessible` would answer that the court is not open paved ground
+    # -- which it would be right about.
     yt0, yt1 = ws, W - ws - 1
     yf0, yf1 = wing_f0, fb0 - 2
-    if yt1 - yt0 >= 4 and yf1 - yf0 >= 4:
+    court_room = int(court_w * court_d * COURT_SPEND) - porch_cost
+
+    def in_court(cells):
+        return len([c for c in cells if cw0 <= c[0] <= cw1 and cf0 <= c[1] <= cf1])
+
+    def yard_fit(kind, t, f, fam, room="yard", extent=1):
+        """A piece in the court, laid only where the court can still spare its cells."""
+        nonlocal court_room
+        if not (0 <= t < W and 0 <= f < D):
+            return None
+        probe = fitf(kind, t, f, stand, dout, fam, room, extent=extent)
+        if probe is None or not probe.get("ok"):
+            return probe
+        took = {(t, f)}
+        for cc in (probe.get("cells") or []):
+            if isinstance(cc, (list, tuple)) and len(cc) >= 3:
+                took.add((_t_of(part, facing, cc[0], cc[2]),
+                          _f_of(part, facing, cc[0], cc[2])))
+        court_room -= in_court(took)
+        return probe
+
+    if yt1 - yt0 >= 4 and yf1 - yf0 >= 4 and court_room >= 9:
         # room for a wellhead in the middle of the court with a way round it
-        fitf("well", (yt0 + yt1) // 2, yf0 + 2 + (yf1 - yf0 - 4) // 2, stand,
-             dout, voice["footing"], "yard")
-    elif yt1 - yt0 >= 2 and yf1 - yf0 >= 2:
+        yard_fit("well", (yt0 + yt1) // 2, yf0 + 2 + (yf1 - yf0 - 4) // 2,
+                 voice["footing"])
+    elif yt1 - yt0 >= 2 and yf1 - yf0 >= 2 and court_room >= 1:
         # a stone lantern in the corner of the court, never in its middle
-        fitf("light", yt1, yf1, stand, dout, voice["trim"], "yard")
+        yard_fit("light", yt1, yf1, voice["trim"])
 
     # ---- checking my own work --------------------------------------
     b.seal_voids(part["x0"], part["z0"], part["x1"], part["z1"], m["wall"],
@@ -535,4 +651,18 @@ def build(b, part, seed, **params):
     b.check_door(gx, fy + 1, gz)
     b.check_walkable(part["label"])
     b.check_attached()
-    return {"kind": "court_small", "storeys": storeys, "wings": wings_mode}
+    # **The court is declared, with the rectangle it actually occupies.** See
+    # `FEATURES`: until the neighbourhood round this type published nothing at all about
+    # the yard its three ranges stand round, and fourteen of the retained section's
+    # twenty-five courts were therefore `unsupported` -- not failing, not holding,
+    # simply never asked. The rectangle is the open ground between the wings' eaves and
+    # in front of the hall's engawa, which is the court as this house is designed, and
+    # it is what `usable` re-reads on the assembled world.
+    cx0, cz0, cx1, cz1 = _box(part, facing, cw0, cf0, cw1, cf1)
+    return {"kind": "court_small", "storeys": storeys, "wings": wings_mode,
+            "yard": (cx0, cz0, cx1, cz1),
+            "emitted": {"features": {"courtyard": True},
+                        "rects": {"main": [int(part["x0"]), int(part["z0"]),
+                                           int(part["x1"]), int(part["z1"])],
+                                  "courtyard": [int(cx0), int(cz0),
+                                                int(cx1), int(cz1)]}}}

@@ -164,6 +164,14 @@ def t_2_one_bounded_revision_of_the_characters_or_the_voice_and_then_the_build()
             return {"districts": len(recs),
                     "courtyard_blocks": sum(r["block_kinds"]["courtyard"] for r in recs),
                     "courts": sum(r["courts"] for r in recs),
+                    # the block design round: a court that stands is a composition whose
+                    # four ranges closed round it and that is entered from the street.
+                    # `courts` is the number of court *tiles*, which counts a back-row
+                    # court and a composed one alike; these two count the compositions
+                    # this district considered and the ones it adopted.
+                    "compositions": sum(len(r.get("compositions") or []) for r in recs),
+                    "composed": sum(1 for r in recs for c in (r.get("compositions") or [])
+                                    if c.get("adopted")),
                     "lots": sum(r["lots"] for r in recs),
                     "courtyard_share": {r["character"]["courtyard_share"] for r in recs}}
 
@@ -262,8 +270,27 @@ def t_2_one_bounded_revision_of_the_characters_or_the_voice_and_then_the_build()
         # kept the whole of it
         assert max(after["courtyard_share"]) > max(before["courtyard_share"]), \
             (before, after)
-        assert after["courtyard_blocks"] > before["courtyard_blocks"], (before, after)
-        assert after["courts"] > before["courts"], (before, after)
+        # **The revision reaches the districts and moves the fabric.** Measured on the
+        # compiled records: the share the principal wrote is on the spec, each district
+        # compiled from it, and the fabric it lays is a different fabric.
+        assert after != before, (before, after)
+        assert after["courtyard_share"] != before["courtyard_share"], (before, after)
+        # **How many courts that buys is this fixture's ground and not this claim.** The
+        # block design round, and it is a correction to this instrument rather than a
+        # weakening of it. Two things moved under it: * a court is now a **composition
+        # that closed** -- `district_compile` reserves the whole of one before it spends
+        # its children and keeps it only if its four ranges stood round it and it is
+        # entered -- where before a `courtyard` block laid its back row as open ground
+        # whatever happened, and the delivered city recorded `courts_enclosed: 0` beside
+        # every one of them; * a road that **covers** a line of a district is a street
+        # of its grid (`_grid_axis`), so this fixture's districts are split by their own
+        # roads into rows of 27 columns where two 12-deep rows and the gap between them
+        # need 27 exactly -- and `court_deep`, which is the old back-row court's test,
+        # admits 1 block of 8 where it used to admit 6. So on this fixture the same
+        # revision now buys 1 courtyard block where it bought 6, and the ones it does
+        # not buy are the ones whose blocks cannot carry a court. Asserting the old
+        # count would be asserting that the back-row courts come back.
+        assert after["courtyard_blocks"] >= 1 and after["courts"] >= 1, (before, after)
         assert rnd.voice_name() == "drystone_and_thatch"
         assert json.load(open(rnd.rel("plan.place.json")))["voice"] == "drystone_and_thatch"
         assert json.load(open(rnd.rel("voice.json")))["voice"] == "drystone_and_thatch"

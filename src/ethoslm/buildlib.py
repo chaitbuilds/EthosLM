@@ -409,7 +409,19 @@ def _courtyard_rects(courtyard, main):
     """
     if not courtyard:
         return None, None
-    if isinstance(courtyard, (int, float)):
+    x0, z0, x1, z1 = main
+    W, D = x1 - x0 + 1, z1 - z0 + 1
+    fixed = None
+    if isinstance(courtyard, dict) and isinstance(courtyard.get("depths"), dict):
+        # **The ranges by their use, and the yard is what they leave.** The design
+        # resolution round: a type that has decided how deep each range's rooms are
+        # (`types/courtyard_house.form_plan`) hands the four depths over and the yard is
+        # the remainder, so a hall deeper than its wings is not averaged away.
+        fixed = {s: int(courtyard["depths"].get(s) or 0)
+                 for s in ("north", "south", "west", "east")}
+        w = W - fixed["west"] - fixed["east"]
+        d = D - fixed["north"] - fixed["south"]
+    elif isinstance(courtyard, (int, float)):
         w = d = int(courtyard)
     elif isinstance(courtyard, dict):
         r = courtyard.get("yard") or courtyard.get("rect") or ()
@@ -422,16 +434,18 @@ def _courtyard_rects(courtyard, main):
     else:
         return None, ("a courtyard is the size of its yard, (w, d), or one number for "
                       "a square one")
-    x0, z0, x1, z1 = main
-    W, D = x1 - x0 + 1, z1 - z0 + 1
     if w < COURT_YARD_MIN or d < COURT_YARD_MIN:
         return None, (f"a yard of {w}x{d} is not a yard: a courtyard building needs at "
                       f"least {COURT_YARD_MIN}x{COURT_YARD_MIN} of open ground in the "
                       f"middle of it")
     # The ranges, split as evenly as the remainder allows, deeper on the far side of an
     # odd one so the yard does not drift.
-    west, east = (W - w) // 2, W - w - (W - w) // 2
-    north, south = (D - d) // 2, D - d - (D - d) // 2
+    if fixed:
+        west, east, north, south = (fixed["west"], fixed["east"], fixed["north"],
+                                    fixed["south"])
+    else:
+        west, east = (W - w) // 2, W - w - (W - w) // 2
+        north, south = (D - d) // 2, D - d - (D - d) // 2
     thin = [n for n, v in (("west", west), ("east", east),
                            ("north", north), ("south", south))
             if v < COURT_RANGE_MIN]
@@ -571,6 +585,45 @@ def _line_between(a, b) -> list:
         lo, hi = sorted((ax, bx))
         return [(x, az) for x in range(lo, hi + 1)]
     return []
+
+
+#: The siting inset, as `Builder.SITE_INSET`; module-level so the district compiler can
+#: ask for a pad without a builder.
+PAD_SITE_INSET = 2
+
+#: Walk-in facing (a threshold's: from the lane into the plot) for each street side.
+WALK_IN = {"north": "south", "south": "north", "east": "west", "west": "east"}
+
+
+def pad_insets(w: int, d: int, attached=None, inset: int = PAD_SITE_INSET) -> tuple:
+    """(west, north, east, south): how far a plot's pad is inset on each side.
+
+    **One definition for the compiler and the builder.** The quarter design round: the
+    compiler validated a pad of its own reckoning and `Builder._site_pad` cut another,
+    so the pad a lot was admitted for was not the pad it was built on. `inset` on a free
+    side, one where two would leave less than five columns across, and **nothing on an
+    attached side** (v2, C2): the next house stands against it and the party wall is on
+    the plot's edge."""
+    a = set(attached or ())
+    i = int(inset)
+    ins = [0 if s in a else i for s in ("west", "north", "east", "south")]
+    if (w - 1 - ins[0] - ins[2]) < 4 or (d - 1 - ins[1] - ins[3]) < 4:
+        ins = [min(v, 1) for v in ins]
+    return tuple(ins)
+
+
+class SiteRefused(ValueError):
+    """A leaf's compiled site cannot be built as compiled: the ground contract cannot
+    hold its floor within `Builder.PLANNED_STEP`, or its pad is under water. Raised by
+    `site()` so the part is refused visibly rather than sunk or moved; the driver reports
+    it as `refused` (`stages_build.instantiate_part`)."""
+
+
+def site_pad_rect(x0: int, z0: int, x1: int, z1: int, attached=None,
+                  inset: int = PAD_SITE_INSET) -> tuple:
+    """The inset pad of a plot `(x0, z0, x1, z1)` in world columns: `pad_insets` applied."""
+    iw, iN, ie, iS = pad_insets(x1 - x0 + 1, z1 - z0 + 1, attached, inset)
+    return (x0 + iw, z0 + iN, x1 - ie, z1 - iS)
 
 
 def _door_cell(facing: str, reserved, main, blocked):
@@ -999,6 +1052,12 @@ class Builder(Primitives):
         ground at (x, z) when there is no circulation network at all -- each says which
         in "source", because a floor derived from a guess should not look like a floor
         derived from a doorstep."""
+        pe = self._planned_entry().get(label) if label else None
+        if pe:
+            return {"floor_y": pe["floor_block_y"], "stand_y": pe["stand_y"],
+                    "door": tuple(pe["door"]), "facing": pe["facing"],
+                    "lane": (tuple(pe["lane"]) if pe.get("lane") else None),
+                    "source": "threshold", "compiled": True}
         t = self.threshold(label) if label else None
         if t:
             return {"floor_y": t["floor_block_y"], "stand_y": t["stand_y"],
@@ -1006,6 +1065,20 @@ class Builder(Primitives):
                     "lane": tuple(t["lane"]), "source": "threshold"}
         if x is not None and z is not None:
             lane = self.nearest_lane(x, z)
+            # **...within the reach of an approach, and no further.** The quarter design
+            # round: a row of the crowded fabric with no reserved threshold took its
+            # floor from the nearest lane *anywhere* -- 44 columns off at y=66 in the
+            # delivered city, which matched its own plinth by coincidence -- and a new
+            # lane 38 columns away in a different quarter at y=64 then sank its floor
+            # two blocks into its own bank. A lane an approach cannot reach says nothing
+            # about this building's floor; the ground its own site laid does.
+            if lane and int(lane.get("distance") or 0) > self.APPROACH_RADIUS:
+                g = self.get_height(int(x), int(z))
+                return {"floor_y": g, "stand_y": g + 1, "door": None, "facing": None,
+                        "lane": None,
+                        "source": (f"no lane within {self.APPROACH_RADIUS} blocks (the "
+                                   f"nearest is {lane['distance']} away): the ground its "
+                                   f"own site laid")}
             if lane:
                 dx, dz = x - lane["x"], z - lane["z"]
                 facing = ("east" if dx > 0 else "west") if abs(dx) >= abs(dz) else \
@@ -2091,6 +2164,15 @@ class Builder(Primitives):
     #: deck on piles rather than a plinth poured into a lake.
     SITE_WET = 0.25
 
+    #: **How far a doorstep may move a floor the plan designed a level for.** The block
+    #: design round. One block: a doorstep is a place to step onto and a threshold a
+    #: block above or below its floor is an ordinary front step. Beyond that the lane
+    #: and the terrace are at different levels, the difference belongs to the approach
+    #: (`approach()` lays it as a flight), and the house stands on the ground its
+    #: district was prepared at. `SITE_RELIEF` governed this and three blocks is a
+    #: basement.
+    PLANNED_STEP = 1
+
     #: The largest pad `site()` will cut out of a plot on broken ground. On a plot with
     #: 24 blocks of relief, levelling the whole of it is a quarry; the flattest
     #: rectangle this size in it is a terrace. On level ground the whole inset plot is
@@ -2272,6 +2354,7 @@ class Builder(Primitives):
         """
         from . import ground as _ground
         before = set(self._pending)
+        self._note_compiled(part)
         # **The seventh role. Read here and nowhere else, because this is the last
         # moment the ground under the part is the ground as found -- `_site_part` lays
         # the pad in the footing family the moment after. The voice's `ground` where it
@@ -2300,6 +2383,22 @@ class Builder(Primitives):
                                     "clamped": res.clamped(label),
                                     "seams": {f"{a}|{b}": dict(v) for (a, b), v
                                               in res.seams_of(label).items()}}
+        planned = self._planned_site(part)
+        if planned is not None:
+            # **the compiled floor, or a visible refusal.** The contract may hold a
+            # platform's level within its relief of the ground as found; a compiled
+            # site's floor may move by a step and no further.
+            want = int(planned["floor"])
+            got_l = int(decision["level"]) if decision and decision.get("level") \
+                is not None else None
+            if decision is not None and not decision.get("ok", True):
+                raise SiteRefused(f"{label}: {decision.get('reason')}")
+            if got_l is not None and abs(got_l - want) > self.PLANNED_STEP:
+                raise SiteRefused(
+                    f"{label}: the compiled site's floor is y={want} and the ground "
+                    f"contract holds this pad at y={got_l}, {abs(got_l - want)} block(s) "
+                    f"away -- more than the {self.PLANNED_STEP} a doorstep may move a "
+                    f"planned floor. Refused rather than built sunk or raised")
         self._cur_part = len(self.parts)
         with self.laying("ground", protected=True):
             out = self._site_part(part, mat=mat, decision=decision)
@@ -2425,6 +2524,7 @@ class Builder(Primitives):
         be near somebody else's front door and is not allowed to be on top of it.
         Refuses, laying nothing, exactly where `site()` refused."""
         kind = part.get("kind", "plot")
+        self._note_compiled(part)
         if kind == "edge":
             dec = self._decide_edge(part)
         elif kind == "point":
@@ -2441,8 +2541,7 @@ class Builder(Primitives):
         elif kind in ("plot", None):
             px0, px1 = int(min(part["x0"], part["x1"])), int(max(part["x0"], part["x1"]))
             pz0, pz1 = int(min(part["z0"], part["z1"])), int(max(part["z0"], part["z1"]))
-            dec = self._decide_rect(part, self._site_pad(px0, pz0, px1, pz1,
-                                                         part.get("attached")),
+            dec = self._decide_rect(part, self._pad_of(part, px0, pz0, px1, pz1),
                                     kind="plot")
         else:
             dec = {"ok": False, "kind": kind,
@@ -2461,28 +2560,130 @@ class Builder(Primitives):
         water = {c: self.wet(c[0], c[1]) for c in cols}
         wet_cols = [c for c in cols if water[c] is not None]
         relief = max(bed.values()) - min(bed.values())
+        planned_site = self._planned_site(part)
+        if planned_site is not None and kind in ("plot", "area"):
+            return self._decide_planned(part, rect, kind, planned_site, cols, bed, water,
+                                        wet_cols, relief)
         fr = self.floor_from_threshold(part.get("label"),
                                        (x0 + x1) // 2, (z0 + z1) // 2) or {}
         want = fr.get("floor_y") if fr.get("source") == "threshold" else None
+        # **A doorstep moves a floor by a step; it does not sink a house.** The block
+        # design round, and the audit's first cause. The doorstep decides the floor (the
+        # law above) and `_within_reach` bounded that at `SITE_RELIEF`, which is three
+        # blocks -- so `lower_ring_north_2_b1_0_00`, whose lane ramps past its terrace,
+        # was sited at y=63 over prepared ground at y=66, three blocks into a pit, with
+        # a stair inside it facing down-slope (`E004`). Nothing had refused it: the
+        # threshold rank preferred a level doorstep and still returned the best bad one,
+        # and siting followed wherever that led. Where the plan says which level this
+        # plot's ground was designed at (`floor`, `pipeline.PART_GEOMETRY`), a doorstep
+        # further than `PLANNED_STEP` from it is **not this plot's doorstep**: the floor
+        # is the prepared ground and the difference between the lane and the door is
+        # realized as a flight by `approach()`, which is what an intentional step or
+        # ramp is. The refusal is recorded on the decision so a reader can see which
+        # houses were entered over a step and how big it was.
+        planned = part.get("floor")
+        step_over = None
+        if planned is not None and want is not None:
+            if abs(int(want) - int(planned)) > self.PLANNED_STEP:
+                step_over = int(want) - int(planned)
+                want = None
         waterline = max(water[c] for c in wet_cols) if wet_cols else None
+        # with no usable doorstep the plan's own level is what this pad was designed to,
+        # held inside the ground that is actually there
+        aim = want if want is not None else (
+            int(planned) if planned is not None else None)
         if len(wet_cols) > self.SITE_WET * len(cols):
             ground = "deck"
             floor_y = waterline + 1
-            floor_y = max(floor_y, want) if want is not None else floor_y
+            floor_y = max(floor_y, aim) if aim is not None else floor_y
         elif relief > self.SITE_RELIEF:
             ground = "platform"
-            floor_y = max(bed.values()) if want is None else self._within_reach(want, bed)
+            floor_y = max(bed.values()) if aim is None else self._within_reach(aim, bed)
         else:
             ground = "plinth"
-            floor_y = max(bed.values()) if want is None else self._within_reach(want, bed)
+            floor_y = max(bed.values()) if aim is None else self._within_reach(aim, bed)
         return {"ok": True, "kind": kind, "rect": [int(v) for v in rect],
                 "level": int(floor_y), "ground": ground, "relief": int(relief),
                 "wet_columns": len(wet_cols), "columns": len(cols),
                 "grade": [int(min(bed.values())), int(max(bed.values()))],
                 "waterline": (int(waterline) if waterline is not None else None),
                 "want": (int(want) if want is not None else None),
+                "planned": (int(planned) if planned is not None else None),
+                # the doorstep this pad refused, and by how much: an entrance over a
+                # step, which `approach()` lays as a flight
+                "doorstep_step": step_over,
                 "threshold": {"source": fr.get("source"), "facing": fr.get("facing"),
                               "door": (list(fr["door"]) if fr.get("door") else None)}}
+
+    # --- the compiled site: consumed, never re-decided --------------------------- The
+    # quarter design round, and the block design audit's second cause. The district
+    # compiler chose each leaf's pad, floor, facing, door and landing **together**
+    # (`district_compile.site_solve`, carried as `site`; a court's as `court_site`), and
+    # until now this library chose each of them again: `_site_pad` insetted and shrank
+    # to the flattest rectangle, `_decide_rect` took the floor from the doorstep,
+    # `_site_part` took the facing from the threshold and `_door_cell` moved the door. A
+    # leaf that carries a site is built on exactly that site. A deviation this library
+    # would once have applied is **reported** (`reach_deviation`), and a floor the
+    # ground contract cannot hold within `PLANNED_STEP` of the plan is refused visibly
+    # (`SiteRefused`) rather than sunk. A leaf with no site keeps the old path.
+
+    @staticmethod
+    def _planned_site(part: dict) -> dict | None:
+        """The compiled site of a leaf -- a plot's `site`, a court's `court_site` --
+        with a floor, or None (the old path)."""
+        kind = part.get("kind", "plot")
+        if kind in ("plot", None):
+            st = part.get("site")
+            if isinstance(st, dict) and st.get("pad") and st.get("floor") is not None:
+                return st
+        if kind == "area":
+            cs = part.get("court_site")
+            if isinstance(cs, dict) and cs.get("floor") is not None:
+                return cs
+        return None
+
+    def _pad_of(self, part: dict, px0: int, pz0: int, px1: int, pz1: int) -> tuple:
+        """The pad a plot is built on: the compiled one verbatim where the leaf carries
+        a site, else `_site_pad`'s choice as before."""
+        st = self._planned_site(part)
+        if st is not None and part.get("kind", "plot") in ("plot", None):
+            return tuple(int(v) for v in st["pad"])
+        return self._site_pad(px0, pz0, px1, pz1, part.get("attached"))
+
+    def _decide_planned(self, part, rect, kind, st, cols, bed, water, wet_cols,
+                        relief) -> dict:
+        """`_decide_rect` for a leaf with a compiled site: the level is the site's floor.
+
+        What the old rule would have done is kept on the decision as evidence and not
+        applied: `reach_deviation` is where `_within_reach` would have moved the floor
+        towards the ground as found. A pad over water whose planned floor does not clear
+        the waterline is refused -- the plan's floor is a decision, and a house under a
+        lake is not a place to take it."""
+        floor_y = int(st["floor"])
+        waterline = max(water[c] for c in wet_cols) if wet_cols else None
+        if len(wet_cols) > self.SITE_WET * len(cols):
+            ground = "deck"
+        elif relief > self.SITE_RELIEF:
+            ground = "platform"
+        else:
+            ground = "plinth"
+        reach = self._within_reach(floor_y, bed)
+        base = {"kind": kind, "rect": [int(v) for v in rect], "level": floor_y,
+                "ground": ground, "relief": int(relief),
+                "wet_columns": len(wet_cols), "columns": len(cols),
+                "grade": [int(min(bed.values())), int(max(bed.values()))],
+                "waterline": (int(waterline) if waterline is not None else None),
+                "want": None, "planned": floor_y, "doorstep_step": None,
+                "site": "compiled",
+                "reach_deviation": (int(reach) - floor_y if reach != floor_y else None),
+                "threshold": {"source": "site", "facing": st.get("facing"),
+                              "door": list(st.get("door") or []) or None}}
+        if waterline is not None and ground == "deck" and floor_y <= waterline:
+            return {**base, "ok": False,
+                    "reason": (f"the compiled floor y={floor_y} does not clear the "
+                               f"waterline y={waterline} under this pad; refused rather "
+                               f"than built under water")}
+        return {**base, "ok": True}
 
     #: The area types that are **designed** ground -- levelled for what happens on them
     #: -- against the ones that are a field: what is left between the plots, planted. A
@@ -2510,6 +2711,13 @@ class Builder(Primitives):
             cls = "footprint"
         cols = [(x, z) for x in range(x0, x1 + 1) for z in range(z0, z1 + 1)]
         cols += _ground.ledge((x0, z0, x1, z1))
+        cs = self._planned_site(part) if dec["kind"] == "area" else None
+        if cs is not None and cs.get("margin"):
+            # the court's owned margin is its ground too, at its floor
+            mx0, mz0, mx1, mz1 = (int(v) for v in cs["margin"])
+            have = set(cols)
+            cols += [(x, z) for x in range(mx0, mx1 + 1) for z in range(mz0, mz1 + 1)
+                     if (x, z) not in have]
         contract.platform(label, [c for c in cols if c not in lanes], dec["level"],
                           cls=cls, rect=(x0, z0, x1, z1),
                           reason=(f"{dec['ground']} at y={dec['level']} over ground "
@@ -2555,9 +2763,11 @@ class Builder(Primitives):
                                         f"know what a {kind!r} is"}}
         px0, px1 = int(min(part["x0"], part["x1"])), int(max(part["x0"], part["x1"]))
         pz0, pz1 = int(min(part["z0"], part["z1"])), int(max(part["z0"], part["z1"]))
-        dec = decision or self._decide_rect(part, self._site_pad(px0, pz0, px1, pz1,
-                                                                 part.get("attached")),
+        dec = decision or self._decide_rect(part, self._pad_of(part, px0, pz0, px1, pz1),
                                             kind="plot")
+        planned = self._planned_site(part)
+        if planned is not None and not dec.get("ok", True):
+            raise SiteRefused(f"{part.get('label')}: {dec.get('reason')}")
         rect = tuple(int(v) for v in dec["rect"])
         x0, z0, x1, z1 = rect
         self.clear_trees(x0 - 2, z0 - 2, x1 + 2, z1 + 2)
@@ -2578,17 +2788,52 @@ class Builder(Primitives):
         relief = int(dec["relief"])
         floor_y = int(dec["level"])
         ground = dec["ground"]
-        laid = self._site_lay(rect, floor_y, bed, water, m)
+        # **not over the party wall** (the fabric reset round): the ledge is laid one
+        # column out on every *free* side; on a side the plan says is attached, that
+        # column is the neighbour's wall, and a lot sited after its neighbour was built
+        # cleared it to floor+4 and left a slot the depth of the house through the lane
+        # face -- in every terrace, `row_house` included (measured by the form worker:
+        # 72 open cells in a row of four; lint does not see it).
+        _att = set(part.get("attached") or ())
+        _beyond = {(x, z) for x in range(x0 - 1, x1 + 2) for z in range(z0 - 1, z1 + 2)
+                   if (x < x0 and "west" in _att) or (x > x1 and "east" in _att)
+                   or (z < z0 and "north" in _att) or (z > z1 and "south" in _att)}
+        laid = self._site_lay(rect, floor_y, bed, water, m, keep=_beyond)
 
-        fr = self.floor_from_threshold(part.get("label"),
-                                       (x0 + x1) // 2, (z0 + z1) // 2) or {}
-        facing = fr.get("facing") or "north"
-        door, why = _door_cell(facing, fr.get("door"), rect, [])
+        site_rec = None
+        if planned is not None:
+            # **the compiled facing and door, verbatim** -- the door is a cell of the
+            # pad's street edge and the threshold's landing is outside the plot on that
+            # side; `approach()` lays the columns between
+            facing = WALK_IN.get(str(planned.get("facing")), "north")
+            door, why = (int(planned["door"][0]), int(planned["door"][1])), None
+            wall = self._DOOR_WALL[facing]
+            on_wall = ((wall == "z0" and door[1] == z0) or (wall == "z1" and door[1] == z1)
+                       or (wall == "x0" and door[0] == x0)
+                       or (wall == "x1" and door[0] == x1))
+            site_rec = {"compiled": True, "pad": [x0, z0, x1, z1],
+                        "floor": int(planned["floor"]), "level": int(floor_y),
+                        "facing": planned.get("facing"), "door": list(door),
+                        "landing": list(planned.get("landing") or []),
+                        "door_on_pad_edge": bool(on_wall),
+                        "reach_deviation": dec.get("reach_deviation")}
+            if part.get("label"):
+                self._planned_entry()[part["label"]] = {
+                    "floor_block_y": int(floor_y), "stand_y": int(floor_y) + 1,
+                    "door": [door[0], int(floor_y) + 1, door[1]], "facing": facing,
+                    "lane": (list(planned["landing"]) if planned.get("landing")
+                             else None)}
+            fr = {}
+        else:
+            fr = self.floor_from_threshold(part.get("label"),
+                                           (x0 + x1) // 2, (z0 + z1) // 2) or {}
+            facing = fr.get("facing") or "north"
+            door, why = _door_cell(facing, fr.get("door"), rect, [])
         # The pad is the ground now, and the doorstep is on it. Written down before the
         # approach is laid, so that `approach()`, `building()` and every instrument that
         # asks where this structure's floor goes get the same answer -- and so that
         # `plinth(to_grade)` inside the shell that follows fills nothing.
-        lanes = self._site_lanes()
+        lanes = self._site_lanes() | _beyond
         for x in range(x0 - 1, x1 + 2):
             for z in range(z0 - 1, z1 + 2):
                 if (x, z) not in lanes:           # nothing was laid there; see _site_lay
@@ -2631,12 +2876,23 @@ class Builder(Primitives):
                           "grade": list(dec["grade"]),
                           "laid": laid, "approach": ap,
                           **({"contract": dec["contract"]} if dec.get("contract") else {}),
+                          **({"site": site_rec} if site_rec else {}),
                           "reason": (f"{ground} at y={floor_y} over ground "
                                      f"y={dec['grade'][0]}..{dec['grade'][1]}, "
                                      f"{dec['wet_columns']} of {dec['columns']} columns wet; "
                                      + str(ap.get("reason")))}}
         self.parts.append(out)
         return out
+
+    def _planned_entry(self) -> dict:
+        """label -> the compiled way in (`floor_block_y`, `stand_y`, `door`, `facing`,
+        `lane`), which `floor_from_threshold` answers before any threshold: a type asking
+        where its door goes is told the compiled door whatever the network recorded."""
+        got = getattr(self, "_planned_entries", None)
+        if got is None:
+            got = {}
+            self._planned_entries = got
+        return got
 
     def _within_reach(self, want: int, bed: dict) -> int:
         """The wanted floor where it is within `SITE_RELIEF` of the pad's own ground, else
@@ -2692,6 +2948,11 @@ class Builder(Primitives):
         d = abs(int(part["z1"]) - int(part["z0"])) + 1
         if kind == "area":
             return (w, d)
+        st = cls._planned_site(part)
+        if st is not None:
+            # the compiled pad is the pad: not a bound on it
+            p = [int(v) for v in st["pad"]]
+            return (p[2] - p[0] + 1, p[3] - p[1] + 1)
         # A plot, and `_site_pad`'s own two cases: inset by `SITE_INSET` on every side,
         # and by one where two would leave less than five columns across -- and, v2 C2,
         # by nothing on a side the plan says is **attached**.
@@ -2701,15 +2962,8 @@ class Builder(Primitives):
     @classmethod
     def _insets(cls, w: int, d: int, attached=None) -> tuple:
         """(west, north, east, south): how far a plot's pad is inset on each side.
-        `SITE_INSET` on a free side, one where two would leave less than five columns
-        across, and **nothing on an attached side** (v2, C2): the next house stands
-        against it and the party wall is on the plot's edge."""
-        a = set(attached or ())
-        i = cls.SITE_INSET
-        ins = [0 if s in a else i for s in ("west", "north", "east", "south")]
-        if (w - 1 - ins[0] - ins[2]) < 4 or (d - 1 - ins[1] - ins[3]) < 4:
-            ins = [min(v, 1) for v in ins]
-        return tuple(ins)
+        The one definition, shared with the district compiler: `pad_insets`."""
+        return pad_insets(w, d, attached, cls.SITE_INSET)
 
     def _site_pad(self, px0: int, pz0: int, px1: int, pz1: int, attached=None) -> tuple:
         """The rectangle inside a plot that gets prepared: inset, and flattest if broken."""
@@ -2807,14 +3061,44 @@ class Builder(Primitives):
         return len(take)
 
     def bed(self, x: int, z: int) -> int:
-        """The y of the **ground** under a column: not the waterline, not the canopy."""
+        """The y of the **ground** under a column: not the waterline, not the canopy.
+
+                **...and not the air under a canopy that overhangs from the next column**, the
+                neighbourhood delivery round. This walked down from `grade()` while the block
+                was vegetation and stopped at the first block that was not -- which for a column
+                under a neighbour's oak is `air`, six blocks over the grass. Measured against
+                `ground.bed_heights`, which is the same sounding done as an array and is what
+                `ethoslm.feasible` decides the developable mask on, the two agreed about 3,559 of
+                3,562 sampled columns of the retained section and disagreed about three, by up
+                to seven blocks. Three columns in a sample is a rounding error and *two
+                instruments answering one question differently* is the round's whole subject:
+                at `x=-5879, z=693` grade is an `oak_log` at y=86, y=81..85 is air, and the
+                grass is at y=80. Air is not a bed, and one of these two functions was wrong.
+                
+        """
         from . import observe
         y = self.grade(int(x), int(z))
         for _ in range(self.MAX_SOUNDING):
-            if not observe._is_vegetation(self._ground_block(int(x), y, int(z))):
+            blk = self._ground_block(int(x), y, int(z)).split("[")[0]
+            if blk not in AIR and not observe._is_vegetation(blk):
                 return y
             y -= 1
         return y
+
+    def crest(self, x: int, z: int) -> int:
+        """The top of whatever stands in a column as found: the canopy, the overhang,
+                the snow. `grade()` or the bed, whichever is higher.
+
+                `bed()` is how deep a cut has to go and this is how high it has to start, and
+                the two parted company the moment `bed()` stopped returning the air under a
+                neighbour's oak (see `bed`). A cut measured from the bed leaves everything
+                standing over it: on `scripts/test_ground_contract.py`'s ring fixture the farm
+                belt read y=85 over a terrace laid at y=69, because the canopy the old `bed()`
+                had counted as ground was no longer in the range being cleared. One function
+                for each of the two questions, and neither answering the other's.
+                
+        """
+        return max(int(self.grade(int(x), int(z))), int(self.bed(int(x), int(z))))
 
     def _site_lanes(self) -> set:
         """The columns the circulation pass owns, which are not the pad's.
@@ -2825,10 +3109,27 @@ class Builder(Primitives):
         if net is None:
             return set()
         keep = {(lx, lz) for (lx, lz) in net.cells}
+        own = getattr(self, "_compiled_labels", None) or ()
         for t in net.thresholds:
             keep.add((t.x, t.z))
+            # **...but a compiled door is its own pad's.** The quarter design round: a
+            # sited leaf's threshold door is the cell on its pad's edge
+            # (`circulate.site_way`), not the lane-side cell the old pass reserved, and
+            # keeping it off the pad left the doorway with no floor under the door --
+            # E008 on seven calm-side court houses of `out/qd-city`.
+            if t.id in own:
+                continue
             keep.add((int(t.door[0]), int(t.door[2])))
         return keep
+
+    def _note_compiled(self, part: dict) -> None:
+        """Remember that this part's threshold door is a compiled one (`_site_lanes`)."""
+        if self._planned_site(part) is not None and part.get("label"):
+            got = getattr(self, "_compiled_labels", None)
+            if got is None:
+                got = set()
+                self._compiled_labels = got
+            got.add(str(part["label"]))
 
     # --- the ground a *place* stands on. `site()` prepares the ground one part stands
     # on, and that is the right size of thing for a house: a pad, inset in its plot,
@@ -2939,6 +3240,8 @@ class Builder(Primitives):
         cols = [(x, z) for x in range(x0, x1 + 1) for z in range(z0, z1 + 1)]
         bed = {c: self.bed(c[0], c[1]) for c in cols}
         water = {c: self.wet(c[0], c[1]) for c in cols}
+        # ...and the crest, which is what the cut starts from. `Builder.crest`.
+        top = {c: max(self.grade(c[0], c[1]), bed[c]) for c in cols}
         was = max(bed.values()) - min(bed.values())
         if y is None:
             y = int(sorted(bed.values())[len(bed) // 2])
@@ -2990,7 +3293,10 @@ class Builder(Primitives):
             else:
                 self.place_block(x, y, z, foot_full)
                 filled += 1
-            for yy in range(y + 1, max(y, b) + 5):
+            # **Cleared from the crest and not from the bed.** What stands over the
+            # level goes, canopy and overhang included: see `Builder.crest` for the
+            # terrace this distinction was found on.
+            for yy in range(y + 1, max(y, top[(x, z)]) + 5):
                 if self.get_block(x, yy, z).split("[")[0] not in AIR:
                     self.place_block(x, yy, z, "air")
                     cut += 1
@@ -3036,7 +3342,7 @@ class Builder(Primitives):
                 g = self.bed(x, z)
                 target = int(round(y * (1 - t) + g * t))
                 if g > target:
-                    for yy in range(target + 1, g + 4):
+                    for yy in range(target + 1, self.crest(x, z) + 4):
                         if self.get_block(x, yy, z).split("[")[0] not in AIR:
                             self.place_block(x, yy, z, "air")
                 else:
@@ -3135,6 +3441,79 @@ class Builder(Primitives):
     #: The four sides of a rectangle a terrace may face and feather.
     TERRACE_SIDES = ("north", "south", "west", "east")
 
+    #: **The per-column bound on designed ground**, when a caller gives one. The
+    #: neighbourhood delivery round, and the disagreement it closes:
+    #: `placeplan.district_ground` measures a district's ground through
+    #: `feasible.record(..., relief=8, fill=8)`, a column needing a deeper cut or fill
+    #: leaves the developable set, and every count, band and cover clause in the place
+    #: divides by what is left. `terrace_annulus` levelled **every** column of the
+    #: rectangle it was handed, with no per-column bound at all -- `TERRACE_MAX_BLOCKS`
+    #: is a total budget and a budget is not a bound. Measured on the retained section's
+    #: observed baseline, the four rings' strips at their settled levels would move
+    #: 2,130,842 blocks of fill and 3,767,160 of cut with no bound, and 935,325 of fill
+    #: and 320,604 of cut inside one of eight: housing was excluded from a hillside
+    #: because that hillside should not be cut, and construction cut it anyway. So
+    #: `reach` is *not* a number of this class's own. It is the number the mask was
+    #: computed with, handed in by the caller that computed it, and the columns
+    #: `feasible.terrain` refuses are exactly the columns this call does not move. None
+    #: keeps the unbounded behaviour, which is what a pad, a plaza or a gate's ramp
+    #: wants: a ramp exists to move earth so a gate can be reached, and bounding it
+    #: refuses the palace gate's approach outright (135 columns, 0 feasible at y=83).
+    TERRACE_REACH_DEFAULT = None
+
+    def _terrace_decision(self, cols, bed, water, y: int, reach: int, base,
+                          rect) -> dict:
+        """**Which columns of this piece of designed ground may be moved**, and the
+                `feasible.DISPOSITIONS` name for every one that may not.
+
+                Taken against `base` -- the ground **as observed**, before any stage prepared
+                it -- where the caller supplies it, and that is the part that matters. A ring's
+                strip is laid first and a district's terrace over it, so a builder asking its
+                own world would measure the district's cut against the level the ring had just
+                put there: eight blocks off the ring and eight off the baseline are not the
+                same eight, and a column can leave the mask and still be moved sixteen. One
+                decision, on one reading of the ground, executed by both.
+
+                With no `base` the decision is taken on this builder's own world, which is the
+                right answer for a single bounded piece on unprepared ground (a block-scale
+                test, a live first pass) and is recorded as such in `from`.
+                
+        """
+        from . import feasible
+        keep: dict = {}
+        if base is not None:
+            got = feasible.dispositions(base, rect, level=int(y), relief=int(reach),
+                                        fill=int(reach))
+            code, names = got["code"], list(feasible.DISPOSITIONS)
+            ox, oz = int(got["origin"][0]), int(got["origin"][1])
+            w, d = code.shape
+            for c in cols:
+                i, j = c[0] - ox, c[1] - oz
+                nm = (names[int(code[i, j])] if 0 <= i < w and 0 <= j < d
+                      else "unread")
+                if nm in feasible.KEPT:
+                    keep[c] = nm
+            got.pop("code", None)
+            got.pop("mask", None)
+            return {"keep": keep, "ground": got, "reach": int(reach),
+                    "from": ("ethoslm.feasible.dispositions over the ground as observed, "
+                             "the same instrument and the same bound the developable "
+                             "mask was computed with")}
+        # No baseline given: the same four clauses, read off this builder's own world.
+        for c in cols:
+            b, wl = bed[c], water[c]
+            if wl is not None:
+                if not (wl + 1 <= y and y - b <= reach):
+                    keep[c] = "keep_water"
+            elif b - y > reach:
+                keep[c] = "keep_high"
+            elif y - b > reach:
+                keep[c] = "keep_low"
+        return {"keep": keep, "ground": None, "reach": int(reach),
+                "from": ("this builder's own world: no observed baseline was given, so "
+                         "the bound is against the ground this call finds and not "
+                         "against the ground the mask was computed on")}
+
     #: A merlon two columns wide and a crenel one between them. A parapet is a fact
     #: about walls and not about one wall type, so it is here and the types read it --
     #: `wall` drew its merlon two or three wide by seed and `great_wall` one, so two
@@ -3148,10 +3527,16 @@ class Builder(Primitives):
         """Is the `i`th column of a parapet a merlon rather than a crenel?"""
         return (int(i) % (self.MERLON_WIDTH + self.CRENEL_WIDTH)) < self.MERLON_WIDTH
 
+    #: How deep under a terrace's level its ground is made solid, whatever the column
+    #: held: a cave roofed by one block is not ground a person or a builder can trust.
+    TERRACE_SOLID_UNDER = 5
+
     @_lays("ground", protected=True)
     def terrace_annulus(self, outer, y: int, *, inner=None, mat=None,
                         cover: str | None = None, label: str | None = None,
-                        feather: int | None = None, sides=None) -> dict:
+                        feather: int | None = None, sides=None,
+                        reach: int | None = TERRACE_REACH_DEFAULT, base=None,
+                        holes=None, keep_off=None) -> dict:
         """Level the ground between two rectangles to `y`, and dress the outer edge.
 
                 `outer` and `inner` are `(x0, z0, x1, z1)`, corners inclusive; the annulus is
@@ -3167,11 +3552,31 @@ class Builder(Primitives):
                 faced and feathered -- all four by default; a strip of an annulus laid as one
                 of several pieces names only the sides that are the annulus's own edge.
 
+                **`reach` is the per-column bound and it is the mask's own.** See
+                `TERRACE_REACH_DEFAULT`. Given one, this call moves a column only where
+                `feasible.terrain` at the same level with the same bound says a building may be
+                founded on it, and every other column is **left exactly as it was found** --
+                the water it stands under kept, the knoll left standing, the hollow left open.
+                `base` is the observed baseline that decision is taken against; without it the
+                decision is taken on this builder's own world. `holes` is any number of further
+                rectangles left out of the annulus, for columns another declaration of the
+                ground contract owns and will lay itself.
+
+                A terrace that leaves ground alone has edges **inside** itself, and they are
+                not left to chance: every kept column next to a worked one is a seam, named by
+                `ground.seam_kind` off the drop, and where the prepared ground stands over the
+                ground that was kept the seam is carried as a retaining face in the footing,
+                one column into the kept ground, exactly as the outer rim is. Where the kept
+                ground stands over the prepared, it is the hillside it always was and nothing
+                is laid: a bank or a face a person meets, not one they fall off.
+
                 Refuses, laying nothing, where the fill would exceed `TERRACE_MAX_BLOCKS`
-                (the estimate is the sum over columns of the fill and cut each needs), and
-                never writes on a lane cell or a reserved doorstep, as `plateau()` does not.
-                Returns the level, the columns, and what was filled, flooded, cut, retained,
-                feathered and dressed.
+                (the estimate is the sum over the columns it will actually move of the fill and
+                cut each needs), and never writes on a lane cell or a reserved doorstep, as
+                `plateau()` does not. Returns the level, the columns, what was filled, flooded,
+                cut, retained, feathered and dressed, and `disposition`: the count of every
+                column of this piece of designed ground under `feasible.DISPOSITIONS`, plus the
+                seams, so the earthwork and the mask reconcile column for column.
         """
         before = set(self._pending)
         x0, z0, x1, z1 = (int(min(outer[0], outer[2])), int(min(outer[1], outer[3])),
@@ -3183,7 +3588,9 @@ class Builder(Primitives):
         y = int(y)
         m = _mat_roles(mat)
         foot_full = _solid(m["footing"])
-        lanes = self._site_lanes()
+        # `keep_off`: columns another owner holds -- a routed road the terrace must not
+        # bury under its fill or its feather -- left alone exactly as a lane is
+        lanes = self._site_lanes() | set(keep_off or ())
         sides = set(self.TERRACE_SIDES if sides is None else sides)
 
         def rim(i):
@@ -3200,8 +3607,19 @@ class Builder(Primitives):
                 out.update((x1 + i, z) for z in range(z0 - i, z1 + i + 1))
             return sorted(out)
 
+        # ...and any further rectangles another declaration of the ground contract owns.
+        # A district that steps off its ring is declared first and laid last, so the
+        # ring's strip may be told to leave its columns alone rather than level them to
+        # the ring and have the district level them again: two bounded moves of eight
+        # off one baseline is a move of sixteen, which is the bound escaping through the
+        # order of the stages.
+        cut_out = [(int(min(h[0], h[2])), int(min(h[1], h[3])),
+                    int(max(h[0], h[2])), int(max(h[1], h[3]))) for h in (holes or [])]
+
         def in_hole(x, z):
-            return hole is not None and hole[0] <= x <= hole[2] and hole[1] <= z <= hole[3]
+            if hole is not None and hole[0] <= x <= hole[2] and hole[1] <= z <= hole[3]:
+                return True
+            return any(a <= x <= c and b <= z <= d for (a, b, c, d) in cut_out)
         cols = [(x, z) for x in range(x0, x1 + 1) for z in range(z0, z1 + 1)
                 if not in_hole(x, z)]
         if not cols:
@@ -3209,10 +3627,27 @@ class Builder(Primitives):
                                                           "the outer: no annulus"}
         bed = {c: self.bed(c[0], c[1]) for c in cols}
         water = {c: self.wet(c[0], c[1]) for c in cols}
+        # ...and the crest of each column -- the top of whatever stands in it as found.
+        # The fill is measured from the bed and the **cut from the crest**: see
+        # `Builder.crest`, and the farm belt that read y=85 over a terrace at y=69.
+        top = {c: max(self.grade(c[0], c[1]), bed[c]) for c in cols}
+        # **The ground decision, taken once and executed here.** Every column this call
+        # will not move, and the `feasible.DISPOSITIONS` name for why.
+        decision = (self._terrace_decision(cols, bed, water, y, int(reach), base,
+                                           (x0, z0, x1, z1))
+                    if reach is not None else
+                    {"keep": {}, "ground": None, "reach": None,
+                     "from": ("no per-column bound was given: this call levels every "
+                              "column of its rectangle, which is what a pad, a plaza "
+                              "or a gate's ramp asks for")})
+        keep = decision["keep"]
         # The cost, before a block is laid: fill from the bed to the level, the cut
-        # above it, and the cover course. Refused by name over the bound.
-        est = sum((y - b if b < y else 0) + (self.grade(c[0], c[1]) - y if b > y else 0) + 1
-                  for c, b in bed.items())
+        # above it, and the cover course -- **over the columns this call will actually
+        # move**, because a budget that counted the ground the decision leaves alone
+        # would split a piece in halves to pay for earthwork it is not going to do.
+        # Refused by name over the bound.
+        est = sum((y - b if b < y else 0) + (top[c] - y if b > y else 0) + 1
+                  for c, b in bed.items() if c not in keep)
         if est > self.TERRACE_MAX_BLOCKS:
             return {"ok": False, "columns": len(cols), "estimated_blocks": int(est),
                     "reason": f"a terrace of {len(cols)} columns at y={y} would lay "
@@ -3240,25 +3675,73 @@ class Builder(Primitives):
         # there is nothing for `clear_ground_cover` to do here -- and what it would do
         # is lift the turf off the terrace laid beside this one (its box reaches `f`
         # past the rectangle), leaving that terrace a block lower than it was laid.
-        self.clear_trees(x0 - f, z0 - f, x1 + f, z1 + f)
+        # ...and where a decision keeps ground, the trees on that ground are kept with
+        # it. Ground left exactly as found and then felled is not ground left as found;
+        # it is a cleared hillside, which is the reading the previous candidate's images
+        # gave of `middle_ring_north_west`. `columns=` is the worked ground and the
+        # feather, and `clear_trees` still walks each trunk whole from there, so a tree
+        # overhanging the terrace goes and a tree standing on the mesa stays.
+        if keep:
+            worked_cols = [c for c in cols if c not in keep]
+            self.clear_trees(x0 - f, z0 - f, x1 + f, z1 + f,
+                             columns=worked_cols + [c for i in range(1, f + 2)
+                                                    for c in rim(i)])
+        else:
+            self.clear_trees(x0 - f, z0 - f, x1 + f, z1 + f)
         was = max(bed.values()) - min(bed.values())
         filled = flooded = cut = skipped = 0
+        cut_blocks = fill_blocks = 0
+        max_cut = max_fill = 0
+        over_reach = 0
+        left: dict = {}
         for (x, z) in cols:
             if (x, z) in lanes:
                 skipped += 1
                 continue
+            # **The columns the mask refuses are the columns this call does not move.**
+            # Not levelled, not filled, not cut, not dressed, not `_sited`: the ground
+            # keeps whatever it was, and `_restore_stripped` puts back anything the tree
+            # clearance took off it, because a column nobody decided is not a column
+            # somebody lowered.
+            why = keep.get((x, z))
+            if why is not None:
+                left[why] = left.get(why, 0) + 1
+                continue
             b, wl = bed[(x, z)], water[(x, z)]
+            if reach is not None and abs(b - y) > reach:
+                # The decision was taken on `ground.bed_heights` over the volume it was
+                # given, and executed against `Builder.bed`, which sounds the column
+                # live from `grade()`. The two agree about 99.9% of columns and not all
+                # of them -- an overhang, a canopy deeper than `MAX_SOUNDING` -- so this
+                # counts the columns where this call moved more earth than the mask
+                # allowed, rather than leaving the reader to infer it from a maximum.
+                over_reach += 1
             if b < y:
                 for yy in range(b + 1, y):
                     self.place_block(x, yy, z, foot_full)
+                fill_blocks += y - b
+                max_fill = max(max_fill, y - b)
                 if wl is not None:
                     flooded += 1
                 else:
                     filled += 1
             else:
                 filled += 1
+                cut_blocks += b - y
+                max_cut = max(max_cut, b - y)
             self.place_block(x, y, z, cover_at(x, z))
-            for yy in range(y + 1, max(y, b) + 5):
+            # **...and solid under it** (the design resolution round): the bed is the
+            # first solid block from the top, and under a terrace cut or filled a block
+            # or two a cave can lie with a roof one block thick -- the market piece's
+            # grass at y=69 over fifty thousand cells of air, opened into a shaft the
+            # moment a builder cleared the turf beside a shop. The terrace is solid to
+            # `TERRACE_SOLID_UNDER` below its level.
+            for yy in range(y - self.TERRACE_SOLID_UNDER, y):
+                if self.get_block(x, yy, z).split("[")[0] in AIR + ("water", "lava"):
+                    self.place_block(x, yy, z, foot_full)
+                    fill_blocks += 1
+            # cleared from the crest, not from the bed: what stands over the level goes
+            for yy in range(y + 1, max(y, top[(x, z)]) + 5):
                 if self.get_block(x, yy, z).split("[")[0] not in AIR:
                     self.place_block(x, yy, z, "air")
                     cut += 1
@@ -3276,6 +3759,51 @@ class Builder(Primitives):
                 self.place_block(x, yy, z, foot_full)
             retained += 1
             self._sited[(x, z)] = y
+        # **The seam inside the terrace**, the neighbourhood delivery round. The rim was
+        # the only place prepared ground met unprepared, and the rim gets a face and a
+        # feather. Every kept column four-adjacent to a worked one is a seam, named off
+        # the drop by `ground.seam_kind` -- the same three names the ground contract
+        # derives at every other boundary in the place, because a seam is a seam whoever
+        # made it: * the prepared ground stands **over** the kept ground: the drop is
+        # carried as a retaining face in the footing, one column into the kept ground
+        # and down to its own bed, exactly as `rim(1)` does outside. A person at the
+        # terrace's edge meets a wall's top and not a hole, and the fill behind it is
+        # not spilling into a hollow. * the kept ground stands **over** the prepared: it
+        # is the hillside it always was. Nothing is laid, because laying anything would
+        # be cutting the ground this decision just refused to cut. A bank or a face a
+        # person walks up to. * a kerb either way (one block) is stepped over and gets
+        # nothing. Measured over the retained section's twenty-four ring and district
+        # pieces at their settled levels: 14,258 seam columns, of which 10,832 take a
+        # face for about 139,952 blocks -- 1.9% of the 7,526,605 this stage laid
+        # unbounded.
+        from .ground import seam_kind as _seam_kind
+        seams: dict = {"columns": 0, "kerb": 0, "faced": 0, "natural": 0,
+                       "face_blocks": 0, "deepest_face": 0, "kinds": {}}
+        if keep:
+            work = {c for c in cols if c not in keep and c not in lanes}
+            for (x, z) in sorted(keep):
+                if (x, z) in lanes:
+                    continue
+                if not any((x + dx, z + dz) in work
+                           for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                    continue
+                b = bed[(x, z)]
+                kind = _seam_kind(y - b)
+                seams["columns"] += 1
+                if kind is not None:
+                    seams["kinds"][kind] = seams["kinds"].get(kind, 0) + 1
+                if kind is None or kind == "kerb":
+                    seams["kerb"] += 1
+                    continue
+                if b >= y:               # the hillside that was kept: it stands, as found
+                    seams["natural"] += 1
+                    continue
+                for yy in range(min(b, y - self.PLATEAU_FACE), y + 1):
+                    self.place_block(x, yy, z, foot_full)
+                    seams["face_blocks"] += 1
+                seams["faced"] += 1
+                seams["deepest_face"] = max(seams["deepest_face"], y - b)
+                self._sited[(x, z)] = y
         # the feather, outside the face: a slope from the level to the ground, a block a
         # column, its top dressed in the cover so it is ground and not a cut
         feathered = 0
@@ -3287,7 +3815,7 @@ class Builder(Primitives):
                 g = self.bed(x, z)
                 target = int(round(y * (1 - t) + g * t))
                 if g > target:
-                    for yy in range(target + 1, g + 4):
+                    for yy in range(target + 1, self.crest(x, z) + 4):
                         if self.get_block(x, yy, z).split("[")[0] not in AIR:
                             self.place_block(x, yy, z, "air")
                     self.place_block(x, target, z, cover_at(x, z))
@@ -3302,11 +3830,55 @@ class Builder(Primitives):
         swept = self._sweep_hanging(before)
         dressed = self._dress_worked(before, (x0 - f - 1, z0 - f - 1,
                                               x1 + f + 1, z1 + f + 1), cover=cover)
+        # **The disposition of every column of this piece of designed ground.** The
+        # neighbourhood delivery round's requirement, in as many words: publish it, so
+        # the mask and the earthwork reconcile column for column and not by argument. It
+        # partitions the annulus -- `worked + left_alone + lanes == columns` -- and
+        # `max_cut`/`max_fill` are what this call *did*, measured and not asserted, so a
+        # reader can hold them against `reach` themselves.
+        from .feasible import KEPT as _FEASIBLE_KEPT
+        left_alone = int(sum(left.values()))
+        disposition = {
+            "columns": len(cols), "worked": filled + flooded,
+            "filled": filled, "reclaimed": flooded, "left_alone": left_alone,
+            "lanes": skipped,
+            **{k: int(left.get(k, 0)) for k in _FEASIBLE_KEPT},
+            "cut_blocks": int(cut_blocks), "fill_blocks": int(fill_blocks),
+            "max_cut": int(max_cut), "max_fill": int(max_fill),
+            # the one number a reader holds against `reach`: the deepest single column
+            # this call moved, cut or fill, whichever went further
+            "deepest_move": int(max(max_cut, max_fill)),
+            "reach": decision["reach"], "from": decision["from"],
+            "over_reach_columns": (None if decision["reach"] is None else int(over_reach)),
+            "within_reach": (None if decision["reach"] is None else not over_reach),
+            "seams": seams,
+            "ground": decision["ground"],
+            "why": (f"{filled + flooded} of {len(cols)} column(s) moved to y={y} "
+                    f"({fill_blocks} block(s) of fill, {cut_blocks} of cut, deepest "
+                    f"{max_fill} and {max_cut}), {left_alone} left exactly as found "
+                    f"({', '.join(f'{v} {k}' for k, v in sorted(left.items())) or 'none'}"
+                    f"), {skipped} owned by the circulation pass"
+                    + (f"; the bound is {decision['reach']} and the deepest column this "
+                       f"call moved is {max(max_cut, max_fill)}, over it on "
+                       f"{over_reach} column(s) where this builder's own sounding and "
+                       f"the reading the decision was taken on disagree"
+                       if decision["reach"] is not None else
+                       "; no per-column bound was given")),
+        }
         return {"ok": True, "y": y, "outer": [x0, z0, x1, z1],
                 "inner": list(hole) if hole else None, "label": label,
+                "holes": [list(h) for h in cut_out] or None,
                 "sides": sorted(sides),
                 "columns": len(cols), "relief_before": int(was),
                 "filled": filled, "flooded": flooded, "cut": cut, "retained": retained,
+                # the three the disposition is read by, at the top of the record too, so
+                # a consumer measuring one piece does not have to reach into it: how
+                # many columns this call moved, how many it left exactly as found, and
+                # the deepest single column of earth it moved against `reach`
+                "moved_columns": filled + flooded, "left_alone": left_alone,
+                "deepest_move": int(max(max_cut, max_fill)),
+                "reach": decision["reach"],
+                "disposition": disposition,
                 "feathered": feathered, "feather": f, "swept": swept, "dressed": dressed,
                 "estimated_blocks": int(est), "blocks": len(self._pending) - len(before),
                 "lane_columns_left_alone": skipped, "cover": cover,
@@ -3314,11 +3886,15 @@ class Builder(Primitives):
                 "reason": (f"a terrace of {len(cols)} columns at y={y}, {was} of relief "
                            f"taken to 0; {filled} filled, {flooded} filled from a bed "
                            f"under water, {cut} cut, {retained} retained, {feathered} "
-                           f"feathered over {f}, {swept} swept, {dressed} dressed")}
+                           f"feathered over {f}, {swept} swept, {dressed} dressed"
+                           + (f"; {left_alone} left as found inside a per-column reach "
+                              f"of {decision['reach']}, {seams['faced']} seam(s) faced "
+                              f"and {seams['natural']} left as the hillside they are"
+                              if decision["reach"] is not None else ""))}
 
     @_lays("footing")
     def _site_lay(self, rect, floor_y: int, bed: dict, water: dict, m,
-                  ledge_cut: int | None = None) -> dict:
+                  ledge_cut: int | None = None, keep=None) -> dict:
         """Lay the pad: piles under water, fill under ground, and cut what stands over.
 
                 One pass and not three, because the three cases are one thing done to different
@@ -3331,7 +3907,7 @@ class Builder(Primitives):
         """
         x0, z0, x1, z1 = rect
         foot_full, deck_full = _solid(m["footing"]), _solid(m["floor"])
-        lanes = self._site_lanes()
+        lanes = self._site_lanes() | set(keep or ())
         filled = piles = decked = cut = skipped = 0
         for x in range(x0 - 1, x1 + 2):
             for z in range(z0 - 1, z1 + 2):
@@ -3604,6 +4180,66 @@ class Builder(Primitives):
                                door_at=((x0 + x1) // 2, (z0 + z1) // 2),
                                decision=decision)
 
+    #: Flowers a court's planted margin may carry, on grass-like ground only.
+    MARGIN_FLOWERS = ("poppy", "cornflower", "azure_bluet", "oxeye_daisy",
+                      "lily_of_the_valley")
+
+    def _site_margin(self, part: dict, cs: dict, rect, floor_y: int, m) -> dict:
+        """Lay a court's owned margin: the ring between its paving and its ranges' lot
+        lines (`court_site.margin` less the court), brought to the court's floor.
+
+        The quarter design round. The ring is the court's and not nobody's: a paved walk
+        one column wide round the paving -- the verandah path a person walks along the
+        front of the ranges -- and the passage's own columns paved through it, and
+        everything else planted ground, flowers and a low hedge. The lane cells the
+        circulation pass owns are left alone. Returns what was laid."""
+        x0, z0, x1, z1 = (int(v) for v in rect)
+        mx0, mz0, mx1, mz1 = (int(v) for v in cs["margin"])
+        pas = cs.get("passage")
+        lanes = self._site_lanes()
+        foot = _solid(m["footing"])
+        path = _solid(m["floor"])
+        try:
+            ground = self._part_ground(part, m)
+        except Exception:                        # noqa: BLE001 -- the plain default
+            ground = "grass_block"
+        grassy = str(ground).split("[")[0] in ("grass_block", "dirt", "podzol",
+                                               "coarse_dirt", "rooted_dirt")
+        bush = self.foliage(m.get("frame") or "oak") + "[persistent=true]"
+        walk, planted, skipped = [], [], 0
+        for x in range(mx0, mx1 + 1):
+            for z in range(mz0, mz1 + 1):
+                if x0 <= x <= x1 and z0 <= z <= z1:
+                    continue
+                if (x, z) in lanes or self.wet(x, z) is not None:
+                    skipped += 1
+                    continue
+                b = self.bed(x, z)
+                for y in range(min(b, floor_y), floor_y):
+                    self.place_block(x, y, z, foot)
+                for y in range(floor_y + 1, max(floor_y, b) + 5):
+                    if self.get_block(x, y, z).split("[")[0] not in AIR:
+                        self.place_block(x, y, z, "air")
+                ring = max(x0 - x, x - x1, z0 - z, z - z1)
+                on_pas = bool(pas and pas[0] <= x <= pas[2] and pas[1] <= z <= pas[3])
+                if ring <= 1 or on_pas:
+                    self.place_block(x, floor_y, z, path)
+                    walk.append((x, z))
+                else:
+                    self.place_block(x, floor_y, z, ground)
+                    edge = x in (mx0, mx1) or z in (mz0, mz1)
+                    if edge and (x + 2 * z) % 3 == 0:
+                        self.place_block(x, floor_y + 1, z, bush)
+                    elif grassy and (3 * x + z) % 4 == 0:
+                        self.place_block(x, floor_y + 1, z,
+                                         self.MARGIN_FLOWERS[(x * 7 + z) %
+                                                             len(self.MARGIN_FLOWERS)])
+                    planted.append((x, z))
+                self._sited[(x, z)] = int(floor_y)
+        self._record_path(part.get("label"), "margin", walk)
+        return {"walk": len(walk), "planted": len(planted), "lanes_left": skipped,
+                "rect": [mx0, mz0, mx1, mz1]}
+
     def _site_rect(self, part, m, rect, *, kind, facing=None, at=None,
                    door_at=None, decision: dict | None = None) -> dict:
         """The plot case over a rectangle somebody else chose: sound, decide, lay, join.
@@ -3651,6 +4287,21 @@ class Builder(Primitives):
         # doorway mid-face.
         if kind == "area" and fr.get("source") == "threshold" and fr.get("door"):
             dx, dz = int(fr["door"][0]), int(tuple(fr["door"])[-1])
+        cs = self._planned_site(part) if kind == "area" else None
+        margin = None
+        if cs is not None:
+            # **a court's compiled way in and its owned margin** (`court_site`): the
+            # door is the court's edge cell on the passage's line, and the ring out to
+            # the ranges' lot lines is laid here as the court's own ground
+            if cs.get("door"):
+                dx, dz = int(cs["door"][0]), int(cs["door"][1])
+                face = WALK_IN.get(str(cs.get("street_side")), face)
+            margin = self._site_margin(part, cs, rect, int(floor_y), m)
+            if part.get("label"):
+                self._planned_entry()[part["label"]] = {
+                    "floor_block_y": int(floor_y), "stand_y": int(floor_y) + 1,
+                    "door": [int(dx), int(floor_y) + 1, int(dz)], "facing": face,
+                    "lane": list(cs.get("approach") or []) or None}
         if self.frontage is not None and part.get("label"):
             self.frontage.sited[part["label"]] = {
                 "floor_block_y": int(floor_y), "stand_y": int(floor_y) + 1,
@@ -3664,6 +4315,7 @@ class Builder(Primitives):
                          "grade": list(dec["grade"]),
                          "laid": laid, "approach": ap,
                          **({"contract": dec["contract"]} if dec.get("contract") else {}),
+                         **({"margin": margin} if margin is not None else {}),
                          "reason": (f"{ground} at y={floor_y} over ground "
                                     f"y={dec['grade'][0]}..{dec['grade'][1]}, "
                                     f"{dec['wet_columns']} of {dec['columns']} columns wet; "
@@ -4106,6 +4758,8 @@ class Builder(Primitives):
 
         if court:
             extras["courtyard"]["yard"] = list(court["yard"])
+            extras["courtyard"]["ranges"] = {k: list(v) for k, v in court["ranges"].items()}
+            extras["courtyard"]["depths"] = dict(court["depths"])
         return {"ok": True, "floors": floors, "rooms": rooms,
                 "courtyard": (dict(extras["courtyard"]) if court else None),
                 "door": (door[0], stand_y, door[1]), "ridge_y": ridge_y,

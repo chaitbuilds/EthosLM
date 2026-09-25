@@ -90,7 +90,7 @@ def from_finding(f: dict, *, source: str = "", at: str | None = None) -> dict:
         
     """
     mat = bool(f.get("material")) if f.get("material") is not None else bool(f.get("target"))
-    return row(f.get("id") or f"find/{f.get('about')}", "finding",
+    out = row(f.get("id") or f"find/{f.get('about')}", "finding",
                about=f.get("about"), says=f.get("says") or "",
                subjects=f.get("subjects") or (), owner=f.get("owner"),
                measure=(f.get("measure")
@@ -99,6 +99,11 @@ def from_finding(f: dict, *, source: str = "", at: str | None = None) -> dict:
                target=f.get("target"), acceptance=f.get("acceptance"),
                material=mat, requirement=f.get("requirement"), part=f.get("part"),
                source=source, at=at)
+    # the reader's own action document (a revision, a relevel), carried on the row so a
+    # later pass on another candidate's reading still knows what was asked
+    if isinstance(f.get("action"), dict):
+        out["action"] = dict(f["action"])
+    return out
 
 
 def from_constraint(c: dict, required=(), *, part: str | None = None,
@@ -275,7 +280,7 @@ def upsert(ledger: dict, rows, source: str, *, candidate: str | None = None,
         # tried on it and the disposition somebody gave it are this ledger's, not the
         # reader's.
         for k in ("about", "says", "subjects", "owner", "measure", "target",
-                  "acceptance", "material", "requirement", "part"):
+                  "acceptance", "material", "requirement", "part", "action"):
             if r.get(k) not in (None, "", [], {}):
                 was[k] = r[k]
         was["last_seen"] = now
@@ -382,19 +387,24 @@ def undisposed(ledger: dict) -> list:
 # ------------------------------------------------------------------ what was tried
 
 def act(ledger: dict, rid: str, action: str | None, candidate: str, *,
-        applied: bool, why: str = "", record=None, at: str | None = None) -> dict:
+        applied: bool, why: str = "", record=None, at: str | None = None,
+        key: str | None = None) -> dict:
     """Record that `action` was tried on this row, on this candidate. Returns the row.
 
         Whether it **worked** is `effect`'s answer and is `None` until something measures
         it: an action is applied, then the world is rebuilt and read, then the measure is
         compared. Recording "applied" as "effective" is the shortcut that closed findings
         nothing had fixed.
+
+        `key` is the caller's fingerprint of **what this action carries**, where an action
+        name is not the whole of it. See `tried_here`.
         
     """
     r = _row(ledger, rid)
     r.setdefault("actions", []).append(
         {"action": action, "candidate": candidate, "applied": bool(applied),
          "effective": None, "why": why, "record": record,
+         **({"key": str(key)} if key is not None else {}),
          "at": at or time.strftime("%Y-%m-%dT%H:%M:%S")})
     return r
 
@@ -434,7 +444,10 @@ def _moved(r: dict, before: dict | None, after: dict | None) -> dict:
     t = r.get("target") if isinstance(r.get("target"), dict) else {}
     value, direction = t.get("value"), str(t.get("direction") or "")
     moved = None
-    if value is not None:
+    # a target with a direction is met by going past it that way (the design resolution
+    # round: a step brought from 7 to 2 against a target of "down to 6" read as "moved
+    # away from its target"); only a target with no direction is a point to approach
+    if value is not None and direction not in ("up", "down"):
         try:
             moved = abs(float(b) - float(value)) < abs(float(a) - float(value))
         except (TypeError, ValueError):
@@ -470,11 +483,28 @@ def admissible(ledger: dict, rid: str, candidate: str, among) -> list:
     return [a for a in among or () if a not in tried]
 
 
-def tried_here(ledger: dict, rid: str, candidate: str, action: str | None) -> bool:
-    """Has this exact action been tried on this candidate? The unchanged retry."""
-    return action in {a.get("action") for a in
-                      (ledger.get("rows", {}).get(str(rid)) or {}).get("actions") or []
-                      if a.get("candidate") == candidate}
+def tried_here(ledger: dict, rid: str, candidate: str, action: str | None,
+               key: str | None = None) -> bool:
+    """Has this exact action been tried on this candidate? The unchanged retry.
+
+        **Exact means the action and what it carries.** The block design round. Some actions
+        are a name and nothing else -- `terrace`, `compact_bay` -- and for those the name is
+        the action. A `character` revision is a name and a document: the reading says which
+        parts and what their characters become. This module refused the second of two
+        different character revisions as a repeat of the first, because both are spelled
+        `character`.
+
+        `key` is the caller's fingerprint of the document. Two attempts with different keys
+        are two different actions under one name; two with the same key, or two with none,
+        are the unchanged retry this exists to refuse.
+        
+    """
+    for a in (ledger.get("rows", {}).get(str(rid)) or {}).get("actions") or []:
+        if a.get("candidate") != candidate or a.get("action") != action:
+            continue
+        if a.get("key") == key:
+            return True
+    return False
 
 
 # ------------------------------------------------------------------ closing one

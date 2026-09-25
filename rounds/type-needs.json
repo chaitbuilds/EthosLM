@@ -6529,7 +6529,7 @@
        "front": "lattice",
        "storeys": 1
       },
-      "why": "refused: the footprint x 19..23, z 21..23 leaves the plot you reserved as 'needs', which is x 20..24, z 20..24 -- nothing has been laid; move it or reserve the ground first"
+      "why": "refused: a footprint of 2x3 has no inside: a building needs at least 3 by 3 so that one block of wall all round leaves a room"
      }
     },
     {
@@ -6580,24 +6580,13 @@
       7
      ],
      "of": 36,
-     "failed": 36,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat",
-      "slope"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E004 deepslate_tile_stairs at [22, 69, 24] faces down-slope (ahead y=68, behind y=71)"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6605,24 +6594,13 @@
       8
      ],
      "of": 36,
-     "failed": 36,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat",
-      "slope"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E004 deepslate_tile_stairs at [22, 69, 25] faces down-slope (ahead y=68, behind y=71)"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6630,24 +6608,13 @@
       9
      ],
      "of": 36,
-     "failed": 6,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat",
-      "slope"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E004 deepslate_tile_stairs at [23, 69, 25] faces down-slope (ahead y=68, behind y=71)"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6655,23 +6622,13 @@
       10
      ],
      "of": 36,
-     "failed": 6,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 2,
-      "params": {
-       "front": "lattice",
-       "storeys": 2
-      },
-      "why": "2 own lint error(s): E003 needs: a room of 8 cells at (23,68,22) cannot be walked into; E011 needs: none of the 8 floor cells of the room at (23,68,22) can be walked to from its own doorway -- you can only get in by jumping"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6679,23 +6636,13 @@
       11
      ],
      "of": 36,
-     "failed": 12,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 2
-      },
-      "why": "2 own lint error(s): E003 needs: a room of 8 cells at (23,68,22) cannot be walked into; E011 needs: none of the 8 floor cells of the room at (23,68,22) can be walked to from its own doorway -- you can only get in by jumping"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6703,23 +6650,13 @@
       12
      ],
      "of": 36,
-     "failed": 12,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "2 own lint error(s): E003 needs: a room of 7 cells at (23,65,23) cannot be walked into; E011 needs: none of the 7 floor cells of the room at (23,65,23) can be walked to from its own doorway -- you can only get in by jumping"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6727,23 +6664,13 @@
       13
      ],
      "of": 36,
-     "failed": 5,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "2 own lint error(s): E003 needs: a room of 7 cells at (23,65,23) cannot be walked into; E011 needs: none of the 7 floor cells of the room at (23,65,23) can be walked to from its own doorway -- you can only get in by jumping"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6751,23 +6678,13 @@
       14
      ],
      "of": 36,
-     "failed": 7,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "2 own lint error(s): E003 needs: a room of 7 cells at (28,65,23) cannot be walked into; E011 needs: none of the 7 floor cells of the room at (28,65,23) can be walked to from its own doorway -- you can only get in by jumping"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6775,23 +6692,13 @@
       15
      ],
      "of": 36,
-     "failed": 16,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E003 needs: a room of 55 cells at (28,65,25) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6799,23 +6706,13 @@
       16
      ],
      "of": 36,
-     "failed": 16,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E003 needs: a room of 62 cells at (28,65,25) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6823,23 +6720,13 @@
       17
      ],
      "of": 36,
-     "failed": 18,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E003 needs: a room of 47 cells at (25,65,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6847,23 +6734,13 @@
       18
      ],
      "of": 36,
-     "failed": 18,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E003 needs: a room of 53 cells at (25,65,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6871,23 +6748,13 @@
       19
      ],
      "of": 36,
-     "failed": 18,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E003 needs: a room of 59 cells at (26,65,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6895,23 +6762,13 @@
       20
      ],
      "of": 36,
-     "failed": 18,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E003 needs: a room of 65 cells at (26,65,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6919,23 +6776,13 @@
       21
      ],
      "of": 36,
-     "failed": 18,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E003 needs: a room of 71 cells at (27,65,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6943,23 +6790,13 @@
       22
      ],
      "of": 36,
-     "failed": 18,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E003 needs: a room of 77 cells at (27,65,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6967,23 +6804,13 @@
       24
      ],
      "of": 36,
-     "failed": 18,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E003 needs: a room of 92 cells at (28,65,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -6991,23 +6818,13 @@
       28
      ],
      "of": 36,
-     "failed": 18,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E003 needs: a room of 117 cells at (30,65,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
@@ -7015,46 +6832,36 @@
       32
      ],
      "of": 36,
-     "failed": 18,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "front": "lattice",
-       "storeys": 1
-      },
-      "why": "1 own lint error(s): E003 needs: a room of 141 cells at (32,65,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     }
    ],
    "band": {
     "footprint": [
      4,
      4,
-     6,
-     6
+     32,
+     32
     ],
     "runs": [
      [
       4,
-      6
+      32
      ]
     ],
     "except": [],
-    "note": "the envelope closes below what was swept"
+    "note": "the maximum is the largest size swept"
    }
   },
   "shop_house": {
    "type": "shop_house",
    "kind": "plot",
-   "combinations": 8,
+   "combinations": 12,
    "seeds": [
     1,
     2
@@ -7065,7 +6872,7 @@
       3,
       3
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7079,7 +6886,7 @@
       4,
       4
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7093,7 +6900,7 @@
       5,
       5
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7107,7 +6914,7 @@
       6,
       6
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7121,7 +6928,7 @@
       7,
       7
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7135,7 +6942,7 @@
       8,
       8
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7149,7 +6956,7 @@
       9,
       9
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7163,7 +6970,7 @@
       10,
       10
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7177,7 +6984,7 @@
       11,
       11
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7191,7 +6998,7 @@
       12,
       12
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7205,7 +7012,7 @@
       13,
       13
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7219,7 +7026,7 @@
       14,
       14
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7233,7 +7040,7 @@
       15,
       15
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7247,7 +7054,7 @@
       16,
       16
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7261,7 +7068,7 @@
       17,
       17
      ],
-     "of": 32,
+     "of": 48,
      "failed": 0,
      "grounds": [
       "flat",
@@ -7275,55 +7082,7 @@
       18,
       18
      ],
-     "of": 32,
-     "failed": 8,
-     "grounds": [
-      "flat",
-      "slope"
-     ],
-     "on": [
-      "slope"
-     ],
-     "first": {
-      "ground": "slope",
-      "seed": 1,
-      "params": {
-       "storeys": 2,
-       "trade": "grain"
-      },
-      "why": "1 own lint error(s): E010 needs: 18 blocks at (22,64,22) are held up by nothing (e.g. dark_oak_fence)"
-     }
-    },
-    {
-     "size": [
-      19,
-      19
-     ],
-     "of": 32,
-     "failed": 4,
-     "grounds": [
-      "flat",
-      "slope"
-     ],
-     "on": [
-      "slope"
-     ],
-     "first": {
-      "ground": "slope",
-      "seed": 1,
-      "params": {
-       "storeys": 3,
-       "trade": "grain"
-      },
-      "why": "1 own lint error(s): E010 needs: 29 blocks at (22,64,22) are held up by nothing (e.g. dark_oak_fence)"
-     }
-    },
-    {
-     "size": [
-      20,
-      20
-     ],
-     "of": 32,
+     "of": 48,
      "failed": 12,
      "grounds": [
       "flat",
@@ -7336,7 +7095,55 @@
       "ground": "slope",
       "seed": 1,
       "params": {
-       "storeys": 2,
+       "storeys": 1,
+       "trade": "grain"
+      },
+      "why": "2 own lint error(s): E010 needs: 18 blocks at (22,64,22) are held up by nothing (e.g. dark_oak_fence); E010 needs: 8 blocks at (23,63,28) are held up by nothing (e.g. cobblestone_wall)"
+     }
+    },
+    {
+     "size": [
+      19,
+      19
+     ],
+     "of": 48,
+     "failed": 12,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "slope"
+     ],
+     "first": {
+      "ground": "slope",
+      "seed": 1,
+      "params": {
+       "storeys": 1,
+       "trade": "grain"
+      },
+      "why": "1 own lint error(s): E010 needs: 29 blocks at (22,64,22) are held up by nothing (e.g. dark_oak_fence)"
+     }
+    },
+    {
+     "size": [
+      20,
+      20
+     ],
+     "of": 48,
+     "failed": 20,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [
+      "slope"
+     ],
+     "first": {
+      "ground": "slope",
+      "seed": 1,
+      "params": {
+       "storeys": 1,
        "trade": "grain"
       },
       "why": "2 own lint error(s): E010 needs: 22 blocks at (22,64,22) are held up by nothing (e.g. dark_oak_fence); E010 needs: 8 blocks at (24,63,29) are held up by nothing (e.g. cobblestone_wall)"
@@ -7347,8 +7154,8 @@
       21,
       21
      ],
-     "of": 32,
-     "failed": 16,
+     "of": 48,
+     "failed": 24,
      "grounds": [
       "flat",
       "slope"
@@ -7360,7 +7167,7 @@
       "ground": "slope",
       "seed": 1,
       "params": {
-       "storeys": 2,
+       "storeys": 1,
        "trade": "grain"
       },
       "why": "2 own lint error(s): E010 needs: 23 blocks at (22,64,22) are held up by nothing (e.g. dark_oak_fence); E010 needs: 8 blocks at (24,63,30) are held up by nothing (e.g. cobblestone_wall)"
@@ -7371,8 +7178,8 @@
       22,
       22
      ],
-     "of": 32,
-     "failed": 16,
+     "of": 48,
+     "failed": 24,
      "grounds": [
       "flat",
       "slope"
@@ -7384,7 +7191,7 @@
       "ground": "slope",
       "seed": 1,
       "params": {
-       "storeys": 2,
+       "storeys": 1,
        "trade": "grain"
       },
       "why": "2 own lint error(s): E010 needs: 24 blocks at (22,64,22) are held up by nothing (e.g. dark_oak_fence); E010 needs: 8 blocks at (25,63,30) are held up by nothing (e.g. cobblestone_wall)"
@@ -7395,8 +7202,8 @@
       24,
       24
      ],
-     "of": 32,
-     "failed": 16,
+     "of": 48,
+     "failed": 24,
      "grounds": [
       "flat",
       "slope"
@@ -7408,7 +7215,7 @@
       "ground": "slope",
       "seed": 1,
       "params": {
-       "storeys": 2,
+       "storeys": 1,
        "trade": "grain"
       },
       "why": "2 own lint error(s): E010 needs: 28 blocks at (22,64,22) are held up by nothing (e.g. dark_oak_fence); E010 needs: 8 blocks at (26,63,31) are held up by nothing (e.g. cobblestone_wall)"
@@ -7419,8 +7226,8 @@
       28,
       28
      ],
-     "of": 32,
-     "failed": 16,
+     "of": 48,
+     "failed": 24,
      "grounds": [
       "flat",
       "slope"
@@ -7432,7 +7239,7 @@
       "ground": "slope",
       "seed": 1,
       "params": {
-       "storeys": 2,
+       "storeys": 1,
        "trade": "grain"
       },
       "why": "2 own lint error(s): E010 needs: 32 blocks at (22,64,22) are held up by nothing (e.g. dark_oak_fence); E010 needs: 8 blocks at (28,63,33) are held up by nothing (e.g. cobblestone_wall)"
@@ -7443,8 +7250,8 @@
       32,
       32
      ],
-     "of": 32,
-     "failed": 16,
+     "of": 48,
+     "failed": 24,
      "grounds": [
       "flat",
       "slope"
@@ -7456,7 +7263,7 @@
       "ground": "slope",
       "seed": 1,
       "params": {
-       "storeys": 2,
+       "storeys": 1,
        "trade": "grain"
       },
       "why": "2 own lint error(s): E010 needs: 30 blocks at (22,65,22) are held up by nothing (e.g. dark_oak_fence); E010 needs: 8 blocks at (30,62,35) are held up by nothing (e.g. cobblestone_wall)"
@@ -11511,7 +11318,7 @@
   "courtyard_house": {
    "type": "courtyard_house",
    "kind": "plot",
-   "combinations": 6,
+   "combinations": 3,
    "seeds": [
     1,
     2
@@ -11522,8 +11329,8 @@
       3,
       3
      ],
-     "of": 24,
-     "failed": 24,
+     "of": 12,
+     "failed": 12,
      "grounds": [
       "flat",
       "slope"
@@ -11547,8 +11354,8 @@
       4,
       4
      ],
-     "of": 24,
-     "failed": 24,
+     "of": 12,
+     "failed": 12,
      "grounds": [
       "flat",
       "slope"
@@ -11572,8 +11379,8 @@
       5,
       5
      ],
-     "of": 24,
-     "failed": 24,
+     "of": 12,
+     "failed": 12,
      "grounds": [
       "flat",
       "slope"
@@ -11597,8 +11404,8 @@
       6,
       6
      ],
-     "of": 24,
-     "failed": 24,
+     "of": 12,
+     "failed": 12,
      "grounds": [
       "flat",
       "slope"
@@ -11622,8 +11429,8 @@
       7,
       7
      ],
-     "of": 24,
-     "failed": 24,
+     "of": 12,
+     "failed": 12,
      "grounds": [
       "flat",
       "slope"
@@ -11647,8 +11454,8 @@
       8,
       8
      ],
-     "of": 24,
-     "failed": 24,
+     "of": 12,
+     "failed": 12,
      "grounds": [
       "flat",
       "slope"
@@ -11672,7 +11479,7 @@
       9,
       9
      ],
-     "of": 24,
+     "of": 12,
      "failed": 0,
      "grounds": [
       "flat",
@@ -11686,7 +11493,7 @@
       10,
       10
      ],
-     "of": 24,
+     "of": 12,
      "failed": 0,
      "grounds": [
       "flat",
@@ -11700,7 +11507,7 @@
       11,
       11
      ],
-     "of": 24,
+     "of": 12,
      "failed": 0,
      "grounds": [
       "flat",
@@ -11714,7 +11521,7 @@
       12,
       12
      ],
-     "of": 24,
+     "of": 12,
      "failed": 0,
      "grounds": [
       "flat",
@@ -11728,7 +11535,7 @@
       13,
       13
      ],
-     "of": 24,
+     "of": 12,
      "failed": 0,
      "grounds": [
       "flat",
@@ -11742,7 +11549,7 @@
       14,
       14
      ],
-     "of": 24,
+     "of": 12,
      "failed": 0,
      "grounds": [
       "flat",
@@ -11756,7 +11563,7 @@
       15,
       15
      ],
-     "of": 24,
+     "of": 12,
      "failed": 0,
      "grounds": [
       "flat",
@@ -11770,7 +11577,7 @@
       16,
       16
      ],
-     "of": 24,
+     "of": 12,
      "failed": 0,
      "grounds": [
       "flat",
@@ -11784,7 +11591,7 @@
       17,
       17
      ],
-     "of": 24,
+     "of": 12,
      "failed": 0,
      "grounds": [
       "flat",
@@ -11798,140 +11605,84 @@
       18,
       18
      ],
-     "of": 24,
-     "failed": 12,
+     "of": 12,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat",
-      "slope"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "screen": "wall",
-       "storeys": 2
-      },
-      "why": "6 own lint error(s): E003 needs: a room of 50 cells at (23,69,35) cannot be walked into; E003 needs: a room of 26 cells at (23,69,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
       19,
       19
      ],
-     "of": 24,
-     "failed": 12,
+     "of": 12,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat",
-      "slope"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "screen": "wall",
-       "storeys": 2
-      },
-      "why": "6 own lint error(s): E003 needs: a room of 53 cells at (23,69,36) cannot be walked into; E003 needs: a room of 29 cells at (23,69,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
       20,
       20
      ],
-     "of": 24,
-     "failed": 12,
+     "of": 12,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat",
-      "slope"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "screen": "wall",
-       "storeys": 2
-      },
-      "why": "6 own lint error(s): E003 needs: a room of 56 cells at (23,69,37) cannot be walked into; E003 needs: a room of 32 cells at (23,69,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
       21,
       21
      ],
-     "of": 24,
-     "failed": 12,
+     "of": 12,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat",
-      "slope"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "screen": "wall",
-       "storeys": 2
-      },
-      "why": "6 own lint error(s): E003 needs: a room of 59 cells at (23,69,38) cannot be walked into; E003 needs: a room of 35 cells at (23,69,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
       22,
       22
      ],
-     "of": 24,
-     "failed": 12,
+     "of": 12,
+     "failed": 0,
      "grounds": [
       "flat",
       "slope"
      ],
-     "on": [
-      "flat",
-      "slope"
-     ],
-     "first": {
-      "ground": "flat",
-      "seed": 1,
-      "params": {
-       "screen": "wall",
-       "storeys": 2
-      },
-      "why": "6 own lint error(s): E003 needs: a room of 62 cells at (23,69,39) cannot be walked into; E003 needs: a room of 38 cells at (23,69,27) cannot be walked into"
-     }
+     "on": [],
+     "first": null
     },
     {
      "size": [
       24,
       24
      ],
-     "of": 24,
-     "failed": 18,
+     "of": 12,
+     "failed": 6,
      "grounds": [
       "flat",
       "slope"
      ],
      "on": [
-      "flat",
-      "slope"
+      "flat"
      ],
      "first": {
       "ground": "flat",
@@ -11948,15 +11699,14 @@
       28,
       28
      ],
-     "of": 24,
-     "failed": 18,
+     "of": 12,
+     "failed": 6,
      "grounds": [
       "flat",
       "slope"
      ],
      "on": [
-      "flat",
-      "slope"
+      "flat"
      ],
      "first": {
       "ground": "flat",
@@ -11973,15 +11723,14 @@
       32,
       32
      ],
-     "of": 24,
-     "failed": 18,
+     "of": 12,
+     "failed": 6,
      "grounds": [
       "flat",
       "slope"
      ],
      "on": [
-      "flat",
-      "slope"
+      "flat"
      ],
      "first": {
       "ground": "flat",
@@ -11998,13 +11747,13 @@
     "footprint": [
      9,
      9,
-     17,
-     17
+     22,
+     22
     ],
     "runs": [
      [
       9,
-      17
+      22
      ]
     ],
     "except": [],
@@ -12771,16 +12520,19 @@
    "seconds": 168.2
   },
   "shop_house": {
-   "seconds": 4060.6
+   "seconds": 125.0
   },
   "courtyard_house": {
-   "seconds": 262.6
+   "seconds": 125.0
   },
   "market": {
    "seconds": 262.6
   },
   "worship": {
    "seconds": 21.1
+  },
+  "row_house": {
+   "seconds": 89.5
   }
  }
 }

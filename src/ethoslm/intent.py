@@ -1136,6 +1136,21 @@ _HOUSE_WORDS = frozenset(("house", "houses", "home", "homes", "dwelling", "dwell
                           "cottage", "cottages", "residence", "residences"))
 
 
+def _rect_in(r, rect) -> bool:
+    """Does the leaf rectangle `r` stand inside the region rectangle `rect`?
+
+        Whole or not at all, the same rule the section sampler uses: a leaf that straddles a
+        district boundary belongs to neither, and counting half of it into a street
+        measurement would be counting a building that is not on that street.
+        
+    """
+    if not r or not rect or len(r) < 4 or len(rect) < 4:
+        return False
+    x0, x1 = min(rect[0], rect[2]), max(rect[0], rect[2])
+    z0, z1 = min(rect[1], rect[3]), max(rect[1], rect[3])
+    return bool(x0 <= r[0] and r[2] <= x1 and z0 <= r[1] and r[3] <= z1)
+
+
 def _in_scope(p: dict, scope: str | None) -> bool:
     """Is this leaf inside the part of the place a scoped requirement is about?
 
@@ -2509,8 +2524,17 @@ def _quality_measure(axis: str, value: str, bound: float, parts: list,
                              "x1": r["rect"][2], "z1": r["rect"][3]}))
                 occupation.append({"district": r.get("name"),
                                    **_pp.built_occupation(d, parts_record)})
-                enclosure.append({"district": r.get("name"),
-                                  **_pp.street_enclosure(d, None, None,
+                # **...and the enclosure is measured on this district's own leaves.**
+                # The neighbourhood round, found by reading the call: `leaves` was
+                # `None`, `street_enclosure` answers `unavailable` on no leaves by
+                # design, and so every district of every reading in the record reported
+                # `unavailable` for the one measure the street is judged by. The leaves
+                # are the plots standing inside this district's own rectangle.
+                mine = ([p for p in plots
+                         if _rect_in(_pp.pipeline.part_rect(p), r.get("rect"))]
+                        if r.get("rect") else [])
+                enclosure.append({"district": r.get("name"), "leaves": len(mine),
+                                  **_pp.street_enclosure(d, None, mine or None,
                                                          parts_record=parts_record)})
         ev = {"coverage": round(got, 4), "lo": t["lo"], "hi": t["hi"], "bound": bound,
               "plots": len(plots), "district_columns": m["ground"],

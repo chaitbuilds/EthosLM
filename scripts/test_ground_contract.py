@@ -406,22 +406,58 @@ def t_7_the_ring_fixtures_terraces_and_podium_are_declarations_of_the_contract()
         assert placeplan.TERRACE_STEP == 4 and ground.seam_kind(placeplan.TERRACE_STEP) == "face"
         assert con["seam_totals"]["face"] > 0, con["seam_totals"]
         assert con["settled"].startswith("the rings before a block was laid")
-        # A ring one level
-        from ethoslm import observe
+        # **and the ground reads as the ground design decided it, column by column.**
+        # **Re-registered by the neighbourhood delivery round, and the rule it tests
+        # changed under it.** This clause asserted "a ring one level": every sampled
+        # column of the belt reads the ring's level. That was the whole truth while
+        # `terrace_annulus` levelled every column of the rectangle it was given -- and
+        # that is exactly the behaviour the delivery round removed, because a mask that
+        # excludes housing from a hillside on the ground that it must not be cut, beside
+        # a builder that cuts it anyway, is two rules about one question. On this
+        # fixture's `relief=40` ground the belt's east strip has a bed of y=82..88
+        # against a settled level of y=69 -- thirteen to nineteen blocks of cut on every
+        # one of its 27,920 columns -- and `feasible.terrain` at the mask's own bound
+        # refuses all of them. The terrace now leaves them exactly as found, so the belt
+        # is deliberately **not** one level and the old assertion asserts the defect.
+        # The question is kept and made two-sided, which is more than it asked before:
+        # every column the decision **moved** reads the ring's level, and every column
+        # it **kept** reads its own baseline bed. A terrace that levelled nothing would
+        # have passed the old clause's negation and fails this one.
+        from ethoslm import feasible, observe
         v2 = rnd.volume()
+        base = offline.load_volume(os.path.join(tmp, "world.before-plateau.npz"))
         h, _wet = observe.ground_heights(v2)
+        hb, _wb = observe.ground_heights(base)
         cx, cz = place["layout"]["centre"]
         r0 = place["layout"]["rings"][-1]
         a, b_ = r0["inner"] + 12, r0["outer"] - 4
         # a strip of the belt on a side with no gate on it, clear of the feathers
         side = -1 if place["layout"]["axis_side"] == "east" else 1
         x = cx + side * (a + b_) // 2
-        sample = [int(h[x - v2.x0, cz + d - v2.z0]) for d in range(-a // 2, a // 2, 5)]
-        assert all(v == r0["level"] for v in sample), (sample, r0["level"])
+        zs = list(range(cz - a // 2, cz + a // 2, 5))
+        reach = int(placeplan.DISTRICT_TERRACE_REACH)
+        moved, kept, wrong = [], [], []
+        for z in zs:
+            terr = feasible.terrain(base, (x, z, x, z), level=r0["level"],
+                                    relief=reach, fill=reach, window=0)
+            here = int(h[x - v2.x0, z - v2.z0])
+            was = int(hb[x - base.x0, z - base.z0])
+            if int(terr.get("feasible_columns") or 0):
+                moved.append(here)
+                if here != r0["level"]:
+                    wrong.append(("moved", z, here, r0["level"]))
+            else:
+                kept.append(here)
+                if here != was:
+                    wrong.append(("kept", z, here, was))
+        assert moved or kept, (zs, r0["level"])
+        assert not wrong, (wrong[:6], r0["level"], reach)
     return (f"the podium and {len(con['pieces'])} terrace pieces settled by the contract "
             f"and laid at their levels ({laid} bounded calls); rings at "
-            f"{[r['level'] for r in got['rings']]}, seams {con['seam_totals']}; "
-            f"{time.perf_counter() - t0:.0f}s")
+            f"{[r['level'] for r in got['rings']]}, seams {con['seam_totals']}; over the "
+            f"belt's sampled strip {len(moved)} column(s) the design moved all read its "
+            f"level {r0['level']} and {len(kept)} it refused at a reach of {reach} all "
+            f"read their own bed; {time.perf_counter() - t0:.0f}s")
 
 
 # ------------------------------------------------------------------ 8. refusals

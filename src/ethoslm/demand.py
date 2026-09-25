@@ -35,7 +35,8 @@ places at three different times:
 
     resolve(spec, intent, part, decls, ...)  -> the demand
     lot(d, cache=...)                        -> the lot it needs, or an honest refusal
-    storeys_admitted(d, w, depth, ...)       -> what a lot of this size admits
+    storeys_admitted(d, w, depth, flanks=0)  -> what a lot of this size and this many
+                                                party walls admits
     validate_lot(d, lot, ...)                -> may an explicit lot width be trusted
     relax(d)                                 -> the same demand one storey lower, where
                                                 nothing requires the floor
@@ -64,9 +65,12 @@ from . import envelope
 STOREYS = envelope.STOREYS
 
 #: The context a demand carries and an envelope answer is keyed on. `ground` and
-#: `clearance` are what the probe was run against; today a probe builds on flat ground
-#: with free flanks and says so, and the day one can be run on a slope the certificates
-#: measured on a plane will not be mistaken for it.
+#: `clearance` are what the probe was run against; a probe builds on flat ground and
+#: says so, and the day one can be run on a slope the certificates measured on a plane
+#: will not be mistaken for it. `attached` is no longer in that waiting room: since the
+#: neighbourhood delivery round `envelope.flanks` resolves it to a party-wall count and
+#: the probe builds the lot that way. A bare `attached: true` off a character resolves
+#: to **0** -- see `envelope.flanks` for why a fabric's word is not a lot's.
 CONTEXT_DEFAULT = {"voice": None, "ground": "flat", "clearance": None,
                    "attached": None, "frontage": None, "seed": 1}
 
@@ -100,6 +104,16 @@ def resolve(spec: dict | None, intent: dict | None, part: dict | None,
     band, band_from = _storeys_band(part, decls, types, allocation,
                                     fixed=asks["params"])
     params = _params(part, band, allocation, fixed=asks["params"])
+    # **...and each approved type's own band** (the design resolution round). The band
+    # above is the leading type's, which is what the part's *lot* is sized for; asked of
+    # a leaf of another type -- a shop house in a quarter whose leading type is a one-
+    # storey courtyard house -- it certified the shop against the house's `[1, 1]`. A
+    # leaf is answered in its own type's band (`storeys_admitted(type_name=)`).
+    bands = {}
+    for t in types:
+        b_t, _f = _storeys_band(part, decls, [t], allocation, fixed=asks["params"])
+        if b_t:
+            bands[t] = list(b_t)
     # **Required is what a requirement says; optional is what the type offers besides.**
     # Every token a requirement named is required, whether or not a type declares it --
     # a token nothing can deliver is a capability gap and a refusal, never a quiet
@@ -127,6 +141,7 @@ def resolve(spec: dict | None, intent: dict | None, part: dict | None,
             "defines": part.get("defines") or part.get("name"),
             "types": list(types), "pool_from": pool_from,
             "params": dict(params), "storeys_band": list(band) if band else None,
+            "bands": bands,
             "band_from": band_from,
             "required": tuple(required), "optional": tuple(optional),
             "unsupported": tuple(unsupported),
@@ -151,6 +166,111 @@ def resolve(spec: dict | None, intent: dict | None, part: dict | None,
 #: The token normaliser, re-exported so an evidence layer needs one import. `market` is
 #: `stalls`; see `envelope.feature_token` for the defect that made it necessary.
 feature_token = envelope.feature_token
+
+#: The token a courtyard-block district owes, and the id the obligation is published
+#: under. It is not a requirement of the sentence and must not be written as one: the
+#: sentence asked for a density, the layout answered with a form, and **the form owes
+#: its court**. `intent` never sees this id; it exists so a reader of the binding can
+#: tell an obligation the request made from one the design made.
+COURT_TOKEN = "courtyard"
+COURT_FORM_ID = "form/courtyard_block"
+
+#: The shape of a district node this rule will read, in the four places the same
+#: district is written down (`plan.place.json` districts, `plan.json` district nodes,
+#: `resolution.json` regions, a compile record). See `court_obligation`.
+_DISTRICT_KINDS = ("district", "quarter", "region")
+
+
+def court_obligation(node: dict | None) -> dict | None:
+    """**What a district owes because of the form it adopted**, or None.
+
+        `{"share", "courts", "from"}` -- the courtyard share this district's fabric is laid
+        at, the number of courts its compile record laid where it has one, and which of them
+        the answer came from.
+
+        **Why this exists.** The neighbourhood review, finding 4: `required_by_part` binds
+        what the *sentence* required, and "a district adopted a courtyard-block arrangement"
+        is not something any sentence said. So the crowded district could ask its compiler for
+        twenty-four courtyard blocks, get them, and publish **no court subject at all** -- and
+        `section._courts` then took its denominator from the parts that *stood* and happened
+        to be of a court type, which is how four standing courts out of nine attempted
+        subjects was reported as "the courts are demonstrated". An adopted form owes its court
+        whether or not any leaf of it is a courtyard-house type, and this is where that
+        obligation is published.
+
+        Read in the order a district's own record is authoritative in
+        (`district_compile.character_of`): an explicit character, then the arrangement the
+        layout negotiated for this rectangle, then the density's registered default, which is
+        the character a district that declared nothing is actually compiled with. A compiled
+        `courts` count establishes the obligation on its own and at any share: ground that was
+        laid as court is court that was adopted.
+        
+    """
+    if not isinstance(node, dict):
+        return None
+    kind = str(node.get("kind") or "")
+    looks_like = (kind in _DISTRICT_KINDS or node.get("density")
+                  or node.get("character") or node.get("arrangement")
+                  or node.get("courts") is not None)
+    if not looks_like:
+        return None
+    courts = node.get("courts")
+    if courts is None:
+        courts = (node.get("compiled") or {}).get("courts")
+    try:
+        courts = int(courts) if courts is not None else None
+    except (TypeError, ValueError):
+        courts = None
+    for where, src in (("character", node.get("character")),
+                       ("arrangement", node.get("arrangement"))):
+        if isinstance(src, dict) and src.get("courtyard_share") is not None:
+            share = float(src["courtyard_share"])
+            if share > 0 or courts:
+                return {"share": share, "courts": courts, "from": where}
+            return None
+    density = node.get("density") or (node.get("character") or {}).get("density")
+    if density:
+        from . import spec as spec_mod
+        share = float((spec_mod.CHARACTER_DEFAULTS.get(str(density)) or {})
+                      .get("courtyard_share") or 0.0)
+        if share > 0 or courts:
+            return {"share": share, "courts": courts,
+                    "from": f"the registered character of `{density}`"}
+        return None
+    if courts:
+        return {"share": None, "courts": courts, "from": "the compile record"}
+    return None
+
+
+def court_districts(place: dict | None) -> dict:
+    """`{district_name: court_obligation}` over every district of a resolved place.
+
+        The same three shapes `section._districts` reads, because the same design is written
+        down three ways and only one of them is the one a stage happens to have loaded.
+        
+    """
+    out: dict = {}
+
+    def visit(node):
+        if isinstance(node, (list, tuple)):
+            for n in node:
+                visit(n)
+            return
+        if not isinstance(node, dict):
+            return
+        name = node.get("name") or node.get("part")
+        if name:
+            got = court_obligation(node)
+            if got and str(name) not in out:
+                out[str(name)] = got
+        for key in ("districts", "children", "parts", "quarters", "regions"):
+            if key in node:
+                visit(node[key])
+
+    doc = place or {}
+    for key in ("districts", "regions", "parts"):
+        visit(doc.get(key))
+    return out
 
 
 def required_by_part(spec: dict | None, intent: dict | None, place: dict | None = None, *,
@@ -220,6 +340,16 @@ def required_by_part(spec: dict | None, intent: dict | None, place: dict | None 
                 if t in can or t in claimed:
                     for rid in ids or [None]:
                         add(name, t, rid)
+    # **A district that adopted a courtyard block owes its court.** The neighbourhood
+    # review's fourth finding, and the one clause of this function that is not about the
+    # sentence: everything above binds what a requirement asked of a part, and a form
+    # the layout adopted asked nothing of anybody -- so a district could request twenty-
+    # four courtyard blocks and publish no court subject at all. The obligation is the
+    # district's own and is published under `COURT_FORM_ID`, which no requirement
+    # carries, so a reader of the binding can tell the two apart. See
+    # `court_obligation`.
+    for name in court_districts(doc):
+        add(name, COURT_TOKEN, COURT_FORM_ID)
     return out
 
 
@@ -538,11 +668,12 @@ def relax(d: dict) -> dict | None:
 _ADMITS: dict = {}
 
 
-def storeys_admitted(d: dict, w: int, depth: int, *, cache: str | None = None) -> dict:
+def storeys_admitted(d: dict, w: int, depth: int, *, flanks: int = 0,
+                     cache: str | None = None, type_name: str | None = None) -> dict:
     """The most storeys of this demand's band a `w` x `depth` lot actually admits.
 
         `{"storeys": int | None, "asked": int, "band": [lo, hi], "holds": bool,
-          "required": bool, "type": str | None, "why": str}`
+          "required": bool, "type": str | None, "flanks": int, "why": str}`
 
         What `district_compile._storeys_fit` was doing, asked of the resolved demand instead
         of a type name and a band: the query carries the feature tokens (so a shell that
@@ -551,26 +682,62 @@ def storeys_admitted(d: dict, w: int, depth: int, *, cache: str | None = None) -
         an edited type cannot answer from the certificate of the file it replaced. The old
         `_FIT_CACHE` was keyed on `(type, storeys)` alone and did all three of those wrong.
 
+        **`flanks` is how many party walls this particular lot has**: 2 for a lot in the
+        middle of a row, 1 for each of its ends, 0 for a lot that stands free. It is the
+        lot's, not the district's -- the neighbourhood delivery round's measurement is that
+        the same 6x13 lot is a 4x11 pad with four free sides and a 6x9 pad between two party
+        walls, and `types/row_house.py` needs a 5x9 **pad** for two storeys. Asked free, that
+        lot admits one storey; asked as the terrace leaf it is, it admits two. The default is
+        0, which is the question every existing caller was already asking.
+
         **`storeys: None` is not "one".** Where not even the band's floor fits, `holds` is
         False and `storeys` is None, and the caller keeps asking for the floor: the ask is
         what a requirement made it, and the shortfall belongs in the emitted constraint where
         the obligation ledger can see it, not in a silently lowered parameter.
+
+        **`type_name` is the leaf that was actually selected**, and it is the block design
+        round's answer to the audit's third cause. A district's demand carries the whole pool
+        its mix may draw from (`d['types']`), and this asked `next(iter(...))` -- the first
+        type of a set -- so a `shop_house` standing on the market street was certified by
+        whatever `court_large` admits, and the record said so in writing
+        (`storeys_admitted: null`, `why: ... of court_large`, on a leaf of another type).
+        A capability answer is about **one** building on **one** lot: where the caller knows
+        which leaf it selected, that is the type the envelope is asked about, and a name the
+        demand does not approve is refused rather than silently swapped.
         
     """
     band = d.get("storeys_band")
     floor = (d.get("params") or {}).get(STOREYS)
     required = STOREYS in (d.get("required") or ())
+    own = (d.get("bands") or {}).get(type_name) if type_name else None
+    if own and not (d.get("fixed") or {}).get(STOREYS):
+        # the selected leaf's own band, not the leading type's (see `resolve`)
+        band, floor = list(own), int(own[0])
+    flanks = max(0, min(envelope.FLANKS_MAX, int(flanks or 0)))
     if not band or not isinstance(floor, int):
         return {"storeys": None, "asked": None, "band": None, "holds": True,
-                "required": required, "type": None,
+                "required": required, "type": None, "flanks": flanks,
                 "why": "this demand fixes no storeys, so no lot is short of them"}
     lo, hi = int(band[0]), int(band[1])
-    ctx = dict(d.get("context") or {})
+    # **The flanks the caller counted, over the word the character carries.** A
+    # character says `attached: true`, which is a fact about the fabric and not about a
+    # lot; the caller holding the leaf knows whether it is a middle or an end. Writing
+    # the number into the context is what makes the envelope key say which of the three
+    # pads the answer was measured on.
+    ctx = dict(d.get("context") or {}, attached=flanks)
     voice, seed = ctx.get("voice"), int(ctx.get("seed") or 1)
-    tname = next(iter(d.get("types") or []), None)
+    pool = list(d.get("types") or [])
+    if type_name and type_name not in pool:
+        return {"storeys": None, "asked": floor, "band": [lo, hi], "holds": False,
+                "required": required, "type": type_name, "flanks": flanks,
+                "selected": type_name, "approved": pool,
+                "why": (f"`{type_name}` was selected for this leaf and this part's "
+                        f"demand approves {pool or 'no type'}: the capability question "
+                        f"cannot be answered about a type the demand does not carry")}
+    tname = type_name or next(iter(pool), None)
     if not tname:
         return {"storeys": None, "asked": floor, "band": [lo, hi], "holds": False,
-                "required": required, "type": None,
+                "required": required, "type": None, "flanks": flanks,
                 "why": "no type is approved for this part"}
     w, depth = int(w), int(depth)
     memo = (tname, lo, hi, w, depth, voice, seed, tuple(sorted(ctx.items(), key=str)),
@@ -584,15 +751,21 @@ def storeys_admitted(d: dict, w: int, depth: int, *, cache: str | None = None) -
         asked = features_asked({**d, "params": params})
         got = envelope.lot_for(tname, params, features=asked, voice=voice, seed=seed,
                                cache=cache, context=ctx)
-        if got.get("lot_min") and envelope.fits((w, depth), got):
+        # An attached answer is read the way round it was measured: the probe fronts
+        # north, so `lot_min[0]` is the frontage the party walls stand either side of.
+        # Turning it ninety degrees would put the street where a party wall is.
+        if got.get("lot_min") and envelope.fits((w, depth), got, oriented=flanks > 0):
             best = st
             break
+    on = (f" with {flanks} flank(s) attached" if flanks else " standing free")
     out = {"storeys": best, "asked": floor, "band": [lo, hi],
            "holds": bool(best is not None and best >= floor),
-           "required": required, "type": tname,
-           "why": (f"a {w}x{depth} lot admits {best} storey(s) of {tname}"
+           "required": required, "type": tname, "flanks": flanks,
+           "selected": (type_name or None), "approved": pool,
+           "why": (f"a {w}x{depth} lot{on} admits {best} storey(s) of {tname}"
                    if best is not None else
-                   f"a {w}x{depth} lot admits no storey count in {[lo, hi]} of {tname}"
+                   f"a {w}x{depth} lot{on} admits no storey count in {[lo, hi]} of "
+                   f"{tname}"
                    f"{'; the floor is required and the shortfall is the constraint'
                       if required else ''}")}
     _ADMITS[memo] = dict(out)

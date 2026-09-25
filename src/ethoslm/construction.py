@@ -51,11 +51,30 @@ def _name(block: str) -> str:
 
 
 def _rect(part: dict) -> tuple:
+    """The ground a built part is measured over.
+
+        A **plot** with a sited footprint is that footprint: it is what `site()` handed the
+        type and it is the ground the type was answerable for. Everything else is
+        `stages_plan.part_rect`'s answer, which is the one definition of "this part's
+        ground" the rest of the project uses -- an **edge** is its swept polyline and a
+        **point** is its pad.
+
+        **A gate is not a rectangle and this used to raise.** The neighbourhood delivery
+        round. This fell through to `part["x0"]`, which a `point` (`at`, `size`) and an
+        `edge` (`path`, `width`) do not carry, so `outcome` raised `KeyError: 'x0'` and
+        the caller swallowed it into a status: `out/sd-city/parts.json` has both boundary
+        gates `status: "built"` with `emitted: {"measured": false, "why": "the outcome
+        could not be measured: KeyError: 'x0'"}`, beside `failed: 0`. The geometry was
+        never missing -- `Builder.pad_extent` has known how to turn both kinds into an
+        extent since A1 -- this line just never asked for it.
+        
+    """
+    from .pipeline import part_rect
     fp = part.get("footprint")
     if fp and len(fp) == 4 and part.get("kind", "plot") == "plot":
         x0, z0, x1, z1 = [int(v) for v in fp]
     else:
-        x0, z0, x1, z1 = int(part["x0"]), int(part["z0"]), int(part["x1"]), int(part["z1"])
+        x0, z0, x1, z1 = part_rect(part)
     return (min(x0, x1), min(z0, z1), max(x0, x1), max(z0, z1))
 
 
@@ -476,8 +495,13 @@ _METHOD = {"measured": "inferred", "verified": "inferred",
 #: The wants `confirm` asks of every built part, and the features each one is about. A
 #: part that claims none of a want's features is answered `unsupported` by `usable` and
 #: is not thereby a failure. **The floor and not the whole set**: see `wants_for`, which
-#: adds the predicates a part's *required* features make applicable.
-CONFIRM_WANTS = ("entrance_connected", "equipment_reachable", "court_accessible")
+#: adds the predicates a part's *required* features make applicable. **`court_enclosed`
+#: is on the floor and not in `wants_for`**, the block design round. The claim it
+#: answers is written by the *compiler* onto the court leaf and travels in the plot
+#: registry, not in the part's own `emitted` record -- so `wants_for`, which reads the
+#: row and the demand binding, has nothing to key on.
+CONFIRM_WANTS = ("entrance_connected", "equipment_reachable", "court_accessible",
+                 "court_enclosed")
 
 #: Which predicate decides each **required** feature token, and what asking it also
 #: makes applicable. The composition round's first evidence connection: `confirm` asked
@@ -548,6 +572,65 @@ OWED_REASONS = ("unsupported", "declared", "not_in_world", "not_identified",
                 "unreachable", "unmeasured")
 
 
+#: How far above a part's floor `occupied_columns` looks when the emission recorded no
+#: height. Twenty-four courses: taller than anything this library builds on a plot and
+#: cheap on the volume, and a part that records a height is measured to its own.
+OCCUPIED_COURSES = 24
+
+
+def occupied_columns(world, row: dict) -> dict | None:
+    """**The columns of a part's footprint that carry its mass**, or None.
+
+        `{"columns": int, "of": int, "from": "assembled", "why": str}`. The round's
+        "separate occupied mass from court interiors and enclosing rectangles where that
+        distinction matters", measured in the pass that is already reading the assembled
+        world.
+
+        What counts is a column inside the footprint carrying a block between the floor and
+        the part's own measured height, on ground the plot registry does not give to somebody
+        else. **None, not zero**, where the part is not standing or has no rectangle to
+        measure: `emitted_columns`' contract is that an unreported part is absent from the
+        dict, and a 0 would be read as a part that built nothing.
+        
+    """
+    from . import usable
+    name = str(row.get("part") or row.get("name") or "")
+    if not row.get("stood", row.get("status") == "built"):
+        return None
+    em = row.get("emitted") if isinstance(row.get("emitted"), dict) else {}
+    fp = em.get("footprint") or ([row["x0"], row["z0"], row["x1"], row["z1"]]
+                                 if row.get("x0") is not None else None)
+    if not fp or len(fp) != 4:
+        return None
+    fy = usable._floor_of(world, name, row)
+    if fy is None:
+        return None
+    x0, z0, x1, z1 = (min(fp[0], fp[2]), min(fp[1], fp[3]),
+                      max(fp[0], fp[2]), max(fp[1], fp[3]))
+    vol, ctx = world.ctx.vol, world.ctx
+    h = em.get("height")
+    top = int(fy) + (int(h) + 1 if isinstance(h, int) and h > 0 else OCCUPIED_COURSES)
+    top = min(top, vol.y0 + vol.shape[1] - 1)
+    n = tot = elsewhere = 0
+    for x in range(int(x0), int(x1) + 1):
+        for z in range(int(z0), int(z1) + 1):
+            tot += 1
+            # a neighbour's mass standing inside this rectangle is the neighbour's; a
+            # column the registry gives to nobody is this part's to have built on
+            owner = ctx.plot_at(x, z)
+            if owner is not None and str(owner) != name:
+                elsewhere += 1
+                continue
+            if any(vol.name(x, y, z) != "air" for y in range(int(fy) + 1, top + 1)):
+                n += 1
+    return {"columns": int(n), "of": int(tot), "from": "assembled",
+            "why": (f"{n} of the {tot} column(s) of {name}'s footprint carry its mass "
+                    f"between the floor and {top - int(fy)} course(s) above it"
+                    + (f"; {elsewhere} belong to another part on the registry"
+                       if elsewhere else "")
+                    + (f". The enclosing rectangle is {tot}" if tot != n else ""))}
+
+
 def confirm(world, parts_record: dict, *, wants=None, required=None) -> dict:
     """Ask the **assembled** world what each built part actually delivers.
 
@@ -565,6 +648,12 @@ def confirm(world, parts_record: dict, *, wants=None, required=None) -> dict:
             emitted.owed                   -> [{feature, holds, method, reason, why}, ...]
                                               the required features with no affirmative
                                               answer, and why each one has none
+            emitted.occupied_columns       -> the columns of the footprint carrying this
+                                              part's mass (`occupied_columns`), absent where
+                                              it could not be measured and never 0 for one
+            emitted.occupied_of            -> the columns of the enclosing rectangle, beside
+                                              it, so the two are readable apart
+            emitted.occupied_from          -> "assembled"
             emitted.features_read_at       -> "assembled"
 
         **"not_in_world" and not "overwritten".** This said `overwritten` where a feature
@@ -610,6 +699,16 @@ def confirm(world, parts_record: dict, *, wants=None, required=None) -> dict:
         em["usable"] = got
         em["features_read_at"] = "assembled"
         em["required"] = list(need)
+        # **the mass, beside the rectangle it stands in.** See `occupied_columns`: the
+        # key is written only where it could be measured, because
+        # `placeplan.emitted_columns` reads its absence as "this part did not report"
+        # and a 0 as "this part built nothing".
+        mass = occupied_columns(world, r)
+        if mass is not None:
+            em["occupied_columns"] = int(mass["columns"])
+            em["occupied_from"] = mass["from"]
+            em["occupied_of"] = int(mass["of"])
+            em["occupied_why"] = mass["why"]
         ev = {w: (a.get("evidence") or {}) for w, a in got.items()}
         lost = sorted(set(ev.get("equipment_reachable", {}).get("gone") or [])
                       | set(ev.get("court_accessible", {}).get("filled") or []))
@@ -901,14 +1000,36 @@ def _type_ns(type_name: str, source: str | None = None) -> dict:
     return ns
 
 
+def probe_flanks(front: str, attached: int) -> list:
+    """The sides a probe lot is built attached on: `attached` of the two perpendicular
+    to `front`, in a fixed order so one number always names one lot.
+
+    A row house's party walls are its flanks; its front is the street and its back is
+    the rear strip, and neither is ever a party wall. `envelope.FLANK_SIDES` is the same
+    table, read from the module that asks the question."""
+    from . import envelope
+    n = max(0, min(envelope.FLANKS_MAX, int(attached or 0)))
+    return list(envelope.FLANK_SIDES.get(str(front or "north"), ("west", "east")))[:n]
+
+
 def probe_build(type_name: str, w: int, d: int, params: dict | None = None, *,
                 seed: int = 1, front: str = "north", size: int = 96,
-                voice: str | None = None, source: str | None = None) -> tuple:
+                voice: str | None = None, source: str | None = None,
+                attached: int = 0) -> tuple:
     """Build one type on a flat lot of `w`x`d`, no voice. Returns (builder, sited, result).
 
         The lot is the plan's lot; `site()` insets it as it insets every plot, so what the
         type sees is the pad the same lot gives it in a real run. `source` names a file to
         build instead of the committed `types/<type_name>.py`; see `_type_ns`.
+
+        **`attached` is how many of the lot's flanks a neighbour stands against** -- 0 for a
+        free-standing lot, 1 for a row's end, 2 for a lot in the middle of one. The
+        neighbourhood delivery round: this argument did not exist and every probe was built
+        free on all four sides, while `Builder._insets` drops the inset on an attached side.
+        A 6x13 lot is a 4x11 pad detached and a 6x9 pad between party walls, and the second
+        is what a terrace leaf is actually handed. Nothing stands next door in the probe --
+        what is being measured is the pad, and the pad is decided by the plan's word, not by
+        whether the neighbour has been built yet.
         
     """
     from . import offline, pipeline
@@ -928,7 +1049,8 @@ def probe_build(type_name: str, w: int, d: int, params: dict | None = None, *,
         if roof is not None and roof.get("chimney") is None:
             from . import voices as _voices
             roof = dict(roof, chimney=_voices.chimney_default(ns.get("FORM")))
-    sited = b.site({**lot, "kind": "plot", "front": front}, mat=mat, roof=roof)
+    sited = b.site({**lot, "kind": "plot", "front": front,
+                    "attached": probe_flanks(front, attached)}, mat=mat, roof=roof)
     try:
         res = ns["build"](b.type_builder(sited, role=role), sited, int(seed),
                           **dict(params or {}))
@@ -985,7 +1107,14 @@ def constraint(part: dict, decl: dict | None, emitted: dict | None, *,
     if not omitted:
         return None
     tname = str(part.get("type") or "")
-    x0, z0, x1, z1 = int(part["x0"]), int(part["z0"]), int(part["x1"]), int(part["z1"])
+    # The **plot** as the plan drew it, which is what a lot constraint is about and is
+    # unchanged. A part with no rectangle of its own -- a gate (`point`), a wall
+    # (`edge`) -- falls back to the one definition of its ground rather than raising
+    # `KeyError: 'x0'` at a caller that turns the exception into a `built` status.
+    if part.get("x0") is not None:
+        x0, z0, x1, z1 = int(part["x0"]), int(part["z0"]), int(part["x1"]), int(part["z1"])
+    else:
+        x0, z0, x1, z1 = _rect(part)
     w, d = abs(x1 - x0) + 1, abs(z1 - z0) + 1
     seed = int(seed if seed is not None else part.get("seed", 0) or 0)
     if "storeys" in omitted and isinstance(params.get("storeys"), int) and tname:

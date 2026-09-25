@@ -418,6 +418,25 @@ SECTION_MEASURES = {
     "section.median_footprint": "the median built footprint of the section's buildings, "
                                 "in columns",
     "section.structures": "how many complete buildings stand in the section",
+    "section.anchor.fronted_sides": "how many of the market's edges off the street are "
+                                    "fronted by walls with a door facing it (up)",
+    "section.anchor.street_sides": "how many of the market's edges open onto a street",
+    "section.courts.min_side_median": "the median shorter side of the courts the "
+                                      "courtyard houses emit, in columns (up)",
+    "section.courts.share_7": "the share of courtyard houses whose court is at least 7 "
+                              "across both ways (up)",
+    "section.courts.with_court": "how many courtyard houses emit a court",
+    "section.ground.step_max": "the largest step in level between two adjacent district "
+                               "pieces of the section, in blocks (the parent's levels)",
+    "section.ground.pits": "columns of open ground in the section standing 3 or more under "
+                           "both neighbours along one axis: slots and holes (down)",
+    "section.ground.water_in_pieces": "columns of standing water inside the section's "
+                                      "building pieces (down)",
+    "section.doors.off_street": "built parts in the section whose doorstep stands more "
+                                "than one step off the lane it is entered from (down)",
+    "section.ground.ridges": "columns of open ground in the section standing 3 or more "
+                             "over both neighbours along one axis on the built world: "
+                             "fins and ridges (down)",
 }
 
 
@@ -461,6 +480,11 @@ def section_measures(rnd) -> dict:
     if foots:
         out["section.median_footprint"] = round(sum(foots) / len(foots), 1)
     out["section.structures"] = structures
+    # the fabric reset round's street measures: what a finding about the market's edges
+    # or the courts of the houses cites, and what its ledger row is closed on
+    with __import__("contextlib").suppress(Exception):
+        for k, v in section_mod.fabric_measures(rnd.state, reg.get("rect")).items():
+            out[f"section.{k}"] = v
     return out
 
 def stage_material(rnd, be, results: dict) -> dict:

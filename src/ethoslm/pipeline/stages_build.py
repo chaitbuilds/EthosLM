@@ -5,6 +5,7 @@ import contextlib
 import functools
 import json
 import os
+import re
 import time
 from dataclasses import dataclass, field
 
@@ -116,7 +117,20 @@ def _dry_circulation(rnd: Round, be) -> dict:
     if not os.path.exists(before_lanes) and os.path.exists(base_p):
         import shutil
         shutil.copyfile(base_p, before_lanes)
-    if os.path.exists(before_lanes):
+    # **...and locally, only the local lanes are taken back.** The block design round.
+    # Under a declared scope the roads outside it are what this unit connects *to*: the
+    # base keeps them, the scope's own columns go back to the ground before any lane,
+    # and the routing below is asked about this unit's sites only.
+    from .. import local as _local
+    scope = _local.scope_of(rnd)
+    scope_rec: dict = {}
+    if scope is not None and os.path.exists(before_lanes) and os.path.exists(base_p):
+        vol = offline.load_volume(base_p)
+        took = _local.restore_rect(vol, offline.load_volume(before_lanes),
+                                   scope["outer"])
+        scope_rec["columns_taken_back"] = took
+        be._vol = vol
+    elif os.path.exists(before_lanes):
         vol = offline.load_volume(before_lanes)
         be._vol = vol
     else:
@@ -134,15 +148,96 @@ def _dry_circulation(rnd: Round, be) -> dict:
     art_cells = circulate.arterial_cells(plan.get("arterials") or {}, heights,
                                          vol.x0, vol.z0)
     t0 = time.perf_counter()
-    net = circulate.plan_network(heights, vol.x0, vol.z0, routing["sites"],
+    # what the scope changes is which sites are *routed to* and how much ground the
+    # solver walks to do it. The margin is where the connection to the rest of the city
+    # happens, and `walk_check` below says whether it did.
+    sites_here = routing["sites"]
+    h_used, hx0, hz0 = heights, vol.x0, vol.z0
+    avoid_used = avoid
+    if scope is not None:
+        sites_here = [s for s in routing["sites"]
+                      if _local.meets(scope, (s["x0"], s["z0"], s["x1"], s["z1"]))]
+        ox0, oz0, ox1, oz1 = scope["outer"]
+        i0 = max(0, ox0 - vol.x0)
+        j0 = max(0, oz0 - vol.z0)
+        i1 = min(heights.shape[0] - 1, ox1 - vol.x0)
+        j1 = min(heights.shape[1] - 1, oz1 - vol.z0)
+        if i1 > i0 and j1 > j0:
+            h_used = heights[i0:i1 + 1, j0:j1 + 1]
+            avoid_used = avoid[i0:i1 + 1, j0:j1 + 1]
+            hx0, hz0 = vol.x0 + i0, vol.z0 + j0
+            art_cells = {c: v for c, v in art_cells.items()
+                         if hx0 <= c[0] <= hx0 + h_used.shape[0] - 1
+                         and hz0 <= c[1] <= hz0 + h_used.shape[1] - 1}
+        scope_rec.update(sites=len(sites_here), of_sites=len(routing["sites"]),
+                         ground=[int(h_used.shape[0]), int(h_used.shape[1])],
+                         of_ground=[int(heights.shape[0]), int(heights.shape[1])])
+    net = circulate.plan_network(h_used, hx0, hz0, sites_here,
                                  centre=plan.get("centre"), max_step=3,
-                                 avoid_extra=avoid, passable=routing["passable"],
+                                 avoid_extra=avoid_used, passable=routing["passable"],
                                  arterial=art_cells)
     plan_s = round(time.perf_counter() - t0, 1)
+    #: what `emit` lays: the lanes this solve decided, and never the kept ones. The
+    #: ground outside the scope already carries them and re-laying it would be the whole
+    #: city's earthwork again by another name.
+    net_here = net
+    if scope is not None:
+        # what this solve *lays* is held to the scope's outer bound, as the terraces'
+        # writes are: a lane cell the solve reached past it is ground the scope does not
+        # own (the fabric reset round: the gate street's cells were laid at the
+        # arterial's designed level on the retained side of the gate, floating in its
+        # passage)
+        _o = scope["outer"]
+        net_here = circulate.Network(
+            {c: r for c, r in net.cells.items()
+             if _o[0] <= c[0] <= _o[2] and _o[1] <= c[1] <= _o[3]},
+            list(net.thresholds), nodes=net.nodes, edges=net.edges, notes=dict(net.notes))
+        # **The city's own network is the boundary condition and it is kept.** A local
+        # solve answers about this unit's lanes; the roads and thresholds outside it
+        # were laid by the seed and are not re-decided, so they are carried through
+        # unchanged and the record says how many of each came from where. Replacing the
+        # whole network with the local one would make a block round quietly delete the
+        # city it is a block of.
+        was = rnd.network()
+        if was is not None:
+            keep_cells = {c: rec for c, rec in was.cells.items()
+                          if not _local.meets(scope, (c[0], c[1], c[0], c[1]))}
+            here_ids = {s["id"] for s in sites_here}
+            # ...and a threshold inside the scope is this solve's to make or not: a site
+            # the revision removed leaves no doorstep standing in its lanes
+            keep_th = [t for t in was.thresholds if t.id not in here_ids
+                       and not _local.meets(scope, (t.x, t.z, t.x, t.z))]
+            merged = dict(keep_cells)
+            merged.update(net.cells)
+            # **...and a retained house the section builds is given back its way in**
+            # (the design resolution round). A kept plot with no reserved doorstep was
+            # entered through the party-wall slot `site()` used to cut; with the slot
+            # gone its door opened into its neighbour's wall and it did not stand
+            # (`lower_ring_north_2_b3_1_04`, the fabric reset reader's site_a). Its doorstep
+            # is reserved on its own front, off the kept lane in front of it.
+            def _g(x, z):
+                i, j = x - vol.x0, z - vol.z0
+                if 0 <= i < heights.shape[0] and 0 <= j < heights.shape[1]:
+                    return int(heights[i, j])
+                return None
+            added, spur = _front_thresholds(rnd, plan, scope, merged,
+                                            {t.id for t in keep_th} | here_ids, ground=_g)
+            keep_th += added
+            if spur:
+                # the short lane a restored doorstep needs, laid with this solve's lanes
+                merged.update(spur)
+                net_here.cells.update(spur)
+            scope_rec.update(cells_kept=len(keep_cells), cells_here=len(net.cells),
+                             thresholds_kept=len(keep_th),
+                             thresholds_here=len(net.thresholds),
+                             thresholds_restored=[t.id for t in added])
+            net = circulate.Network(merged, keep_th + list(net.thresholds),
+                                    nodes=net.nodes, edges=net.edges,
+                                    notes={**net.notes, "local": dict(scope_rec)})
     wc = circulate.walk_check(net)
     b = Builder(offline.OfflineSite(vol))
     b._vol = vol
-    stats = circulate.emit(b, net, mat, ground=heights, x0=vol.x0, z0=vol.z0,
+    stats = circulate.emit(b, net_here, mat, ground=heights, x0=vol.x0, z0=vol.z0,
                            keep_off=settlement.path_columns())
     placed = be.commit(b)
     net.notes["material"] = mat
@@ -169,6 +264,9 @@ def _dry_circulation(rnd: Round, be) -> dict:
            "lint": rep.to_json(), "pieces": [len(p) for p in ctx.lane_pieces()],
            "note": "routed and emitted into the cached volume; no block was written to "
                    "the world"}
+    if scope is not None:
+        out["scope_sites"] = _scope_sites(rnd)
+        out["scope"] = scope_rec
     json.dump(out, open(rnd.rel("circulation.json"), "w"), indent=1)
     return out
 
@@ -178,12 +276,139 @@ def _plots_or_empty(rnd: Round) -> list:
     return json.load(open(p)) if os.path.exists(p) else []
 
 
+def _scope_sites(rnd) -> str | None:
+    """A digest of the sites a local scope's lanes are routed to -- every plot and area
+    of the plan meeting the scope, by name and rectangle -- or None without a scope."""
+    import hashlib
+    from .. import local as _local
+    scope = _local.scope_of(rnd)
+    plan = rnd.plan()
+    if scope is None or not plan:
+        return None
+    rows = []
+    for p in _pipeline.plan_parts(plan):
+        if p.get("kind") in ("plot", "area") and p.get("x1") is not None \
+                and _local.meets(scope, (p["x0"], p["z0"], p["x1"], p["z1"])):
+            rows.append([p.get("name"), p["x0"], p["z0"], p["x1"], p["z1"],
+                         p.get("site"), p.get("court_site")])
+    return hashlib.sha256(json.dumps(sorted(rows, key=str), sort_keys=True)
+                          .encode()).hexdigest()[:16]
+
+
+def _front_thresholds(rnd, plan: dict, scope: dict, cells: dict, have: set,
+                      ground=None) -> tuple:
+    """Doorsteps for kept plots in the registered section that carry none: on the plot's
+    own front, at the pad edge, off a lane cell one column outside the lot -- and, where
+    the kept lane stops short of the plot, the spur that brings it along the front row
+    (at most `SPUR_MAX` cells, over ground a step from the lane's). Returns
+    `(thresholds, {cell: lane record})`."""
+    from .. import circulate, local as _local
+    from ..buildlib import site_pad_rect
+    sec = ((rnd.flags.get("section") or {}).get("rect")) or None
+    if not sec or not plan:
+        return [], {}
+    out, spur = [], {}
+    SPUR_MAX = 12
+
+    def _spur(row, want):
+        """Lane cells from the nearest lane cell on `row` to `want`, or None."""
+        have_ = [c for c in row if c in cells]
+        if not have_:
+            return None
+        src = min(have_, key=lambda c: abs(c[0] - want[0]) + abs(c[1] - want[1]))
+        d = abs(src[0] - want[0]) + abs(src[1] - want[1])
+        if d > SPUR_MAX:
+            return None
+        y = int(cells[src]["y"])
+        path, cur = {}, src
+        while cur != want:
+            cur = (cur[0] + (want[0] > cur[0]) - (want[0] < cur[0]),
+                   cur[1] + (want[1] > cur[1]) - (want[1] < cur[1]))
+            g = ground(*cur) if ground else y
+            if g is None or abs(int(g) - y) > 1:
+                return None
+            path[cur] = {"y": y, "rank": 3, "face": None}
+        return path
+    step = {"north": (0, -1), "south": (0, 1), "west": (-1, 0), "east": (1, 0)}
+    into = {"north": "south", "south": "north", "west": "east", "east": "west"}
+    for leaf in _pipeline_plan_parts(plan):
+        if leaf.get("kind", "plot") != "plot" or leaf.get("name") in have:
+            continue
+        front = leaf.get("front")
+        if front not in step or leaf.get("x1") is None:
+            continue
+        r = (leaf["x0"], leaf["z0"], leaf["x1"], leaf["z1"])
+        if r[2] < sec[0] or r[0] > sec[2] or r[3] < sec[1] or r[1] > sec[3]:
+            continue
+        if _local.meets(scope, r):
+            continue
+        pad = site_pad_rect(*r, leaf.get("attached") or [],
+                            *([int(leaf["inset"])] if leaf.get("inset") is not None else []))
+        dx, dz = step[front]
+        if front in ("north", "south"):
+            zd = pad[1] if front == "north" else pad[3]
+            zl = r[1] - 1 if front == "north" else r[3] + 1
+            mid = (pad[0] + pad[2]) // 2
+            opts = sorted(range(pad[0] + 1, pad[2]), key=lambda x: abs(x - mid))
+            pick = next(((x, zl, x, zd) for x in opts if (x, zl) in cells), None)
+            if not pick and opts:
+                row = [(x, zl) for x in range(r[0] - SPUR_MAX, r[2] + SPUR_MAX + 1)]
+                got_ = _spur(row, (opts[0], zl))
+                if got_:
+                    spur.update(got_)
+                    cells = {**cells, **got_}
+                    pick = (opts[0], zl, opts[0], zd)
+            if pick:
+                lx, lz, ddx, ddz = pick
+        else:
+            xd = pad[0] if front == "west" else pad[2]
+            xl = r[0] - 1 if front == "west" else r[2] + 1
+            mid = (pad[1] + pad[3]) // 2
+            opts = sorted(range(pad[1] + 1, pad[3]), key=lambda z: abs(z - mid))
+            pick = next(((xl, z, xd, z) for z in opts if (xl, z) in cells), None)
+            if not pick and opts:
+                row = [(xl, z) for z in range(r[1] - SPUR_MAX, r[3] + SPUR_MAX + 1)]
+                got_ = _spur(row, (xl, opts[0]))
+                if got_:
+                    spur.update(got_)
+                    cells = {**cells, **got_}
+                    pick = (xl, opts[0], xd, opts[0])
+            if pick:
+                lx, lz, ddx, ddz = pick
+        if not pick:
+            continue
+        y = int(cells[(lx, lz)]["y"])
+        out.append(circulate.Threshold(str(leaf.get("name")), lx, lz, y, into[front],
+                                       (ddx, y + 1, ddz), step=0))
+    return out, spur
+
+
+def _pipeline_plan_parts(plan):
+    from .. import pipeline as _pl
+    return _pl.plan_parts(plan or {})
+
+
 def stage_circulation(rnd: Round, be, results: dict) -> dict:
     """Route C: procedural, deterministic, no model call. Live only -- it owns the
     ground it crosses, so it writes blocks."""
     net = rnd.network()
     if not be.live:
-        if net is not None:
+        # **Under a local scope the network on disk is the city's, not this plan's.**
+        # The quarter design round: re-laying a district no longer deletes the lanes
+        # (they are the boundary condition the scope merges into), so "a network exists"
+        # stopped meaning "this plan was routed". What the scope was routed for is
+        # recorded (`scope_sites`) and a plan whose sites in the scope differ is routed
+        # again.
+        stale_scope = None
+        if net is not None and getattr(be, "dry_run", False):
+            want = _scope_sites(rnd)
+            if want is not None:
+                got = None
+                with contextlib.suppress(Exception):
+                    got = json.load(open(rnd.rel("circulation.json"))).get("scope_sites")
+                if got != want:
+                    stale_scope = want
+        if net is not None and stale_scope is None:
             return {"skipped": "offline backend; the network is already on disk",
                     "cells": len(net.cells), "thresholds": len(net.thresholds)}
         if getattr(be, "dry_run", False):
@@ -2321,6 +2546,23 @@ def _clip_runs(path: list, rect: tuple, *, half: int = 0) -> list:
     return out
 
 
+#: A district leaf's name is `<district>_<code>` and the code carries the block the
+#: compiler laid it in: `b1_0_00` is the first lot of row 0 of block (1, 0), `pc3_0_0`
+#: the first court tile of block (3, 0), `x0_1_00` a cross-street lot, `v2_0` a verge.
+#: The block is the unit a composition is made in, so it is the unit a section that
+#: means to judge compositions selects by.
+_BLOCK_CODE = re.compile(r"^(?P<district>.+)_(?P<kind>[a-z]{1,2})(?P<i>\d+)_(?P<j>\d+)"
+                         r"[a-z]?(?:_.*)?$")
+
+
+def _block_key(name: str | None):
+    """`(district, i, j)` for a leaf the compiler laid in a block, else None."""
+    m = _BLOCK_CODE.match(str(name or ""))
+    if not m:
+        return None
+    return (m.group("district"), int(m.group("i")), int(m.group("j")))
+
+
 def section_parts(parts: list, section: dict) -> tuple:
     """The leaves of a **registered section**: one connected piece of a larger place.
 
@@ -2363,13 +2605,45 @@ def section_parts(parts: list, section: dict) -> tuple:
     def meets(r) -> bool:
         return r[0] <= x1 and x0 <= r[2] and r[1] <= z1 and z0 <= r[3]
 
+    # **A section may select whole blocks rather than a rectangle's worth of leaves.**
+    # The block design round. `whole_in` takes a plot or an area whole or not at all, so
+    # a cut falls between buildings and never through one -- and it still falls through
+    # the *compositions* those buildings make. A court block whose front range is inside
+    # the rectangle and whose back range is two columns outside it builds three ranges
+    # of four, and the court in the middle of them is then read, photographed and
+    # counted as open ground. That is exactly the "arbitrary crop through a court" the
+    # round refuses: "Choose scope for the relationship being designed; an arbitrary
+    # crop through a court or route is not a complete unit." With `unit: "block"` the
+    # selection is closed under the compiler's own block: a leaf inside the rectangle
+    # brings in every other leaf of its block, wherever that block reaches. The extent
+    # grows to whole blocks and the record says by how much.
+    unit = str((section or {}).get("unit") or "rect")
+    block_of = _block_key if unit == "block" else (lambda _n: None)
+    here_blocks = set()
+    if unit == "block":
+        for p in parts:
+            if p.get("kind", "plot") not in ("plot", "area"):
+                continue
+            if whole_in(_pipeline.part_rect({**p, "name": p.get("name")})):
+                k = block_of(p.get("name"))
+                if k:
+                    here_blocks.add(k)
+
     out, joins, cut_out, runs_rec = [], [], [], []
+    grown: list = []
     quarters: dict = {}
     for p in parts:
         kind = p.get("kind", "plot")
         if kind in ("plot", "area"):
             r = _pipeline.part_rect({**p, "name": p.get("name")})
-            if whole_in(r):
+            in_block = bool(here_blocks) and block_of(p.get("name")) in here_blocks
+            if whole_in(r) or in_block:
+                if in_block and not whole_in(r):
+                    grown.append({"part": p["name"], "kind": kind,
+                                  "rect": [int(v) for v in r],
+                                  "why": "a leaf of a block this section selects, "
+                                         "outside the registered rectangle: a block is "
+                                         "taken whole or not at all"})
                 out.append(p)
                 q = (p.get("in") or [None])[-1]
                 if kind == "plot" and q:
@@ -2444,6 +2718,12 @@ def section_parts(parts: list, section: dict) -> tuple:
            "joining_parts": joins,
            "boundary_runs": runs_rec,
            "cut_out": cut_out,
+           # the block design round: what the rectangle would have cut through and the
+           # block selection kept whole, so "the extent is bigger than the registered
+           # rectangle" is a thing on the record and not a surprise in an image
+           "unit": unit,
+           "grown_to_whole_blocks": grown,
+           "blocks": sorted(f"{d}/{i},{j}" for (d, i, j) in here_blocks),
            "of_plan": {"quarters": len({(p.get("in") or [None])[-1] for p in parts
                                        if p.get("kind", "plot") == "plot"
                                        and p.get("in")}),
@@ -2686,6 +2966,12 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None,
                                 ground=ground)
     except Exception as e:                       # noqa: BLE001 -- reported, not raised
         import traceback
+        if type(e).__name__ == "SiteRefused":
+            # the compiled site could not be built as compiled: a visible refusal, not a
+            # crash and not a sunk house (`buildlib.SiteRefused`)
+            return {"part": name, "status": "refused", "type": part.get("type"),
+                    "kind": part.get("kind", "plot"), "site_refused": True,
+                    "error": f"SiteRefused: {e}"}
         return {"part": name, "status": "crashed", "type": part.get("type"),
                 "error": f"{type(e).__name__}: {e}",
                 "traceback": pipeline.scrub_traceback(traceback.format_exc())[-1200:]}
@@ -2749,6 +3035,17 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None,
             "placed": placed.get("placed"), "failed": placed.get("failed"),
             "ground": sited.get("ground"), "floor_y": sited.get("floor_y"),
             "sited": (sited.get("sited") or {}).get("reason"),
+            # **The way in that was actually laid.** The neighbourhood delivery round:
+            # `site()` chooses the door cell on the pad it prepared and `approach()`
+            # answers, against the world it has just changed, whether a person can walk
+            # to it. Both were inside the sited dict and neither reached the record, so
+            # nothing downstream could tell a structure entered somewhere other than its
+            # reserved doorstep from one that cannot be entered at all.
+            "door": (list(sited["door"]) if sited.get("door") else None),
+            "way_in": {"ok": bool(((sited.get("sited") or {}).get("approach") or {})
+                                  .get("ok")),
+                       "why": str((((sited.get("sited") or {}).get("approach") or {})
+                                   .get("reason")) or "")[:200]},
             # the calls in which the voice's footing stood in for a bare floor block
             # (`TypeBuilder._shapeable`), or nothing
             **({"voice_stood_in": sited["voice_stood_in"]}
@@ -3140,6 +3437,90 @@ def stage_parts(rnd, be, results: dict) -> dict:
                          "worker_seconds": res["seconds"]})
         out["parallel"] = {"workers": n_workers, "quarter_waves": len(quarters),
                            "snapshot": os.path.relpath(snapshot, _pipeline.ROOT)}
+    # **Where a structure was actually entered, written back onto the network.** The
+    # neighbourhood delivery round, and it is the rule the spatial design round set for
+    # gates applied to every part: *"the doorstep wins -- a doorway that cannot be
+    # walked into is not a way in -- and the network record is corrected to say what was
+    # laid"* (`circulate.emit`). The circulation pass reserves a doorstep from the
+    # ground it plans on; `site()` prepares the plot's own ground, chooses the door cell
+    # on the pad it made, and then **measures**, against the world it has just changed,
+    # whether a person can walk to it (`approach()`). Where a lane ramps past a plot the
+    # two disagree: `middle_ring_north_east_b0_0_02` stands on its district's terrace at
+    # y=64, the lane outside it is cut to y=60 for the ramp, and `E008` refused the
+    # build for the reserved doorstep while the door `site()` laid four columns away was
+    # measured walk-reachable from outside. So the record is corrected to the door that
+    # exists, and **only** on a measured positive: `way_in.ok` is `approach()`'s own
+    # answer re-read off the built world, not a claim. The reserved cell is kept beside
+    # it as `was`, and a part whose way in was *not* measured reachable is left exactly
+    # as it was, so `E008` still refuses a structure nobody can enter -- which is the
+    # whole of what that check is for. **...and for a leaf with a compiled site this is
+    # a check, not a correction.** The quarter design round: the router reserved the
+    # compiled door at the compiled floor (`circulate.site_way`) and `site()` built
+    # exactly that door, so the two agree by construction. A disagreement is recorded
+    # (`sites_disagree`, which should be empty) and the network is left as planned --
+    # moving it would hide the very defect the compiled site exists to remove.
+    with contextlib.suppress(Exception):
+        net = rnd.network()
+        moved = []
+        disagree = []
+        by_part = {r.get("part"): r for w in out.get("waves") or []
+                   for r in (w.get("parts") or [])}
+        sited_names = set()
+        with contextlib.suppress(Exception):
+            sited_names = {str(p.get("name")) for p in _pipeline.plan_parts(rnd.plan())
+                           if isinstance(p.get("site"), dict)
+                           or isinstance(p.get("court_site"), dict)}
+        n_checked = 0
+        for t in (net.thresholds if net else []):
+            r = by_part.get(str(t.id))
+            if str(t.id) in sited_names:
+                if not r or r.get("status") != "built":
+                    continue
+                n_checked += 1
+                d = [int(v) for v in (r.get("door") or [])]
+                laid = (d if len(d) == 3 else
+                        [d[0], int(r["floor_y"]) + 1, d[1]]
+                        if len(d) == 2 and r.get("floor_y") is not None else None)
+                if laid is None or list(t.door) != laid:
+                    disagree.append({"part": str(t.id), "planned": [int(v) for v in t.door],
+                                     "laid": laid,
+                                     "way_in": (r.get("way_in") or {}).get("ok")})
+                continue
+            if not r or not (r.get("way_in") or {}).get("ok") or not r.get("door"):
+                continue
+            # `site()` records the door as the pad cell `(x, z)`; its level is the floor
+            # a person stands on, which is the floor block plus one -- the same
+            # arithmetic `floor_from_threshold` and `building()` use.
+            d = [int(v) for v in r["door"]]
+            if len(d) == 3:
+                laid = d
+            elif len(d) == 2 and r.get("floor_y") is not None:
+                laid = [d[0], int(r["floor_y"]) + 1, d[1]]
+            else:
+                continue
+            if list(t.door) == laid:
+                continue
+            moved.append({"part": str(t.id), "was": [int(v) for v in t.door],
+                          "now": laid, "why": (r.get("way_in") or {}).get("why")})
+            t.door = tuple(laid)
+        if moved:
+            net.save(rnd.rel("network.json"))
+            out["thresholds_corrected"] = {
+                "moved": moved[:40], "n": len(moved),
+                "why": ("the door each of these parts was entered by is the one `site()` "
+                        "laid on the pad it prepared and `approach()` measured walkable "
+                        "from outside; the reserved cell is kept on the row as `was`. "
+                        "A part whose way in was not measured reachable is untouched")}
+            print(f"   thresholds: {len(moved)} door(s) corrected to the way in that was "
+                  f"laid and measured walkable", flush=True)
+        out["sites_checked"] = {"n": n_checked, "disagree": len(disagree),
+                                "rows": disagree[:40],
+                                "why": ("parts with a compiled site: the network's "
+                                        "reserved door against the door `site()` laid. "
+                                        "Recorded, never moved; should be zero")}
+        if disagree:
+            print(f"   sites: {len(disagree)} of {n_checked} compiled door(s) disagree "
+                  f"with the door laid", flush=True)
     # **Which candidate this construction is of.** The closure round: a parts record
     # that cannot say which design it built is a record a revision can inherit.
     from .. import deps as _deps_b

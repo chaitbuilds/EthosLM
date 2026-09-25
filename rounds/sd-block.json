@@ -1,0 +1,72 @@
+{
+ "name": "sd-block",
+ "sentence": "Build Ringed City.",
+ "flags": {
+  "dry_run": true,
+  "seed": 1,
+  "max_new_squares": 0,
+  "workers": 3,
+  "memory_kb": 15000000,
+  "parts_bound_seconds": 3600,
+  "improve": {
+   "cycles_per_candidate": 1,
+   "cycles_per_lineage": 2
+  },
+  "section": {
+   "id": "gate_block",
+   "rect": [
+    -5800,
+    640,
+    -5700,
+    750
+   ],
+   "boundary": "great_wall_middle_ring",
+   "gate": "ring_gate_middle_ring",
+   "sides": {
+    "crowded": "lower_ring",
+    "calm": "middle_ring"
+   },
+   "demonstrate": [
+    "a street of the crowded fabric with building along its frontage rather than grass verges",
+    "variation in height, depth or frontage along one terrace, within one architectural language",
+    "the ground between the terraces belonging to somebody",
+    "the ground each side is prepared on being ground its buildings can be founded on, with the step between the two fabrics a seam a person can walk",
+    "the gate reached on foot from both sides of the boundary it stands in"
+   ]
+  },
+  "material": true,
+  "axis_side": "north"
+ },
+ "preregistered": {
+  "written_before": "any new candidate was compiled, anything was built or read",
+  "model": "no API key and no retrieval provider is configured; the terminal agent answers every staged job.",
+  "section_extent": {
+   "registered_as": "a block-sized rectangle spanning the boundary gate and both inhabited fabrics, chosen for its ground",
+   "rect": [
+    -5800,
+    640,
+    -5700,
+    750
+   ],
+   "columns": 11211,
+   "share_of_section": "23.3% of the registered section's 48,051 columns",
+   "why_here": "measured on the observed baseline `out/nb-city/world.before-plateau.npz` before the round ran: 11,211 columns, 4.7% standing water, bed from y=35 to y=104, and 72% of it within eight blocks of its own median and dry. The gate `ring_gate_middle_ring` stands at (-5761, 692), 39 columns from the nearest edge, so the selection rule's 16-column clearance is kept. The three alternatives measured beside it are recorded in the round report: the neighbourhood round's own block west of the gate (5,265 columns, 16.1% wet, no gate, one fabric), the middle ring's wettest run east of it (6,771 columns, 18.4% wet, no gate), and the crowded ring's east end (4,209 columns, 8.3% wet, one fabric). This one is the only candidate that carries the gate, both fabrics, the boundary and the grade together, which is what `the wet/grade/entrance interface that broke construction` names.",
+   "out_of_scope": "everything the section is for: the whole of both fabrics, the market, the continuous route from the outer gate, whole-city identity"
+  },
+  "expectations": {
+   "ground_first": "the block's districts are terraced at the level `placeplan.district_ground` chose for them and their counts are derived from `placeplan.developable_columns` over the ground that can carry a building, not over the rectangle",
+   "architecture_not_labels": "every functional claim rests on a final-world predicate run on the assembled world after all construction",
+   "outcome": "a built, checked and inspected block whose ground, street, frontage and roofline can be looked at and improved cheaply -- or a stop naming what could not be laid and why"
+  },
+  "bounds": {
+   "improve_cycles": "1 per candidate, 2 per lineage",
+   "parts": "3600 s, 15 GB address space, 3 workers",
+   "sites": "cached squares only (max_new_squares 0)"
+  },
+  "seeded_from": "out/sd-city, copied after its plan, ground, terraces and circulation: the block shares the city's plan, its prepared ground and its roads and differs only in which extent is built, which is what makes it cheap enough to be the iteration unit",
+  "commands": {
+   "run": "\"$PY\" scripts/round.py rounds/sd-block.json --dry-run --stage parts,finish,lint,material,section",
+   "views": "\"$PY\" scripts/section_views.py --state out/sd-block --label <label> --out out/sd-views/block-<label> --section -5800,640,-5700,750"
+  }
+ }
+}
