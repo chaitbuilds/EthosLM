@@ -444,8 +444,13 @@ def build(b, part, seed, **params):
             covered.append((max(x0, srect[0] - 1), max(z0, srect[1] - 1),
                             min(x1, srect[2] + 1), min(z1, srect[3] + 1)))
 
-    # lamps at the corners of the square, benches out of the way of the crossing
+    # lamps at the corners of the square, benches out of the way of the crossing. No
+    # lamp on the corner the way in fell on: `area_way_in` clears that cell to head
+    # height below, and a post cut there leaves its top floating.
+    door = b.door_cell(part["x0"], part["z0"], part["x1"], part["z1"])
     for c in ((x0, z0), (x1, z0), (x0, z1), (x1, z1)):
+        if door is not None and (int(door[0]), int(door[1])) == c:
+            continue
         _lamp(b, c[0], c[1], fy)
 
     seats = [(x0 + 1, cz), (x1 - 1, cz), (cx, z0 + 1), (cx, z1 - 1),
