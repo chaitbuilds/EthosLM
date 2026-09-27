@@ -17,9 +17,9 @@ FORM = "civic"
 #: `FORM` is the tradition it is built in and this is a different question: a farmhouse
 #: and a shop-house are both east Asian.
 ROLE = "civic"
-#: **What this area is for.** The expression round: a paved crossing with four booths at
-#: its corners is a market by function, and the booths are reported below as a measured
-#: feature so the function is evidenced by what stood and not by this tag.
+#: **What this area is for.** A paved crossing with four booths at its corners is a
+#: market by function, and the booths are reported below as a measured feature so the
+#: function is evidenced by what stood and not by this tag.
 FUNCTION = "market"
 FEATURES = ("stalls",)
 
@@ -480,17 +480,15 @@ def build(b, part, seed, **params):
     _lid(b, covered, fy)
     # the reserved doorway stays walkable, whatever the floor and the border did
     b.area_way_in(part["x0"], part["z0"], part["x1"], part["z1"], int(part["floor_y"]))
-    # the expression round: what stood, said by the type and measured by construction.
-    # `rects.stalls` is the ground the booths occupy; a square too small for booths
-    # reports them omitted rather than calling paving a market. **Four booths are four
-    # rectangles, not the box round them** (the design round). This published `[min x,
-    # min z, max x, max z]` over all four corners, which on a 40x40 square is a 38x38
-    # rectangle with the whole open market inside it; `construction._verify_rect` asks
-    # whether half of a claimed rectangle carries something, four corner booths gave it
-    # three per cent, and the square's stalls read `claimed_not_found` on every square
-    # this type has ever built, however well they stood. The `des-farm` run is where
-    # that showed: two booths had genuinely been razed by a neighbour's siting and the
-    # record could not tell that from the four standing perfectly.
+    # what stood, said by the type and measured by construction. `rects.stalls` is the
+    # ground the booths occupy; a square too small for booths reports them omitted
+    # rather than calling paving a market. **Four booths are four rectangles, not the
+    # box round them.** `[min x, min z, max x, max z]` over all four corners is, on a
+    # 40x40 square, a 38x38 rectangle with the whole open market inside it;
+    # `construction._verify_rect` asks whether half of a claimed rectangle carries
+    # something, and four corner booths give it three per cent, so the stalls would
+    # read `claimed_not_found` however well they stood -- and a booth razed by a
+    # neighbour's siting could not be told from four standing perfectly.
     srect = [list(r) for r in stalls] or None
     emitted = {
         "requested": {"paving": paving, "canopy": canopy, "stalls": True},

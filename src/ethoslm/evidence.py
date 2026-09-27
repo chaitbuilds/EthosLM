@@ -1,11 +1,10 @@
 """Finding out about a request at runtime, from sources, with the sources written down.
 
-The audit's first finding: `stage_place_spec` asks a model for a place schema and there
-is no stage anywhere that **acquires** anything. its recollection is not evidence,
-nobody can check it, and a run cannot tell the difference between a fact and a confident
-sentence. Worse, the one thing that *was* outside the loop -- a supervising agent
-browsing and hand-writing a reference sheet -- is the capability the whole system is
-supposed to have.
+`stage_place_spec` asks a model for a place schema, and without a stage that
+**acquires** something the model's recollection is all there is. Recollection is not
+evidence: nobody can check it, and a run cannot tell the difference between a fact and a
+confident sentence. Browsing and writing a reference sheet is a capability the system
+itself has to have, not work a supervising agent does outside the loop.
 
 So: a bounded retrieval interface, a configurable provider behind it, and a reading
 record whose every claim either cites a source that was actually fetched or says it was

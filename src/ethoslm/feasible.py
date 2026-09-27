@@ -28,9 +28,8 @@ that was laid at the terrace level. That is the whole of clause 2, and it is why
 module re-exports `RELIEF` from `ground` rather than choosing a tolerance of its own: a
 feasibility rule that disagreed with the resolver would be a fourth different number.
 
-Four clauses, in precedence, each **independently** counted. The review is explicit that
-*"the records do not establish one cause for every unreachable stance"*, so they are never
-collapsed into a single refusal:
+Four clauses, in precedence, each **independently** counted. Unreachable stances do not
+share one cause, so the clauses are never collapsed into a single refusal:
 
   1. **wet** -- the observed surface is water. Refused, *unless* this design's level
      stands at or above the waterline + 1, in which case the water is reclaimed by fill,
@@ -45,7 +44,7 @@ collapsed into a single refusal:
   4. **unreached** -- of the ground that survives 1-3, the connected components no route
      cell touches. Reported, and deliberately **left in the mask**: a component cut off
      outside the section is a different failure from a door that fails inside it, and
-     collapsing them is how 973 unreachable stances came to have no attributable cause.
+     collapsing them leaves an unreachable stance with no attributable cause.
 
 Absence is never an answer. With no volume to read, `terrain` returns a mask that refuses
 nothing, `"level": None`, `"measured": False` and a `why` that says the ground was not
@@ -425,8 +424,7 @@ def terrain(vol, rect, *, level=None, relief: int = RELIEF, routes=None,
     # --- 4. unreached. The connected components (4-neighbour) of the feasible ground
     # that no route cell touches. Left **in** the mask on purpose: this clause separates
     # "a door fails inside the section" from "a component of the fabric is disconnected
-    # from everything outside it", and the review's finding is precisely that those two
-    # were one undifferentiated number.
+    # from everything outside it", which counted as one number cannot be told apart.
     unreached = None
     comps = reached = None
     if routes is not None:

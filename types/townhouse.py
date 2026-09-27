@@ -12,10 +12,10 @@ FORM = "european_vernacular"
 #: and a shop-house are both east Asian.
 ROLE = "urban"
 
-#: **What this type is for.** The realization round: a `ROLE` says what work a building
-#: is for and is satisfied by a hall, a barn or a temple alike; a sentence asking for
-#: houses people live in is asking for a `dwelling`. Declared so that the function can
-#: be checked rather than inferred from a label.
+#: **What this type is for.** A `ROLE` says what work a building is for and is satisfied
+#: by a hall, a barn or a temple alike; a sentence asking for houses people live in is
+#: asking for a `dwelling`. Declared so that the function can be checked rather than
+#: inferred from a label.
 FUNCTION = "dwelling"
 
 
@@ -637,9 +637,9 @@ def build(b, part, seed, **params):
                             "omitted": ["storeys"], "features": {}}}
 
     n = res.get("_storeys") or storeys
-    # **What survived, said by the type.** The closure round: `_house` walks the storeys
-    # down from what was asked and the jetty and the oriel off the massing; the record
-    # says what stood beside what `construction.outcome` measures.
+    # **What survived, said by the type.** `_house` walks the storeys down from what was
+    # asked and the jetty and the oriel off the massing; the record says what stood
+    # beside what `construction.outcome` measures.
     _kw = res.get("_asked") or {}
     res["emitted"] = {
         "requested": {"storeys": storeys, "jetty_side": jetty_side},

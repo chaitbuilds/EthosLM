@@ -87,7 +87,7 @@ def _defines(spec: dict | None) -> set:
 
 
 def budget_frames(plan: dict, spec: dict | None, budget: dict) -> list:
-    """Which subjects this place is photographed as, in order. Deterministic. A4.
+    """Which subjects this place is photographed as, in order. Deterministic.
 
         One row per frame, each saying *why* it is being taken, so the readout can report
         what was rendered and what was not rather than leaving "we did not photograph 376
@@ -158,15 +158,15 @@ def _passage(part: dict) -> bool:
 
 
 def arrival_gate(plan: dict, spec: dict | None, parts: list | None = None):
-    """The part a place is entered by. **One rule, both callers.** Demo-polish, 1d.
+    """The part that a place is entered by. **One rule, both callers.**
 
         A passage point standing on the outermost ring where the spec names rings
         (`placeread.rings`), else the first part in plan order whose type declares a
-        passage -- which is every open town's and walled town's answer, unchanged. Until
-        this `_gate_threshold` took the first passage part in plan order on the stated
-        invariant "at most one way in", which is a walled town's and not a city's, while
-        `flythrough_path` preferred the outermost ring's gate: the demo's arrival frame
-        stood outside whichever gate sorted first. Returns the plan leaf, or None.
+        passage -- which is every open town's and walled town's answer. `_gate_threshold`
+        and `flythrough_path` both ask here: "the first passage part in plan order" rests
+        on "at most one way in", which is a walled town's invariant and not a city's, and
+        two rules would put the arrival frame outside whichever gate sorted first.
+        Returns the plan leaf, or None.
 
     """
     from .. import placeread
@@ -492,7 +492,7 @@ def stage_write(rnd: Round, be, results: dict) -> dict:
 
 
 def stage_map(rnd: Round, be, results: dict) -> dict:
-    """The plan as a picture: `<state>/plan_map.png`. v2, A6.
+    """The plan as a picture: `<state>/plan_map.png`.
 
         Deterministic, offline, under a second, and it needs nothing but the plan -- so it
         can be asked for the moment `plan` has run and long before a block is placed, which
@@ -523,7 +523,7 @@ def stage_map(rnd: Round, be, results: dict) -> dict:
 
 
 def stage_sheet(rnd: Round, be, results: dict) -> dict:
-    """A sheet of instances per type: `<state>/sheets/<type>.png`. v2, A6.
+    """A sheet of instances per type: `<state>/sheets/<type>.png`.
 
         The types are the round's own `types.list`, the fixture and the seeds are the ones
         its **checker** would use for a type of that kind (`blind._fixtures_for`,
@@ -603,9 +603,9 @@ def stage_render(rnd: Round, be, results: dict) -> dict:
     geom = getattr(render, spec.get("geometry", "E1D"))
     prefix = spec.get("prefix", "r")
     report = {}
-    # A4: which buildings get a card is a budget now, and at a city's four hundred it is
-    # a *sample* of them. `None` -- a round with no budget and no place spec -- is every
-    # plot, which is what every round before this one did.
+    # Which buildings get a card is a budget, and at a city's four hundred it is a
+    # *sample* of them. `None` -- a round with no budget and no place spec -- is every
+    # plot.
     plan = rnd.plan()
     budget = render_budget(plan, rnd.place_spec(), spec) if plan else None
     wanted = None
@@ -697,28 +697,28 @@ def stage_render(rnd: Round, be, results: dict) -> dict:
                 spp=spec.get("spp", 40), size=tuple(spec.get("size", (900, 560))),
                 reuse=True)
     if spec.get("place"):
-        # A7: the two frames a *place* is photographed with, beside the four each
-        # building gets. Opt-in per round, because every round before this one was a set
-        # of buildings and photographing it as one thing would be a claim.
+        # The two frames a *place* is photographed with, beside the four each building
+        # gets. Opt-in per round, because a round that is only a set of buildings,
+        # photographed as one thing, would be a claim.
         s = rnd.site or json.load(open(rnd.rel("site.json")))
         X, Z, S = s["origin"][0], s["origin"][1], s["size"]
         cy = render.mid_y(built, {"x0": X, "z0": Z, "x1": X + S - 1, "z1": Z + S - 1})
         centre = (X + S / 2, cy, Z + S / 2)
         gate = _pipeline._gate_threshold(rnd, net)
-        # The distance was a constant chosen when the tallest thing a type could build
-        # was a wall of twenty, and a great wall of forty-eight filled the frame from
-        # the ground to the sky. Measured off the built world, because what stands in
-        # front of the camera is a fact about the world and not about the plan.
+        # The distance is measured off the built world and not a constant: a constant
+        # chosen for a wall of twenty lets a great wall of forty-eight fill the frame
+        # from the ground to the sky, and what stands in front of the camera is a fact
+        # about the world and not about the plan.
         place_shots = render.place_card_shots(
             centre, S, gate=gate, sight=sight,
             bearing=render.approach_bearing(net, centre),
             rise=render.approach_rise(built, gate))
-        # **The frame's chunks, not the site's** (1d, finding 9): each whole-place
-        # camera loads the site plus its own stand-off, so the aerial does not show the
-        # site as a slab floating over nothing. A chunk the save never made renders as a
-        # grey slab, so the list is clipped to finished chunks and a camera standing
-        # over an unmade one is dollied in along its line of sight until it stands over
-        # ground that exists.
+        # **The frame's chunks, not the site's**: each whole-place camera loads the site
+        # plus its own stand-off, so the aerial does not show the site as a slab
+        # floating over nothing. A chunk the save never made renders as a grey slab, so
+        # the list is clipped to finished chunks and a camera standing over an unmade
+        # one is dollied in along its line of sight until it stands over ground that
+        # exists.
         report["place"] = {}
         for key, shot in place_shots.items():
             chunks, dropped = render.finished_chunks(render.place_chunks(X, Z, S, {key: shot}))
@@ -733,8 +733,8 @@ def stage_render(rnd: Round, be, results: dict) -> dict:
                 frames_dir, tag=f"{prefix}_place", scene_prefix=f"{rnd.name}_",
                 spp=spec.get("spp", 40), size=(1200, 700), reuse=True))
     if budget and budget.get("flythrough"):
-        # A4: the camera move from outside the outer gate to the palace, as frames. The
-        # path is written whether or not the frames are shot, because the path is a fact
+        # The camera move from outside the outer gate to the palace, as frames. The path
+        # is written whether or not the frames are shot, because the path is a fact
         # about the plan and the frames are an hour of Chunky.
         s = rnd.site or json.load(open(rnd.rel("site.json")))
         path = flythrough_path(plan, rnd.place_spec(), s)
@@ -1186,11 +1186,10 @@ def _write_selection(rnd: Round, out: dict) -> dict:
 
 
 # ------------------------------------------------------------ the loop before the city
-# v2, C4. A city was judged after four hundred copies of a design nobody had looked at:
-# the map, the landmark and five buildings are drawn the moment the plan exists --
-# offline, deterministic, seconds -- written to disk, handed to the judge for a reading
-# and to the principal for one bounded revision of the characters or the voice, and then
-# the build.
+# A city is not judged after four hundred copies of a design nobody has looked at: the
+# map, the landmark and five buildings are drawn the moment the plan exists -- offline,
+# deterministic, seconds -- written to disk, handed to the judge for a reading and to the
+# principal for one bounded revision of the characters or the voice, and then the build.
 
 #: How many representative buildings the preview draws: the plot types the plan names
 #: most, one instance each on the round's own largest plot of that type.
@@ -1506,13 +1505,11 @@ def _restore(rnd: Round, snap: dict) -> None:
 def _replan(rnd, be):
     """Lay the plan out again, **driven to an outcome** rather than called once.
 
-        The review's fifth finding, last part: "The preview's revision and repair helpers
-        call `stage_plan` once directly. A legitimate `reenter` or pending agent response is
-        not driven to completion there." A stage that changes the candidate under itself
-        returns `reenter` and the driver runs it again; a helper that calls it once reads
-        that state as a result and decides the revision failed. Plan, preview and revision
-        have to use the same control path or they are three different systems that look
-        alike.
+        A stage that changes the candidate under itself returns `reenter` (or a pending
+        agent response) and the driver runs it again; a helper that called `stage_plan`
+        once would read that state as a result and decide the revision failed. Plan,
+        preview and revision have to use the same control path or they are three
+        different systems that look alike.
 
     """
     from . import round as driver, stages_plan
@@ -1853,7 +1850,7 @@ def _verify_improvement(rnd: Round, rec: dict, tag: str) -> dict:
 
 
 def stage_preview(rnd: Round, be, results: dict) -> dict:
-    """The loop before the city. v2, C4.
+    """The loop before the city.
 
         After the plan and before the parts: the map, the landmark and five representative
         buildings are drawn to `<state>/preview/`, handed to the **judge** for a reading
@@ -1926,13 +1923,12 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
             return {"preview": rec,
                     "dependencies": "warm" if not legacy else "unstamped"}
         print(f"   preview: {why}; it is drawn and read again", flush=True)
-        # **And the drawing and the reading go with it.** The review reproduced the
-        # bypass in this exact branch: the check noticed the changed plan, the stamp was
-        # invalidated, `done` was cleared -- and then the code below found the current
-        # tag already in `drawn` and `reading_1.md` already on disk, returned both, and
-        # set `done` again. Invalidating the *stamp* of an artifact whose contents are
-        # still reused is not invalidating anything. A drawing and a reading are of one
-        # plan; when that plan moves they are evidence about a candidate that is gone.
+        # **And the drawing and the reading go with it.** Otherwise, with the stamp
+        # invalidated and `done` cleared, the code below would find the current tag
+        # already in `drawn` and the reading already on disk, return both, and set `done`
+        # again. Invalidating the *stamp* of an artifact whose contents are still reused
+        # is not invalidating anything. A drawing and a reading are of one plan; when
+        # that plan moves they are evidence about a candidate that is gone.
         rec = _withdraw_preview(rnd, d, rec, why)
         json.dump(rec, open(rec_p, "w"), indent=1)
     spec = rnd.place_spec()
@@ -1997,10 +1993,10 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
                             "note": "the preview's reading: what a person would see "
                                     "wrong, from the map, the landmark and five "
                                     "buildings; no score -- and the same as data"}}
-    # **The reading as data, beside the prose.** The closure round: a revision has to
-    # answer a finding by id, and a second reading has to say which of those it no
-    # longer sees, or "revised and inspected again" is two pages of prose with nothing
-    # between them a runner can check.
+    # **The reading as data, beside the prose.** A revision has to answer a finding by
+    # id, and a second reading has to say which of those it no longer sees, or "revised
+    # and inspected again" is two pages of prose with nothing between them a runner can
+    # check.
     rec.setdefault("readings", {})
     if tag not in rec["readings"]:
         got = json.load(open(findings_p)) if os.path.exists(findings_p) else None
@@ -2014,16 +2010,15 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
         _verify_improvement(rnd, rec, tag)
         json.dump(rec, open(rec_p, "w"), indent=1)
     # 1b. **the repairs the findings route to a layer that can make them.** The
-    # architecture round. Before this the only thing the loop could change was words: a
-    # district's character and the place's voice. A finding about *scale* -- the
-    # resolved design holds eleven structures against a band of twenty-four -- had
-    # nobody to go to, and a repair that did land was never looked at again. So:
-    # `repair.apply` makes the repairs this build can make, each inside a bound that is
-    # written down and never against an explicit requirement; the plan is laid out again
-    # from the repaired programme; the resolution and findings are recomputed; and the
-    # stage **goes back to the reading**, so the repaired plan is inspected and not
-    # merely redrawn. A repair whose plan will not lay out is rolled back by the
-    # snapshot this stage already keeps.
+    # revision below can change only words: a district's character and the place's
+    # voice. A finding about *scale* -- the resolved design holds eleven structures
+    # against a band of twenty-four -- needs a layer that can act on it, and a repair
+    # that lands has to be looked at again. So: `repair.apply` makes the repairs this
+    # build can make, each inside a bound that is written down and never against an
+    # explicit requirement; the plan is laid out again from the repaired programme; the
+    # resolution and findings are recomputed; and the stage **goes back to the
+    # reading**, so the repaired plan is inspected and not merely redrawn. A repair whose
+    # plan will not lay out is rolled back by the snapshot this stage already keeps.
     if spec is not None and not rec.get("repaired"):
         got = _repair_pass(rnd, be, spec, rec, site)
         rec["repairs"].append(got)
@@ -2032,9 +2027,8 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
         if got.get("changed"):
             print(f"   preview: {got['says']}; the plan was laid out again and is read "
                   f"a second time", flush=True)
-            # **An executable state, not a note.** The review drove the production
-            # return shape through the real driver and it went straight on to `parts`:
-            # the stage said in prose that it would re-enter and nothing re-entered it.
+            # **An executable state, not a note.** A stage that says in prose that it
+            # will re-enter is not re-entered; the driver goes straight on to `parts`.
             # `status: "reenter"` is what `pipeline.round.run` acts on.
             return {"preview": rec, "repair": got, "status": "reenter",
                     "why": ("a repair changed a planning decision; this stage is "
@@ -2122,12 +2116,12 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
     if plan:
         rec["drawn"][tag] = _draw_preview(rnd, plan, parts, site, voice, tag)
     json.dump(rec, open(rec_p, "w"), indent=1)
-    # **The revision is a changed candidate, so it is inspected.** The review: after the
-    # character/voice revision this stage drew the result and set `done`, so the saved
-    # village finished with `revisions: 1`, new images and no `reading_1.md` -- the
-    # thing that was actually built was the one thing nobody looked at. Re-entering here
-    # reaches the reading branch above with the new tag, which asks for a reading of
-    # *this* candidate; the next entry finds it on disk and finishes.
+    # **The revision is a changed candidate, so it is inspected.** Drawing the result of
+    # the character/voice revision and setting `done` would finish with new images and
+    # no reading of them -- the thing that is actually built would be the one thing
+    # nobody looked at. Re-entering here reaches the reading branch above with the new
+    # tag, which asks for a reading of *this* candidate; the next entry finds it on disk
+    # and finishes.
     reading_now = os.path.join(d, f"reading{tag}.md")
     if applied.get("plan") is not None and not applied.get("rolled_back") \
             and not os.path.exists(reading_now):

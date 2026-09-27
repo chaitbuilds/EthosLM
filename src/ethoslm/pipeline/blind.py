@@ -176,12 +176,12 @@ def _collect_blinded(rnd: Round, subs=None) -> dict:
 def scrub_traceback(tb: str) -> str:
     """A traceback with everything but the builder's own program taken out of it.
 
-        Found by a test after three bounces had already gone out. A raw `format_exc` names
-        the driver frame that raised (`stage_candidates`) and the absolute path of the
-        program it ran -- `.../arms/selection/wave1/c3/wave1.py` -- and a builder shown that
-        has been told it is candidate 3 of something called selection, which is the one
-        thing the spec says must not happen. The frames from this package and from
-        `scripts/` are dropped and what is left is the line that raised and the exception.
+        A raw `format_exc` names the driver frame that raised (`stage_candidates`) and the
+        absolute path of the program it ran -- `.../arms/selection/wave1/c3/wave1.py` --
+        and a builder shown that has been told it is candidate 3 of something called
+        selection, which is the one thing the spec says must not happen. The frames from
+        this package and from `scripts/` are dropped and what is left is the line that
+        raised and the exception.
 
     """
     keep, drop_next = [], False
@@ -467,7 +467,7 @@ PART_EDGE_BIG_SOURCES = (("city_b", "world.npz"),
 
 def big_loop_fixture(sources=PART_EDGE_BIG_SOURCES, n: int = PART_EDGE_BIG,
                      floor: int = 101) -> dict | None:
-    """The city-scale ring: a closed loop of `4n - 4` columns on unbuilt ground. A3.
+    """The city-scale ring: a closed loop of `4n - 4` columns on unbuilt ground.
 
         The same discipline as the other three -- a total order over measured numbers with
         the position as the last tie-break, computed off a cache already on disk. The relief
@@ -504,7 +504,7 @@ PART_AREA_BIG = 48
 
 def big_area_fixture(sources=PART_EDGE_BIG_SOURCES, n: int = PART_AREA_BIG,
                      floor: int = 24) -> dict | None:
-    """The compound-scale area: the flattest clear `n x n` on unbuilt ground. A3.
+    """The compound-scale area: the flattest clear `n x n` on unbuilt ground.
 
         `check_parts`' own area rule -- flattest first -- on the same ground the city ring is
         cut from, and for the same reason: there is no 48x48 anywhere on a 192-block site
@@ -738,7 +738,7 @@ def _free_ground(round_name: str):
 
 
 def check_parts(round_name: str = PART_FIXTURE_ROUND) -> list:
-    """One fixture of each new part kind, chosen by rule. A3.
+    """One fixture of each new part kind, chosen by rule.
 
         The same discipline as `check_fixtures`: a total order over measured numbers with
         the position as the last tie-break, computed by one command off a cache that is
@@ -829,13 +829,13 @@ def check_parts(round_name: str = PART_FIXTURE_ROUND) -> list:
                            f"{PART_EDGE_RELIEF} and then nearest the lane; the gate is "
                            f"the middle of the side the lane is closest to"})
 
-    # A5 cost a round by proving that one fixture per part kind is not a fixture set:
-    # the standing `wall` was 4 of 4 on the 40-column L and 0 of 4 on the closed loop,
-    # and the class it failed on -- a turret door nobody can reach, two blocks held up
-    # by nothing at a vertex -- is one `NEEDS` cannot express. Both existing fixtures
-    # are chosen for ground the wall runs *along*. Neither says what a wall does where
-    # its ground **stops**, which is the case a walled place on real terrain meets at
-    # every escarpment: a run whose last column has a drop off the end of it.
+    # One fixture per part kind is not a fixture set: a wall can pass every seed on the
+    # 40-column L and fail every seed on the closed loop, on a class -- a turret door
+    # nobody can reach, two blocks held up by nothing at a vertex -- that `NEEDS`
+    # cannot express. Both existing fixtures are chosen for ground the wall runs
+    # *along*. Neither says what a wall does where its ground **stops**, which is the
+    # case a walled place on real terrain meets at every escarpment: a run whose last
+    # column has a drop off the end of it.
     from .. import observe as _observe
     _h, _wet = _observe.ground_heights(vol)
 
@@ -934,8 +934,8 @@ def _fixtures_for(rnd: Round, spec: dict) -> list:
     wall, gate or square in a settlement's plot registry. One list per kind, from the
     config, registered before the builder was called."""
     kind = spec.get("part", "plot")
-    # v2, C3: a type the plan found missing carries the fixtures its plan-time author
-    # was given (`growth.default_fixtures`), because the round registered none.
+    # A type the plan found missing carries the fixtures its plan-time author was given
+    # (`growth.default_fixtures`), because the round registered none.
     own = [dict(f) for f in (spec.get("fixtures") or [])]
     if kind == "plot":
         from ..slopefixture import descriptors
@@ -973,10 +973,10 @@ def stage_type_check(rnd: Round, d: str, key: str, spec: dict) -> str:
     t = rnd.types
     json.dump({"kind": "type", "config": rnd.path, "key": key, "type": spec["name"],
                "fixtures": _fixtures_for(rnd, spec), "voice": spec.get("voice"),
-               # B1: the two voices the checker stands the type in, decided here so the
+               # The two voices the checker stands the type in, decided here so the
                # record of what an author was checked against is on disk.
                "voices": _pipeline.check_voices(spec.get("voice"), rnd.voice_name()),
-               # B1: an author's checker crosses every set of parameters the type
+               # An author's checker crosses every set of parameters the type
                # declares, unless the config pins one. A type is checked where the plan
                # may ask for it, not at the low end of its own ranges.
                "sweep": bool(spec.get("check_sweep", True)),
@@ -1052,17 +1052,15 @@ def check_type(rnd: Round, be, prog: str, labels: list, seeds: list,
         per-instance answers are identical because `standard_report` scopes the build
         family to a plot and the place family is a fact about the town either way.
 
-        **And every set of parameters, since B1.** `sweep` crosses
-        `param_combinations(PARAMS)` into the work as a fourth axis. Without it a checker
-        stands a type at *one* point of its own declared space -- `check_params` fills a
-        missing parameter from the low end of an int range and the first of a choice -- so
-        a `shop_house` declaring `storeys` 2 to 3 was only ever checked at two, a `hall`
-        declaring three uses was only ever checked as a moot, and a `wall` declaring
-        `height` 3 to 20 and `width` 1 to 5 was only ever checked three high and one
-        thick. The city then asked for three storeys, a market, and twenty by three. This
-        is the project's standing law one dimension further: a type must carry to ground
-        its author never saw, to a voice its author never saw, and to the **parameters the
-        planner actually gives it**.
+        **And every set of parameters.** `sweep` crosses `param_combinations(PARAMS)` into
+        the work as a fourth axis. Without it a checker stands a type at *one* point of its
+        own declared space -- `check_params` fills a missing parameter from the low end of
+        an int range and the first of a choice -- so a `shop_house` declaring `storeys` 2
+        to 3 is only ever checked at two, and a `wall` declaring `height` 3 to 20 and
+        `width` 1 to 5 only ever three high and one thick, while a plan may ask for any
+        point in that space. This is the project's standing law one dimension further: a
+        type must carry to ground its author never saw, to a voice its author never saw,
+        and to the **parameters the planner actually gives it**.
 
         Returns the findings text and a row per instance, worst first.
     """
@@ -1088,12 +1086,10 @@ def check_type(rnd: Round, be, prog: str, labels: list, seeds: list,
         sets = [_pipeline.check_params(decl["params"], params, where=where)]
     kw = sets[0]
     voices = list(voices or _pipeline.check_voices(voice, rnd.voice_name()))
-    # A6: one work item per (fixture round, seed, voice) -- which is what a composed
-    # program already is -- run across processes and read back in the order a serial
-    # loop produces them. The rows are the answer and the rows do not move; what moves
-    # is where the twenty-four of them are computed. `ETHOSLM_WORKERS=1` is the serial
-    # arm. B1 adds the parameter set as a fourth axis; with one set this is the same
-    # work.
+    # One work item per (fixture round, seed, voice, parameter set) -- which is what a
+    # composed program already is -- run across processes and read back in the order a
+    # serial loop produces them. The rows are the answer and the rows do not move; what
+    # moves is where they are computed. `ETHOSLM_WORKERS=1` is the serial arm.
     work = [(name, seed, v, i) for i in range(len(sets)) for v in voices
             for name in sorted({f["round"] for f in fixtures}) for seed in seeds]
     got = parallel.par_map(
@@ -1123,7 +1119,7 @@ def check_type(rnd: Round, be, prog: str, labels: list, seeds: list,
 
 
 def param_summary(rows: list, sets: list) -> dict:
-    """What each set of parameters read, over the same fixtures, seeds and voices. B1.
+    """What each set of parameters read, over the same fixtures, seeds and voices.
 
         Keyed by the parameters as they are written down, because that is what an author
         has to change and what a plan has to avoid asking for.
@@ -1146,7 +1142,7 @@ def param_summary(rows: list, sets: list) -> dict:
 
 
 def voice_summary(rows: list, voices: list) -> dict:
-    """What each voice read, over the same fixtures and seeds. B1."""
+    """What each voice read, over the same fixtures and seeds."""
     out = {}
     for v in voices:
         mine = [r for r in rows if r["voice"] == v]
@@ -1164,7 +1160,7 @@ def voice_summary(rows: list, voices: list) -> dict:
 
 
 def coupled_to_silhouette(by_voice: dict) -> dict | None:
-    """The B1 verdict: None when every voice read the same, else which differ and how.
+    """The voice verdict: None when every voice read the same, else which differ and how.
 
         Read on the counts and not on the cells, because a roof that follows the voice is
         *supposed* to put its stairs in different places; what it is not supposed to do is
@@ -1198,17 +1194,14 @@ def _check_type_job(rnd, be, prog, decl, fixtures, sets, work) -> dict:
     plots = {p["label"]: p for p in _plots_of(frnd)}
     want = [q for q in (_pipeline.fixture_part(f, plots) for f in fixtures
                         if f["round"] == name) if q is not None]
-    # A3: an edge, a point and an area are not in the round's plot registry, so the
+    # An edge, a point and an area are not in the round's plot registry, so the
     # rectangle each is answerable for is added to the Context's plots -- otherwise
     # `standard_report` falls back to the whole town and a wall is judged on it.
     # `part_registry_row` writes one rectangle per segment and `lint.plot_rects` reads
-    # them; this composed the row by hand off `part_rect` and got the box. It cost
-    # nothing while an edge fixture was a 40-column L, and on A3's 131-a-side city ring
-    # the box is **seventeen thousand columns of hillside**: the wall's author was
-    # handed forty sealed cave pockets and twenty-one floating jungle logs at identical
-    # coordinates in all six of its runs, most of them tens of blocks off the line, one
-    # of them a 952-cell room outside the ring entirely. A wall's bounding box is the
-    # town it encloses, and this is the second time that sentence has cost a round.
+    # them. Do not compose the row off `part_rect`, which gives the bounding box: on a
+    # city-scale ring that box is thousands of columns of hillside, and the wall's
+    # author would be handed every cave pocket and stray log inside it. A wall's
+    # bounding box is the town it encloses.
     extra = [_pipeline.part_registry_row({**p, "name": p["label"]})
              for p in want if p.get("kind") in ("edge", "point", "area")]
     instances = [(p, seed, kw) for p in want]
@@ -1223,10 +1216,10 @@ def _check_type_job(rnd, be, prog, decl, fixtures, sets, work) -> dict:
         crashed = True
     pending = b._pending if b is not None else {}
     # **and the level the library sited each part at**, so the checker attributes a room
-    # the way the round does. Without it the type checker is the one reader of
-    # `room["plot"]` that A1 does not reach, and it charged `palace` a 266-cell cavern
-    # at y=1 under a 48x48 compound. `site()` records `floor_y` on every part it
-    # prepares; this is that record, put where `room_owner` reads it.
+    # the way the round does. Without it the type checker attributes rooms by column
+    # alone, and a cavern deep under a compound is charged to the building above it.
+    # `site()` records `floor_y` on every part it prepares; this is that record, put
+    # where `room_owner` reads it.
     sited = {p.get("label"): p.get("floor_y") for p in (getattr(b, "parts", None) or [])
              if p.get("floor_y") is not None}
     rows_in = list(plots.values()) + extra
@@ -1241,15 +1234,12 @@ def _check_type_job(rnd, be, prog, decl, fixtures, sets, work) -> dict:
         rep = _pipeline.standard_report(ctx, mine or ctx.plots)
         lines = _pipeline.entry_lines(_pipeline.diagnose_entry(ctx, p["label"]))
         errs = len([f for f in rep.findings if f.code.startswith("E")])
-        # The same question the round asks, off the same measure. Until A4 this read
-        # `interior_walk`, which counted every room on the plot; A4 gives that call the
-        # `ENCLOSED` filter its two siblings already applied, and under it no room in
-        # this project is an interior -- every one of them joins the sheltered band
-        # outside its own door and reads 0.14 to 0.7 against a threshold of 0.85. A
-        # checker that came back "0 rooms, no number" on a finished building is worse
-        # than no checker, so the walkability a type's author reads is now the one
-        # `measure_program` reads and the one its round is scored on: the room's floor,
-        # walked from outdoors. `shut` is what `interior_walk` still reports, which is
+        # The same question the round asks, off the same measure. Not `interior_walk`:
+        # it applies the `ENCLOSED` filter, and under it almost no room is an interior --
+        # each joins the sheltered band outside its own door -- so a finished building
+        # would read "0 rooms, no number". The walkability a type's author reads is the
+        # one `measure_program` reads and the one its round is scored on: the room's
+        # floor, walked from outdoors. `shut` is what `interior_walk` reports, which is
         # rooms cut off from that band -- the E011 candidates and nothing else.
         walkable = _type_walkable(ctx)
         cells = walk = n_rooms = 0
@@ -1266,7 +1256,7 @@ def _check_type_job(rnd, be, prog, decl, fixtures, sets, work) -> dict:
         # flag, rather than 0.0 -- a number that can only be zero is not a measurement,
         # and 0.0% beside a palace that is entirely walkable is worse than no number.
         off = bool(_pipeline.diagnose_entry(ctx, p["label"]).get("off_network"))
-        # 1b: a plot instance carries its roof on top, or it is not clean. Read off the
+        # A plot instance carries its roof on top, or it is not clean. Read off the
         # pending set against the plot's own rectangle and the floor `site()` gave it.
         roof = {"columns": 0, "roofed": 0, "share": None}
         if p.get("kind", "plot") == "plot" and b is not None and mat and mat.get("roof"):
@@ -1278,7 +1268,7 @@ def _check_type_job(rnd, be, prog, decl, fixtures, sets, work) -> dict:
         rows.append({
             "round": name, "plot": p["label"],
             "kind": p.get("kind", "plot"), "seed": seed, "voice": voice,
-            # B1: which point of the type's own declared space this instance is.
+            # Which point of the type's own declared space this instance is.
             "params": dict(kw),
             "codes": sorted(f.code for f in rep.findings if f.code.startswith("E")),
             "errors": errs,

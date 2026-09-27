@@ -2,9 +2,9 @@
 
     $PY scripts/check_types.py [name ...] [--out DIR] [--jobs N]
 
-Voice contract, B1. `pipeline.check_type` stands a type on its registered fixtures at
-both seeds in the voice its author was given **and** in the round's place's own voice
-(or, where that is the author's, the voice on disk whose silhouette is least like it;
+`pipeline.check_type` stands a type on its registered fixtures at both seeds in the
+voice its author was given **and** in the round's place's own voice (or, where that is
+the author's, the voice on disk whose silhouette is least like it;
 `pipeline.check_voices`), and says whether the two read the same. This runs that over
 `types/*.py`.
 
@@ -115,8 +115,8 @@ def main() -> int:
     bad = [n for n, d in docs.items() if d["coupled"]]
     print(f"\n{len(names) - len(bad)} of {len(names)} types read the same in both voices"
           + (f"; coupled to a silhouette: {', '.join(sorted(bad))}" if bad else ""))
-    # B1's own answer, and the one this sweep exists for: which types are dirty, and at
-    # which of their own declared parameters. A type clean at the low end of every range
+    # The answer this sweep exists for: which types are dirty, and at which of their
+    # own declared parameters. A type clean at the low end of every range
     # and dirty three storeys up is a type the city finds out about.
     dirty = {n: _dirty(d) for n, d in docs.items() if _dirty(d)}
     print(f"{len(names) - len(dirty)} of {len(names)} types are clean at every set of "
@@ -130,7 +130,7 @@ def main() -> int:
 
 
 def _dirty(doc: dict) -> dict:
-    """The parameter sets a type is not clean at. B1."""
+    """The parameter sets a type is not clean at."""
     return {k: d for k, d in (doc.get("params") or {}).items()
             if d["errors"] or d["crashed"] or d.get("roofless")}
 

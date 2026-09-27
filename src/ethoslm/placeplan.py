@@ -2,8 +2,8 @@
 
 Each level is validated before the next is asked for, and a failing level goes back to
 its own planner once. The levels are then assembled into the one tree
-`pipeline.plan_parts` has read since A4, so nothing downstream knows or cares that the
-plan was made in four calls rather than one.
+`pipeline.plan_parts` reads, so nothing downstream knows or cares that the plan was made
+in four calls rather than one.
 
 The briefs are composed here rather than in `scripts/make_settlement_prompts.py` because
 that script bakes `settlement.STATE` in at import from `$ETHOSLM_SETTLEMENT` and says so in
@@ -21,7 +21,7 @@ from .buildlib import Builder
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 #: **The least a sector may be asked for to be a district at all.** The same number
-#: `placesolve.DISTRICT_MIN_STRUCTURES` has had since v2, C5, and for the same reason: a
+#: `placesolve.DISTRICT_MIN_STRUCTURES` holds, and for the same reason: a
 #: division of a place that holds houses holds more than one, and a sliver asked for a
 #: single house is held to a district's count and cover and can meet neither.
 DISTRICT_MIN_STRUCTURES = 2
@@ -176,12 +176,11 @@ def fabric_fit(w: int, d: int, density: str, role: str | None = None,
     return max(0, int(sum(per)))
 
 
-#: **What a density word means, as one band of lot cover.** The closure round, and the
-#: review's third finding in numbers: the compiler asked the rings town's upper quarter
-#: for at least 19.4% of its columns in lots (`DISTRICT_MIN_FRACTION` of the fabric's
-#: own plot share) while the checker called `sparse` at most 12% of a slightly different
-#: area. Two objectives about one word, and no number of retries reconciles them. So
-#: there is one statement. A density word is a **band** `[lo, hi]` of the metric
+#: **What a density word means, as one band of lot cover.** If the compiler and the
+#: checker each derive their own number for a word (a floor from the fabric's plot share
+#: on one side, a ceiling over a slightly different area on the other), the two can
+#: contradict, and no number of retries reconciles them. So there is one statement. A
+#: density word is a **band** `[lo, hi]` of the metric
 #: `lot_cover` -- the columns of a district's plot leaves over the columns it can
 #: develop (`developable_columns`) -- and both ends govern: the compiler's search lays
 #: no fewer lots than the floor asks and no more than the ceiling admits, and the
@@ -312,11 +311,11 @@ def ground_cover(density: str | None) -> float:
 def columns_per_structure_ceiling() -> dict:
     """The ceiling per density word, derived. See `COLUMNS_PER_STRUCTURE_CEILING`.
 
-        **From the density band's floor** (the closure round): the loosest a district of a
-        word may be is its fabric's lot over the band's `lo` -- a medium house on a 144
-        column lot at 15% cover is 960 columns of ground -- over `RING_COVERAGE`, the least
-        of an annulus its districts may cover. It was the fabric's own natural density over
-        the coverage, a number the band's definition of the word no longer targets.
+        **From the density band's floor**: the loosest a district of a word may be is its
+        fabric's lot over the band's `lo` -- a medium house on a 144 column lot at 15% cover
+        is 960 columns of ground -- over `RING_COVERAGE`, the least of an annulus its
+        districts may cover. Not the fabric's own natural density, which the band's
+        definition of the word does not target.
 
     """
     out = {}
@@ -331,8 +330,8 @@ def columns_per_structure_ceiling() -> dict:
 
 def wanted_footprint(spec: dict, decls: dict | None = None) -> int | None:
     """The site side the spec's rings **want**: `least_footprint` and, for a place of
-    the sentence's own count, the ground each ring needs at its density word (the
-    expression round). What the site search should ask for; the layout refuses below
+    the sentence's own count, the ground each ring needs at its density word. What the
+    site search should ask for; the layout refuses below
     `least_footprint` and lays what it is given above it."""
     return least_footprint(spec, decls, wanted=True)
 
@@ -341,10 +340,9 @@ def least_footprint(spec: dict, decls: dict | None = None, *,
                     wanted: bool = False) -> int | None:
     """The least site side the spec's defining parts need together, or None.
 
-        The closure round's transfer case: a town of twenty-four houses in two rings about a
-        temple compound was sized by its count at 240 columns, and the concentric arithmetic
-        refused the site -- the rings' least widths and the compound's plateau want more
-        ground than the count implies. The count sizes the houses; the parts size the place.
+        A place sized by its house count alone can be refused by the concentric arithmetic:
+        the rings' least widths and a compound's plateau can want more ground than the
+        count implies. The count sizes the houses; the parts size the place.
         This is the concentric layout's own arithmetic (`concentric_layout`, steps 1 and 2)
         asked before a site is chosen: the centre square the compound needs, every ring's
         least width from its insets and `RING_COVERAGE`, the outer wall's edge inset, and
@@ -469,7 +467,7 @@ def least_footprint(spec: dict, decls: dict | None = None, *,
     explicit = bool(spec.get("explicit_count"))
     if wanted:
         # **...and the width each ring of the sentence's count needs at its density
-        # word** (the expression round), the same rule `concentric_layout` draws it by:
+        # word**, the same rule `concentric_layout` draws it by:
         # a sparse ring of nine farmhouses wants more ground than its share of a count-
         # sized site gave it, and the site is what can give it. The least ground the
         # word admits (the top of its band), not the band's middle; bounded by the
@@ -524,8 +522,8 @@ COMPOUND_PLATEAU_SHARE = 0.75
 
 #: **Registered.** The least halls (plots) a compound of the **default** composition
 #: holds -- two, with a closed wall of its own, a gate on it and a court. A great thing
-#: is a composition; one hall inside a fence is a house with a garden. v2, C0: what a
-#: compound is made of is its **family's** row of `spec.COMPOSITIONS` -- a monument is
+#: is a composition; one hall inside a fence is a house with a garden. What a compound
+#: is made of is its **family's** row of `spec.COMPOSITIONS` -- a monument is
 #: one thing and its setting, a castle a keep inside its wall -- and this is the floor
 #: of the row a family not in that table gets, which is the palace's.
 COMPOUND_MIN_HALLS = spec_mod.COMPOSITION_DEFAULT["halls"]
@@ -550,7 +548,7 @@ COMPOUND_GATE_REACH = 8
 
 #: The roles a compound of the **default** composition admits over its own part's role:
 #: a walled compound has a wall and a gate whatever it is for, so the `defensive` types
-#: stand in it; `pipeline.UNIVERSAL_ROLES` still applies. v2, C0: each family's row of
+#: stand in it; `pipeline.UNIVERSAL_ROLES` still applies. Each family's row of
 #: `spec.COMPOSITIONS` says what it admits (`compound_composition`), and an unwalled
 #: precinct admits nothing over its own role.
 COMPOUND_ROLES = spec_mod.COMPOSITION_DEFAULT["admits"]
@@ -559,7 +557,7 @@ COMPOUND_ROLES = spec_mod.COMPOSITION_DEFAULT["admits"]
 def compound_composition(part: dict | None = None, *, spec: dict | None = None,
                          comp: dict | None = None) -> dict:
     """What this compound is made of, at the least: its family's row of
-        `spec.COMPOSITIONS`. v2, C0.
+        `spec.COMPOSITIONS`.
 
         Found from the defining part where the caller has it, else from the plan's compound
         rectangle (`comp`, by `_answers`), else from the spec's compound at the centre, else
@@ -1035,7 +1033,7 @@ def compound_ground(types: list | None = None, *, spec: dict | None = None,
         registered to hold and what the committed types are measured to need -- never a
         model's guess and never a place's name:
 
-          * the composition (its family's halls and courts, `spec.COMPOSITIONS`; v2, C0)
+          * the composition (its family's halls and courts, `spec.COMPOSITIONS`)
             laid out as squarely as it goes, every one of them at the largest plot the
             types admit, with the clearance the plan validator holds two plots to between
             them;
@@ -1064,11 +1062,10 @@ def compound_ground(types: list | None = None, *, spec: dict | None = None,
     # What a place's rings leave over is the centre's, and the thing four terraces rise
     # to should be that square and not the smallest one the committed types fit in.
     declared = centre_side(spec, site_side)
-    # **A place sized by its count is not sized by its shares** (the expression round).
-    # The centre share is what the rings' inferred shares leave over, and on a site
-    # chosen for twenty-four houses it made a temple compound of 103 columns a side -- a
-    # hundred houses' ground -- so the ring of fifteen dense houses about it was four
-    # times too long for its count. Where the sentence states the count, the compound
+    # **A place sized by its count is not sized by its shares.** The centre share is
+    # what the rings' inferred shares leave over, and on a site chosen for a stated count
+    # it can hand the compound a hundred houses' ground and leave the ring about it far
+    # too long for its count. Where the sentence states the count, the compound
     # stands at what its own composition, its wall and the place read's monumental
     # margin need, and the share is recorded as asked and not taken.
     explicit = bool((spec or {}).get("explicit_count"))
@@ -1448,10 +1445,10 @@ def _kind_ok(part: dict, d: dict, decls: dict) -> bool:
 
 
 def _district_part(spec: dict, district: dict) -> dict:
-    """The defining part a district answers, by its own `defines`, or a bare one. A1.
+    """The defining part that a district answers, by its own `defines`, or a bare one.
 
         A district says which ring it is; where it does not, it gets the place's own number,
-        which is `DENSITIES["medium"]` and is what every round before this one used.
+        which is `DENSITIES["medium"]`.
 
     """
     name = district.get("defines")
@@ -1463,7 +1460,7 @@ def _district_part(spec: dict, district: dict) -> dict:
 
 
 def _density_note(spec: dict) -> str:
-    """What each defining part's own density costs in ground. A1.
+    """What each defining part's own density costs in ground.
 
         The number above is the place's; this is the part's, and it is here because a spec
         that says one ring is dense and another is farmland has said something the planner
@@ -1486,7 +1483,7 @@ def _density_note(spec: dict) -> str:
 
 
 def _concentric_rules(spec: dict) -> str:
-    """The rules a place of rings is checked against, stated. A2.
+    """The rules a place of rings is checked against, stated.
 
         Silent where nothing is concentric. A rule that is checked and not stated is a plan
         handed back once for free, and this level is handed back at most once in total.
@@ -1615,10 +1612,10 @@ def district_ground(district: dict, vol, *, ring_level: int | None = None,
                     steps: int = DISTRICT_TERRACE_STEPS) -> dict:
     """**The level this district's ground is brought to, and what stands on it.**
 
-        The spatial design round's first connected decision: capacity, arrangement, proposed
-        earthworks and reachable entrances have to be one account of where construction can
-        stand, and until now there were three different numbers -- the rectangle's columns,
-        the columns a count was derived from, and the columns a building could be founded on.
+        Capacity, arrangement, proposed earthworks and reachable entrances have to be one
+        account of where construction can stand, not three different numbers -- the
+        rectangle's columns, the columns a count was derived from, and the columns a
+        building could be founded on.
 
         The level is chosen, not assumed: the ring's own terrace level and every level within
         `steps` terrace steps of it are measured by `feasible.terrain` over this district's
@@ -2329,23 +2326,20 @@ def developable_columns(district: dict, place: dict | None,
         arterial's band, less every standing part's rectangle with the clearance it keeps,
         **and less the ground construction cannot be founded on**.
 
-        The craft round, E1, found by a case. A district is asked for a cover, and the cover
-        was over the whole rectangle -- so a road cut corner to corner across one, a band of
-        558 columns, fragmented the grid, took a third of the rectangle out of it, and the
-        district was still held to covering 46% of the whole. A floor asked of ground nobody
-        may build on is a floor about somebody else's decision, and the district is the one
-        that gets handed back for it.
+        A district is asked for a cover, and a cover over the whole rectangle holds it to
+        ground nobody may build on: a road cut corner to corner across one can take a third
+        of the rectangle and fragment the grid while the district is still held to a share
+        of the whole. A floor asked of ground nobody may build on is a floor about somebody
+        else's decision, and the district is the one that gets handed back for it.
 
-        **...and the terrain, the spatial design round.** The same argument, and the review's
-        first remaining cause: this subtracted roads and standing parts and not water, not an
-        impossible grade and not the level the design proposes to bring the ground to. Every
-        count in the place is derived from this number (`_ask_for`, `count_band`,
-        `columns_per_plot`, the cover clauses), so a district whose rectangle runs onto ground
-        that cannot be prepared was promised houses that had nowhere to stand -- and the
-        denser fabric filled exactly that ground. Where the district carries a feasibility
-        record (`district_ground`, written by the layout) the ground it refuses leaves this
-        number; where it does not, the answer is what it always was and the record says the
-        terrain was not read.
+        **...and the terrain.** The same argument covers water, an impossible grade and the
+        level the design proposes to bring the ground to. Every count in the place is
+        derived from this number (`_ask_for`, `count_band`, `columns_per_plot`, the cover
+        clauses), so a district whose rectangle runs onto ground that cannot be prepared
+        would be promised houses that have nowhere to stand. Where the district carries a
+        feasibility record (`district_ground`, written by the layout) the ground it refuses
+        leaves this number; where it does not, only roads and standing parts are subtracted
+        and the record says the terrain was not read.
 
     """
     x0, x1 = min(district["x0"], district["x1"]), max(district["x0"], district["x1"])
@@ -2513,9 +2507,8 @@ def built_occupation(district: dict, parts_record: dict | None, *,
                      leaves: list | None = None) -> dict:
     """**What this district's ground actually holds**, against what was allocated to it.
 
-        The composition round's fourth change, and the review's words for why: "Density remains
-        primarily lot occupation... Enlarging empty lots or excluding unused ground cannot
-        establish density." `allocated_columns` is the lots the compiler drew;
+        Density is primarily lot occupation: enlarging empty lots or excluding unused
+        ground cannot establish it. `allocated_columns` is the lots the compiler drew;
         `built_columns` is the extent construction reported standing on them
         (`emitted.footprint`). `from` names which record was read, and where there is no
         record it says `unavailable` and every figure is None -- an unmeasured district reports
@@ -2900,7 +2893,7 @@ def _cover_note(district: dict, role: str | None, part: dict | None = None,
 
 
 def _role_note(role: str | None) -> str:
-    """What this district is for, said in the brief and not only enforced after it. A2."""
+    """What this district is for, said in the brief and not only enforced after it."""
     if not role:
         return ""
     return (f"**This is a {role} district**, and the table below is the types that "
@@ -2911,7 +2904,7 @@ def _role_note(role: str | None) -> str:
 
 
 def _arterial_note(place: dict, district: dict) -> str:
-    """Where the road already runs through this district, **column by column**. A4.
+    """Where the road already runs through this district, **column by column**.
 
         Run-length encoded by row, because 909 columns written out one pair at a time is a
         brief nobody reads and a box is a brief nobody can obey.
@@ -3024,7 +3017,7 @@ def _compound_note(spec: dict, plateau: dict | None = None) -> str:
 def place_failures(place: dict, spec: dict, site: dict, decls: dict,
                    ground: dict | None = None, *, voice=None,
                    plateau: dict | None = None) -> list:
-    """Everything wrong with a place-level plan, named. A5, and A6's other half.
+    """Everything wrong with a place-level plan, named.
 
         `plateau` is `stage_plateau`'s record -- `part`, `rect`, `y` -- where ground was
         levelled for a defining part, and the compound answering that part is held to it.
@@ -3209,16 +3202,15 @@ def place_failures(place: dict, spec: dict, site: dict, decls: dict,
         want = int(d.get("structures") or 0)
         room = (x1 - x0 + 1) * (z1 - z0 + 1) * DISTRICT_FILL
         # **The density the spec gave this district, and not one number for all of
-        # them.** A1: the brief quotes a per-ring figure -- 287 columns for the dense
-        # ring, 818 for the farmland -- and this check quoted the flat 225. Two derived
-        # numbers about the same thing, disagreeing.
+        # them.** The brief quotes a per-ring figure (a dense ring costs far fewer
+        # columns a structure than farmland), and a flat figure here would be a second
+        # derived number about the same thing, disagreeing with it.
         per = spec_mod.columns_per_plot(_district_part(spec, d))
-        # **The estimate proposes and the compiler certifies** (the closure round). This
-        # area rule refused a district the arrangement had just laid twenty houses in
-        # (3,920 columns wanted by the estimate, 3,870 offered), because the two were
-        # different rules about one rectangle. Before a refusal on the estimate, the
-        # construction logic is asked: a district whose own character compiles to the
-        # count is not refused for an arithmetic it has already beaten.
+        # **The estimate proposes and the compiler certifies.** This area rule and the
+        # arrangement are different rules about one rectangle, and the estimate can fall
+        # just short of a count the arrangement has already laid. Before a refusal on the
+        # estimate, the construction logic is asked: a district whose own character
+        # compiles to the count is not refused for an arithmetic it has already beaten.
         if want and want * per > room:
             part_d = _district_part(spec, d)
             held = 0
@@ -3258,13 +3250,13 @@ def place_failures(place: dict, spec: dict, site: dict, decls: dict,
                 # does not.
                 fail(an, "overlap", f"{an} and {bn} overlap", other=bn)
 
-    # 3b. **the rings nest, and the centre is inside the innermost.** A2, at plan time
+    # 3b. **the rings nest, and the centre is inside the innermost**, at plan time
     # rather than only in the place read. The read at the end asks five questions and
     # three of them are about what stood; these two are about geometry alone and can be
     # answered now.
     out += concentric_failures(place, spec, decls)
 
-    # 4. the roads between the districts, where they have been routed. A4.
+    # 4. the roads between the districts, where they have been routed.
     if len(districts) > 1 and place.get("arterials"):
         out += arterial_failures(place, place["arterials"], decls)
 
@@ -3294,7 +3286,7 @@ def compound_rects(place: dict) -> dict:
 
 
 def concentric_failures(place: dict, spec: dict, decls: dict) -> list:
-    """Everything wrong with a plan of rings, named, before anything is sited. A2.
+    """Everything wrong with a plan of rings, named, before anything is sited.
 
         Three of the place read's five clauses are about geometry the plan already has --
         nesting, a gate per ring, and what is at the centre -- so they are asked here too.
@@ -3358,13 +3350,11 @@ def concentric_failures(place: dict, spec: dict, decls: dict) -> list:
     return out
 
 
-# ------------------------------------------------------------------ arterials A4.
-# Between the place level and the district level there was nothing. Each district was
-# handed a rectangle and asked for the plots in it; the circulation pass then routed
-# lanes between every plot in the whole place at once, with no road drawn first -- so
-# what joined one district to the next was whatever the router happened to lay through
-# the gaps, and the gate had no road leading to it until after everything else existed.
-# An **arterial** is the road between the districts and the gates, and it is planned
+# ------------------------------------------------------------------ arterials
+# Without a road drawn first, what joins one district to the next is whatever the lane
+# router happens to lay through the gaps, and the gate has no road leading to it until
+# after everything else exists. An **arterial** is the road between the districts and
+# the gates, and it is planned
 # before a district is. It is deterministic and costs no model call: the nodes are the
 # gates and the district centres, the routing is the same one the lanes get, and the
 # only thing this level knows that the district level cannot is where the other
@@ -3409,9 +3399,9 @@ def arterial_nodes(place: dict, decls: dict) -> list:
         acc = d.get("access") if d.get("sector") else None
         edge = section_street_node(d, (place.get("layout") or {}).get("centre"))
         if edge is not None:
-            # the ring's section lays its principal street along the strip's inner edge
-            # (the city attempt round): the arterial is joined there, so the ring street
-            # runs where the section's frontage faces it
+            # the ring's section lays its principal street along the strip's inner edge:
+            # the arterial is joined there, so the ring street runs where the section's
+            # frontage faces it
             out.append({"id": d["name"], "kind": "district", "x0": edge[0],
                         "z0": edge[1], "x1": edge[2], "z1": edge[3]})
             continue
@@ -3427,12 +3417,11 @@ def arterial_nodes(place: dict, decls: dict) -> list:
     # gate will be, and the compound's own call is told where that is. Its whole
     # rectangle is the node, so the router chooses the side, and `plan_arterials` keeps
     # the road out of the inside. **...and the compound at the centre of a concentric
-    # place is joined on its axis** (the city attempt round): the ring gates stand on
-    # one axis through the centre and the road runs up it, but a node the size of the
-    # whole compound let the tree join the palace from whichever side was cheapest --
-    # the west, in the first plan -- so its gate, which goes where the road arrives,
-    # turned its back on the approach the city's gates line up. Its node is the middle
-    # of its side facing the gates.
+    # place is joined on its axis**: the ring gates stand on one axis through the
+    # centre and the road runs up it, but a node the size of the whole compound lets the
+    # tree join it from whichever side is cheapest, so its gate, which goes where the
+    # road arrives, can turn its back on the approach the gates line up. Its node is the
+    # middle of its side facing the gates.
     lay = place.get("layout") or {}
     axis = lay.get("axis_side") if lay.get("policy") == "concentric" else None
     for name, (x0, z0, x1, z1) in compound_rects(place).items():
@@ -3567,7 +3556,7 @@ def arterial_record(net, nodes, place: dict) -> dict:
 
 
 def arterial_failures(place: dict, arterials: dict, decls: dict) -> list:
-    """Everything wrong with the roads between the districts. A4.
+    """Everything wrong with the roads between the districts.
 
         Three things, and each is a way a place stops being one place: a district the road
         does not reach, a road through somebody's building, and a road through a wall
@@ -3632,9 +3621,8 @@ def _edge_cells(edge: dict) -> list:
         if a[0] != b[0] and a[1] != b[1]:
             if abs(b[0] - a[0]) != abs(b[1] - a[1]):
                 continue
-            # a diagonal run's band is the siting's own (`Builder.edge_band`, solid
-            # since the design synthesis round), so the plan's cells and the sited ones
-            # agree
+            # a diagonal run's band is the siting's own (`Builder.edge_band`, solid),
+            # so the plan's cells and the sited ones agree
             from .buildlib import Builder
             out.extend(Builder.edge_band(a, b, int(edge.get("width", 1) or 1)))
             continue
@@ -3689,7 +3677,7 @@ def occupancy_failures(district: dict, plots: list, part: dict,
     # into one corner of it", and a district holding every house its ground fits,
     # evenly, is not in one corner. It is short of cover because the fabric it was given
     # does not fill it, which is a capacity finding for the layout owner and is raised
-    # as one. A refusal here would stop the round with a reason that is not the reason.
+    # as one. A refusal here would stop the run with a reason that is not the reason.
     limited = district.get("cover_limited")
     if cols < t["min_plot_columns"] and not limited:
         out.append({"part": district["name"], "type": None, "kind": "district",
@@ -3702,9 +3690,8 @@ def occupancy_failures(district: dict, plots: list, part: dict,
                     "covered": cols, "columns": t["columns"],
                     "floor": t["min_plot_columns"]})
     # **And the ceiling.** A density word is a band, and a sparse quarter laid as
-    # densely as a town's is refused for it by name -- the review's rings case, where
-    # the upper quarter came out at 22% against the 12% its word allows and nothing at
-    # the district refused it. Over the ceiling is never a capacity fact, so
+    # densely as a town's is refused for it by name, here at the district and not left
+    # for a later read to find. Over the ceiling is never a capacity fact, so
     # `cover_limited` does not excuse it.
     if cols > t.get("max_plot_columns", cols):
         out.append({"part": district["name"], "type": None, "kind": "district",
@@ -3715,13 +3702,9 @@ def occupancy_failures(district: dict, plots: list, part: dict,
                            f"{t['usable_columns']} it can develop "
                            # **a band with no top is not a number.** `density_target.hi`
                            # is None for a density word whose band the registry leaves
-                           # open at the top, and this line formatted it
-                           # unconditionally: the moment a district of such a word came
-                           # over its ceiling the refusal itself raised `TypeError` and
-                           # took the run with it. Found by a district that went over
-                           # for the first time when the ceiling started being a share
-                           # of *developable* ground. A refusal that cannot be written
-                           # is not a refusal.
+                           # open at the top, and formatting it unconditionally would
+                           # raise `TypeError` inside the refusal and take the run with
+                           # it. A refusal that cannot be written is not a refusal.
                            + (f"({t['density_target']['hi']:.0%})"
                               if (t.get("density_target") or {}).get("hi") is not None
                               else "(the share its word allows)")
@@ -3729,8 +3712,7 @@ def occupancy_failures(district: dict, plots: list, part: dict,
                     "covered": cols, "columns": t["columns"],
                     "ceiling": t["max_plot_columns"]})
     # **What the plots do not cover, the areas do.** A rural district has its own rule
-    # for this and it is `RURAL_COVER`, registered a round earlier and unmoved; this is
-    # every other district, where until now there was nothing to fill the ground with.
+    # for this and it is `RURAL_COVER`; this is every other district.
     if role != "rural":
         ground = cols
         for p in plots:
@@ -3741,16 +3723,13 @@ def occupancy_failures(district: dict, plots: list, part: dict,
             d = min(r[3], z1) - max(r[1], z0) + 1
             ground += max(0, w) * max(0, d)
         # **...and a district at the capacity of its own ground is not refused for it.**
-        # The spatial design round, and it is exactly the argument `cover` above makes,
-        # applied to the clause below it. `cover_limited` says the compiler laid every
-        # house this rectangle fits, evenly; once `developable_columns` is the ground a
-        # building can be founded on, that district's *areas* are short for the same
-        # reason its plots are -- there is less ground. Measured on
-        # `middle_ring_south_west`: 11,400 columns of rectangle, 1,772 it can develop,
-        # 1,016 of plots and areas drawn against a floor of 1,063 -- short by 47
-        # columns, on a hillside, with no character anyone could write that would find
-        # them. The refusal stops the run with a reason that is not the reason, which is
-        # the sentence the clause above already carries.
+        # It is exactly the argument `cover` above makes, applied to the clause below it.
+        # `cover_limited` says the compiler laid every house this rectangle fits, evenly;
+        # since `developable_columns` is the ground a building can be founded on, that
+        # district's *areas* are short for the same reason its plots are -- there is
+        # less ground, and on a hillside no character anyone could write would find the
+        # missing columns. The refusal would stop the run with a reason that is not the
+        # reason, which is the sentence the clause above already carries.
         if ground < t["min_ground_columns"] and not limited:
             out.append({"part": district["name"], "type": None, "kind": "district",
                         "check": "ground_cover",
@@ -3954,7 +3933,7 @@ def district_failures(district: dict, got: dict, place: dict, decls: dict,
                         "check": "district",
                         "why": f"this plot is at x {r[0]}..{r[2]}, z {r[1]}..{r[3]} and "
                                f"your district is x {x0}..{x1}, z {z0}..{z1}"})
-    # A4: nothing this district draws stands on the road that was routed to it.
+    # Nothing this district draws stands on the road that was routed to it.
     art = {(int(x), int(z)) for x, z in ((place.get("arterials") or {})
                                          .get("cells") or [])}
     if art:
@@ -3971,9 +3950,9 @@ def district_failures(district: dict, got: dict, place: dict, decls: dict,
     # Its farms and fields together cover at least `RURAL_COVER` of its rectangle, said
     # in the brief in the same columns and refused here by name. Counted as the leaves'
     # own rectangles, clipped to the district, so a field drawn over the edge is not
-    # credit. **Keyed on the land use and not on `role`.** The review's fourth finding:
-    # this read `role == "rural"`, so a fishing village -- rural, and not a farm -- was
-    # refused for not covering 60% of its ground in fields it was never asked for. A
+    # credit. **Keyed on the land use and not on `role`**: keyed on `role == "rural"`,
+    # a fishing village -- rural, and not a farm -- would be refused for not covering
+    # 60% of its ground in fields it was never asked for. A
     # role says what the buildings are for; what lies between them is `spec.land_use`,
     # which a spec may declare and which is derived from the part's own prose otherwise.
     if spec_mod.land_use(part) == "farmland" and plots:
@@ -3997,12 +3976,11 @@ def district_failures(district: dict, got: dict, place: dict, decls: dict,
                                f"{int(math.ceil(RURAL_COVER * area))} columns are drawn",
                         "covered": covered, "columns": int(area),
                         "share": round(share, 3)})
-    # **A leaf standing on ground this design cannot prepare.** The spatial design
-    # round, and it is the clause `arrange.certificate_for`'s `ground=None` could never
-    # ask: the validator's existing ground check reads `plan_ground`'s classification of
-    # a *part's* terrain and answers `any` for every house in the library, so nothing
-    # between the layout and construction ever asked whether a lot had ground under it.
-    # The district carries its own feasibility record now (`district_ground`) and this
+    # **A leaf standing on ground this design cannot prepare.** It is the clause
+    # `arrange.certificate_for`'s `ground=None` cannot ask: the validator's other ground
+    # check reads `plan_ground`'s classification of a *part's* terrain and answers `any`
+    # for every house in the library, so it never asks whether a lot has ground under
+    # it. The district carries its own feasibility record (`district_ground`) and this
     # is where a plan is refused for ignoring it. Named per leaf, with the clause that
     # refused the ground, so the compiler is told which lots to move rather than that
     # the district is wrong. **...and it is asked only once the compiler can answer
@@ -4111,14 +4089,13 @@ def district_plots(got: dict, role: str | None = None,
 
         `role` is what the district is **for**, off the defining part it was drawn for, and
         it is stamped on every leaf so `pipeline.plan_failures` can put it beside the type's
-        own `ROLE` without having to work out which district a leaf came from. A2.
+        own `ROLE` without having to work out which district a leaf came from.
 
         **The leaf's own kind, not `plot` for everything.** A district of farmland is fields
         and a field is an `area`: it is a rectangle of worked ground at one level, with no
-        door and no rooms, and the type that builds one says so. This forced every leaf to
-        `plot`, so a district that named `field` -- which is exactly what the agrarian ring's
-        brief asks for -- had every one of its leaves refused by name for building the wrong
-        kind of thing. The planner was right and the driver was not.
+        door and no rooms, and the type that builds one says so. Forcing every leaf to
+        `plot` would refuse every leaf of a district that named `field` -- exactly what an
+        agrarian ring's brief asks for -- for building the wrong kind of thing.
 
         A leaf still defaults to `plot`, because that is what almost every one of them is.
 
@@ -4254,8 +4231,8 @@ def compound_types(types, spec: dict, part: dict) -> tuple:
 
 
 def _composition_bullets(t: dict) -> tuple:
-    """The brief's lines for what this compound is made of -- its family's composition
-    (v2, C0): (what it is drawing, the bullets, what "inside" is)."""
+    """The brief's lines for what this compound is made of -- its family's composition:
+    (what it is drawing, the bullets, what "inside" is)."""
     walled, gated = t["walled"], t["gated"]
     halls, floor, courts = t["count"], t["min_count"], t["courts"]
     inside = "the wall" if walled else "the rectangle's margin"
@@ -4418,7 +4395,7 @@ def compound_parts(got: dict, part: dict | None, name: str,
             row["defines"] = part["name"]
             if part.get("role"):
                 row["role"] = part["role"]
-            # v2, C0: what this compound admits over its own role is its family's
+            # What this compound admits over its own role is its family's
             # (`spec.COMPOSITIONS`), and the validator reads it off the leaf.
             row["admits"] = list(admits)
         out.append(row)
@@ -4429,7 +4406,7 @@ def compound_target(comp: dict, spec: dict | None = None) -> dict:
     """What one compound is asked to hold: halls, courts and gardens, from its rectangle."""
     x0, x1 = min(comp["x0"], comp["x1"]), max(comp["x0"], comp["x1"])
     z0, z1 = min(comp["z0"], comp["z1"]), max(comp["z0"], comp["z1"])
-    # v2, C0: the floor, the wall and the margin are the family's.
+    # The floor, the wall and the margin are the family's.
     made_of = compound_composition(spec=spec, comp=comp)
     floor = int(made_of["halls"])
     margin = int(made_of["margin"])
@@ -4457,8 +4434,8 @@ def compound_failures(comp: dict, got: dict, place: dict, decls: dict,
         `pipeline.plan_failures` over its parts -- type, form, role, footprint, ground,
         overlap -- plus what only this level knows: a part outside its own rectangle, no
         closed wall of its own, no gate on it, a gate away from where the road arrives, a
-        hall outside the wall, and too few parts to be a compound at all. v2, C0: which of
-        those apply is the **family's composition** (`compound_composition`): a monument
+        hall outside the wall, and too few parts to be a compound at all. Which of those
+        apply is the **family's composition** (`compound_composition`): a monument
         asks no wall and no gate of itself, a castle one keep inside its wall, a palace two
         halls; a wall drawn where none is asked is still held closed and inset, and a gate
         drawn is held to stand on a wall.
@@ -4672,7 +4649,7 @@ def assemble(place: dict, districts: dict, spec: dict,
                              "notes": c.get("notes", ""), "children": kids})
     for d in (place.get("districts") or []):
         got = districts.get(d["name"]) or {}
-        # A2: and the district's role with it, for the same reason -- a leaf checked at
+        # ...and the district's role with it, for the same reason -- a leaf checked at
         # the district level against what its district is for has to carry that into the
         # assembled plan, or the whole-plan check asks a weaker question than the level
         # below it did. `district_plots` stamps it there; this is the other copy and the
@@ -4815,16 +4792,15 @@ def terrace_levels(median: int, n: int, step: int = TERRACE_STEP,
 def terrace_ranks(rings: list) -> tuple:
     """**Radial order, social rank and terrain elevation are three things.**
 
-        The expression round's hill town: the programme read `lower`/`upper` as names for
-        ring 0 and ring 1, terraced the rings down from the centre as every concentric place
-        is terraced, and stood the *dense lower ring* four blocks **above** the sparse upper
-        ring. `lower` and `upper` are not names. They are statements about height, and where
-        a place's ring parts carry them the terraces are ordered by the words rather than by
-        the radius.
+        Reading `lower`/`upper` as names for ring 0 and ring 1 and terracing the rings down
+        from the centre, as every concentric place is terraced, stands a hill town's *dense
+        lower ring* **above** its sparse upper ring. `lower` and `upper` are not names.
+        They are statements about height, and where a place's ring parts carry them the
+        terraces are ordered by the words rather than by the radius.
 
         Returns `(ranks, why)` -- the elevation rank of each ring, 0 for the lowest, and the
         sentence that says where the order came from. `(None, why)` where no ring carries an
-        elevation word, which leaves every existing place exactly as it was.
+        elevation word, which leaves the default radial order.
 
     """
     from .placeread import RING_WORDS
@@ -5510,16 +5486,15 @@ def probe_key(r: dict, rect, count: int, arrangement: dict, spec: dict | None, *
               certified: bool = True) -> tuple:
     """**Everything the probe body reads, in the key that answers for it.**
 
-        The review's named omission, and the composition round's third change. The key was
-        `(width, depth, count, arrangement items, region name)` and the probe body also reads
+        Besides `(width, depth, count, arrangement items, region name)` the probe body reads
         the ring's resolved **demand** (`r["demand"]` -- the approved type pool, the required
         features and the requirement ids), its approved **fabric types**, its form, role and
         density, the **seed** it is laid under, the **ceiling** the compiler is asked with and
-        the **exact** flag. Two rings differing in nothing but their resolved demand shared one
-        answer, so a capability revision could not move a capacity figure, and a stale
-        certificate was indistinguishable from a fresh one.
+        the **exact** flag. Leave any of them out and two rings differing in nothing but, say,
+        their resolved demand share one answer, so a capability revision cannot move a
+        capacity figure and a stale certificate is indistinguishable from a fresh one.
 
-        Every one of them is in the key now, digested deterministically (`_digest`) so that a
+        Every one of them is in the key, digested deterministically (`_digest`) so that a
         nested structure is identity and not a `repr` that happens to sort.
 
         `certified` is in the key for the same reason as the rest: two callers ask this cache
@@ -5527,7 +5502,7 @@ def probe_key(r: dict, rect, count: int, arrangement: dict, spec: dict | None, *
         (`_arrange_capacity` asks for a count, `negotiate_ring` offers an alternative for
         selection). Sharing one entry would let an uncertified probe answer a certified
         question -- an alternative with no verdict reads as an alternative with no failures,
-        which is the whole false pass A4 is about.
+        which is a false pass.
 
     """
     return (int(rect[2]) - int(rect[0]) + 1, int(rect[3]) - int(rect[1]) + 1,
@@ -5720,9 +5695,9 @@ def negotiate_ring(r: dict, *, cx: int, cz: int, inner: float, i_in: int, i_out:
             got = _RING_PROBE_CACHE.get(key)
             if got is None:
                 # **The alternative is certified by the validator that will judge it.**
-                # A4, and the review's words: "a compiler return need not pass the
-                # district validator". `capacity_of` now runs `district_failures` on the
-                # result it compiled and carries the verdict, so an alternative offered
+                # A compiler return need not pass the district validator, so
+                # `capacity_of` runs `district_failures` on the result it compiled and
+                # carries the verdict, and an alternative offered
                 # for selection is one the validator would accept -- and one it would
                 # refuse is recorded with the refusal and taken out of the running.
                 res = _arrange.capacity_of(d, r, place_of(bare, rc), mine or decls,
@@ -5755,7 +5730,7 @@ def negotiate_ring(r: dict, *, cx: int, cz: int, inner: float, i_in: int, i_out:
                                        for f in (got[3] if len(got) > 3 else [])],
                            "failures": (got[7] if len(got) > 7 else [])})
         row.update(capacity=int(held), allocated_columns=int(allocated),
-                   # **the lots drawn and the mass they admit, side by side.** A5: a
+                   # **the lots drawn and the mass they admit, side by side.** A
                    # cover figure improved only by enlarging empty lots moves the first
                    # and leaves the second where it was, so selection is recorded
                    # against both and the reader can see which moved.
@@ -5850,7 +5825,7 @@ def ring_section_demand(r: dict, spec: dict | None = None, *,
     """**What a ring's neighbourhood needs across each strip**, or None where its
         fabric is not composed from its streets or its dwelling publishes no form plan.
 
-        The city attempt round. The same form plans the compiler asks (`parentdemand.forms`
+        The same form plans the compiler asks (`parentdemand.forms`
         over the ring's own character and the lead dwelling of its resolved demand), turned
         into the least district depth at which a strip holds a whole section
         (`parentdemand.ring_section`). `allocation.sections[ring]` may pin the street's
@@ -6018,8 +5993,7 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
     if comp_rect is None and core is not None:
         # No plateau: the centre square is the centre's share, at least what a compound
         # needs where the centre is one, at most the site. **A place sized by its count
-        # takes the compound's own need and not the share** (the expression round; see
-        # `compound_ground`).
+        # takes the compound's own need and not the share** (see `compound_ground`).
         want = 0 if explicit_count else centre_side
         if spec_mod.compound(core):
             want = max(want, int(compound_ground(spec=spec, site_side=S)["side"]))
@@ -6040,7 +6014,7 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
     # **The capability record's approved wall goes first.** The ring wall is chosen by
     # the height the ring needs (`_wall_for`), and matching chooses by kind, form, role,
     # envelope and -- where the rings are round -- whether the type draws a diagonal
-    # run. Two rules, and the round's own report recorded them disagreeing. Putting the
+    # run. Two rules, and they can disagree. Putting the
     # approved type at the head of the list makes matching's answer win wherever it can
     # build the height, and leaves the height rule as the thing that overrides it, with
     # the disagreement visible to `capability.agreements` rather than silent.
@@ -6053,8 +6027,8 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         return None, fails
     h_last = S // 2 - edge_inset
     n = len(rings)
-    # **The wall at each walled boundary, by what kind of wall the request makes it**
-    # (the expression round). The outermost is `great` only where the spec's words of it
+    # **The wall at each walled boundary, by what kind of wall the request makes it.**
+    # The outermost is `great` only where the spec's words of it
     # or the sourced claims say so, and then it stands `GREAT_OVER` times the tallest
     # other ring wall out of the tallest type; every other walled ring is a town wall
     # over the storeys of its fabric, stepping down inward by `WALL_STEP` from the
@@ -6094,13 +6068,13 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                     src = src0 + [f"the top of `{tallest[0]}`'s band, {outer_h}"]
                 else:
                     # **a ring wall is sized by the fabric it divides, not by the great
-                    # wall** (the city attempt round): stepped down from a 48-high great
-                    # wall by three quarters a ring, the walls between the classes stood
-                    # 36, 27 and 20 over houses of one and two storeys, and from the air
-                    # the city read as walls with a little fabric between them. The
-                    # innermost stands a town wall over its fabric's storeys; each ring
-                    # wall outward one `RING_WALL_RISE` higher; none reaches the great
-                    # wall, which stays the singular monument the sources lead with.
+                    # wall**: stepped down from a tall great wall by a fixed ratio a
+                    # ring, the walls between the classes tower over houses of one and
+                    # two storeys, and from the air the city reads as walls with a little
+                    # fabric between them. The innermost stands a town wall over its
+                    # fabric's storeys; each ring wall outward one `RING_WALL_RISE`
+                    # higher; none reaches the great wall, which stays the singular
+                    # monument the sources lead with.
                     th, tsrc = wall_height_for("town", spec, by_height[-1][1],
                                                storeys=_fabric_storeys(spec))
                     want = int(th) + RING_WALL_RISE * (len(walled) - 1 - step)
@@ -6121,11 +6095,10 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
             heights[r["name"]] = got
             hierarchy[r["name"]] = {"kind": "town", "height": int(got[2]),
                                     "from": ksrc + town_src}
-    # **The mass each ring wall actually carries, before the ground is budgeted.** The
-    # architecture audit's capacity finding, and the craft run's: the layout budgeted
-    # every wall at width 3 (`_wall_inset(d, 3)`) and then drew ramparts of nine, so
-    # four columns either side of every ring wall were promised to a district and taken
-    # by the wall. A capacity the compiler cannot realise is not a capacity, and the one
+    # **The mass each ring wall actually carries, before the ground is budgeted.** A
+    # layout that budgets every wall at a fixed width and then draws wider ramparts
+    # promises columns either side of every ring wall to a district that the wall then
+    # takes. A capacity the compiler cannot realise is not a capacity, and the one
     # number both sides have to read is this one.
     wall_part = next((p for p in spec["defining_parts"]
                       if p["family"] == "wall" and p["relation"] == "concentric"),
@@ -6140,7 +6113,7 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         masses[r["name"]] = (wall_width_for(wall_part, spec, d)
                              if wall_part is not None else WALL_MASSES["screen"])
         # ...and only the great wall carries the rampart's mass: a ring wall is a
-        # curtain between quarters (the city attempt round)
+        # curtain between quarters
         if (hierarchy.get(r["name"]) or {}).get("kind") == "ring":
             masses[r["name"]] = min(masses[r["name"]], WALL_MASSES["curtain"])
     insets = []
@@ -6180,8 +6153,8 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         prev = max(prev, t)
         widths.append(w)
     widths = [max(w, float(m)) for w, m in zip(widths, mins)]
-    # **A ring's width from its count at its density word** (the expression round). The
-    # shares are the spec's inference about the whole; a ring whose count the sentence
+    # **A ring's width from its count at its density word.** The shares are the spec's
+    # inference about the whole; a ring whose count the sentence
     # states (or the spec declares) is sized by the one rule the relation solver sizes a
     # strip by (`placesolve.land_need`): the columns `n` houses need at the middle of
     # the word's band, over the developable perimeter of the ring at its inner edge --
@@ -6202,22 +6175,21 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         rec["counted"] = counted
         rec["share_width"] = round(widths[k], 1)
         i_in, i_out = insets[k]
-        # by the controller's own action or by a round file -- was silently ignored. The
-        # composition round's certified 6x6 for the crowded ring is the case: written to
-        # `allocation.arrangement`, never read, and the ring rebuilt at 69 lots of 6x8.
-        # The **width negotiation stays where it was**, and deliberately. A ring's width
-        # is derived from its count, so it is a decision only a counted ring can take.
-        # An inferred ring adopts the arrangement, keeps its width and its
+        # **An arrangement adopted for this ring is read**, whether the controller chose
+        # it or an allocation file wrote it to `allocation.arrangement`; otherwise the
+        # ring is rebuilt at its default lots and the adopted one is lost. The **width
+        # negotiation** stays with counted rings, deliberately: a ring's width is
+        # derived from its count, so it is a decision only a counted ring can take. An
+        # inferred ring adopts the arrangement, keeps its width and its
         # `district_depth`, and the record says so. **The ring's width from its complete
-        # neighbourhood, counted or not** (the city attempt round). A ring whose fabric
+        # neighbourhood, counted or not.** A ring whose fabric
         # is composed from its streets and whose dwelling publishes a form plan owes
         # each strip a whole section: the principal street's frontage and a residential
         # lane of courtyard houses facing each other behind it
         # (`parentdemand.ring_section`). That depth is the least this ring may be, and
         # it is a parent decision: the rings with slack give it up below, and a site
-        # with no slack refuses by name. It replaces the old restriction that only a
-        # sentence's count could renegotiate a width -- a restriction from a local
-        # rebuild, when moving a district rectangle was forbidden.
+        # with no slack refuses by name. So any ring's width may grow for its section,
+        # not only one whose count the sentence states.
         sec = ring_section_demand(r, spec, allocation=allocation)
         if sec is not None:
             ch_sec = sec["chosen"]
@@ -6244,11 +6216,11 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
             w_need = rec["columns"] / max(8.0 * a, 1.0) + i_in + i_out
             over = ((allocation or {}).get("rings") or {}).get(r["name"]) or {}
             rec["width_need"] = round(w_need, 1)
-            # **The ring's width and its fabric's arrangement are one decision.** The
-            # least width was `dmin` -- a constant district depth of 28 -- plus the
-            # insets, whatever the houses standing in the ring were; that is what made a
-            # ring whose count needed 22 stand at 37, with the difference laid as open
-            # ground and then dropped from the density it was measured by. The
+            # **The ring's width and its fabric's arrangement are one decision.** A least
+            # width of `dmin` -- a constant district depth -- plus the insets, whatever
+            # the houses standing in the ring, lays a ring wider than its count needs,
+            # with the difference laid as open ground and then dropped from the density
+            # it was measured by. The
             # alternatives are enumerated and the **actual compiler** is asked what each
             # holds (`negotiate_ring`); the exact count is invariant under it.
             neg = None
@@ -6431,7 +6403,7 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                                else _square_path(cx, cz, hs[k], max_run)),
                       **({"shape": "octagon"} if octagon else {}),
                       "width": mass, "mass": mass_word,
-                      # **A ring's wall is in its ring's palette**, the craft round: a
+                      # **A ring's wall is in its ring's palette**: a
                       # place whose rings differ in colour differs in colour at its
                       # walls too, and a wall left in the place's own voice is the one
                       # thing in a ring that is not the ring's. ...unless the spec's
@@ -6446,7 +6418,7 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                          if isinstance((wall_part or {}).get("voice"), str) else {}),
                       "defines": (wall_part or {}).get("name"),
                       "ring": int(r["ring"]),
-                      # **what kind of wall this is, and why** (the expression round)
+                      # **what kind of wall this is, and why**
                       "hierarchy": {**(hierarchy.get(r["name"]) or {}),
                                     "rank": len([x for x in rings[k + 1:]
                                                  if x.get("walled")]),
@@ -6456,9 +6428,9 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                       **({"level": levels[k]} if levels[k] is not None else {}),
                       # ...and the face the spec's words chose, for a type that reads it
                       # off the part rather than a parameter (`wall`), and with it how
-                      # often that face carries a way down: the craft round (E6) gives
-                      # `wall` the `stairs` word `great_wall` has had, so a low ring
-                      # wall of an unbroken place stops zigzagging.
+                      # often that face carries a way down: `wall` reads the same
+                      # `stairs` word `great_wall` does, so a low ring wall of an
+                      # unbroken place does not zigzag.
                       **({"face": face_word} if face_word else {}),
                       **({"stairs": wall_stairs_for(wall_part, spec)}
                          if wall_part is not None else {}),
@@ -6479,9 +6451,9 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                       "params": _top_params(gate_decl[1]), "at": [gx, gz],
                       "facing": _FACING[side], "defines": (gate_part or {}).get("name"),
                       "ring": int(r["ring"]),
-                      # **A gate stands in its wall's voice** (the expression round):
-                      # the closure town's gate fell back to the place's temple voice
-                      # inside a ring that was not, because nothing wrote one on it.
+                      # **A gate stands in its wall's voice**: with none written on
+                      # it, a gate falls back to the place's voice (a temple's, say)
+                      # inside a ring that is not in it.
                       "voice": r.get("voice") or place_voice,
                       "voice_from": "ring" if r.get("voice") else "place",
                       "notes": f"the one way through {wname}, on the {side} side, on "
@@ -6506,14 +6478,11 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         rec = ring_needs.get(r["name"]) or {}
         rdmin = int(rec.get("district_depth") or dmin)
         arrangement = dict(rec.get("arrangement") or {})
-        # **The ring's ground is a region, and the districts are how it is tiled.** The
-        # architecture audit: an octagonal place had round walls and square districts,
-        # so the ground between the chamfer and the strips belonged to nobody and the
-        # lower ring covered 54.5% of its own annulus against a 60% bar. A square ring
-        # is still cut into the four strips it has always been cut into -- every
-        # registered number about a square place is unmoved, by construction, because
-        # that is literally the same arithmetic moved into `regions.ring_sectors` -- and
-        # a **round** ring is tiled against its actual mask, corners and all.
+        # **The ring's ground is a region, and the districts are how it is tiled.**
+        # Square districts under an octagonal wall leave the ground between the chamfer
+        # and the strips to nobody, and the ring falls short of its coverage bar. A
+        # square ring is cut into four strips (`regions.ring_sectors`), and a **round**
+        # ring is tiled against its actual mask, corners and all.
         if cc:
             rmask = regions.annulus_mask(X, Z, S, cx, cz, a + i_in, hs[k] - i_out,
                                          chamfer_in=chamfers.get(k - 1, 0) if k else 0,
@@ -6528,22 +6497,18 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         # `area x plot_share / columns_per_plot` -- capped by the room `DISTRICT_FILL`
         # leaves, and never nothing. What the spec's rings declared is kept beside it as
         # a declaration the readout reports against and nothing reads. **...and of the
-        # fabric this ring adopted**, the neighbourhood round's fourth unconnected seam
-        # and the one that decided its own deliverable. `per` is the ground one house
-        # costs and `caps` is the sector's ground over it, so this is what sets the
-        # ceiling on a district's count -- and it answered from the density word alone,
-        # whatever arrangement the ring had adopted. The crowded ring held 69 houses on
-        # 12,696 columns, one every 184, and no arrangement in the catalogue could reach
-        # past that number, because the number was never about the arrangement. The lot
-        # only: see `columns_per_plot`.
+        # fabric this ring adopted.** `per` is the ground one house costs and `caps` is
+        # the sector's ground over it, so this is what sets the ceiling on a district's
+        # count; answered from the density word alone, whatever arrangement the ring had
+        # adopted, it would cap every arrangement in the catalogue at the same number.
+        # The lot only: see `columns_per_plot`.
         per = spec_mod.columns_per_plot(r, arrangement)
         areas = [(rc[2] - rc[0] + 1) * (rc[3] - rc[1] + 1) for _l, rc in sectors]
         caps = [int(ar * DISTRICT_FILL // per) for ar in areas]
-        # **...at the ring's word, from the one density definition** (the closure
-        # round). `structures_for` asked at the fabric's block share, which for a
-        # `sparse` ring is a quarter of the ground in lots -- the 19.4% the review found
-        # the upper quarter's compiler targets summing to, against the 12% the word
-        # allows. `count_band` proposes at the middle of the band and never above its
+        # **...at the ring's word, from the one density definition.** Asked at the
+        # fabric's block share (`structures_for`), a `sparse` ring would be a quarter of
+        # its ground in lots, well over the ceiling the word allows. `count_band`
+        # proposes at the middle of the band and never above its
         # ceiling; the compiler lays the ask and the validator holds it to both ends.
         bands = [count_band({"name": lab, "x0": rc[0], "z0": rc[1], "x1": rc[2],
                              "z1": rc[3]}, r, None, decls) for lab, rc in sectors]
@@ -6555,26 +6520,23 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                                         int(r["structures"]),
                                         caps=[min(cap, b["hi"]) for cap, b in
                                               zip(caps, bands)], floor=0)
-        # **A sector the fabric fits no house in is asked for none**, the craft round,
-        # found by running it: the count used to be floored at one, so a sliver of 4,257
-        # columns in the corner of a ring was asked for a house its own shape cannot
-        # hold, drew none and stopped the run. It stays a district -- its ground is the
-        # ring's and the coverage clause counts it -- and what it holds is the open
-        # ground a district asked for nothing lays.
+        # **A sector the fabric fits no house in is asked for none**: a count floored at
+        # one would ask a sliver in the corner of a ring for a house its own shape
+        # cannot hold, and the district that draws none stops the run. It stays a
+        # district -- its ground is the ring's and the coverage clause counts it -- and
+        # what it holds is the open ground a district asked for nothing lays.
         left_over.extend({"ring": r["name"], "label": lab, "rect": list(rc),
                           "why": "its own shape fits no house of this density, so it is "
                                  "asked for none and lays open ground"}
                          for (lab, rc), n in zip(sectors, counts) if n < 1)
-        # **A sector asked for nothing stays a district**, and that is deliberate. Tried
-        # and reverted inside the architecture round: dropping the four 126x30
-        # rectangles of the city's upper ring that hold no house at their ring's density
-        # saves the compiler four calls that draw nothing -- and takes the ring's
-        # coverage from 60% to 27%, because `RING_COVERAGE` is about the ring's *ground*
-        # being somebody's and not about its houses. A district asked for no structures
-        # is open ground with an owner, which is exactly what a ring's thinnest band
-        # should be; a piece of ring nobody owns is the defect the coverage bar exists
-        # to catch. The cost is a compiler call per empty sector and it buys the clause
-        # its meaning.
+        # **A sector asked for nothing stays a district**, and that is deliberate.
+        # Dropping the rectangles of a ring that hold no house at its density saves the
+        # compiler calls that draw nothing -- and can take the ring's coverage far below
+        # its bar, because `RING_COVERAGE` is about the ring's *ground* being somebody's
+        # and not about its houses. A district asked for no structures is open ground
+        # with an owner, which is exactly what a ring's thinnest band should be; a piece
+        # of ring nobody owns is the defect the coverage bar exists to catch. The cost is
+        # a compiler call per empty sector and it buys the clause its meaning.
         declared = int(r.get("structures") or 0)
         capped = ({"asked": declared, "room": sum(caps)}
                   if declared > sum(caps) else None)
@@ -6582,25 +6544,24 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         role = r.get("role") or spec_mod.read_role(None, r, r["name"])
         exact_ring = bool(spec.get("explicit_count")
                           and not (spec.get("explicit_count") or {}).get("about"))
-        # **A ring's sectors are drawn to what their count needs at the ring's word**
-        # (the expression round), the way the relation solver's strips hug the square.
-        # The closure round's town: fifteen dense houses spread over sixteen thousand
-        # columns of annulus covered five per cent of it. Each sector keeps a centred
-        # piece as long as its share of the count needs at the density's target cover
-        # (`placesolve.land_need`); what is left of the strip stays the ring's, as open
-        # ground with an owner asked for no house (`surface: open`), so the ring's
+        # **A ring's sectors are drawn to what their count needs at the ring's word**,
+        # the way the relation solver's strips hug the square: a handful of dense houses
+        # spread over a whole annulus covers a few per cent of it. Each sector keeps a
+        # centred piece as long as its share of the count needs at the density's target
+        # cover (`placesolve.land_need`); what is left of the strip stays the ring's, as
+        # open ground with an owner asked for no house (`surface: open`), so the ring's
         # coverage stands and the density is measured over the ground the houses stand
-        # on, **and the remainder stays inside that measurement**: the design round's
-        # second contract. Naming a remainder open is an allocation decision and is not
-        # independent justification for removing it from the ring the requirement is
-        # about, so every piece below carries `scope_of` and its own `scope_columns`.
+        # on, **and the remainder stays inside that measurement**. Naming a remainder
+        # open is an allocation decision and is not independent justification for
+        # removing it from the ring the requirement is about, so every piece below
+        # carries `scope_of` and its own `scope_columns`.
         counts = list(counts)
         merged: dict = {}
         if rec.get("counted") and sectors:
             # **A sector asked for fewer houses than a block of its word holds is not a
-            # district of that word** (the coordinator's finding on the live run): two
-            # row houses on a strip of the dense ring covered 5% of it and no character
-            # could answer for it. Their count goes to the sector of the ring with the
+            # district of that word**: a couple of row houses on a strip of a dense ring
+            # cover a few per cent of it and no character can answer for it. Their count
+            # goes to the sector of the ring with the
             # most room, and the strip stays the ring's open ground.
             from .district_compile import BLOCK_LOTS
             least_block = int(BLOCK_LOTS.get(r.get("density") or "medium", 3))
@@ -6708,12 +6669,12 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
             rec["merged"] = merged
         if any(p[5] for p in pieces):
             areas = [(p[1][2] - p[1][0] + 1) * (p[1][3] - p[1][1] + 1) for p in pieces]
-        # **A ring's landmarks stand at its arrival** (the city attempt round): the
-        # character's landmark -- the Middle Ring's market -- was laid in every sector
-        # of the ring, eight markets for one, each a reservation its sector had to
-        # front. It stands in the sector nearest the ring's own gate, where the gate
-        # street arrives; the other sectors carry none, and the record says where it
-        # went. A ring with no gate keeps the old rule.
+        # **A ring's landmarks stand at its arrival**: the character's landmark (a
+        # ring's market, say) laid in every sector would be one market per sector, each
+        # a reservation its sector has to front. It stands in the sector nearest the
+        # ring's own gate, where the gate street arrives; the other sectors carry none,
+        # and the record says where it went. A ring with no gate lays it in every
+        # sector.
         arrival_label = None
         ch_lm = (spec_mod.character(r) or {}).get("landmarks") or []
         if ch_lm and r.get("walled"):
@@ -6758,17 +6719,12 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                 **({"target": target} if target else {}),
                 **({"lot_min": list(here["lot"])}
                    if here is not None and lot_raised(here.get("from") or []) else {}),
-                # "which areas a district may draw is its role's own table, read off the
-                # files, and not a list of type names in a constant" -- and this broke
-                # it: the expression round named two area types here by hand, one per
-                # role, which is the layout deciding a type for a district. It was also
-                # a no-op for the rural half (`district_compile._open_type` has no
-                # branch for the word it wrote, so it fell to the same default either
-                # way) and for the urban half wherever the named type is in the role's
-                # table, which is every urban role in the library. So there was nothing
-                # to keep and a rule to restore. Dropped: `_open_type(areas, role,
-                # density, spec.land_use(part))` chooses from the role's own area types,
-                # which is the one rule for this question.
+                # No area type is named here: which areas a district may draw is its
+                # role's own table, read off the files, and not a list of type names in
+                # a constant, so the layout does not decide a type for a district.
+                # `district_compile._open_type(areas, role, density,
+                # spec.land_use(part))` chooses from the role's own area types, which is
+                # the one rule for this question.
                 **({"surface": "open"} if moved == "open" else {}),
                 # the four columns of this region, fixed here and not revised by any
                 # later allocation (`placeregion.column_record`). No requirement of this
@@ -6842,13 +6798,13 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                                            "district_columns": int(sum(areas))}},
             "annulus_columns": int(annulus), "district_columns": int(covered),
             "coverage": round(cov, 4), "voice": rvoice, "level": levels[k],
-            # what this ring was sized from (the expression round)
+            # what this ring was sized from
             "section": rec.get("section") or None,
             "landmarks_at": rec.get("landmarks_at") or None,
             "target": ({k2: rec.get(k2) for k2 in ("what", "columns", "target_cover",
                                                     "lot", "houses", "counted",
                                                     "share_width", "width_need",
-                                                    # the design round: the arrangement
+                                                    # the arrangement
                                                     # chosen for this ring, every
                                                     # alternative considered and the
                                                     # capacity the compiler reported
@@ -6857,9 +6813,9 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                        if rec else None),
             "hierarchy": hierarchy.get(r["name"]),
             # **Three things, three fields, and none of them stands in for another.**
-            # The expression round read `lower`/`upper` as names for ring 0 and ring 1
-            # and stood a *dense lower ring* on the terrace four blocks above the sparse
-            # upper one. Radial order is where a ring is from the centre; elevation is
+            # Reading `lower`/`upper` as names for ring 0 and ring 1 stands a *dense
+            # lower ring* on a terrace above the sparse upper one. Radial order is where
+            # a ring is from the centre; elevation is
             # what terrace it stands on (`terrace_ranks`, from the words the parts carry
             # and from context, not from the radius); social rank is what the design
             # gives the ring -- its density word and its voice -- and is neither of the
@@ -7039,7 +6995,7 @@ def _lay_court_city(*, plot, admit, rect, plot_t, area_t, temple_t, inner_u, inn
                     gap, lo_p, hi_p, lo_a, hi_a, name) -> dict | None:
     """**A palace precinct as a sequence of courts on its axis, flanked by courtyards.**
 
-        The city attempt round. `u` runs from the gate, `v` across; `plot`, `admit` and
+        `u` runs from the gate, `v` across; `plot`, `admit` and
         `rect` are `compound_axial`'s own. On the axis, in order from the gate: a forecourt,
         a gate hall across the axis, the outer court, the middle hall, the inner court and
         the greatest hall at the far end -- three halls on the axis, each wider than it is
@@ -7663,10 +7619,10 @@ def _axial_type(decls: dict, kind: str, part: dict | None, spec: dict | None,
                 approved: dict | None = None) -> tuple | str | None:
     """The type an axial compound builds this kind of part out of.
 
-        **The capability record's approved type first** (the closure round's city run): the
-        record approved `hall` for `cap/royal_palace/hall` and `square` for its court, this
-        chose `temple` and `plaza` by form, and `capability.agreements` recorded the two
-        choosers disagreeing and the plan blocked. Where the record names a type for the
+        **The capability record's approved type first**: choosing by form alone can pick
+        a different type than the record approved (a `temple` for its `hall`, say), and
+        `capability.agreements` then records the two choosers disagreeing and the plan
+        blocks. Where the record names a type for the
         family this kind answers and the compound's table can build it, that is the type;
         the largest-banded type of the compound's own role is the fallback, so the greatest
         hall is as great as the library can make it. Returns the name, and `chosen_by` is

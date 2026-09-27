@@ -142,7 +142,7 @@ def _approach_candidates(h: np.ndarray, x0: int, z0: int, rect, per_site: int = 
         One candidate per side, so the router can choose which face of a building the town
         arrives at rather than being told. That choice is the whole point of going first.
 
-        **...unless the plan says which face.** v2, C2: a leaf carrying `front` -- the side
+        **...unless the plan says which face.** A leaf carrying `front` -- the side
         its street is on, which the district compiler writes and a row of party walls
         depends on, because its flanks have a neighbour against them -- offers that side
         and no other; the way in is held on the street. Where that side has no cell in
@@ -353,9 +353,9 @@ def stamp_occupation(parts: list, decls: dict | None = None) -> list:
 
 
 def parts_to_routing(parts: list, passage=()) -> dict:
-    """Until A4 a plan was a list of building footprints and the router's whole job was to
-    join them up. A place has three more kinds of part in it and each means something
-    different to a network:
+    """A plan is more than a list of building footprints for the router to join up. A
+    place has three more kinds of part in it and each means something different to a
+    network:
 
       plot   a site, as always: the lane comes to it and reserves a doorstep.
       area   a site too. A square is joined to the lanes on every side -- it *is* a
@@ -403,25 +403,23 @@ def parts_to_routing(parts: list, passage=()) -> dict:
         kind = p.get("kind", "plot")
         name = p.get("name") or p.get("id") or p.get("label")
         if kind == "edge":
-            # **A wall's base is wider than its line.** The expression round's city: the
-            # middle ring's wall stood as a great-wall type twenty-seven high with a
-            # battered base and a walkway step two columns outside its declared width,
-            # and the lanes routed against the declared width were built over (134 lane
-            # cells that cannot be stood on). The obstacle band carries the clearance a
-            # wall's construction takes beside its line.
+            # **A wall's base is wider than its line.** A tall wall type can stand a
+            # battered base and a walkway step columns outside its declared width, and
+            # lanes routed against the declared width alone get built over (lane cells
+            # that cannot be stood on). The obstacle band carries the clearance a wall's
+            # construction takes beside its line.
             half = max(1, int(p.get("width", 1))) // 2 + _extra(p)
             path = [(int(a[0]), int(a[1])) for a in p["path"]]
             for a, b in zip(path, path[1:]):
-                # **A 45-degree run is an obstacle too.** v2, A5. it is how a ring is
-                # round rather than square -- and this read every segment as axial:
-                # `step` came out (1, 0) for a chamfer, `n` was its Manhattan length,
-                # and the columns marked were a line twice as long running due east from
-                # one end of it. So an octagon's chamfers were not in `obstacles` at all
-                # and a lane could be routed straight through the city wall. The frame
-                # is the one the library sites in: the run's own direction, and the
-                # width along the perpendicular lattice diagonal. A diagonal line of
-                # cells is 8-connected, and `_grid_graph` is 4-connected, so the line
-                # alone is a barrier -- nothing has to be thickened to seal it.
+                # **A 45-degree run is an obstacle too** -- it is how a ring is round
+                # rather than square. Read as axial, a chamfer's `step` comes out (1, 0)
+                # and `n` its Manhattan length, marking a line twice as long running due
+                # east from one end, so the chamfer is missing from `obstacles` and a
+                # lane can be routed straight through the wall. The frame is the one the
+                # library sites in: the run's own direction, and the width along the
+                # perpendicular lattice diagonal. A diagonal line of cells is
+                # 8-connected, and `_grid_graph` is 4-connected, so the line alone is a
+                # barrier -- nothing has to be thickened to seal it.
                 if a[0] != b[0] and a[1] != b[1]:
                     sx = 1 if b[0] > a[0] else -1
                     sz = 1 if b[1] > a[1] else -1
@@ -459,7 +457,7 @@ def parts_to_routing(parts: list, passage=()) -> dict:
                 "x0": min(p["x0"], p["x1"]), "z0": min(p["z0"], p["z1"]),
                 "x1": max(p["x0"], p["x1"]), "z1": max(p["z0"], p["z1"])}
         if p.get("front"):
-            site["front"] = p["front"]           # v2, C2: the way in is on this side
+            site["front"] = p["front"]           # the way in is on this side
         # **The compiled way in, taken verbatim.** The quarter design round: a leaf
         # whose district compiler chose its pad, door and landing together (`site`) is
         # approached at that landing and nowhere else, and its threshold's door is the
@@ -539,7 +537,7 @@ def plan_network(heights: np.ndarray, x0: int, z0: int, sites: list, *,
     `arterial` is a network already laid -- the roads between the districts and the
     gates, routed before any district was planned. Its columns are never avoided, they
     are cheaper to walk than open ground by `ARTERIAL_BONUS`, and they come back in the
-    answer at rank 0. That ordering is the whole of A4: a district whose lanes are
+    answer at rank 0. That ordering is the point: a district whose lanes are
     routed with no knowledge of the road past it produces a place of cul-de-sacs that
     happen to touch, and a walk from one district to the next goes through somebody's
     front room or round the outside of the town."""
@@ -567,7 +565,7 @@ def plan_network(heights: np.ndarray, x0: int, z0: int, sites: list, *,
 
     # **The arterials are already there**, so they are neither avoided nor re-planned:
     # they are the cheapest ground on the site and every lane the router lays is drawn
-    # to them. A4.
+    # to them.
     art_cells = (dict(arterial.cells) if isinstance(arterial, Network)
                  else dict(arterial or {}))
     if art_cells:
@@ -879,16 +877,12 @@ def _hub(ids: list, edges: list, centre: str | None) -> str | None:
 def _threshold_for(sid: str, cands: list, cells: dict, ground=None):
     """The lane cell this structure is entered from, and which way its door faces.
 
-        **...and a doorway does not open onto a four-block face either.** The neighbourhood
-        delivery round, found by building the block once the earthwork was bounded. A lane
-        is graded -- `_solve_heights` cuts and fills it into a walkable profile -- and the
-        ground a plot stands on is its district's terrace, and where a lane ramps past a
-        plot the two are at different levels. Measured on `middle_ring_north_east_b0_0_02`:
-        the district's terrace brought its ground to y=64, the lane outside it was cut to
-        y=60 for a ramp, the doorstep was reserved on the ramp, and `E008` said the reserved
-        doorway could not be walked into off its own threshold -- of a house standing on
-        ground that was prepared exactly as designed, entered from a lane laid exactly as
-        planned. Neither pass is wrong; the choice of cell is, again.
+        **A doorway does not open onto a four-block face.** A lane is graded --
+        `_solve_heights` cuts and fills it into a walkable profile -- while the ground a plot
+        stands on is its district's terrace, so where a lane ramps past a plot the two can be
+        several blocks apart. A doorstep reserved on the ramp is then a doorway that cannot
+        be walked into off its own threshold (`E008`), though the terrace and the lane are
+        each exactly as designed. Neither pass is wrong; the choice of cell is.
 
         `ground(x, z)` is the ground under a cell as this pass found it, which for a plot on
         a terrace is the terrace's level. A candidate whose lane level is **level with the
@@ -896,16 +890,14 @@ def _threshold_for(sid: str, cands: list, cells: dict, ground=None):
         other rank below, because a doorstep a person cannot step onto is not a way in
         whatever else is right about it.
 
-        **A doorway does not open onto a stair.** The spatial design round, found by
-        building the block on the gate's own ground. The door cell is one step in from the
+        **A doorway does not open onto a stair.** The door cell is one step in from the
         threshold's lane cell, and on a lane that turns -- or on a gate's approach ramp --
         that cell can itself be a lane cell. Where it is a *step*, the two passes want two
         different things from one block: the lane wants a riser at its own level and the
-        threshold wants a flat doorstep at the lane's. Whichever ran last won, and both
-        answers are refused by a check: levelling it broke the ramp (`E007`, one lane cell
-        of 44,726 that could not be stood on, at the middle ring's gate) and leaving it a
-        stair broke the door (`E008`, the doorway reserved for `ring_gate_upper_ring` cannot
-        be walked into off its own threshold).
+        threshold wants a flat doorstep at the lane's. Whichever runs last wins, and both
+        answers are refused by a check: levelling it breaks the ramp (`E007`, a lane cell
+        that cannot be stood on) and leaving it a stair breaks the door (`E008`, the
+        reserved doorway cannot be walked into off its own threshold).
 
         Neither pass is wrong; the *choice of cell* is. A candidate whose door cell is off
         the lane is preferred, then one whose door cell is a lane **landing** at the same

@@ -1,9 +1,9 @@
 """The versioned records the planning loop is made of, and the one place they are checked.
 
-Before this module a stage handed the next one a dict and hoped. The audit's finding was
-not that any single dict was wrong -- it was that **a requirement could disappear between
-two of them and nothing could say where**: the sentence became a spec, the spec became a
-plan, and an omitted wall was indistinguishable from a wall nobody asked for.
+Without a contract a stage hands the next one a dict and hopes. The danger is not that
+any single dict is wrong -- it is that **a requirement can disappear between two of them
+and nothing can say where**: the sentence becomes a spec, the spec becomes a plan, and an
+omitted wall is indistinguishable from a wall nobody asked for.
 
 So the loop is written down as six records, each with a version, a producer, a consumer
 and an invariant, and each read through `read()`, which **refuses a field it does not
@@ -126,17 +126,15 @@ def _known(doc: dict, fields: tuple, record: str, where: str = "") -> None:
 
 # ------------------------------------------------------------------ the records
 
-#: One explicit requirement, with the ID everything downstream links to. `scope` is the
-#: realization round's, and it is what makes a negation a negation. "a dense lower
-#: district and a sparse upper district" states two requirements about two different
-#: parts of one place, and a requirement that cannot say *which* part it is about
-#: collapses them into one global claim -- which is exactly what the review found: "One
-#: global dense requirement; the scoped contrast is unread." None is the whole place,
-#: which is what every requirement written before this meant and still means.
+#: One explicit requirement, with the ID everything downstream links to. `scope` is what
+#: makes a negation a negation. "a dense lower district and a sparse upper district"
+#: states two requirements about two different parts of one place, and a requirement
+#: that cannot say *which* part it is about collapses them into one global dense claim
+#: and leaves the scoped contrast unread. None is the whole place.
 REQUIREMENT_FIELDS = ("id", "says", "kind", "hard", "source", "phrase", "wants",
                       "status", "why", "evidence", "owner", "scope",
-                      # the design round: **how** this status was established, which is
-                      # a different question from how much of the place was built. See
+                      # **how** this status was established, which is a different
+                      # question from how much of the place was built. See
                       # `intent.METHODS`.
                       "method")
 
@@ -164,18 +162,17 @@ CAPABILITY_FIELDS = ("id", "requirement", "wants", "kind", "family", "form", "ro
 REGION_FIELDS = ("name", "policy", "role", "defines", "rect", "boundary", "inner",
                  "holes", "level", "routes", "access", "surface", "lots", "realized",
                  "faces", "requirement", "density", "voice", "anchor", "notes",
-                 # the closure round: the denominator the density clause and the
-                 # compiler's target share, so both measure cover over the same ground
+                 # the denominator the density clause and the compiler's target
+                 # share, so both measure cover over the same ground
                  "developable_columns",
-                 # the expression round: the dimension this region was sized to, with
-                 # the programme inputs it was derived from (`{"what", "value",
-                 # "from"}`)
+                 # the dimension this region was sized to, with the programme inputs
+                 # it was derived from (`{"what", "value", "from"}`)
                  "target", "land_use", "lot_min", "hierarchy",
-                 # **the design round: four columns, kept apart.** A density clause is
-                 # about the ground the *requirement* names, and the expression round
-                 # measured it over whatever the allocation happened to leave built --
-                 # the ring layout called its remainder `open` and the checker dropped
-                 # it. So: `scope_columns` is what the requirement is about and is fixed
+                 # **four columns, kept apart.** A density clause is about the ground
+                 # the *requirement* names, not whatever the allocation happened to
+                 # leave built -- measured that way, a layout that calls its remainder
+                 # `open` drops it from the denominator and the clause passes on less
+                 # ground. So: `scope_columns` is what the requirement is about and is fixed
                  # at resolution; `developable_columns` is what the compiler may build
                  # on; `allocated_columns` is what it drew; `built_columns` is what
                  # stands. `open_requested` carries the id of an explicit requirement
@@ -270,9 +267,9 @@ def _rows(doc: dict, key: str, fields: tuple, record: str) -> list:
 VERSIONS = {
     "intent": (1, ("record", "version", "sentence", "digest", "requirements", "t",
                    "note",
-                   # the expression round: the programme's entities -- what is a counted
-                   # building, what is land, what is an amenity, a compound, a boundary
-                   # -- bound once here and read by the solvers and the selectors
+                   # the programme's entities -- what is a counted building, what is
+                   # land, what is an amenity, a compound, a boundary -- bound once here
+                   # and read by the solvers and the selectors
                    "entities")),
     "reading": (1, ("record", "version", "sentence", "classification", "sources",
                     "claims", "uncertainty", "inferred", "queries", "provider", "t",
@@ -282,20 +279,19 @@ VERSIONS = {
     "resolution": (1, ("record", "version", "policy", "regions", "site", "centre",
                        "bounds", "negotiated", "t", "note")),
     "findings": (1, ("record", "version", "findings", "stage", "t", "note")),
-    # **What the sentence means, read by an agent and checked by the rules.** The
-    # realization round's first boundary. `intent` is a phrase table, and a phrase table
-    # is a finite instrument pointed at an open domain: it read "without a wall or a
-    # temple" as requiring a temple, "not dense" as requiring dense, and "small houses
-    # around a big temple" as requiring a temple and nothing else. Those are not gaps to
-    # be filled with more rows. So meaning is read *here*, by a reader that can carry
+    # **What the sentence means, read by an agent and checked by the rules.** `intent`
+    # is a phrase table, and a phrase table is a finite instrument pointed at an open
+    # domain: alone it reads "without a wall or a temple" as requiring a temple, "not
+    # dense" as requiring dense, and "small houses around a big temple" as requiring a
+    # temple and nothing else. Those are not gaps to be filled with more rows. So
+    # meaning is read *here*, by a reader that can carry
     # scope, relation and hierarchy, and the rules become what cross-checks it. The
     # sentence is immutable and lives on this record unchanged; everything else is an
     # interpretation, each with its own reason, and each revisable against evidence.
     "interpretation": (1, ("record", "version", "sentence", "reads", "unread",
                            "uncertain", "checks", "source", "revisions", "t", "note")),
-    # The direct test closed an identity with one cited claim and a Boolean verdict,
-    # supplying no plan and no built result, while the final place reader answered
-    # "nothing has been read about this name yet" for the same run. So a judgment is
+    # A Boolean verdict with one cited claim and no plan or built result behind it can
+    # close an identity that the place reader has read nothing about. So a judgment is
     # bound to three things or it is not a judgment: the **candidate** it is of, the
     # **output** that was looked at, and the **claims** it was judged against. A verdict
     # with no evidence behind it is somebody's impression; evidence with no verdict is a
@@ -327,8 +323,8 @@ INTERPRETATION_KINDS = ("feature", "absent", "count", "quality", "layout", "orie
                         "hierarchy")
 
 #: The relations a reader may state between two parts of a place, and what each means as
-#: a measurement. `around` is the review's own counterexample -- "small houses around a
-#: big temple" -- and it is a fact about bearings, not about a list of parts.
+#: a measurement. `around` -- "small houses around a big temple" -- is a fact about
+#: bearings, not about a list of parts.
 RELATIONS = ("around", "along", "facing", "inside", "beside", "between", "above")
 
 
@@ -383,13 +379,12 @@ def read(kind: str, doc: dict) -> dict:
                                      "classification", kind)
         out["sources"] = _rows(doc, "sources", SOURCE_FIELDS, kind)
         out["claims"] = _rows(doc, "claims", CLAIM_FIELDS, kind)
-        # **A source is a thing somebody can go and look at.** The integration review's
-        # counterexample, one line after the one below it: a reading was accepted whose
-        # only source was `{"id": "invented"}`, so the referenced-id rule was satisfied
-        # by a bare identifier and "this claim is evidenced" meant "this claim cites a
-        # string that appears twice in the same file". A citation resolving to nothing
-        # is the defect; a citation resolving to an empty record is the same defect with
-        # one more step.
+        # **A source is a thing somebody can go and look at.** Checking only that a
+        # claim's source id is referenced lets a bare identifier like
+        # `{"id": "invented"}` pass, so "this claim is evidenced" would mean "this claim
+        # cites a string that appears twice in the same file". A citation resolving to
+        # nothing is the defect; a citation resolving to an empty record is the same
+        # defect with one more step.
         for i, s in enumerate(out["sources"]):
             missing = [f for f in ("id", "title", "accessed", "fingerprint")
                        if not str(s.get(f) or "").strip()]

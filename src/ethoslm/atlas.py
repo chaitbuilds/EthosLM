@@ -1,10 +1,10 @@
 """**The terrain atlas**: ground height and water for the whole generated world, cheaply.
 
-The design synthesis round. The site search read terrain as cached squares of the
-footprint it was asked for (`out/sites/ground_<x>_<z>_<n>x<n>.npz`), so a city larger
-than any cached square had no ground to be judged on, and "no suitable site" meant "no
-square of this size in the cache". Designing a larger place needs the ground first and
-cheaply: its relief, its water and where the flat land lies, over tens of kilometres.
+A site search that reads terrain only as cached squares of the footprint it was asked
+for (`out/sites/ground_<x>_<z>_<n>x<n>.npz`) leaves a city larger than any cached square
+with no ground to be judged on, and "no suitable site" then means "no square of this
+size in the cache". Designing a larger place needs the ground first and cheaply: its
+relief, its water and where the flat land lies, over tens of kilometres.
 
 Every chunk's saved `Heightmaps` already hold it: `OCEAN_FLOOR` is the highest solid
 block and `MOTION_BLOCKING_NO_LEAVES` is the surface including water, so their difference

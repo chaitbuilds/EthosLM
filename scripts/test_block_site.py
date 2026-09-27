@@ -3,10 +3,11 @@
 
     $PY scripts/test_block_site.py [name-fragment]
 
-The quarter design round, block/building worker. The block design audit's second cause:
-`pad_founded` and `entrance_ok` answered "is there one" and every later stage chose the
-pad, the floor, the facing, the door and the landing again. These are the counterexamples
-at the boundaries the round changed; nothing here needs a cached world or a model call.
+A check that answers only "is there one" (`pad_founded`, `entrance_ok`) leaves every
+later stage to choose the pad, the floor, the facing, the door and the landing again, and
+they need not agree. The compiler chooses once and every later stage consumes its choice.
+These cases sit at the boundaries where that choice is made and consumed; nothing here
+needs a cached world or a model call.
 
     s1  every plot leaf of a district on measured ground carries one `site`: the pad the
         builder's own inset gives for its settled attachment, the district level, the

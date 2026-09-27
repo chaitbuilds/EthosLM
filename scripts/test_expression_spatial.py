@@ -1,5 +1,5 @@
-"""The expression round's spatial cases: parent allocation from purpose, as regressions
-with positive controls.
+"""Spatial cases for parent allocation from purpose, as regressions with positive
+controls.
 
     $PY scripts/test_expression_spatial.py
 
@@ -78,8 +78,9 @@ def _side(p):
 
 @case
 def t_a_the_square_is_sized_from_the_count_and_its_derivation_is_recorded():
-    """The review: `_rect_for` chose the largest rectangle a type admits, so the market
-    square was forty a side against cottages of 12x10 and the hall thirty-six."""
+    """The square is sized from the household count, not the largest rectangle its type
+    admits -- which would make the market square forty a side against cottages of 12x10
+    and the hall thirty-six."""
     r = _retained("closure-farm")
     place, fails = _solve(r)
     assert not fails, fails
@@ -103,7 +104,7 @@ def t_a_the_square_is_sized_from_the_count_and_its_derivation_is_recorded():
     assert fields["target"]["what"] == "land" and \
         fields["target"]["value"]["land_columns"] >= 16 * placesolve.LAND_PER_HOUSE["farmland"], \
         fields["target"]
-    # the relations the closure round made hold still hold on the sized place
+    # the relations the layout predicts satisfied still hold on the sized place
     pred = {x["id"]: x["predicted"] for x in lay["districts"]["relations"]}
     assert all(v == "satisfied" for v in pred.values()), pred
     # control: a smaller anchor share through the allocation channel gives a smaller

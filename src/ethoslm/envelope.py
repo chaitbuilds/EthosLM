@@ -1,12 +1,11 @@
 """**Feature-aware envelopes: the lot a type needs to deliver what was asked of it.**
 
-The expression round's second contract. The closure round measured, after construction,
-that a cottage asked for two storeys on a 12x10 lot emitted one and that the type needs
-16x14 for two (`construction.constraint`, `needs.lot_min`). Nothing consumed that before
-the lot was drawn: `district_compile` admitted generic footprint bounds and chose storeys
-separately, so the layout learned the envelope only from the wreckage. This module is the
-question asked **before** the lot exists, by the layout owner and by the improve stage,
-of the same type rules, and answered the same way whichever caller asks.
+Construction measures, after the fact, that a cottage asked for two storeys on a lot too
+small for two emitted one (`construction.constraint`, `needs.lot_min`). A layout that
+admits generic footprint bounds and chooses storeys separately learns the envelope only
+from the wreckage. This module is the question asked **before** the lot exists, by the
+layout owner and by the improve stage, of the same type rules, and answered the same way
+whichever caller asks.
 
     lot_for(type_name, params, features=(...), voice=None, seed=1, cache=None)
         -> {"lot_min": [w, d], "lot_pref": [w, d], "source": "declared"|"probed",
@@ -30,17 +29,16 @@ needs on a plane; a slope, a lane on two sides or a neighbour's clearance can ta
 and construction's emitted outcome remains authoritative. What this closes is the other
 half: a lot the type cannot use on *any* ground is never drawn on purpose.
 
-**The probe builds the lot the question is about, attachment and all.** The neighbourhood
-delivery round. `context["attached"]` was keyed and recorded and changed nothing: every
-probe stood on a lot with four free sides, and `Builder._insets` insets a free side by
-`SITE_INSET` and an attached one by nothing. So a 6x13 terrace lot was probed as the
-4x11 pad a detached lot of that size gives, while the real lot gives a 6x9 pad -- and
-`types/row_house.py` declares its `STOREY_PAD` in **pad** columns, needing 5x9 for two
-storeys. Two storeys were refused for every attached lot in the delivered section, and
-every house in the crowded ring stood one storey on a lot deep enough for two. `flanks()`
-resolves the context to the number of attached flanks, `probe`/`_stands` build the lot
-with that many, and the count is what the key carries: an answer measured with two flanks
-attached is never served to a question about a free-standing lot, or the other way round.
+**The probe builds the lot the question is about, attachment and all.**
+`Builder._insets` insets a free side by `SITE_INSET` and an attached one by nothing, so
+a lot probed with four free sides is not the lot a terrace gets: a 6x13 terrace lot
+probed free-standing gives the 4x11 pad of a detached lot, while the real lot gives a
+6x9 pad -- and `types/row_house.py` declares its `STOREY_PAD` in **pad** columns,
+needing 5x9 for two storeys. Probed free-standing, every attached lot would be refused
+its second storey. `flanks()` resolves `context["attached"]` to the number of attached
+flanks, `probe`/`_stands` build the lot with that many, and the count is what the key
+carries: an answer measured with two flanks attached is never served to a question
+about a free-standing lot, or the other way round.
 
 Feature tokens are the names `construction.outcome` reports under `emitted.features`
 (`outshot`, `courtyard`, `chimney`, `stalls`, `forge`, `hearth`, ...) plus one marker,
@@ -48,10 +46,10 @@ Feature tokens are the names `construction.outcome` reports under `emitted.featu
 reports is answered `False` and named in `why`, which is a capability gap and not a
 small lot.
 
-**A certificate names what it was measured of.** The design round's first cause: `_key`
-hashed the type's *name*, its parameters and its features, so an edited or newly authored
-generator answered from the answer measured of the file it replaced -- and the authoring
-path this project has exists precisely to edit and author generators mid-run. A key now
+**A certificate names what it was measured of.** A key of the type's *name*, its
+parameters and its features alone would let an edited or newly authored generator be
+answered from the answer measured of the file it replaced -- and the authoring path this
+project has exists precisely to edit and author generators mid-run. So a key also
 carries `_deps_print`: the content digest of the type file, of the builder modules that
 execute it, and of the voice palette it is built in, together with the physical context
 the probe was run under. The on-disk cache carries `CACHE_VERSION`; a document written
@@ -73,13 +71,11 @@ PREF_SEEDS = (1, 2, 3)
 STOREYS = "storeys"
 
 #: **What a stored certificate is a certificate of.** Bumped when the key's meaning
-#: changes; entries written under another version are read and dropped. The design
-#: round's version is the first that binds an answer to the generator that produced it;
-#: this one is the first whose `attached` slot is the number of flanks the probe was
-#: actually built against rather than a word nothing read. Every `envelopes.json` on
-#: disk -- `out/nd-city/envelopes.json` among them -- is therefore read and dropped,
-#: which is the designed behaviour and not a loss: those entries answer a question ("how
-#: big a lot, with four free sides") that is no longer the one being asked.
+#: changes; entries written under another version are read and dropped. The current
+#: version binds an answer to the generator that produced it, and its `attached` slot is
+#: the number of flanks the probe was actually built against. Dropping an older
+#: `envelopes.json` is the designed behaviour and not a loss: its entries may answer a
+#: question ("how big a lot, with four free sides") that is not the one being asked.
 CACHE_VERSION = "envelopes-v3-flanks"
 
 #: The modules that execute a type file, and whose content therefore decides what the
@@ -108,11 +104,11 @@ def required_features(requirements, part: dict | None = None) -> tuple:
 def required_by(requirements, part: dict | None = None) -> dict:
     """`{token: [requirement_id, ...]}` -- the tokens and **what made each required**.
 
-        The design round's first contract asks a demand to carry the requirement ids behind
-        every required feature, so that a refusal can be reported against the thing that was
-        asked for rather than against a token. `required_features` is this in the shape its
-        existing callers take. Insertion order is requirement order, which is the order a
-        reader of the intent record meets them in.
+        A demand carries the requirement ids behind every required feature, so that a
+        refusal can be reported against the thing that was asked for rather than against a
+        token. `required_features` is this in the shape its existing callers take.
+        Insertion order is requirement order, which is the order a reader of the intent
+        record meets them in.
 
     """
     from . import intent as intent_mod
@@ -167,13 +163,12 @@ def feature_token(word) -> str | None:
         `market -> stalls`, `smithy -> forge`, `court -> courtyard`; a token is its own word.
         None where the word asks for no emitted feature at all.
 
-        The composition round's fifth evidence connection, and the defect it closes is one
-        string comparison: `pipeline/improve._required_tokens` collected the sentence's own
-        words, so `feature/market` gave `{"market"}` while the construction constraint it was
-        about emits `what = "stalls"`, and `obligation.from_constraint` computed
-        `material = "stalls" in {"market"}` -- False. The row was never selected, on a
-        requirement the sentence makes hard. `FEATURE_WORDS` is the table that already knew
-        the two words are the same ask; this is it read the other way round.
+        The sentence's own words are not the tokens construction emits: `feature/market`
+        gives `{"market"}` while the construction constraint it is about emits `what =
+        "stalls"`, and a plain comparison (`"stalls" in {"market"}`) is False, so the
+        obligation would never be selected on a requirement the sentence makes hard.
+        `FEATURE_WORDS` is the table that already knows the two words are the same ask;
+        this is it read the other way round.
 
     """
     w = str(word or "").strip().lower()
@@ -376,9 +371,8 @@ def _row_answers(row: dict, params: dict, features, n_flanks: int = 0) -> bool:
     it names (a row naming fewer covers more), its features must include every one asked
     for, and it must have been measured **with the same flanks attached**.
 
-    A row carrying no `flanks` was measured on a lot with four free sides, which is what
-    every `ENVELOPE` block committed before the neighbourhood delivery round was: it is
-    the answer to the 0-flank question and to no other, so an attached question falls
+    A row carrying no `flanks` was measured on a lot with four free sides: it is the
+    answer to the 0-flank question and to no other, so an attached question falls
     through to the probe rather than being served a detached certificate."""
     if int(row.get("flanks") or 0) != int(n_flanks):
         return False
@@ -398,18 +392,17 @@ def _delivered(got: dict, params: dict, features, said: dict | None = None,
         or verified; a feature the outcome looked for and did not find
         (`claimed_not_found`) is never delivered.
 
-        **A type's own word is not evidence about a type that undertook to prove it.** The
-        design round. Two branches believed the generator: `source == "declared"` -- a claim
-        with no rectangle behind it -- counted as delivered, and a token
-        `construction.outcome` has no verifier for at all fell through to
-        `emitted.features`. That is the right answer for a file written before any of this
-        existed, and the wrong one for a type declaring `FEATURES`, because the growth brief
-        its author was handed says in so many words that **a declared feature with no
-        rectangle is not evidence**. So a token inside the type's own declared vocabulary is
-        delivered only where the geometry says so, and a type that declares no vocabulary is
-        believed exactly as it was. Checked on all four committed types that declare
-        `FEATURES` -- market, square, courtyard_house, worship -- every one of whose tokens
-        is emitted with a rectangle and verified, so nothing that passed stops passing.
+        **A type's own word is not evidence about a type that undertook to prove it.**
+        Believing the generator -- counting `source == "declared"` (a claim with no
+        rectangle behind it) as delivered, or letting a token `construction.outcome` has
+        no verifier for fall through to `emitted.features` -- is the right answer for a
+        type that declares no vocabulary, and the wrong one for a type declaring
+        `FEATURES`, because the growth brief its author is handed says in so many words
+        that **a declared feature with no rectangle is not evidence**. So a token inside
+        the type's own declared vocabulary is delivered only where the geometry says so,
+        and a type that declares no vocabulary is believed as before. The committed types
+        that declare `FEATURES` -- market, square, courtyard_house, worship -- emit every
+        one of their tokens with a rectangle, so they pass under this rule.
 
     """
     feats = got.get("features") or {}

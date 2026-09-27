@@ -51,12 +51,11 @@ RELATION_SEARCH_MAX = 120
 RELATION_SEARCH_STEP = 8
 
 #: **Every attempted action is recorded against the candidate it was tried on**, and an
-#: action already tried on that candidate is not tried again (the closure round). The
-#: shore village's record: twelve passes, seven with no applied action, eight identical
-#: refusals of the same move on the same design. A repair that changed nothing is
-#: `changed: false` here, and the next pass escalates to a different decision instead of
-#: repeating it. `REPAIR_ATTEMPTS_TOTAL` bounds the whole run's attempts whether or not
-#: they were charged as applied changes.
+#: action already tried on that candidate is not tried again. Without that record a loop
+#: can spend pass after pass refusing the same move on the same design. A repair that
+#: changed nothing is `changed: false` here, and the next pass escalates to a different
+#: decision instead of repeating it. `REPAIR_ATTEMPTS_TOTAL` bounds the whole run's
+#: attempts whether or not they were charged as applied changes.
 ATTEMPTS_RECORD = "repair_attempts.json"
 REPAIR_ATTEMPTS_TOTAL = 12
 
@@ -142,12 +141,11 @@ def _band_repair(spec: dict, f: dict) -> dict | None:
     if not lo or promised >= lo:
         return None
     # **The bound belongs to the interpretation that was accepted, not to the last one
-    # this function produced.** The review walked a village's floor 24 -> 6 -> 2 with
-    # both calls inside "the registered 25% minimum", because each call measured 25% of
-    # the band the call before it had already moved. A limit re-applied to its own
-    # output is not a limit; it is a decay rate. So the floor every negotiation is
-    # measured against is the original one, recorded the first time the spec was
-    # negotiated.
+    # this function produced.** Measured against the band the call before had already
+    # moved, a village's floor walks 24 -> 6 -> 2 with every call inside "the registered
+    # 25% minimum". A limit re-applied to its own output is not a limit; it is a decay
+    # rate. So the floor every negotiation is measured against is the original one,
+    # recorded the first time the spec was negotiated.
     first = accepted_band(spec)
     origin = int(first[0]) if first else lo
     floor = int(round(origin * SCALE_NEGOTIATION_MIN))
@@ -336,7 +334,7 @@ def _relation_repair(rnd, spec: dict, f: dict, place: dict | None) -> dict | Non
 
 #: The judge's composition measures the layout owner has an action for.
 COMPOSITION_MEASURES = ("undeveloped_share", "clusters", "open_to_built")
-#: ...and the measures and actions that are an **allocation** (the expression round).
+#: ...and the measures and actions that are an **allocation**.
 SIZING_MEASURES = ("square_scale",)
 
 
@@ -642,12 +640,11 @@ def _extent_repair(rnd, spec: dict, f: dict, place: dict | None) -> dict | None:
 def _fits_in(spec: dict, d: dict, place: dict | None = None) -> int:
     """How many structures **the construction logic lays** in this district's rectangle.
 
-        **The estimate is not a capacity, and using one here is what made the extent repair
-        unsound.** The review: "Extent repair reuses this estimate, so it can enlarge a
-        region and promise more of the same unrealizable housing." That is exactly what this
-        did -- it grew a district and raised its allocation to `placeplan.fabric_fit`'s
-        prediction for the new rectangle, and the compiler then laid whatever the ground
-        really held, which is the disagreement the whole round exists to remove.
+        **The estimate is not a capacity, and using one here would make the extent repair
+        unsound.** An extent repair that grew a district and raised its allocation to
+        `placeplan.fabric_fit`'s prediction for the new rectangle would promise more of
+        the same unrealizable housing: the compiler then lays whatever the ground really
+        holds, and promise and realization disagree again.
 
         So the question is put to `arrange`, which compiles the grown rectangle and returns
         the houses that stand in it. A repair that claims ground now claims what can be
@@ -681,10 +678,9 @@ def _allocation_repair(spec: dict, f: dict, place: dict | None) -> dict | None:
         **The other half of the promise/realization disagreement.** `resolve.with_realized`
         writes a finding when a district lays fewer lots than the allocator budgeted, and
         it blocks feasibility -- correctly, because a design whose own record disagrees with
-        itself is not feasible. Until this, the plan level had no action for it: the finding
-        was routed to `layout`, `layout` had only a frontage action, and the run reported
-        the plan planned with the disagreement open. The review found exactly that in the
-        city, twice.
+        itself is not feasible. This is the plan level's action for it; without one the
+        finding is routed to `layout`, `layout` has only a frontage action, and the run
+        reports the plan planned with the disagreement open.
 
         The allocator made the promise from an area estimate and the compiler measured the
         ground; the measurement wins, and the *place's* obligation does not move -- what
@@ -743,11 +739,11 @@ def apply(rnd, spec: dict, findings: dict, *, budget: int = REPAIR_BUDGET,
     # **The layout owner acts first, and that order is the rule.** A place short of what
     # it was asked for has two kinds of answer: change the ground, the geometry or the
     # types it is built of, or change what was asked for. The second is always available
-    # and is almost always the worse one, and running the scale owner first meant it was
-    # also always the one that happened -- the review's "recovery changes promises more
-    # readily than it resolves design conflicts", as a line of control flow. A promise
-    # is moved only after the spatial actions have been tried. --- the layout owner: a
-    # spatial decision changed, and the plan laid out again ---
+    # and is almost always the worse one, and running the scale owner first would make
+    # it also always the one that happened -- recovery changing promises more readily
+    # than it resolves design conflicts, as a line of control flow. A promise is moved
+    # only after the spatial actions have been tried. --- the layout owner: a spatial
+    # decision changed, and the plan laid out again ---
     place_changed = False
     allocation_changed = False
     attempts = _attempts(rnd)
@@ -759,8 +755,7 @@ def apply(rnd, spec: dict, findings: dict, *, budget: int = REPAIR_BUDGET,
                                    "why": f"the repair budget of {budget} is spent"})
             continue
         # `requirement` is present and null on every finding that answers no clause of
-        # the sentence, so `.get(k, "")` returns None and not "" -- found by running the
-        # held-out village, whose realized-capacity finding crashed this line.
+        # the sentence, so `.get(k, "")` returns None and not "".
         rid = str(f.get("requirement") or "")
         if rid.startswith("relation/") or f["id"].startswith("find/relation/"):
             action, fn = "relation", lambda: _relation_repair(rnd, spec, f, place)
@@ -771,17 +766,17 @@ def apply(rnd, spec: dict, findings: dict, *, budget: int = REPAIR_BUDGET,
         elif f["id"].startswith("find/extent/unclaimed/"):
             action, fn = "extent", lambda: _extent_repair(rnd, spec, f, place)
         elif f["id"].startswith("find/reading/") and _sizing_action(f):
-            # **A finding about a dimension is the layout owner's allocation** (the
-            # expression round): the square's scale, thin working land, a lot the
-            # storeys need, a ring's width -- `placesolve.reallocate` revises the
-            # inferred allocation, records it on the spec, and lays the place out again
+            # **A finding about a dimension is the layout owner's allocation**: the
+            # square's scale, thin working land, a lot the storeys need, a ring's width
+            # -- `placesolve.reallocate` revises the inferred allocation, records it on
+            # the spec, and lays the place out again
             action, fn = "reallocate", lambda: _reallocate_repair(rnd, spec, f, place)
         elif f["id"].startswith("find/reading/") and _composition_measure(f):
-            # **A judge's composition finding is a layout action** (the closure round):
-            # "scattered, not gathered" -- `undeveloped_share`, `clusters`,
-            # `open_to_built` -- is answered by laying the place level out again with
-            # the sentence's relations and the compact sizing they imply, and refused by
-            # name where that reproduces the geometry on the record.
+            # **A judge's composition finding is a layout action**: "scattered, not
+            # gathered" -- `undeveloped_share`, `clusters`, `open_to_built` -- is
+            # answered by laying the place level out again with the sentence's relations
+            # and the compact sizing they imply, and refused by name where that
+            # reproduces the geometry on the record.
             action, fn = "resector", lambda: (_resector(rnd, spec, place)
                                                or {"refused": True,
                                                    "why": "the relation solver cannot "
@@ -898,8 +893,8 @@ def apply(rnd, spec: dict, findings: dict, *, budget: int = REPAIR_BUDGET,
         rec.setdefault("wrote_place", os.path.basename(place_path))
     if allocation_changed and rnd is not None:
         # **An allocation row is a change to the programme's inferred choices and is
-        # written where the scale owner writes its own** (the expression round): the
-        # checked spec, so the plan laid out again from it carries the allocation
+        # written where the scale owner writes its own**: the checked spec, so the plan
+        # laid out again from it carries the allocation
         p = rnd.rel("place.checked.json")
         doc = json.load(open(p)) if os.path.exists(p) else dict(spec)
         doc["negotiated"] = list(spec.get("negotiated") or [])

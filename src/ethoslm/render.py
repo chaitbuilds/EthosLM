@@ -52,10 +52,10 @@ class View:
 
 
 # Chunky's orientation is spherical and measured off the DOWN axis, which is not obvious
-# and cost a calibration sweep to pin down (see scripts/calibrate_camera.py): pitch 0 ->
-# straight down pitch -pi/2 -> level (Chunky's default) pitch -pi -> straight up yaw was
-# calibrated the same way against coloured axis markers: yaw 0 -> -X, yaw pi/2 -> +Z,
-# yaw pi -> +X, yaw -pi/2 -> -Z (north, the default). So with phi = -pitch the view
+# and was pinned down by a calibration sweep against coloured axis markers: pitch 0 ->
+# straight down, pitch -pi/2 -> level (Chunky's default), pitch -pi -> straight up. Yaw
+# was calibrated the same way: yaw 0 -> -X, yaw pi/2 -> +Z, yaw pi -> +X, yaw -pi/2 ->
+# -Z (north, the default). So with phi = -pitch the view
 # direction is (-sin(phi)cos(yaw), -cos(phi), sin(phi)sin(yaw)). In the overhead view
 # (yaw -pi/2) image right is +X and image up is -Z.
 DOWN = 0.0
@@ -409,10 +409,10 @@ def raw_shot(name: str, pos, yaw: float, pitch: float,
              projection: str = "PINHOLE", fov: float = 70) -> Shot:
     """A camera pointed by raw yaw and pitch rather than at a subject.
 
-        The one legitimate reason to want this is calibration: `scripts/calibrate_camera.py`
-        sweeps angles against coloured axis markers to find out what Chunky's orientation
-        convention actually is, and it cannot aim at anything because what "aim" means is
-        the thing being measured. Everything else should be asking for a subject.
+        The one legitimate reason to want this is calibration: a sweep of angles against
+        coloured axis markers, to find out what Chunky's orientation convention actually
+        is, cannot aim at anything because what "aim" means is the thing being measured.
+        Everything else should be asking for a subject.
 
     """
     return Shot(name, View(name, tuple(pos), yaw, pitch, projection, fov),
@@ -722,13 +722,9 @@ def pass_foliage(rungs: list, sight: "Sightline | None") -> list:
     return clear + leafy
 
 
-# `pipeline.stage_render` and `pipeline.stage_finish` reached these four functions
-# through `scripts/step4_render.py`, which reached one of them through
-# `scripts/e1d_shotlist.py`, which reached one of *those* through
-# `scripts/audit_mutants.py` -- so running a round imported three finished experiments,
-# and the shot list lived in the scripts directory with the scripts that had used it
-# once. They are the geometry the cameras above are pointed at, so they live here with
-# the cameras, and the three experiment scripts are gone.
+# The geometry the cameras above are pointed at: a settlement's structures, their
+# floors and built cells. `pipeline.stage_render` and `pipeline.stage_finish` read them
+# from here, beside the cameras, rather than from any script.
 
 def merged_plots(state: str) -> list:
     """One rectangle per structure, from a settlement's plot registry.
@@ -982,7 +978,7 @@ def approach_rise(built, gate, span: int = PLACE_SKYLINE_SPAN) -> int:
 def place_card_shots(centre, size: float, *, gate=None, bearing: float = 45,
                      sight: "Sightline | None" = None, fov: float = 70,
                      rise: float | None = None) -> dict:
-    """The two whole-place frames. A7.
+    """The two whole-place frames.
 
         `centre` is (cx, cy, cz) of the site and `size` its side.
 
@@ -1441,9 +1437,9 @@ def shoot_all(shots: dict, chunks: list, out_dir: str, *, tag: str = "",
     return out
 
 
-#: A4: how high over the ground a flythrough camera flies, and its field of view. Low
+#: How high over the ground a flythrough camera flies, and its field of view. Low
 #: enough that the walls are the horizon and not a pattern seen from a plane, which is
-#: the whole reason a city gets a camera move and a town got two stills.
+#: the whole reason a city gets a camera move rather than two stills.
 FLY_RISE = 26
 FLY_FOV = 80
 
@@ -1560,7 +1556,7 @@ def tallest_between(vol, a, b, *, stop: float | None = None,
 
 def flythrough_shots(path: list, vol, *, sight: "Sightline | None" = None,
                      rise: float = FLY_RISE, fov: float = FLY_FOV) -> dict:
-    """One camera per step of `path`, each looking at where the path ends. A4.
+    """One camera per step of `path`, each looking at where the path ends.
 
         `path` is `stages_media.flythrough_path`'s answer -- `{"i", "at": [x, z],
         "look": [x, z]}` -- and the y of every camera is taken off the world under it, so

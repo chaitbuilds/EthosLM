@@ -1,4 +1,4 @@
-"""Compose a district from its streets. The fabric reset round.
+"""Compose a district from its streets.
 
 The block grid (`district_compile._grid_axis`) cuts a rectangle into blocks and then asks
 each block what to hold, so the streets a quarter is lived on are whatever the grid
@@ -64,9 +64,9 @@ PRINCIPAL_LEAST = 16
 ROAD_REACH = 6
 #: How far a principal street may lie beyond the district's first buildable column when
 #: every column between is outside the district (the sector gap a ring strip leaves
-#: between its pieces, where the routed road may run on either side of it): the design
-#: resolution round, where the gate street ran nine columns off the hill-toe piece and
-#: the piece was composed as if the street were not there.
+#: between its pieces, where the routed road may run on either side of it). With a
+#: shorter reach a street running a few columns off a piece is missed, and the piece is
+#: composed as if the street were not there.
 PRINCIPAL_REACH = 10
 #: A principal street's run may be broken this many columns (a drain, a tree the mask
 #: refuses) and still be one run of frontage.
@@ -279,7 +279,7 @@ def cut_run(P: _Plan, run: dict, spec: dict, rng: random.Random, site_ok=None) -
     if cur:
         stretches.append(cur)
     band, pref = spec["widths"], spec["pref"]
-    # **A row's free ends carry their inset** (the design resolution round): the band is
+    # **A row's free ends carry their inset**: the band is
     # what a lot between two party walls needs, and a lot at the end of a stretch keeps
     # the pad's inset on its free flank, so it is `end_extra` wider to hold the same
     # house (`ethoslm.formplan`, asked in both configurations by the compiler).
@@ -444,7 +444,7 @@ def _propose(X0, Z0, ok, road, access, house, shop, anchor, fam, rng, site_ok):
         z += d0
         facing_lane = True
     Dlo = int(house.get("depth_lo") or D)
-    # **Rows that face each other across their lane** (the parent composition round).
+    # **Rows that face each other across their lane.**
     # Where no principal street bounds the near side, the sweep above starts with a lane
     # at the ground's edge, so the first row faces outward and the next backs onto it:
     # every lane then carries doors on one side only and the quarter's houses turn their
@@ -606,14 +606,12 @@ def _propose(X0, Z0, ok, road, access, house, shop, anchor, fam, rng, site_ok):
 
 
 def _prune_lanes(P: _Plan) -> None:
-    """**A lane whose rows did not stand is not laid** (the parent composition round).
+    """**A lane whose rows did not stand is not laid.**
 
     The sweep decides lanes before lots, and a row whose ground is refused leaves its lane
-    with no front on either side. The judge used to exempt such a lane as "a footway
-    through open ground", so the proposal kept a blank lane and passed. The judge now
-    fails any lane it is shown without fronts; the proposal instead withdraws that lane
-    (and a cross lane that served only it), gives its ground back to open ground, and
-    says so in its notes. The proposal is then ranked on the houses it actually holds."""
+    with no front on either side. The judge fails any lane it is shown without fronts, so
+    the proposal withdraws that lane (and a cross lane that served only it), gives its
+    ground back to open ground, and says so in its notes. The proposal is then ranked on the houses it actually holds."""
     keep, dropped = [], []
     for st in P.streets:
         if st.get("kind") == "lane" and "rect" in st:
@@ -953,9 +951,8 @@ def judge(P: _Plan, house_needed: bool = True, anchor_needed: bool = False,
                              if lot["rect"][0] <= x <= lot["rect"][2]
                              and lot["rect"][1] <= z <= lot["rect"][3]), None)
             if lot_here is not None:
-                # **a front on this street**, and only that (the parent composition
-                # round): a shop facing the market lines the street with its flank and
-                # is reached through the market, which is not a door on this street. The
+                # **a front on this street**, and only that: a shop facing the market
+                # lines the street with its flank and is reached through the market, which is not a door on this street. The
                 # market's own open side (above) is the street's active edge there.
                 marks.append("door" if lot_here["front"] == side else "wall")
             elif P.inside(x, z) and P.street[x - P.X0, z - P.Z0]:
@@ -1012,11 +1009,10 @@ def judge(P: _Plan, house_needed: bool = True, anchor_needed: bool = False,
         sides_ = lane_fronts(st["rect"], P.lots)
         share = max(sides_.values()) if sides_ else 0.0
         both = min(sides_.values()) if sides_ else 0.0
-        # **A lane the composition laid is a lane it owes** (the parent composition
-        # round). This was exempted where no lot fronted it -- "a footway through open
-        # ground, not a lane the quarter claims" -- so a lane whose rows failed became a
-        # successful path and the proposal stayed admissible with blank walls both
-        # sides. A lane with no fronts is now a failed lane; a design that wants a path
+        # **A lane the composition laid is a lane it owes.** Exempting a lane no lot
+        # fronts as "a footway through open ground" would turn a lane whose rows failed
+        # into a successful path and keep the proposal admissible with blank walls both
+        # sides. A lane with no fronts is a failed lane; a design that wants a path
         # through a garden has to lay one as open ground, not inherit one from a lane.
         rel.append({"name": f"lane_{i}_fronted", "required": True,
                     "held": share >= LANE_FRONTED,
@@ -1196,12 +1192,12 @@ def compose(rect, ok, road, *, access=None, house=None, shop=None, anchor=None,
         if not fam.get("mirror"):
             lots, streets, anch, opens, verdict = one(fam, ok, road, access, site_ok, rng)
         else:
-            # **the same sweep from the other side** (the city attempt round): the sweep
-            # lays its principal street's frontage row only on the street at the low
-            # side of its frame, so a quarter whose street runs along its high side -- a
-            # ring strip whose section faces the centre on its south or east -- had its
-            # lanes laid from the wrong edge. The ground is mirrored across the lane
-            # grain, swept, and mirrored back.
+            # **the same sweep from the other side**: the sweep lays its principal
+            # street's frontage row only on the street at the low side of its frame, so
+            # a quarter whose street runs along its high side -- a ring strip whose
+            # section faces the centre on its south or east -- would have its lanes laid
+            # from the wrong edge. The ground is mirrored across the lane grain, swept,
+            # and mirrored back.
             m = _Mirror(rect, "z" if fam["axis"] == "x" else "x")
             okm = ok[:, ::-1].copy() if m.along == "z" else ok[::-1, :].copy()
             roadm = {m.cell(c) for c in road}
@@ -1223,10 +1219,10 @@ def compose(rect, ok, road, *, access=None, house=None, shop=None, anchor=None,
                     "open": opens, **verdict})
     admissible = [p for p in out if p["admissible"]]
     adopted = max(admissible, key=lambda p: p["preference"]) if admissible else None
-    # **The parent's arrangement, where it decided one** (the parent composition round):
-    # a piece cut to hold modules of one street arrangement is composed in it where any
-    # proposal of that arrangement is admissible, and the record says when none was --
-    # the decision reaches the lots, or its failure reaches the parent.
+    # **The parent's arrangement, where it decided one**: a piece cut to hold modules of
+    # one street arrangement is composed in it where any proposal of that arrangement is
+    # admissible, and the record says when none was -- the decision reaches the lots, or
+    # its failure reaches the parent.
     asked = None
     if prefer:
         match = [p for p in admissible
@@ -1272,7 +1268,7 @@ def default_families(house, shop, anchor=None) -> list:
     d0 = int(house["depth"])
     depths = sorted({d0, max(house.get("depth_lo", d0), d0 - 2),
                      min(house.get("depth_hi", d0), d0 + 2)})
-    # ...and a principal street lined with shops its whole run (the city attempt round):
+    # ...and a principal street lined with shops its whole run:
     # a ring's high street, where the section the parent sized the ring for puts the
     # trade form's shallow row on the street and the houses behind it
     reaches = [0] if not shop else [48, 96, SHOP_ALL]
@@ -1288,7 +1284,7 @@ def default_families(house, shop, anchor=None) -> list:
     fams = []
     # ...and the lane grain's two sweeps: a lane at the ground's edge first (each lane
     # fronted on one side), or a row backing onto the edge so that houses face each
-    # other across the lane (`lanes: between`, the parent composition round)
+    # other across the lane (`lanes: between`)
     for axis, mirror in (("x", False), ("z", False), ("x", True), ("z", True)):
         for lanes in (None, "between"):
             for d in depths:

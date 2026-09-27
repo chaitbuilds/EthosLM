@@ -1,6 +1,6 @@
 """**Owned surfaces**: what construction laid, by part, role and exposure, editable.
 
-The expression round's material interface. `construction.surfaces` counted block
+The interface a material pass works through. `construction.surfaces` counted block
 families; a family cannot say whether a cobblestone is a wall or a floor, which part
 laid it, or whether it is a tread a person walks on. The builder now records the role
 at the write (`buildlib.Builder._tag`, packed beside every pending block), and this
@@ -41,8 +41,7 @@ FLAGS = {"open_north": 1, "open_south": 2, "open_east": 4, "open_west": 8,
          #: **This cell is part of a figure somebody drew.** Not an exposure bit: the
          #: others say what the weather does to a cell, this says what the type meant by
          #: it. Declared with `Primitives.figure`, carried through `reconcile` the way
-         #: ground contact is, and refused by `material.plan`. Composition round; the
-         #: design round's cause 4 (`out/des-material/comparison.json`).
+         #: ground contact is, and refused by `material.plan`.
          "figure": 4096}
 _FACES = (("open_north", 0, -1), ("open_south", 0, 1), ("open_east", 1, 0),
           ("open_west", -1, 0))
@@ -76,11 +75,10 @@ def _parse(state: str) -> tuple:
 def same_state(saw: str, stands: str) -> bool:
     """Is the block that stands the block the record saw -- **including its state**?
 
-        Composition round, Q1. Freshness used to be decided on the bare name
-        (`_name`), so a cell whose stair was re-faced the other way, whose slab moved from
-        bottom to top or whose log changed axis after the record was made still read
-        `fresh`, and `material.substitute` then re-emitted the *record's* suffix over it and
-        silently turned the block back round. Orientation is physics here -- a tread faces
+        Freshness decided on the bare name (`_name`) would let a cell whose stair was
+        re-faced the other way, whose slab moved from bottom to top or whose log changed
+        axis after the record was made read `fresh`, and `material.substitute` would then
+        re-emit the *record's* suffix over it and silently turn the block back round. Orientation is physics here -- a tread faces
         the way somebody climbs -- so a cell whose state has moved is stale and is left
         alone.
     """
@@ -262,21 +260,24 @@ def record(builder, part: dict, *, part_index: int | None = None,
             "how": how, "owned": len(cells)}
 
 
-# ------------------------------------------------ the record against the world v2,
-# design round, C2. `record` is made inside one part's builder, before the part next to
-# it exists. Four things can be true of a recorded cell by the time the place is
-# assembled, and the pass may edit none of them: stale the block the record saw is not
-# the block that stands (a later sweep cleared it, a doorstep was held open).
-# `material.apply` already refuses these; reconciling them here makes the count visible
-# instead of a silent skip. overwritten two parts wrote the same cell and the later one
-# won. The cell belongs to the later part -- under *its* role and *its* voice -- and the
-# earlier part's claim on it is not permission. protected any part's protected list
-# beats every part's editable claim. A tread, a door, a glass, a light, the ground.
-# unexposed no air on any of its six faces in the assembled world. Nobody can see it, so
-# it is not worth an edit and not worth a comparison. and one thing must be recomputed
-# rather than trusted: **exposure**. `open_south` was true of a wall that had nothing
-# south of it when it was built; the house built next to it later is what a material
-# pass is conditioned on now.
+# -------------------------------------------------------- the record against the world
+# `record` is made inside one part's builder, before the part next to it exists. Four
+# things can be true of a recorded cell by the time the place is assembled, and the pass
+# may edit none of them:
+#   stale        the block the record saw is not the block that stands (a later sweep
+#                cleared it, a doorstep was held open). `material.apply` already refuses
+#                these; reconciling them here makes the count visible instead of a
+#                silent skip.
+#   overwritten  two parts wrote the same cell and the later one won. The cell belongs
+#                to the later part -- under *its* role and *its* voice -- and the
+#                earlier part's claim on it is not permission.
+#   protected    any part's protected list beats every part's editable claim. A tread,
+#                a door, a glass, a light, the ground.
+#   unexposed    no air on any of its six faces in the assembled world. Nobody can see
+#                it, so it is not worth an edit and not worth a comparison.
+# And one thing must be recomputed rather than trusted: **exposure**. `open_south` was
+# true of a wall that had nothing south of it when it was built; the house built next to
+# it later is what a material pass is conditioned on now.
 
 def reconcile(doc: dict, built, *, note: str = "") -> tuple:
     """(reconciled doc, report) of an emission record against the assembled world.
@@ -336,13 +337,13 @@ def reconcile(doc: dict, built, *, note: str = "") -> tuple:
     prot_role = {(r[0], r[1], r[2]): (r[4] if len(r) > 4 else "unknown")
                  for p in parts for r in (p.get("protected") or [])}
     clash = np.fromiter(((xs[k], ys[k], zs[k]) in prot for k in range(n)), bool, n)
-    # The block that stands, against the block the record saw, **with its state**. This
-    # compared bare names until the composition round, so a cell whose stair had been
-    # re-faced or whose slab had moved to the top half since the record was made still
-    # read fresh and the pass wrote the record's own stale suffix back over it. The
-    # freshness test is `same_state`, which says why it compares the properties both
-    # sides name. A cache of the two-state answer, because a city record holds 167,270
-    # cells over 145 distinct states and 763 palette entries.
+    # The block that stands, against the block the record saw, **with its state**.
+    # Comparing bare names would let a cell whose stair had been re-faced or whose slab
+    # had moved to the top half since the record was made read fresh, and the pass would
+    # write the record's own stale suffix back over it. The freshness test is
+    # `same_state`, which says why it compares the properties both sides name. A cache
+    # of the two-state answer, because a city record holds far more cells than it has
+    # distinct states.
     here = gather(X, Y, Z)
     _fresh_cache: dict = {}
 

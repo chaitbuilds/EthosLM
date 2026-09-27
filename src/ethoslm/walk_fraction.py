@@ -16,8 +16,8 @@ TOWNS = ["site_a", "site_b", "site_c"]
 def load(name):
     state = os.path.join(ROOT, "out", name)
     vol = offline.load_volume(os.path.join(state, "world_built.npz"))
-    # A1: the registry carrying the floor level each part was sited at, so a room under
-    # a plot is not read as the floor of the building above it.
+    # The registry carrying the floor level each part was sited at, so a room under a
+    # plot is not read as the floor of the building above it.
     plots = settlement.registry_with_floors(state)
     netp = os.path.join(state, "network.json")
     net = Network.load(netp) if os.path.exists(netp) else None
@@ -29,8 +29,8 @@ def load(name):
 
 def measure(name, show_rooms=False, context=None):
     """`context` is `(lint.Context, Network)` already built over this town's volume --
-    A4, so that a readout builds one and not five. With none, this builds its own, which
-    is what the command line does."""
+    so that a readout builds one and not five. With none, this builds its own, which is
+    what the command line does."""
     t0 = time.perf_counter()
     ctx, net = context if context is not None else load(name)
     rows = ctx.interior_walk()

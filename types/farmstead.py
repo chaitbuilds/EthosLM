@@ -11,9 +11,9 @@ FORM = "east_asian"
 #: and a shop-house are both east Asian.
 ROLE = "rural"
 
-#: **What this type is for.** The realization round: a `ROLE` says what work a building
-#: is for and is satisfied by a hall, a barn or a temple alike; a sentence asking for
-#: houses people live in is asking for a `dwelling`. Declared so that the function can
+#: **What this type is for.** A `ROLE` says what work a building is for and is
+#: satisfied by a hall, a barn or a temple alike; a sentence asking for houses people
+#: live in is asking for a `dwelling`. Declared so that the function can
 #: be checked rather than inferred from a label.
 FUNCTION = "dwelling"
 
@@ -369,7 +369,8 @@ def build(b, part, seed, **params):
                                   "storeys": 0, "attempt": None,
                                   "fallback": "no shell stood", "omitted": ["storeys"],
                                   "features": {}})
-    # **What survived, said by the type.** The closure round.
+    # **What survived, said by the type**: what was asked, what stood, and which rungs
+    # of the fallback ladder it took to stand it.
     emitted = {"requested": {"storeys": asked_storeys, "yard_use": yard_use},
                "storeys": int(storeys), "attempt": len(gave_up),
                "fallback": "; ".join(gave_up) or None,

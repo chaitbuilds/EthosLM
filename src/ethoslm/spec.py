@@ -41,8 +41,9 @@ SIZE_BANDS = {
 
 def kind_order() -> list:
     """The kinds of place from the smallest to the largest, read off `SIZE_BANDS` --
-    the one table -- and not declared again anywhere. v2, C0: the site search's last
-    escape drops a place one band down, and it kept its own list of the order."""
+    the one table -- and not declared again anywhere. The site search's last escape
+    drops a place one band down, and reads the order from here rather than keeping its
+    own list."""
     return sorted(SIZE_BANDS, key=lambda k: (SIZE_BANDS[k], k))
 
 
@@ -85,26 +86,25 @@ DISTRICT_FAMILIES = ("district", "quarter")
 #: sentence makes it a castle. See `compound`.
 COMPOUND_FAMILIES = ("palace", "monument")
 
-#: **What a compound of each family is made of, at the least -- by the word.** v2, C0.
-#: Until this, every compound was palace-shaped: a closed wall of its own with a gate on
-#: it, two halls and a court were the validator, the brief, the place read's clause and
-#: the plateau arithmetic for any compound family, `monument` included, and every
-#: compound was granted the defensive types. A monument is one thing and its setting; a
-#: shrine precinct is a shrine and its court; a castle is a keep inside its own curtain
-#: wall with a gatehouse and a bailey. Each row says whether the compound has a closed
-#: wall of its own (`walled`), a gate on it (`gated`), the least enclosed parts
-#: (`halls`: plots) and open parts (`courts`: areas) it holds, and the roles it admits
-#: over its own (`admits`: a wall and a gate are defensive whatever the compound is for,
-#: so a walled compound admits them). The count of halls is a **floor** where the row
-#: `scales`: the compound's rectangle raises it at the compound's density
-#: (`placeplan.compound_target`), so a palace on two hundred square is not two halls and
-#: a court. A monument does not scale -- it is one thing whatever the size of its
-#: setting. A wall drawn where none is asked for is still held to be closed and inset,
-#: and a gate drawn is held to stand on it. A family not in the table is the default
-#: row, which is the palace's. ...and **`axis`**, the craft round (E5): whether a
-#: compound of this family is a **sequence** and not a set. A composition says what a
-#: great thing holds and said nothing about the order, so a palace precinct a quarter of
-#: a city wide came out as halls and courts arranged to fit rather than as an approach.
+#: **What a compound of each family is made of, at the least -- by the word.** Not every
+#: compound is palace-shaped: the validator, the brief, the place read's clause and the
+#: plateau arithmetic all read this row rather than assuming a wall, a gate, two halls
+#: and a court and granting every compound the defensive types. A monument is one thing
+#: and its setting; a shrine precinct is a shrine and its court; a castle is a keep
+#: inside its own curtain wall with a gatehouse and a bailey. Each row says whether the
+#: compound has a closed wall of its own (`walled`), a gate on it (`gated`), the least
+#: enclosed parts (`halls`: plots) and open parts (`courts`: areas) it holds, and the
+#: roles it admits over its own (`admits`: a wall and a gate are defensive whatever the
+#: compound is for, so a walled compound admits them). The count of halls is a
+#: **floor** where the row `scales`: the compound's rectangle raises it at the
+#: compound's density (`placeplan.compound_target`), so a palace on two hundred square
+#: is not two halls and a court. A monument does not scale -- it is one thing whatever
+#: the size of its setting. A wall drawn where none is asked for is still held to be
+#: closed and inset, and a gate drawn is held to stand on it. A family not in the table
+#: is the default row, which is the palace's. ...and **`axis`**: whether a compound of
+#: this family is a **sequence** and not a set. The rest of the row says what a great
+#: thing holds and nothing about the order, so without an axis a palace precinct comes
+#: out as halls and courts arranged to fit rather than as an approach.
 #: Where a family declares an axis the library lays it as one -- the gate, a forecourt,
 #: a hall, an inner court and the greatest hall at the far end, the flanking ranges
 #: paired down it -- and where it does not, the compound is drawn as it always was. A
@@ -151,10 +151,10 @@ FORMS = ("european_vernacular", "east_asian", "dryland_vernacular", "fortificati
          "civic")
 
 #: How a defining part sits in the place. Free text is refused: a relation nothing can
-#: act on is a comment, and A5 plans the place level off exactly these words.
+#: act on is a comment, and the place level is planned off exactly these words.
 RELATIONS = ("concentric", "centre", "edge", "perimeter", "gateway", "throughout",
              "quarter", "beside_the_centre",
-             # v2, B2: the three that name another part -- `of` -- and the solver places
+             # The three that name another part -- `of` -- and the solver places
              # against it: `near` (on a side of it), `along` (a strip beside an edge's
              # run), `on` (a point at a cell of an edge's line). `near` with no `of` is
              # `beside_the_centre`.
@@ -225,7 +225,7 @@ PART_NEEDS_DEFAULT = {"max_relief": None,      # over this part's own ground
 #: -- and an authored one is validated by the voice validator exactly as the place's is.
 RING_FIELDS = ("ring", "share", "walled", "voice")
 
-#: **A district's character**, v2, C1: what a district is like, in words and a few
+#: **A district's character**: what a district is like, in words and a few
 #: numbers, which the district compiler (`ethoslm.district_compile`) turns into streets,
 #: blocks, lots and buildings with no model asked. The model writes this in the district
 #: brief's place. Every field is optional; the density word's row of
@@ -380,7 +380,7 @@ def merge_hand_back(first: dict, answer: dict, fields: list) -> dict:
 
 # ---------------------------------------------------------------- the ceiling
 
-#: A2. What one run of this pipeline may be. Hard limits, in one place, checked before a
+#: What one run of this pipeline may be. Hard limits, in one place, checked before a
 #: site is looked for and applied to the spec rather than to the plan -- a place that is
 #: scaled after its site is chosen has already spent the search. footprint the largest
 #: square of world one place may occupy structures the most things one place may stand
@@ -389,12 +389,11 @@ def merge_hand_back(first: dict, answer: dict, fields: list) -> dict:
 #: a place that needs two sessions cannot be built here.
 CEILING = {"footprint": 512, "structures": 400, "sessions": 1}
 
-#: A city at 768, every other kind at `CEILING["footprint"]`. The principal's decision
-#: for the last run -- it goes for it all -- and a general fact: a city of four rings on
-#: 512 had its belt squeezed to 0.44 of the site against 0.58 declared because the inner
-#: rings' least widths took what the shares could not give; at 768 the shares fit. Every
-#: reader asks `footprint_ceiling(kind)`; a spec read before this carried the old
-#: ceiling's footprint and is read back as it was (`_read_needs`).
+#: A city at 768, every other kind at `CEILING["footprint"]`. A city of four rings on 512
+#: has its belt squeezed well below its declared share, because the inner rings' least
+#: widths take what the shares cannot give; at 768 the shares fit. Every reader asks
+#: `footprint_ceiling(kind)`; a spec written under the old ceiling carries its footprint
+#: and is read back as it was (`_read_needs`).
 CEILING_FOOTPRINT_BY_KIND = {"city": 768}
 
 
@@ -494,10 +493,10 @@ COLUMNS_PER_PLOT = 225
 #: the footprint is good.
 BUILDABLE_FRACTION = 0.45
 
-#: Footprints are a multiple of this, because `scripts/prepare_settlement.py` reduces
-#: the site to a 12x12 grid of cells for the planner's briefing and a size that is not a
-#: multiple of twelve does not reshape. Twelve, not "round to a hundred": the constraint
-#: is real and this is where it is written down.
+#: Footprints are a multiple of this, because `pipeline/_commands/prepare_settlement.py`
+#: reduces the site to a 12x12 grid of cells for the planner's briefing and a size that
+#: is not a multiple of twelve does not reshape. Twelve, not "round to a hundred": the
+#: constraint is real and this is where it is written down.
 FOOTPRINT_STEP = 12
 
 #: The smallest place worth looking for a site for. Below this the footprint is smaller
@@ -517,18 +516,14 @@ def footprint_for(structures: int, kind: str | None = None) -> int:
 #: What a place's `needs` may say about its ground, and what each defaults to. These are
 #: the terrain bank's own measures (`scripts/terrain_bank.py`) so a site is scored on
 #: the same numbers every fixture in this project is described by. **Relief is not
-#: scale-free, and a fixed cap on it is a filter that admits nothing.** This was
-#: `max_relief: 40` -- a flat number over the whole footprint -- and running A3's search
-#: against it found **nothing within 1,536 blocks of the origin**: the flattest 372x372
-#: anywhere in that disc has 49 blocks of relief, and water, forest and the plateau all
-#: passed at every candidate. Then the record was read, and the number is refuted by it
-#: outright: **every site this project has ever built a town on carries relief 46 to 99
-#: over 192x192**. A cap of 40 would have refused all eight. Read what an instrument
-#: *admits*, not only what it rejects. So the need is expressed the way the evidence is
-#: -- as **fall per block of footprint** -- and the band comes from the record: those
-#: eight sites span 0.24 to 0.52. `MAX_GRADIENT` is 0.55, which is "no steeper than
-#: anything this project has built a town on", with a margin and no site fitted to. The
-#: reading under the old number is kept.
+#: scale-free, and a fixed cap on it is a filter that admits nothing.** A flat
+#: `max_relief` over the whole footprint (40, say) refuses almost every large square of
+#: real terrain, and every site this project has built a town on carries relief of
+#: 46 to 99 over 192x192. Read what an instrument *admits*, not only what it rejects. So
+#: the need is expressed the way the evidence is -- as **fall per block of footprint**
+#: -- and the band comes from those built sites, which span 0.24 to 0.52. `MAX_GRADIENT`
+#: is 0.55, which is "no steeper than anything this project has built a town on", with a
+#: margin and no site fitted to.
 MAX_GRADIENT = 0.55
 
 #: Floats and not ints, so that reading a spec that has already been read gives the
@@ -672,9 +667,9 @@ _NUMBER_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
                  "hundred": 100, "two hundred": 200, "three hundred": 300,
                  "four hundred": 400, "five hundred": 500, "a thousand": 1000}
 
-# **Thirteen to ninety-nine, by rule.** The closure round's first retained failure: the
-# table above had no row for `sixteen`, and a village of sixteen cottages was sized at
-# fifty-two. The interpretation now carries the count (see
+# **Thirteen to ninety-nine, by rule.** A number word missing from the table (`sixteen`,
+# say) is a sentence read as naming no count, and a village of sixteen cottages sized by
+# its kind's band instead. The interpretation carries the count (see
 # `stages_plan.explicit_count_of`) and this table is the rules' cross-check, which has
 # to be able to read the same words.
 _NUMBER_WORDS.update({"thirteen": 13, "fourteen": 14, "sixteen": 16, "seventeen": 17,
@@ -703,12 +698,12 @@ def count_in(sentence: str) -> dict | None:
     # size of the settlement and it is attached to a word for a building.
     unit = r"(?:houses?|homes?|dwellings?|buildings?|structures?|cottages?|halls?)"
     words = "|".join(sorted(_NUMBER_WORDS, key=len, reverse=True))
-    # **Six digits, and thousands separators.** The architecture audit, found by asking
-    # for one: `\d{1,4}` read "10000 houses" as no count at all, so a sentence naming a
-    # number this system certainly cannot build was read as a sentence naming none --
-    # and a place that cannot be built became a place nobody asked a question about. A
-    # number too large is refused downstream, by name, with the number in the refusal; a
-    # number unread is refused nowhere.
+    # **Six digits, and thousands separators.** A pattern of `\d{1,4}` reads "10000
+    # houses" as no count at all, so a sentence naming a number this system certainly
+    # cannot build is read as a sentence naming none -- and a place that cannot be built
+    # becomes a place nobody asked a question about. A number too large is refused
+    # downstream, by name, with the number in the refusal; a number unread is refused
+    # nowhere.
     m = re.search(rf"(\b(?:{'|'.join(_ABOUT_WORDS[:-1])})\s+)?"
                   rf"\b(\d{{1,3}}(?:,\d{{3}})+|\d{{1,6}}|{words})\b[\w\s-]{{0,20}}?"
                   rf"\b{unit}\b", s)
@@ -721,7 +716,7 @@ def count_in(sentence: str) -> dict | None:
 
 
 def band_for(kind: str, count: dict | None) -> tuple:
-    """The size band, from the kind and any explicit count. A1.
+    """The size band, from the kind and any explicit count.
 
         The kind's band unless the sentence gave a number, in which case that number wins --
         `+/- ABOUT` where the sentence hedged and exactly where it did not. The kind's band
@@ -742,12 +737,12 @@ def band_for(kind: str, count: dict | None) -> tuple:
 def size_from(declared: int, lo: int, hi: int) -> int:
     """How big the place is, from what the districts declared and the kind's band.
 
-        So the arithmetic is here, where A1 says it belongs, and the rule turns on **which
+        The arithmetic is the library's, not the model's, and the rule turns on **which
         side of the band** the sum falls:
 
           - at or above the band's floor, it is a count. A city declared at 1,200 has been
-            given a size and it is too big; that is the **ceiling's** job, and the scaling
-            case in `test_place` is what says so, unmoved.
+            given a size and it is too big; that is the **ceiling's** job
+            (`scale_to_ceiling`), not this function's.
           - below the band's floor, it is not a count at all: no city is thirteen buildings
             and no model believes one is. It is read as the proportions between the parts
             and the size comes from the middle of the band.
@@ -781,7 +776,7 @@ def apportion(parts: list, declared: int, target: int) -> list:
         if not groups or not target:
             return parts
         for p in groups:
-            p["structures_inferred"] = True      # the closure round: an inferred share
+            p["structures_inferred"] = True      # an inferred share, marked as one
         weight = {p["name"]: (float(p["share"]) / DENSITIES.get(p.get("density")
                                                                   or "medium", 1.0)
                               if p.get("share") is not None else 1.0) for p in groups}
@@ -938,7 +933,7 @@ def read_ring_fields(d: dict, out: dict, where: str) -> None:
 
 
 def read_character(got, out: dict, where: str) -> None:
-    """A district part's `character`, checked, onto `out["character"]`. v2, C1.
+    """A district part's `character`, checked, onto `out["character"]`.
 
         Absent means the district is planned as it always was; present -- even empty --
         means the compiler plans it. Refused by name on a part that is not a district, on
@@ -1101,7 +1096,7 @@ def district_voice(spec: dict, district: dict) -> str | None:
 
 
 def read_role(got, part: dict, where: str) -> str:
-    """What this defining part is for, checked, or derived where it does not say. A2."""
+    """What this defining part is for, checked, or derived where it does not say."""
     if got is not None:
         if got not in ROLES:
             raise SpecError(f"{where}: role is one of {list(ROLES)}, or null to take "
@@ -1114,7 +1109,7 @@ def read_role(got, part: dict, where: str) -> str:
 
 
 def read_part_needs(got, where: str) -> dict:
-    """One defining part's own ground, checked. A1. Refuses by name."""
+    """One defining part's own ground, checked. Refuses by name."""
     out = dict(PART_NEEDS_DEFAULT)
     if got is None:
         return out
@@ -1138,7 +1133,7 @@ def read_part_needs(got, where: str) -> dict:
 
 
 def read_part_forms(got, where: str) -> list | None:
-    """The forms a defining part's own types may be, or None for the place's. A1."""
+    """The forms a defining part's own types may be, or None for the place's."""
     if got is None:
         return None
     if isinstance(got, str):
@@ -1153,7 +1148,7 @@ def read_part_forms(got, where: str) -> list | None:
 
 
 def read_density(got, where: str) -> str | None:
-    """How thickly this part is built up, or None. A1."""
+    """How thickly this part is built up, or None."""
     if got is None:
         return None
     if got not in DENSITIES:
@@ -1240,17 +1235,15 @@ def structures_for(columns: float, part: dict, shape: tuple | None = None) -> in
 
 
 def read_spec(doc: dict, sentence: str | None = None, count: dict | None = None) -> dict:
-    """A place spec off a model's answer: checked, completed, and scaled. A1 + A2.
+    """A place spec off a model's answer: checked, completed, and scaled.
 
         `count` is the explicit count the **interpretation** read from the sentence
-        (`{"n", "about", "phrase", "what"}`), the closure round. Read before this the count
-        came from `count_in` alone, a regex with a table of number words, so "sixteen low
-        cottages" -- a number word the table lacks -- was read as no count at all and the
-        village was sized at fifty-two from the kind's band while the interpretation beside
-        it said sixteen, exactly. Meaning lost at the first consumer. The order now: the
-        count handed in; else the count a **checked** spec already carries, so a spec read
-        back from disk is the spec that was written; else `count_in`, for a round with no
-        interpretation.
+        (`{"n", "about", "phrase", "what"}`). It is preferred over `count_in`, a regex
+        with a table of number words, because a number word the table lacks is read there
+        as no count at all and the place sized from the kind's band while the
+        interpretation beside it said the number exactly. The order: the count handed in;
+        else the count a **checked** spec already carries, so a spec read back from disk
+        is the spec that was written; else `count_in`, for a run with no interpretation.
 
         What the model is answerable for is `kind`, `defining_parts` and `voice`. The band,
         the structure count, the footprint and the ceiling are computed here from the
@@ -1320,14 +1313,14 @@ def read_spec(doc: dict, sentence: str | None = None, count: dict | None = None)
     #: the sentence gave -- "about sixty houses" is sixty; 2. what the **districts** say
     #: they hold, where they say. A district is the defining part that stands for
     #: ordinary buildings; three rings declaring twelve hundred between them is an ask,
-    #: and it is the ask A2's ceiling scales. 3. the middle of the kind's band, where
-    #: neither says. Only the groups, and that is not a detail. declining to give a
-    #: number for the houses, which is what the brief tells it to do -- and counting the
-    #: palace made a city of **one structure**. A defining plot is one building; it is
-    #: never the size of the place. ...and only the **districts** among the groups. A
-    #: compound -- a palace planned as a place of halls -- is a great thing and not the
-    #: size of the place either, whatever its `structures` says; its halls are counted
-    #: when they stand.
+    #: and it is the ask the ceiling scales. 3. the middle of the kind's band, where
+    #: neither says. Only the groups, and that is not a detail: a model that declines to
+    #: give a number for the houses, which is what the brief tells it to do, leaves only
+    #: the defining plots with counts -- and counting the palace would make a city of
+    #: **one structure**. A defining plot is one building; it is never the size of the
+    #: place. ...and only the **districts** among the groups. A compound -- a palace
+    #: planned as a place of halls -- is a great thing and not the size of the place
+    #: either, whatever its `structures` says; its halls are counted when they stand.
     declared = sum(p["structures"] for p in out_parts if district(p))
     target = count["n"] if count else size_from(declared, lo, hi)
 
@@ -1418,23 +1411,23 @@ def read_spec(doc: dict, sentence: str | None = None, count: dict | None = None)
         spec["scaled_from"] = doc["scaled_from"]
     # ...and the same for the record of a requirement the ceiling could not meet. A spec
     # read back from disk is already under the ceiling, so nothing here would write
-    # `unmet` a second time -- and an obligation that vanishes when the record is re-
-    # read is the failure mode this whole round exists to close.
+    # `unmet` a second time -- and an obligation must not vanish when the record is
+    # re-read.
     if doc.get("unmet") and "unmet" not in spec:
         spec["unmet"] = doc["unmet"]
     if spec.get("unmet") and spec.get("explicit_count"):
         # The band on disk is the band the sentence set, and a second read restates it
         # rather than deriving a softer one from the reduced count.
         spec["size_band"] = [int(v) for v in spec["unmet"]["band"]]
-    # **A negotiated target survives being read again.** The architecture round, found
-    # by running the repair loop: `repair.apply` writes the revised band and count to
-    # `place.checked.json`, and the next `place_spec()` re-derived both from the kind
-    # and threw them away -- so the repair landed, the plan was laid out from the
-    # programme it had before, and the finding it was meant to close stayed open. A
-    # negotiation is a **decision about an inferred choice**, on the record with its
-    # bound and its reason, and it is as much a part of the spec as the sentence's own
-    # count. Only `size_band` and `structures` are restated, and never over an explicit
-    # count: `repair` refuses to negotiate one and this could not restate it if it did.
+    # **A negotiated target survives being read again.** `repair.apply` writes the
+    # revised band and count to `place.checked.json`; were the next `place_spec()` to
+    # re-derive both from the kind, the repair would land, the plan would be laid out
+    # from the programme it had before, and the finding it was meant to close would stay
+    # open. A negotiation is a **decision about an inferred choice**, on the record with
+    # its bound and its reason, and it is as much a part of the spec as the sentence's
+    # own count. Only `size_band` and `structures` are restated, and never over an
+    # explicit count: `repair` refuses to negotiate one and this could not restate it if
+    # it did.
     neg = doc.get("negotiated")
     if neg:
         spec["negotiated"] = list(neg)
@@ -1488,11 +1481,11 @@ def _read_needs(got, structures: int, kind: str | None = None,
     """The ground the place wants, filled out. **The footprint is derived, never given.**
 
         A footprint that is present and does not match what the count implies is refused by
-        name rather than obeyed: the whole of A1 is that the model reads and the library
-        computes, and a spec that could hand back its own footprint is a spec a model can
-        size a place with. A footprint that *does* match is accepted, because reading a spec
-        that has already been read has to give the same spec -- `Round.place_spec()` is
-        called by five stages.
+        name rather than obeyed: the model reads and the library computes, and a spec that
+        could hand back its own footprint is a spec a model can size a place with. A
+        footprint that *does* match is accepted, because reading a spec that has already
+        been read has to give the same spec -- `Round.place_spec()` is called by five
+        stages.
 
     """
     out = dict(NEEDS_DEFAULT)
@@ -1535,10 +1528,10 @@ def _read_needs(got, structures: int, kind: str | None = None,
     return out
 
 
-# ------------------------------------------------------------------ A2, scaling
+# ---------------------------------------------------------------------- scaling
 
 def scale_to_ceiling(spec: dict) -> dict:
-    """Bring a spec under `CEILING`, and write down that it was. A2.
+    """Bring a spec under `CEILING`, and write down that it was.
 
         The footprint is capped in the same act and re-derived from the reduced count, so a
         scaled spec asks for the ground it now needs and not the ground it wanted.
@@ -1608,7 +1601,7 @@ def scale_to_ceiling(spec: dict) -> dict:
 # ------------------------------------------------------------------- utilities
 
 def walls(spec: dict) -> list:
-    """The defining parts that are walls. What A6 reads "walled" off."""
+    """The defining parts that are walls. What the plan's checks read "walled" off."""
     return [p for p in spec["defining_parts"] if p["family"] == "wall"]
 
 
@@ -1634,12 +1627,11 @@ def district(part: dict) -> bool:
 
 
 #: What the ground between the buildings of a district **is**. Distinct from `role`,
-#: which says what the buildings are for, and the integration review's fourth finding
-#: turns on the two having been the same word: > its supplied programme uses `role:
-#: rural`, which `placeplan.district_failures` > treats as a **farmland belt** requiring
-#: 60% farms/fields coverage [...] "rural > means farmland" also imports the wrong
-#: functional assumption. A fishing village is rural and is not a farm. A farm belt is a
-#: farm because it is fields, and a spec that means fields can say so.
+#: which says what the buildings are for. Were they one word, `role: rural` would be read
+#: by `placeplan.district_failures` as a **farmland belt** requiring 60% farms/fields
+#: coverage, and "rural means farmland" is the wrong functional assumption: a fishing
+#: village is rural and is not a farm. A farm belt is a farm because it is fields, and a
+#: spec that means fields can say so.
 LAND_USES = ("settled", "farmland", "pasture", "orchard", "industrial", "civic")
 
 #: The words a spec spends on a district when it means farmland, for the derivation
@@ -1652,14 +1644,13 @@ _FARMLAND_WORDS = ("farm", "farms", "farmland", "farmlands", "farmstead", "farms
                    "paddies", "cropland", "irrigation")
 
 
-#: **The programme's entities, bound once.** The expression round. The falsification
-#: pass's held-out sentence spent one of eleven houses on the orchard's lot and could
-#: not select the orchard by word, because "what is a counted building, what is land"
-#: was answered by each policy with its own noun table. A defining part is one of these
-#: classes, read from what it declares -- kind, family, role, function, land use -- and
-#: never from its name alone; the explicit count is spent only on `building` entities
-#: whose unit is the count's subject. `land` families are areas of ground with a
-#: purpose.
+#: **The programme's entities, bound once.** "What is a counted building, what is land"
+#: is answered here and nowhere else: answered by each policy with its own noun table, a
+#: sentence's house count gets spent on an orchard's lot and the orchard cannot be
+#: selected by word. A defining part is one of these classes, read from what it declares
+#: -- kind, family, role, function, land use -- and never from its name alone; the
+#: explicit count is spent only on `building` entities whose unit is the count's
+#: subject. `land` families are areas of ground with a purpose.
 ENTITY_CLASSES = ("building", "land", "amenity", "compound", "boundary", "point")
 _LAND_FAMILIES = ("field", "orchard", "pasture", "paddy", "grove", "garden", "yard",
                   "farmland", "meadow", "park", "cropland")
@@ -1800,12 +1791,12 @@ def compounds(spec: dict) -> list:
 
 
 def core(spec: dict) -> dict | None:
-    """The defining part at the middle: the one the ground is levelled for. A1.
+    """The defining part at the middle: the one the ground is levelled for.
 
-        The same rule `find_site.innermost` has always applied -- the part whose
-        relation is `centre`, and where two are, the one that is not a group -- lifted here
-        because A1 gives that part a *say*: its own `needs` are what the core of the site is
-        scored against, and the search reads them from this one answer.
+        The same rule `find_site.innermost` applies -- the part whose relation is
+        `centre`, and where two are, the one that is not a group -- kept here because that
+        part has a *say*: its own `needs` are what the core of the site is scored against,
+        and the search reads them from this one answer.
 
     """
     at_centre = [p for p in spec["defining_parts"] if p["relation"] == "centre"]
@@ -1816,12 +1807,11 @@ def core(spec: dict) -> dict | None:
 
 
 def core_needs(spec: dict) -> dict:
-    """The ground the **core** wants: the core part's own needs over the place's. A1.
+    """The ground the **core** wants: the core part's own needs over the place's.
 
-        A place's `needs` describe the whole footprint and always did. What A1 adds is that
-        the number that matters most -- how level the middle is -- belongs to the part that
-        stands on it, and a spec that says so is a spec whose outer rings are free to be a
-        hillside.
+        A place's `needs` describe the whole footprint. The number that matters most -- how
+        level the middle is -- belongs to the part that stands on it, and a spec that says
+        so is a spec whose outer rings are free to be a hillside.
 
     """
     out = {k: v for k, v in spec["needs"].items()}
@@ -1834,7 +1824,7 @@ def core_needs(spec: dict) -> dict:
 
 
 def district_role(spec: dict, district: dict) -> str | None:
-    """What one district of a place plan is for. A2.
+    """What one district of a place plan is for.
 
         A place-level district carries `defines`: the name of the defining part it is part
         of. The role comes from there and from nowhere else, so a district is not asked to
@@ -1854,7 +1844,7 @@ def district_role(spec: dict, district: dict) -> str | None:
 
 
 def outer_parts(spec: dict) -> list:
-    """The defining parts that are not the core: the rings, the wall, the fields. A1."""
+    """The defining parts that are not the core: the rings, the wall, the fields."""
     c = core(spec)
     return [p for p in spec["defining_parts"] if not c or p["name"] != c["name"]]
 

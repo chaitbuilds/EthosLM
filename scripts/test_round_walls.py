@@ -4,11 +4,11 @@ whole along its length, climbs its ground and is passed through by its gates.
 
     $PY scripts/test_round_walls.py [name-fragment] [--show] [--terrain]
 
-The design synthesis round. The coordinator states a ring's boundary as an `Outline`
-and draws its wall as `Outline.polyline(step=8, gates=..., gate_run=13)`: hundreds of
-short axial and 45-degree runs, a straight axial run pinned at each gate. `wall` and
-`great_wall` draw such a path with the curved engine they both carry (one text,
-asserted identical here). Offline, on a synthetic flat volume, through the production
+The coordinator states a ring's boundary as an `Outline` and draws its wall as
+`Outline.polyline(step=8, gates=..., gate_run=13)`: hundreds of short axial and
+45-degree runs, a straight axial run pinned at each gate. `wall` and `great_wall` draw
+such a path with the curved engine they both carry (one text, asserted identical
+here). Offline, on a synthetic flat volume, through the production
 calls -- `Builder.site()`, the type's `build()` through `type_builder()`, then
 `resolve_steps()` -- exactly as `instantiate_part` composes a part:
 
@@ -35,8 +35,9 @@ calls -- `Builder.site()`, the type's `build()` through `type_builder()`, then
         climb their neighbours: every block within max(ring_floors) + height + 2, a
         tower's drum within its own courses more -- with the ring's context and without
 
-A hill, a mountain flank and water) and renders it. `--cost R` builds a `great_wall`
-ring of radius R on flat ground and prints the seconds and blocks.
+`--terrain` builds a ring over a cached world's ground (a hill, a mountain flank and
+water) and renders it. `--cost R` builds a `great_wall` ring of radius R on flat
+ground and prints the seconds and blocks.
 """
 from __future__ import annotations
 

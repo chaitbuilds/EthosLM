@@ -3,11 +3,11 @@ import random
 
 KIND = "edge"
 FORM = "fortification"
-#: **This wall draws a 45-degree run**, the design synthesis round. A path of axial runs
-#: only is drawn as it always was, segment by segment; a path with a diagonal in it --
-#: `boundary.Outline.polyline`'s round ring, hundreds of short runs -- is drawn by the
-#: curved engine below as one field: a solid band, a walk that climbs its ground in
-#: half-block courses, towers by arc length and stair turrets for the ways down.
+#: **This wall draws a 45-degree run.** A path of axial runs only is drawn segment by
+#: segment; a path with a diagonal in it -- `boundary.Outline.polyline`'s round ring,
+#: hundreds of short runs -- is drawn by the curved engine below as one field: a solid
+#: band, a walk that climbs its ground in half-block courses, towers by arc length and
+#: stair turrets for the ways down.
 DIAGONAL_RUNS = True
 #: What this building is **for**, and so which part of a settlement it belongs in.
 #: `FORM` is the tradition it is built in and this is a different question: a farmhouse
@@ -977,9 +977,9 @@ def _curved_path(part):
 
 
 def occupied(part=None, **params):
-    """**What a curved wall fills** past its band (the design synthesis round): towers
-    project past the outer face and stair turrets stand against the inner one. A square
-    path publishes nothing, as before, and is held to its band."""
+    """**What a curved wall fills** past its band: towers project past the outer face and
+    stair turrets stand against the inner one. A square path publishes nothing and is
+    held to its band."""
     part = part or {}
     if not _curved_path(part):
         return None

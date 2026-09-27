@@ -1,10 +1,10 @@
 """Dump the world to disk so build passes can be tested without a server.
 
-    ETHOSLM_SETTLEMENT=<name> bash scripts/mcrun.sh scripts/cache_world.py
+    ETHOSLM_SETTLEMENT=<name> bash scripts/mcrun.sh src/ethoslm/pipeline/_commands/cache_world.py
 
 Run once after the circulation pass, and again after each wave if later passes should
 see what earlier ones built. Writes out/<name>/world.npz -- a few tens of megabytes,
-gitignored, and the only thing scripts/dry_run.py needs.
+gitignored, and the only thing an offline dry run needs.
 """
 import os
 import sys

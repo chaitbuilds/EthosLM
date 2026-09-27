@@ -1,11 +1,11 @@
 """**Designed ground**: a level and a treatment per column, turned into finished ground.
 
-The design synthesis round. The design compiler (`cityresolve`) decides, for every column
-of a region, a designed level (`target`, the top solid y, or `NO_TARGET`) and a
-treatment. This module turns that into ground a person would call finished -- terraces
-with faced retaining walls, landscape graded in natural slopes, paved streets that are
-walkable across their own level changes, banks where land meets water -- with its costs
-and bounds stated rather than discovered in a picture.
+The design compiler (`cityresolve`) decides, for every column of a region, a designed
+level (`target`, the top solid y, or `NO_TARGET`) and a treatment. This module turns
+that into ground a person would call finished -- terraces with faced retaining walls,
+landscape graded in natural slopes, paved streets that are walkable across their own
+level changes, banks where land meets water -- with its costs and bounds stated rather
+than discovered in a picture.
 
     plan(found_h, found_wet, target, treatment, *, pave=None, water_surface=None,
          soft_grade=1.0, max_retain=12) -> GroundPlan

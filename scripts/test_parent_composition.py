@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""**The parent composition round's contracts, on synthetic ground.** Seconds, no state.
+"""**The parent composition contracts, on synthetic ground.** Seconds, no state.
 
     $PY scripts/test_parent_composition.py
 

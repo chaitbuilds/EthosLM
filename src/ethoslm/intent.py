@@ -1,10 +1,10 @@
 """The original request, read into requirements with IDs, and checked against the place.
 
 **This module reads the sentence and nothing else.** Not the spec, not the plan, not a
-model's interpretation of any of them. That is the whole of why it exists: the audit's
-counterexample was a sentence asking for a walled village whose spec omitted the wall,
-and every downstream check passed because every downstream check is generated *from the
-spec*. A check generated from the thing being checked cannot find an omission.
+model's interpretation of any of them. That is the whole of why it exists: if a spec
+omits the wall a sentence asked for, every downstream check still passes, because every
+downstream check is generated *from the spec*. A check generated from the thing being
+checked cannot find an omission.
 
 So there are two readings of every request and they are kept apart:
 
@@ -24,14 +24,13 @@ Nothing here weakens: `coverage` may write `satisfied`, `failed`, `unresolved` o
 `hard` flag. A repair that wants an easier requirement has to change the sentence, and
 the sentence is immutable.
 
-no requirement at all -- and `holds()` therefore returned True before a single block was
-laid. The same for "Build a Japanese village.", and "German", "bakery" and "aqueduct"
-all fell out of a combined request. A keyword table is a finite instrument pointed at an
-open domain, and the failure mode of a finite instrument is not "it misses things": it
-is that **missing everything reads exactly like asking for nothing**.
-
-So three more kinds of requirement come out of a sentence, and none of them is a keyword
-that names a building:
+A keyword table is a finite instrument pointed at an open domain, and the failure mode
+of a finite instrument is not "it misses things": it is that **missing everything reads
+exactly like asking for nothing** -- a sentence whose words no table knows yields no
+requirement, and `holds()` would return True before a single block was laid. So three
+more kinds of requirement come out of a sentence, and none of them is a keyword that
+names a building: `identity/` (a named place), `tradition/` (how it is built) and
+`clause/` (any content word no rule claimed).
 
 `unclaimed_words` is the independent check that produces the last of those: it walks the
 sentence and asks which columns no requirement's own phrase covers. It is the one thing
@@ -81,12 +80,11 @@ FEATURES = (
 #: The words that make a feature word an **absence** where the feature's own phrases are
 #: not enough. A negation is generated for every feature from its own phrases (see
 #: `_absent_phrases`); this table holds the ones a phrase cannot be derived from --
-#: `unwalled` is not "without a wall" spelled differently, it is a different word. **The
-#: review's counterexample, and why the table alone was the defect.** `ABSENT` had one
-#: row, for walls, so "Build a village without a temple." read straight through its own
-#: negation and stated a requirement for a temple. A negation that scopes over one
-#: feature is not a negation; it is a special case, and the sentence it reverses is
-#: exactly the sentence a reader would write to test one.
+#: `unwalled` is not "without a wall" spelled differently, it is a different word. **This
+#: table alone is not enough**: were it the only source of negations, "Build a village
+#: without a temple." would read straight through its own negation and state a
+#: requirement for a temple. A negation that scopes over one feature is not a negation;
+#: it is a special case.
 ABSENT = {"wall": ("unwalled", "open village", "unfortified")}
 
 #: How a negation is written in front of a feature's own phrase. Applied to every phrase
@@ -118,12 +116,11 @@ FACING = (("water", ("facing the water", "face the water", "facing the sea",
                      "overlooking the sea", "looking out over the water")),
           ("street", ("facing the street", "face the street", "fronting the street")))
 
-#: **What the sentence says the buildings are like**, and the axis each word moves. The
-#: review's first counterexample: `Build a dense city with tall buildings.` produced no
-#: requirement at all, because `dense` and `tall` were listed among the words a sentence
-#: spends on plain description. They are not description -- they are the two properties
-#: of the fabric a reader would name first, they are decided by the compiler and by each
-#: type's own parameters, and both are measurable on the plan that results.
+#: **What the sentence says the buildings are like**, and the axis each word moves.
+#: `dense` and `tall` are not plain description -- they are the two properties of the
+#: fabric a reader would name first, they are decided by the compiler and by each type's
+#: own parameters, and both are measurable on the plan that results. Treated as
+#: description, `Build a dense city with tall buildings.` would state no requirement.
 QUALITIES = (
     ("density", (("dense", ("densely", "dense", "crowded", "closely packed",
                             "tightly packed", "packed")),
@@ -180,11 +177,10 @@ TRADITION_FORMS = {
 #: and expensive in the other: a word wrongly listed here is a requirement silently
 #: lost, which is the whole defect, and a word wrongly left out is a `clause/`
 #: obligation a reader has to look at. So it holds function words and nothing that could
-#: name a thing. **And nothing that could describe one.** The review found `dense`,
-#: `tall`, `sparse`, `roof`, `high` and `low` in this list, and a sentence made of them
-#: alone therefore asked for nothing. They are in `QUALITIES` above, or -- `roof` --
-#: they fall through to a `clause/` obligation, which is the honest answer for a word no
-#: rule here reads.
+#: name a thing. **And nothing that could describe one.** Words like `dense`, `tall`,
+#: `sparse`, `high` and `low` belong in `QUALITIES` above; a word like `roof` falls
+#: through to a `clause/` obligation, which is the honest answer for a word no rule here
+#: reads. Listed here, a sentence made of them alone would ask for nothing.
 _ACCOUNTED = frozenset("""
 a an the this that these those there here it its their his her our your my
 and or but nor plus also then than as so if when while
@@ -214,10 +210,9 @@ exactly precisely just roughly approximately about around-about
 looking facing fronting overlooking standing sitting lying
 """.split())
 
-#: **Every number word to a hundred, and the compounds.** The closure round's retained
-#: first failure: `spec._NUMBER_WORDS` skipped thirteen to nineteen and every compound,
-#: so "sixteen low cottages" read as no count at all and the village was sized from the
-#: kind's band while the interpretation beside it said sixteen, exactly. A number the
+#: **Every number word to a hundred, and the compounds.** `spec._NUMBER_WORDS` alone
+#: lacks thirteen to nineteen and every compound, so "sixteen low cottages" would read as
+#: no count at all and the village would be sized from the kind's band. A number the
 #: reader cannot read is a requirement silently lost, which is the one direction this
 #: module may not be wrong in. `spec.count_in` is asked first and this table second.
 _ONES = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
@@ -294,12 +289,10 @@ def storeys_of(sentence: str) -> dict | None:
         `low` and `tall` are bands -- a share of what each type's own parameters admit --
         and "cottages of two storeys" is not a band at all. It is the same kind of statement
         as "sixteen cottages": an exact number the design has to deliver on every building
-        it is about, or refuse. The distinction is the one the expression round could not
-        make. Its farm planned sixteen cottages at two storeys, built them at one because
-        the lots were 5x5, and the improve stage legitimately adopted a one-storey band --
-        legitimately, because the two storeys there were an *inferred* choice under a
-        request for `low` cottages. Under this requirement that revision is not available:
-        the lot has to grow or the design has to say it cannot.
+        it is about, or refuse. Under a request for `low` cottages, two storeys is an
+        *inferred* choice, and the improve stage may legitimately adopt a one-storey band
+        when the lots are too small for two. Under a stated storey count that revision is
+        not available: the lot has to grow or the design has to say it cannot.
 
     """
     text = _words(sentence)
@@ -613,8 +606,8 @@ def _families_in(spec: dict) -> dict:
 
         A smithy the spec puts in a district's character (`landmarks: [{"type":
         "workshop"}]`) is declared as surely as a defining part is, and the compiler lays
-        it; the held-out hamlet failed `feature/workshop` at the spec stage for a workshop
-        the spec had declared one level down.
+        it; counting defining parts alone would fail `feature/workshop` at the spec stage
+        for a workshop the spec declared one level down.
 
     """
     out: dict = {}
@@ -664,10 +657,9 @@ def _leaves_of_family(spec: dict, parts: list, family: str) -> list:
 def leaves_built_as(parts: list, family: str, decls: dict | None = None) -> list:
     """The plan leaves that **are** a `family`, whatever any spec declares.
 
-        The integration review's second finding, and it is a one-line defect with a wide
-        blast radius: `_leaves_of_family` starts from the families the *spec* declares, so
-        when the question is "is there a wall the spec never mentioned?" the answer is
-        computed from a list that cannot contain one. An absence check generated from a
+        `_leaves_of_family` starts from the families the *spec* declares, so when the
+        question is "is there a wall the spec never mentioned?" its answer is computed from
+        a list that cannot contain one. An absence check generated from a
         document cannot see what the document omits -- which is the exact sentence this
         module's own docstring opens with, applied one level further down.
 
@@ -767,16 +759,16 @@ def _policy_geometry(policy: str, resolution: dict | None, plan: dict | None) ->
     """Does the resolved design carry the geometry its policy's name promises?
 
         `(ok, why)`. One clause per policy and each one is a **measurement on the columns
-        the design occupies**, which is the thing the review found missing in both:
+        the design occupies**, not a check that the right records exist:
 
           `shoreline`   there is a shore anchor derived from the ground, with a path, and
-                        each district actually stands within the band behind it. The old
-                        clause asked only that a path and a region existed, and certified a
-                        district a million columns offshore.
-          `concentric`  the rings carry real radii and those radii nest. The old clause read
-                        `half`, which the city's own rings do not record -- they record
-                        `inner` and `outer` -- and a missing value was silently skipped, so
-                        two empty dicts named `one` and `two` read as a concentric city.
+                        each district actually stands within the band behind it. Asking
+                        only that a path and a region exist would certify a district a
+                        million columns offshore.
+          `concentric`  the rings carry real radii and those radii nest. The rings record
+                        `inner` and `outer` (not `half`), and a missing value fails rather
+                        than being skipped, so two empty dicts named `one` and `two` do not
+                        read as a concentric city.
 
         A policy nothing here knows how to measure says so **and does not certify itself**:
         inventing a pass is what this function exists to stop.
@@ -831,9 +823,9 @@ def _policy_geometry(policy: str, resolution: dict | None, plan: dict | None) ->
         blank = [r.get("name", "?") if isinstance(r, dict) else "?"
                  for r, got in zip(rings, radii) if got is None]
         if blank:
-            # **A missing radius is not a nesting ring.** It used to be skipped, so a
-            # design whose rings recorded nothing at all passed on the strength of there
-            # being two of them.
+            # **A missing radius is not a nesting ring.** Skipped, it would let a design
+            # whose rings record nothing at all pass on the strength of there being two
+            # of them.
             return (False, f"{len(blank)} of {len(rings)} rings record no radii "
                            f"({', '.join(str(b) for b in blank[:4])}), so whether they "
                            f"nest is not something this design says")
@@ -853,13 +845,12 @@ def _policy_geometry(policy: str, resolution: dict | None, plan: dict | None) ->
 
 
 #: What "the buildings face the water" is, as a measurement, registered here rather than
-#: chosen after looking at a run. **Both numbers are the review's, and the second is the
-#: one that was missing.** The implemented rule was "no home fronts away", which
-#: certified a village whose every home fronted *along* the shore and none at the water
-#: -- the absence of the opposite condition is not the condition. So a majority of the
-#: homes must actually front the water, and a plan that cannot say which way most of its
-#: homes front has not answered the question at all and says `unresolved` rather than
-#: counting the silence as a pass.
+#: chosen after looking at a run. A rule of "no home fronts away" would certify a village
+#: whose every home fronted *along* the shore and none at the water -- the absence of the
+#: opposite condition is not the condition. So a majority of the homes must actually
+#: front the water, and a plan that cannot say which way most of its homes front has not
+#: answered the question at all and says `unresolved` rather than counting the silence
+#: as a pass.
 WATER_FACING_SHARE = 0.5
 MEASURED_SHARE_MIN = 0.75
 
@@ -891,8 +882,8 @@ def _streets_in(plan: dict | None, parts: list) -> list:
 
         A street is an `edge` leaf with a path -- which is what `circulate` routes and what
         `district_compile` lays a block's lane as -- plus whatever the plan records as its
-        own `streets`. Nothing about a *plot* is a street: the review's counterexample read
-        a `front` field on a lot and called it street frontage with no street in the plan.
+        own `streets`. Nothing about a *plot* is a street: a `front` field on a lot is not
+        street frontage when the plan has no street.
 
     """
     from . import pipeline as _pipeline
@@ -952,14 +943,11 @@ def _fronts(faces: str, resolution: dict | None, parts: list,
             plan: dict | None = None) -> dict:
     """Which way the plan's homes actually front, against what the sentence asked.
 
-        **The review's sharpest counterexamples, and there were three.** The saved shoreline
-        village recorded `resolution.bounds.faces == "water"`, the check read that field, the
-        requirement passed -- and nine of fifteen homes had their doors in the wall away from
-        the water. That one was fixed. The two that replaced it were subtler and are the
-        reason this function now counts rather than looks for an absence: a village whose
-        every home fronted *along* the shore passed, because none fronted away from it; and
-        one home with a `front` field and no street anywhere in the plan passed "facing the
-        street", because a lot's own field was the whole of the evidence.
+        **This counts; it does not read a field or look for an absence.** A design's own
+        `resolution.bounds.faces == "water"` says nothing about where the doors are. A
+        village whose every home fronts *along* the shore has none fronting away from it
+        and none facing it. And a lot's own `front` field, with no street anywhere in the
+        plan, is not evidence of facing a street.
 
         So: a majority of the homes must front the water beside them, most of them must be
         measurable at all, and a street must be a street that is in the plan.
@@ -1067,9 +1055,9 @@ def _word_matches(p: dict, what: str) -> bool:
         if str(p.get("kind", "plot")) != "plot":
             return False
         # **A house is a type that declares the dwelling function**, where the type is
-        # on disk to ask. A hall answers the same rural role and is not a house; the
-        # closure round found `select(parts, "cottages")` returning the hall on the
-        # square, which would have made it the seventeenth cottage. A type this checkout
+        # on disk to ask. A hall answers the same rural role and is not a house;
+        # `select(parts, "cottages")` must not return the hall on the square as the
+        # seventeenth cottage. A type this checkout
         # cannot load keeps the old rule -- a plot that is not a civic or defensive
         # family -- so a recorded plan still reads.
         decl = _plan_decls([p]).get(str(p.get("type") or ""))
@@ -1088,12 +1076,11 @@ def _word_matches(p: dict, what: str) -> bool:
     # there" and "the checker does not know what a market is called here". **A plural is
     # the same word.** A sentence counts `townhouses` and the library's type is
     # `townhouse`; `cottages` only worked because both forms happen to be in
-    # `_HOUSE_WORDS` above. Worker A found it from the other side -- `_parts_for_word`
-    # had the same hole -- and it cost the held-out village its whole count clause:
-    # `select('townhouses')` found none of thirteen standing townhouses, while
-    # `select('townhouse')` and `select('houses')` each found them all. English plurals
-    # are not a vocabulary to be maintained; the singular of the word that was asked is
-    # tried where the word itself finds nothing.
+    # `_HOUSE_WORDS` above. Without this, `select('townhouses')` finds none of the
+    # standing townhouses that `select('townhouse')` and `select('houses')` each find,
+    # and a count clause is lost. English plurals are not a vocabulary to be
+    # maintained; the singular of the word that was asked is tried where the word
+    # itself finds nothing.
     fams = {want} | {f for rid, f, _ph in FEATURES if rid == want and f}
     if want.endswith("es") and len(want) > 4:
         fams.add(want[:-2])
@@ -1172,13 +1159,12 @@ def _in_scope(p: dict, scope: str | None) -> bool:
     return all(w in blob for w in want)
 
 
-# ------------------------------------------------------- I1: the shared selectors The
-# closure round's first interface. Generation and checking used to resolve the words of
-# a sentence to parts of a place by two different rules -- the checker by
-# `_word_matches` and `_in_scope`, the layout by whatever it had to hand -- and a
-# relation the checker measured on one set of leaves was laid out over another. One
-# selector, called by both, so a disagreement between them is impossible rather than
-# merely unlikely.
+# ----------------------------------------------------------- the shared selectors
+# Generation and checking resolve the words of a sentence to parts of a place by one
+# rule. With two -- the checker by `_word_matches` and `_in_scope`, the layout by
+# whatever it had to hand -- a relation the checker measured on one set of leaves could
+# be laid out over another. One selector, called by both, so a disagreement between
+# them is impossible rather than merely unlikely.
 
 #: The scope words that name a division of the place rather than a thing in it.
 _SCOPE_WORDS = frozenset(("district", "quarter", "ring", "region", "zone", "belt",
@@ -1191,9 +1177,9 @@ _FIELD_TYPES = ("field", "orchard", "pasture", "paddy")
 
 
 def _is_field_leaf(p: dict, use: str | None = None) -> bool:
-    """An area leaf that is working land: built as a field family, or -- the expression
-    round's entity binding -- an area whose defining part is land of the use asked for
-    (an orchard is laid as a `grove` and is an orchard by what it answers)."""
+    """An area leaf that is working land: built as a field family, or -- by entity
+    binding -- an area whose defining part is land of the use asked for (an orchard is
+    laid as a `grove` and is an orchard by what it answers)."""
     from . import capability as cap_mod
     t = str(p.get("type") or "")
     if str(p.get("kind") or "") != "area":
@@ -1390,12 +1376,11 @@ def select_regions(place: dict, word: str) -> list:
 #: is `placeplan.developable_columns` and is the denominator the compiler's own target
 #: is computed over. Both bounds, because a word bounds from both sides: a sparse
 #: quarter with no houses at all is not sparse, it is empty, and a dense one has no
-#: ceiling. The review found the compiler's `sparse` objective at ~19% of the rectangle
-#: against a check that capped it at 12% over a different denominator, and the two could
-#: not both be met by any arrangement. These are the checker's numbers and the compiler
-#: is held to the same ones (interface I1); nothing here is moved to make a saved case
-#: pass. `dense` and `sparse` keep the bounds `QUALITY_BOUNDS` registered before the
-#: realization round.
+#: ceiling. The compiler's objective and this check must share one denominator: a
+#: target computed over the rectangle and a cap computed over developable ground cannot
+#: both be met by any arrangement. These are the checker's numbers and the compiler is
+#: held to the same ones; nothing here is moved to make a saved case pass. `dense` and
+#: `sparse` keep the bounds `QUALITY_BOUNDS` registered.
 DENSITY_TARGETS = {
     "sparse": (0.03, 0.12),
     "low":    (0.08, 0.22),
@@ -1406,13 +1391,12 @@ DENSITY_TARGETS = {
 #: The least of an allocated lot that emitted mass may fill before the allocation is
 #: emptier than anything this library builds -- so a density figure reached with lots
 #: like that is a statement about allocation and not about fabric. **Measured, not
-#: chosen.** Over the 34 buildings of the design round's retained city section
-#: (`out/des-city/parts.json`, emitted footprint against the plot rect it was laid on):
-#: median 0.51, minimum **0.45**, and by type `court_large` 0.50, `hall` 0.51,
-#: `shop_house` 0.56, `temple` 0.57, `courtyard_house` 0.59. Every type in this library
-#: fills at least 0.45 of its lot, so 0.40 cannot be reached by building; it can only be
-#: reached by allocating ground that carries nothing. That is exactly the escape route
-#: the design review named -- "enlarging empty lots ... cannot establish density".
+#: chosen.** Emitted footprint against the plot rect it was laid on, over a built city
+#: section, has a median of 0.51 and a minimum of **0.45** (by type: `court_large` 0.50,
+#: `hall` 0.51, `shop_house` 0.56, `temple` 0.57, `courtyard_house` 0.59). Every type in
+#: this library fills at least 0.45 of its lot, so 0.40 cannot be reached by building;
+#: it can only be reached by allocating ground that carries nothing. Enlarging empty lots
+#: cannot establish density.
 MIN_LOT_FILL = 0.40
 
 
@@ -1449,14 +1433,14 @@ def lot_cover(plots: list, regions: list) -> dict:
         and the record says which, so a number over the wrong denominator cannot pass as
         the metric.
 
-        **An inferred remainder does not leave the question.** The expression round let the
-        ring layout keep a dense ring's leftover as `surface: "open"` sectors and then
-        dropped every open region from the denominator, so the ring's "27.5% dense" was
-        measured over the part of the ring that happened to get lots. Naming a remainder
-        open is an allocation decision, and an allocation decision cannot narrow the scope
-        of the requirement it is being judged against. Ground **an explicit requirement asks
-        to be open** -- a park, a green, land the sentence reserves -- does leave, carries
-        `open_requested` with the requirement id, and is named in `excluded`.
+        **An inferred remainder does not leave the question.** If a layout keeps a dense
+        ring's leftover as `surface: "open"` sectors and every open region leaves the
+        denominator, the ring's density is measured over only the part of the ring that
+        happened to get lots. Naming a remainder open is an allocation decision, and an
+        allocation decision cannot narrow the scope of the requirement it is being judged
+        against. Ground **an explicit requirement asks to be open** -- a park, a green, land
+        the sentence reserves -- does leave, carries `open_requested` with the requirement
+        id, and is named in `excluded`.
 
         **And a bigger empty lot is not denser building.** `built` is the area of the lots
         the compiler drew; `built_columns`, where the regions record it, is the footprint
@@ -1648,8 +1632,8 @@ def sample_scope(parts_record: dict | None, parts: list) -> set | None:
     """The names of the leaves a **construction sample** attempted, or None.
 
         A parts record carrying `sample` (`stages_build.sample_parts`) built the plots of
-        its named quarters and the parts joining them and nothing else, and the round's
-        registered rule is that a sample qualifies only its constructed scope. The scope is
+        its named quarters and the parts joining them and nothing else, and the registered
+        rule is that a sample qualifies only its constructed scope. The scope is
         the record's own rows, the plots of the sampled quarters and the joining parts;
         everything else in the plan was not built, and a clause that counts standing
         leaves is measured inside this set and says so.
@@ -1660,8 +1644,8 @@ def sample_scope(parts_record: dict | None, parts: list) -> set | None:
         return None
     names = {r["part"] for w in (parts_record or {}).get("waves", [])
              for r in w.get("parts", []) if r.get("part")}
-    # **A registered section takes a quarter partly** (the composition round): its cut
-    # falls between buildings, so a quarter on the section boundary contributes the
+    # **A registered section takes a quarter partly**: its cut falls between
+    # buildings, so a quarter on the section boundary contributes the
     # plots that fit and no others, and `included_plots` names them. Adding every plot
     # of a partly-taken quarter would put leaves nobody attempted into the scope a
     # clause about standing leaves is measured over -- a sample scope that flatters
@@ -1685,11 +1669,11 @@ OUTSIDE_SAMPLE = "outside the sample: nothing of it was built"
 
 
 def emitted_of(parts_record: dict | None) -> dict:
-    """`{part name: emitted outcome}` off `parts.json`, interface I3.
+    """`{part name: emitted outcome}` off `parts.json`.
 
         What construction actually delivered for each part -- storeys, features, omissions,
         fallback -- measured by the construction worker off the emitted geometry. Empty
-        where nothing was built or the record predates the interface, which reads as "not
+        where nothing was built or the record does not carry them, which reads as "not
         measured" and never as "as planned".
 
     """
@@ -1748,8 +1732,8 @@ def emitted_findings(parts: list, parts_record: dict | None) -> list:
 def _hierarchy_measure(w: dict, parts: list, decls: dict) -> tuple:
     """`(status, why, evidence)` -- is the greater thing actually greater?
 
-        The review's counterexample is "small houses around a big temple", whose size
-        hierarchy disappeared entirely. It is a measurement: the greater part's footprint (or
+        "Small houses around a big temple" states a size hierarchy, and a plan can lose
+        it entirely. It is a measurement: the greater part's footprint (or
         its storeys, on the `height` axis) against the lesser's, on the plan that exists.
         Nothing here reads an adjective.
 
@@ -1797,9 +1781,9 @@ AROUND_QUADRANTS = 3
 AROUND_REACH = 8.0
 #: How far a thing said to stand **beside** (or on, or by) another may be from that
 #: other's own edge, in columns: a lane and a clearance apart is beside; a district away
-#: is not. Registered here. The review reproduced `inside` and `beside` sharing one
-#: proximity rule measured centre to centre, so a house forty columns clear of a temple
-#: passed `inside`; each relation is now the measurement its word means.
+#: is not. Registered here. `inside` and `beside` do not share one proximity rule
+#: measured centre to centre -- under that, a house forty columns clear of a temple
+#: would pass `inside`; each relation is the measurement its word means.
 BESIDE_REACH = 12.0
 
 
@@ -1867,10 +1851,10 @@ def _relation_measure(w: dict, parts: list) -> tuple:
                 f"against the {AROUND_QUADRANTS} this build calls standing around "
                 f"something; they are beside it, not around it", ev)
     if rel == "inside":
-        # **Containment, not proximity.** The review's counterexample: a house at
-        # [40,44]^2 wholly outside a temple at [0,19]^2 passed `inside`. For a wall --
-        # an edge whose path is a closed ring -- inside is inside the ring itself, every
-        # corner of the subject, and not inside the ring's bounding box.
+        # **Containment, not proximity**: a house wholly outside a temple but near it
+        # is not `inside`. For a wall -- an edge whose path is a closed ring -- inside
+        # is inside the ring itself, every corner of the subject, and not inside the
+        # ring's bounding box.
         ring = _closed_ring(obj)
         if ring:
             def _contained_in(r, _orect):
@@ -1972,20 +1956,17 @@ def _usable_verdict(parts: list, types: set, parts_record: dict | None) -> dict:
         construction; where it ran, a function's status is a measurement, and where it did
         not, the only thing behind the status is a type declaring itself.
 
-        **An answer that decided nothing is not a predicate that ran.** The design review's
-        finding, in the code that produced it: this function counted `ran += 1` for every
-        answer whose method was not `unsupported`, so a `declared` answer with `holds: None`
-        -- `equipment_reachable`'s honest "this part claims equipment and published no
-        rectangle to look in" -- incremented the count, `holds is False` was the only failure
-        test, and `_function_measure` then reported `satisfied` with `method: "observed"` and
-        the words "1 final-world predicate(s) on them hold". Nothing held. The three
-        categories are now kept apart and all three are returned:
+        **An answer that decided nothing is not a predicate that ran.** A `declared` answer
+        with `holds: None` -- `equipment_reachable`'s honest "this part claims equipment and
+        published no rectangle to look in" -- must not count as a predicate that held, or
+        `_function_measure` would report `satisfied` with `method: "observed"` when nothing
+        held. The three categories are kept apart and all three are returned:
 
           `held`         an affirmative answer measured on the assembled world;
           `failed`       the world refuses it;
           `owed`         asked and undecided -- `declared`, or `holds: None` for any other
                          reason. Unresolved, and it stays that way until something measures
-                         it. This is the category that used to be counted as a pass.
+                         it. It is never counted as a pass.
 
         `unsupported` is counted separately and is neither owed nor held: a wall carries no
         door leaf, and asking it about entrances is a question that does not apply.
@@ -2040,13 +2021,12 @@ def _function_measure(w: dict, parts: list, capabilities: dict | None,
                       parts_record: dict | None = None) -> tuple:
     """`(status, why, evidence)` -- is this function actually fulfilled?
 
-        **A role label is not a function.** The review's third finding in its semantic form:
-        "An allowed plot type and a coarse role do not establish that a dwelling's function
-        has been fulfilled", and the village's three halls and two temples in an eight-house
-        fishing village are what that costs. A function is fulfilled when a committed type
-        that *declares* it is what the plan actually built, and it is `unsupported` when
-        nothing on disk declares it -- which keeps the obligation visible instead of letting
-        the nearest-looking building close it.
+        **A role label is not a function.** An allowed plot type and a coarse role do not
+        establish that a dwelling's function has been fulfilled; trusting them is how an
+        eight-house fishing village ends up with three halls and two temples. A function is
+        fulfilled when a committed type that *declares* it is what the plan actually built,
+        and it is `unsupported` when nothing on disk declares it -- which keeps the
+        obligation visible instead of letting the nearest-looking building close it.
 
     """
     # the function named, not the word the sentence used for the thing that has it:
@@ -2077,10 +2057,9 @@ def _function_measure(w: dict, parts: list, capabilities: dict | None,
                 f"{len(declared)} type(s) declaring the function `{what}` were selected "
                 f"({', '.join(declared[:4])}) and the plan's {len(parts)} leaf(s) use "
                 f"none of them", {"declared": declared, "used": []})
-    # **...and a type that declares it is not a function that is fulfilled.** The
-    # review's fourth finding, and the design round's third boundary: until here the
-    # answer above was the whole measurement, so a market whose stalls a later terrace
-    # buried and a chapel nobody can walk into both read `satisfied`. Where
+    # **...and a type that declares it is not a function that is fulfilled.** Were the
+    # answer above the whole measurement, a market whose stalls a later terrace buried
+    # and a chapel nobody can walk into would both read `satisfied`. Where
     # `construction.confirm` has re-read these parts on the assembled world, its
     # predicates decide; where it has not, this stays a declaration and says so.
     seen = _usable_verdict(parts, set(declared), parts_record)
@@ -2093,9 +2072,9 @@ def _function_measure(w: dict, parts: list, capabilities: dict | None,
                 {"declared": declared, "used": used, "method": "observed",
                  "failed": [list(f) for f in seen["failed"][:8]], "ran": seen["ran"],
                  "held": seen["held"], "owed": [list(o) for o in seen["owed"][:8]]})
-    # **An owed predicate leaves the function unresolved.** The composition round: an
-    # undecided answer used to be counted as a predicate that held, so a function could
-    # report observed success because a *different* predicate ran. A function whose
+    # **An owed predicate leaves the function unresolved.** Counting an undecided
+    # answer as a predicate that held would let a function report observed success
+    # because a *different* predicate ran. A function whose
     # applicable evidence is owed is not failed either -- nothing refused it -- so the
     # honest status is `unresolved`, and the words say which subject owes what.
     if seen["owed"]:
@@ -2129,11 +2108,11 @@ def judgment_usable(judgment: dict | None, verdict: dict | None,
                     reading: dict | None) -> tuple:
     """`(ok, why)` -- may this verdict close an obligation?
 
-        Three things, and the review found each missing: the judgment looked at **built**
-        output (a plan alone is intentions); the verdict **cites** claims; and every cited
-        claim is one this run actually made from a retrieved source. A negative verdict is
-        consumed whatever this says -- refusing needs no evidence -- and a positive one
-        that fails here leaves the obligation `unresolved`, naming what is missing.
+        Three things, each required: the judgment looked at **built** output (a plan alone
+        is intentions); the verdict **cites** claims; and every cited claim is one this run
+        actually made from a retrieved source. A negative verdict is consumed whatever this
+        says -- refusing needs no evidence -- and a positive one that fails here leaves the
+        obligation `unresolved`, naming what is missing.
 
     """
     if judgment is None or verdict is None:
@@ -2280,11 +2259,11 @@ def _dished(grid) -> float | None:
 
 #: What each setting the sentence can name **is**, on the ground the search chose.
 #: Registered here, so a run cannot pass a setting by choosing the threshold afterwards.
-#: `cliff_step` and `island_land` are the realization round's, and both are the review's
-#: finding that these clauses certified properties they never measured: relief alone
-#: made a hillside a cliff, and a water share alone made a lake shore an island. A cliff
-#: is a *steep* fall and an island is land with water on every side of it, and both of
-#: those are questions the site's own height grid and surface census can answer.
+#: `cliff_step` and `island_land` exist so these clauses measure the property they
+#: certify: relief alone would make a hillside a cliff, and a water share alone would
+#: make a lake shore an island. A cliff is a *steep* fall and an island is land with
+#: water on every side of it, and both of those are questions the site's own height grid
+#: and surface census can answer.
 SETTING_BOUNDS = {"cliff": 24.0, "cliff_step": 8.0, "mountain": 40.0, "valley": 4.0,
                   "forest": 0.25, "river": 0.02, "island": 0.30, "island_land": 0.55}
 
@@ -2309,13 +2288,11 @@ def _setting_measure(what: str, site: dict | None) -> tuple:
             return ("failed", f"the site falls {relief:g} blocks across itself and a "
                               f"cliff in this build is {bound:g}; the place does not "
                               f"stand on one")
-        # **Relief alone is not a cliff, and this used to certify one.** The review:
-        # "Site relief alone certifies a cliff; no local slope, enclosure or channel
-        # geometry is needed." A site that falls 30 blocks evenly across 200 columns is
-        # a hillside. A cliff is that fall happening *somewhere*, steeply, and the site
-        # record carries the grid that would say so -- so where it does, the steepest
-        # step is measured, and where it does not, this says what it would need instead
-        # of passing.
+        # **Relief alone is not a cliff.** A site that falls 30 blocks evenly across
+        # 200 columns is a hillside. A cliff is that fall happening *somewhere*,
+        # steeply, and the site record carries the grid that would say so -- so where
+        # it does, the steepest step is measured, and where it does not, this says
+        # what it would need instead of passing.
         step = _steepest_step(f["grid"])
         if step is None:
             return ("unresolved",
@@ -2502,11 +2479,10 @@ def _quality_measure(axis: str, value: str, bound: float, parts: list,
         got = m["cover"]
         if got is None:
             return ("unresolved", "the districts this is about record no ground", m)
-        # **A lot cover bought by emptying the lots is not density.** The design review:
-        # "Enlarging empty lots or excluding unused ground cannot establish density",
-        # and this measure decided on allocated lot cover alone while computing the
-        # built figure beside it and never consulting it. Both are reported now and the
-        # built one can refuse: `fill` is how much of the allocated ground carries
+        # **A lot cover bought by emptying the lots is not density.** Enlarging empty
+        # lots or excluding unused ground cannot establish density, so allocated lot
+        # cover is not decided on alone. Both figures are reported and the built one
+        # can refuse: `fill` is how much of the allocated ground carries
         # emitted mass, and below `MIN_LOT_FILL` the allocation is emptier than anything
         # this library's own types build (see the constant).
         fill = (round(m["built_columns"] / m["built"], 4)
@@ -2525,11 +2501,10 @@ def _quality_measure(axis: str, value: str, bound: float, parts: list,
                 occupation.append({"district": r.get("name"),
                                    **_pp.built_occupation(d, parts_record)})
                 # **...and the enclosure is measured on this district's own leaves.**
-                # The neighbourhood round, found by reading the call: `leaves` was
-                # `None`, `street_enclosure` answers `unavailable` on no leaves by
-                # design, and so every district of every reading in the record reported
-                # `unavailable` for the one measure the street is judged by. The leaves
-                # are the plots standing inside this district's own rectangle.
+                # `street_enclosure` answers `unavailable` on no leaves by design, so
+                # passing `None` would make every district report `unavailable` for the
+                # one measure the street is judged by. The leaves are the plots
+                # standing inside this district's own rectangle.
                 mine = ([p for p in plots
                          if _rect_in(_pp.pipeline.part_rect(p), r.get("rect"))]
                         if r.get("rect") else [])
@@ -2563,11 +2538,10 @@ def _quality_measure(axis: str, value: str, bound: float, parts: list,
                     f"least any type in this library builds, so the cover figure is "
                     f"allocation and not fabric" if empty else "")), ev)
     if axis == "height":
-        # **What was built, where construction has said.** The review's counterexample:
-        # `cottage.build(storeys=3)` on a 9x9 lot emits one storey and the production
-        # height helper read the planned three. `emitted.storeys` (interface I3) is the
-        # measurement; the planned parameter is what is read only before anything is
-        # built, and the evidence says which was read.
+        # **What was built, where construction has said.** A type asked for three
+        # storeys on a small lot may emit one, so the planned parameter is not the
+        # height. `emitted.storeys` is the measurement; the planned parameter is what is
+        # read only before anything is built, and the evidence says which was read.
         emitted = emitted_of(parts_record)
         rows, read_off = [], ("emitted" if emitted else "planned params")
         for p in plots:
@@ -2601,16 +2575,17 @@ def _quality_measure(axis: str, value: str, bound: float, parts: list,
     return ("unresolved", f"this build has no measurement for `{axis}`", {})
 
 
-#: **How a property was established.** The design round's third boundary: the expression
-#: round labelled every clause `built_place` the moment every leaf stood, including the
-#: clauses it had measured on the plan. Coverage -- which subjects were built -- and
-#: method -- what the answer was read off -- are two independent questions, and only
-#: their conjunction is built evidence. `observed` read off the built world or off what
-#: construction emitted `plan` measured on the planned geometry; true of the drawing,
-#: not the place `declared` taken from a type's or a record's own statement of itself
-#: `judged` an inspection's verdict, which no measurement can replace `site` measured on
-#: the chosen site's own terrain record `unsupported` nothing in this build can decide
-#: it
+#: **How a property was established.** Every leaf standing does not make every clause
+#: `built_place`: a clause measured on the plan is still a plan measurement. Coverage --
+#: which subjects were built -- and method -- what the answer was read off -- are two
+#: independent questions, and only their conjunction is built evidence.
+#:
+#:   `observed`     read off the built world or off what construction emitted
+#:   `plan`         measured on the planned geometry; true of the drawing, not the place
+#:   `declared`     taken from a type's or a record's own statement of itself
+#:   `judged`       an inspection's verdict, which no measurement can replace
+#:   `site`         measured on the chosen site's own terrain record
+#:   `unsupported`  nothing in this build can decide it
 METHODS = ("observed", "plan", "declared", "judged", "site", "unsupported")
 
 #: The method each requirement kind is answered by **when nothing has been built**. A
@@ -2664,12 +2639,11 @@ def coverage(intent: dict, spec: dict | None = None, plan: dict | None = None,
             a reason, because a drawn wall is not a standing wall;
           - with a **parts record**, it reaches `satisfied` or `failed` for good.
 
-        **Nothing here is allowed to read a declaration as a measurement.** The integration
-        review's second finding, in three places and all three fixed below: an absence was
-        checked against the families the spec declared (so an undeclared wall was invisible),
-        a frontage against `resolution.bounds.faces` (a word), and a layout against its own
-        policy name. A check whose evidence is the thing being checked has not checked
-        anything.
+        **Nothing here is allowed to read a declaration as a measurement.** So an absence is
+        not checked against the families the spec declared (an undeclared wall would be
+        invisible), a frontage not against `resolution.bounds.faces` (a word), and a layout
+        not against its own policy name. A check whose evidence is the thing being checked
+        has not checked anything.
 
     """
     from . import pipeline as _pipeline
@@ -2852,10 +2826,10 @@ def coverage(intent: dict, spec: dict | None = None, plan: dict | None = None,
                 req["status"] = "satisfied"
                 req["why"] = f"{got} {where}, against {lo}-{hi}"
             else:
-                # **The band the spec carries is not consulted here on purpose.** The
-                # audit's case: a ceiling reduced "exactly 2000 houses" to 1,824 and
-                # moved the band down with it, and `in_band` then passed. The sentence
-                # said two thousand. It still says two thousand.
+                # **The band the spec carries is not consulted here on purpose.** A
+                # ceiling can reduce "exactly 2000 houses" to 1,824 and move the spec's
+                # band down with it, so `in_band` would pass. The sentence said two
+                # thousand. It still says two thousand.
                 req["status"] = "failed"
                 req["why"] = (f"{got} {where}, against the {lo}-{hi} the sentence asks "
                               f"for")
@@ -2877,9 +2851,9 @@ def coverage(intent: dict, spec: dict | None = None, plan: dict | None = None,
                 continue
             if got == w["policy"]:
                 # **And the geometry that policy's name promises is actually there.** A
-                # `policy` field is a word a layout wrote about itself; the review's
-                # second finding is that coverage was reading exactly such words. What
-                # each policy owes the record is checked instead.
+                # `policy` field is a word a layout wrote about itself, and coverage
+                # does not read such words as evidence. What each policy owes the
+                # record is checked instead.
                 ok, why = _policy_geometry(w["policy"], resolution, plan)
                 if ok:
                     req["status"] = "satisfied"
@@ -2961,9 +2935,9 @@ def coverage(intent: dict, spec: dict | None = None, plan: dict | None = None,
                         axis=w["axis"], value=w["value"], **ev)
         elif req["kind"] == "identity":
             # evidence informs the design, and whether the result is the place is a
-            # judgment. What this can do, and what the round requires it to do, is
-            # refuse to let the obligation disappear: it is carried, it names what is
-            # missing, and it never reads `satisfied`.
+            # judgment. What this can do, and must do, is refuse to let the obligation
+            # disappear: it is carried, it names what is missing, and it never reads
+            # `satisfied` on evidence alone.
             srcs = len((reading or {}).get("sources") or [])
             claims = [c for c in (reading or {}).get("claims") or []
                       if c.get("source")]
@@ -2971,12 +2945,9 @@ def coverage(intent: dict, spec: dict | None = None, plan: dict | None = None,
                 req["status"] = "open"
                 req["why"] = "nothing has been read about this name yet"
                 continue
-            # **And the judgment that can close it.** The integration round left this
-            # requirement able to read `unresolved` and nothing else, which the review
-            # named as the other half of the same defect: a tradition had a false-pass
-            # route and an identity had no completion route at all. An obligation that
-            # cannot be met is not an obligation, it is a permanent refusal, and a run
-            # that did the research and made the judgment had nowhere to record it. Two
+            # **And the judgment that can close it.** An obligation that cannot be met
+            # is not an obligation, it is a permanent refusal, and a run that did the
+            # research and made the judgment would have nowhere to record it. Two
             # things close it and neither alone does: sourced claims about the name, and
             # a verdict from an inspection that looked at what was built. A verdict with
             # no evidence behind it is somebody's impression; evidence with no verdict
@@ -3027,11 +2998,11 @@ def coverage(intent: dict, spec: dict | None = None, plan: dict | None = None,
                                if e.get("matched")
                                and str((e.get("envelope") or {}).get("tradition")
                                        or "") == t})
-            # **A type the plan uses, not a type the record named.** The review's
-            # counterexample was one capability entry carrying `tradition: japanese` and
-            # **no plan at all** satisfying a request for a Japanese village: the record
-            # is a statement of what was selected, and what was selected is not what was
-            # built until the plan says so.
+            # **A type the plan uses, not a type the record named.** A capability entry
+            # carrying `tradition: japanese`, with **no plan at all**, does not satisfy a
+            # request for a Japanese village: the record is a statement of what was
+            # selected, and what was selected is not what was built until the plan says
+            # so.
             used = sorted({str(p.get("type")) for p in parts
                            if str(p.get("type") or "") in declared})
             # **The inspection's verdict on the built place comes first, both ways.** A
@@ -3083,12 +3054,11 @@ def coverage(intent: dict, spec: dict | None = None, plan: dict | None = None,
                         declared=declared[:8], used=[])
             elif used:
                 # **How much of the place is built that way, not whether one part is.**
-                # The review's counterexample: one Japanese-labelled type among 99 other
-                # plots satisfied the entire tradition requirement, before anything was
-                # built. A tradition is a property of the fabric, so it is measured as a
-                # share of the leaves, against a bar registered here rather than chosen
-                # after a run. Below the bar it is `unresolved` and names the share --
-                # the tradition is present and the place is not built in it.
+                # One Japanese-labelled type among 99 other plots does not make a
+                # Japanese place. A tradition is a property of the fabric, so it is
+                # measured as a share of the leaves, against a bar registered here rather
+                # than chosen after a run. Below the bar it is `unresolved` and names the
+                # share -- the tradition is present and the place is not built in it.
                 mine_t = [p for p in parts if str(p.get("type") or "") in set(used)
                           and (not parts_record or stood.get(p["name"], False))]
                 plots_t = [p for p in parts if p.get("kind", "plot") == "plot"]
@@ -3130,8 +3100,8 @@ def coverage(intent: dict, spec: dict | None = None, plan: dict | None = None,
                         nearest=nearest)
         elif req["kind"] == "hierarchy":
             # **"a big temple" among "small houses" is a measurement.** See
-            # `_hierarchy_measure`; the relative hierarchy the review found disappearing
-            # between the sentence and the design is checked on the plan that exists.
+            # `_hierarchy_measure`; a relative hierarchy can disappear between the
+            # sentence and the design, so it is checked on the plan that exists.
             if not plan:
                 req["status"] = "open"
                 req["why"] = f"{req['says']}; nothing is planned yet"

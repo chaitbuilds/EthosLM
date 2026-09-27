@@ -50,13 +50,13 @@ def stage_programs(rnd: Round, be, results: dict) -> dict:
 
 
 def _gate_threshold(rnd: Round, net):
-    """The reserved doorstep of the part the place is entered by. A7.
+    """The reserved doorstep of the part the place is entered by.
 
         The plan says which one: `stages_media.arrival_gate` -- a passage point on the
         outermost ring where the spec names rings, else the first leaf in plan order whose
-        type declares `PASSAGE`. One rule, shared with the flythrough (demo-polish, 1d).
-        With no such part -- an open village, which is every round up to 11 -- there is no
-        arrival to photograph and the skyline frame is absent.
+        type declares `PASSAGE`. One rule, shared with the flythrough. With no such part --
+        an open village -- there is no arrival to photograph and the skyline frame is
+        absent.
 
     """
     if net is None:
@@ -447,12 +447,11 @@ def stage_cache(rnd: Round, be, results: dict) -> dict:
     p = rnd.rel(rnd.base_volume)
     if os.path.exists(p):
         vol = offline.load_volume(p)
-        # **Cached for the site that was chosen, or cached again.** The closure round's
-        # transfer case: the spec grew its footprint, the search chose a larger square
-        # at the same origin, and this stage handed back the volume cached for the
-        # smaller one because the file existed. A dry run's base volume is the ground
-        # under the chosen site plus its pad and nothing else; a volume for another site
-        # is set aside by name.
+        # **Cached for the site that was chosen, or cached again.** When the spec grows
+        # its footprint the search can choose a larger square at the same origin, and
+        # the volume cached for the smaller one must not be handed back just because the
+        # file exists. A dry run's base volume is the ground under the chosen site plus
+        # its pad and nothing else; a volume for another site is set aside by name.
         want = rnd.site or rnd.chosen_site() or {}
         if want and not rnd.site and not be.live:
             pad = int(rnd.flags.get("cache_pad", CACHE_PAD))
@@ -480,14 +479,13 @@ def stage_cache(rnd: Round, be, results: dict) -> dict:
                                "running state", "path": p, "shape": list(vol.shape)}
     if not be.live and getattr(be, "dry_run", False):
         # **A dry run caches its own ground, off the save's region files, with no
-        # server.** v2, C5, and the gap a fresh site found: the search reads region
-        # files directly (`find_site.field_from_region_files`) and chose this square
-        # without a server, and then the run refused to go on until a server session
-        # wrote the same ground into `world.npz` -- so "one sentence in, a finished
-        # place out, offline" was true only for a site somebody had already cached.
-        # `savedworld.SavedWorld.volume` is the same read at the same fidelity, a chunk
-        # at a time; the vertical range is trimmed to the ground it holds, as the server
-        # path trims it.
+        # server.** The site search reads region files directly
+        # (`find_site.field_from_region_files`) and chooses a square without a server;
+        # needing a server session to write the same ground into `world.npz` would make
+        # "one sentence in, a finished place out, offline" true only for a site somebody
+        # had already cached. `savedworld.SavedWorld.volume` is the same read at the
+        # same fidelity, a chunk at a time; the vertical range is trimmed to the ground
+        # it holds, as the server path trims it.
         s = rnd.site or rnd.chosen_site() or {}
         o = s.get("origin", ["?", "?"])
         if not s:
@@ -517,13 +515,11 @@ def stage_cache(rnd: Round, be, results: dict) -> dict:
             # **A site whose ground cannot be read is the site owner's finding.** The
             # search ranks the squares `out/sites/` holds, and a square's *cached height
             # field* existing does not mean the save holds every generated chunk of the
-            # padded volume this stage reads. Until this the run simply stopped, and a
-            # request that could not be built for that reason reported a chunk number --
-            # which is the failure the realization round's refusal case exists to
-            # prevent, in a different place. So the square is written down as unreadable
-            # and the site search is asked again: the next-ranked square is chosen on
-            # the next invocation, and a run that exhausts them says that, by name,
-            # instead of naming a chunk.
+            # padded volume this stage reads. Stopping here would answer a request that
+            # cannot be built with a chunk number instead of a reason. So the square is
+            # written down as unreadable and the site search is asked again: the
+            # next-ranked square is chosen on the next invocation, and a run that
+            # exhausts them says that, by name, instead of naming a chunk.
             from .. import deps as _deps_c
             ref_p = rnd.rel(UNREADABLE_SITES)
             rec = json.load(open(ref_p)) if os.path.exists(ref_p) else {"refused": []}
@@ -662,10 +658,10 @@ def _reconcile_surfaces(rnd: Round, path: str, built_path: str) -> dict:
 def stage_finish(rnd: Round, be, results: dict) -> dict:
     """The seam between what was built and what was there, then the built world cached.
 
-        `scripts/finish_run.py` rounds the lip of every cut face and dresses the ground the
-        round touched, and lints afterwards because a pass that moves ground can sever a
-        network. Then `world_built.npz`, which is what `lint`, `render` and every card are
-        read off.
+        `_commands/finish_run.py` rounds the lip of every cut face and dresses the
+        ground the round touched, and lints afterwards because a pass that moves ground
+        can sever a network. Then `world_built.npz`, which is what `lint`, `render` and
+        every card are read off.
 
     """
     import subprocess
@@ -713,12 +709,11 @@ def stage_finish(rnd: Round, be, results: dict) -> dict:
                            "built world is cached from the volume the waves left"}
     if not be.live:
         return {"error": "the finish pass moves ground; run this stage --live"}
-    # **The one publish.** v2, A1: a live round builds its parts against the volume,
-    # exactly as a dry run does, and the world is written here -- once, in
-    # `Builder.flush`'s two passes, the second of which computes the connective states
-    # only a running server knows. It is before the seam pass because that pass runs in
-    # its own process against the world, and there is nothing for it to dress until the
-    # buildings are in it.
+    # **The one publish.** A live round builds its parts against the volume, exactly as a
+    # dry run does, and the world is written here -- once, in `Builder.flush`'s two
+    # passes, the second of which computes the connective states only a running server
+    # knows. It is before the seam pass because that pass runs in its own process against
+    # the world, and there is nothing for it to dress until the buildings are in it.
     published = be.publish() if hasattr(be, "publish") else None
     if published and published.get("published"):
         print(f"  published {published['published']} blocks in "
@@ -1068,13 +1063,12 @@ def voice_roof(voice: str | None) -> dict | None:
 def check_voices(voice: str | None, place: str | None = None) -> list:
     """The two voices a type's checker stands it in: the one its author was given and
         **the place's own** -- the voice the round's place is in -- and never a voice
-        named in this file. v2, C0.
+        named in this file.
 
-        Two and not one, because a checker that saw one voice validated six of the eight
-        types a city authored in a silhouette the city was never going to use. Until this
-        the partner was the demo's authored voice, a library constant, so every future
-        type of every other place was checked against one city's roof. The partner is the
-        place's: where the author's voice **is** the place's, or there is no place, it is
+        Two and not one, because a checker that sees one voice validates types in a
+        silhouette the place is never going to use. The partner is the place's, not a
+        library constant, which would check every type of every place against one city's
+        roof: where the author's voice **is** the place's, or there is no place, it is
         the voice on disk whose silhouette is least like the first's
         (`styles.partner_voice`) -- a voice with a **different explicit silhouette** and
         not a silent one, because a type whose own default silhouette is its author's
@@ -1463,13 +1457,13 @@ def stage_type_briefs(rnd: Round, be, results: dict) -> dict:
 def type_brief(rnd: Round, spec: dict, fixtures: list | None = None) -> str:
     """One type's brief: the API, the voice, the contract for its kind, the ground it
     will be checked on as sited, and the request. What `stage_type_briefs` writes for
-    a round's own types and what the library's growth (v2, C3) writes for a type the
+    a round's own types and what the library's growth writes for a type the
     plan found missing -- one composition, so an author at plan time is shown exactly
     what an author in a types round is."""
     from .. import styles
     from ..buildlib import API_DOC
-    # A3: a type is checked on the ground of its own kind, and told about that ground
-    # and no other.
+    # A type is checked on the ground of its own kind, and told about that ground and
+    # no other.
     if fixtures is None:
         fixtures = _pipeline._fixtures_for(rnd, spec)
     census: dict = {}
@@ -1536,7 +1530,7 @@ The library prepared this pad by laying {ground.get(part['ground'], part['ground
 
 
 def _sited_part_block(b, p: dict, mat) -> str:
-    """One edge, point or area fixture's ground, as the type will receive it. A3.
+    """One edge, point or area fixture's ground, as the type will receive it.
 
         The same job `_sited_block` does for a plot: run `site()` on the real cache and
         describe what came back. What differs is what there is to describe -- a wall gets
@@ -2104,7 +2098,7 @@ def _record_call(rnd: Round, subj: dict, n: int, prog: str, sha: str,
 
 
 def _check_recorded(subj: dict, row: dict, sha: str, n: int) -> None:
-    """Part A's acceptance, per draft-0 row: this stage re-measures a published build."""
+    """The reproduction check, per draft-0 row: re-measure a published build."""
     import hashlib
     if n != 0 or not os.path.exists(subj["recorded"]):
         return
@@ -2209,9 +2203,9 @@ def stage_revise(rnd: Round, be, results: dict) -> dict:
                       indent=1)
         rows[subj["id"]] = rec
     out["candidates"] = rows
-    # Part A's free acceptance: draft 0 is the published first draft, re-measured by the
-    # identical code. Reported as a count so a drift shows in the round file rather than
-    # in a log nobody reads.
+    # A free reproduction check: draft 0 is the published first draft, re-measured by
+    # the identical code. Reported as a count so a drift shows in the round file rather
+    # than in a log nobody reads.
     checked = [d for r in rows.values() for d in (r.get("drafts") or [])
                if d["draft"] == 0 and "reproduces_recorded" in d]
     out["reproduces_recorded"] = {
@@ -2350,11 +2344,11 @@ def part_waves(parts: list) -> list:
 def sample_parts(parts: list, sample: dict) -> tuple:
     """The leaves of a **construction sample**: adjoining quarters and what joins them.
 
-        The architecture round. A place of four hundred leaves cannot be materialised to
-        answer "can the plan's promised geometry actually be built", and a single house
-        cannot answer it either -- what a sample has to span is the seam: two districts that
-        touch, the lanes between them, and the wall, gate or square that stands on their
-        boundary. So the rule is written down and run off the plan, not chosen by hand:
+        A place of four hundred leaves cannot be materialised to answer "can the plan's
+        promised geometry actually be built", and a single house cannot answer it either
+        -- what a sample has to span is the seam: two districts that touch, the lanes
+        between them, and the wall, gate or square that stands on their boundary. So the
+        rule is written down and run off the plan, not chosen by hand:
 
           1. the `quarters` plot-bearing quarters with the most plots, taking the first by
              count and then each next one **nearest an already chosen quarter**, so the
@@ -2383,13 +2377,13 @@ def sample_parts(parts: list, sample: dict) -> tuple:
 
     boxes = {q: box(rows) for q, rows in by_q.items()}
     order = sorted(by_q, key=lambda q: (-len(by_q[q]), q))
-    # **A sample chosen by its architectural questions** (the expression round). The
-    # closure city built two lower-ring quarters and every ring wall -- 120 parts that
-    # answered no question about form. With `market`, the first quarter is the one that
-    # holds a market leaf (working space); with `compound`, the compound's own quarters
-    # join it (a courtyard/compound); the quarter between them, nearest both, joins for
-    # the transition; with `boundary`, only the walls whose LINE passes within `margin`
-    # of a chosen quarter are built, with their gates -- not every ring.
+    # **A sample chosen by its architectural questions.** Two quarters and every ring
+    # wall can be a hundred parts that answer no question about form. With `market`, the
+    # first quarter is the one that holds a market leaf (working space); with
+    # `compound`, the compound's own quarters join it (a courtyard/compound); the
+    # quarter between them, nearest both, joins for the transition; with `boundary`,
+    # only the walls whose LINE passes within `margin` of a chosen quarter are built,
+    # with their gates -- not every ring.
     want_market = bool((sample or {}).get("market"))
     want_compound = bool((sample or {}).get("compound"))
     want_boundary = bool((sample or {}).get("boundary"))
@@ -2469,11 +2463,11 @@ def sample_parts(parts: list, sample: dict) -> tuple:
             continue                    # another quarter's open ground
         out.append(p)
         joins.append(p["name"])
-    # **A wall in the sample brings its gates.** The closure round's transfer sample:
-    # the town wall was within the margin and its ring gate was not, so the wall was
-    # built through the gate's cell, over the threshold the circulation pass had
-    # reserved for it, and the sample's own check refused the sample for a defect the
-    # sampling rule had made. A point that stands on an included edge is included.
+    # **A wall in the sample brings its gates.** A wall within the margin whose gate is
+    # not would be built through the gate's cell, over the threshold the circulation
+    # pass reserved for it, and the sample's own check would refuse the sample for a
+    # defect the sampling rule made. A point that stands on an included edge is
+    # included.
     edge_rects = [r for p in out if p.get("kind") == "edge"
                   for r in _pipeline.part_rects({**p, "name": p.get("name")})]
     for p in parts:
@@ -2867,7 +2861,7 @@ def preflight_parts(parts: list, voices: list, workers: int = 1,
 
 
 def settle_ground(rnd, be, parts: list, mat_of) -> tuple:
-    """The ground contract of a build, settled once before the first part. v2, B1.
+    """The ground contract of a build, settled once before the first part.
 
         Every leaf declares what it needs of the ground -- its pad and level, an edge's
         footing along its run -- read off the volume **as it stands before any part is
@@ -2930,7 +2924,7 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None,
                      ground=None) -> dict:
     """One leaf, from the type it names. Returns what happened; never raises.
 
-        The whole of Part C's claim is in this function being the only way a part gets
+        The whole design rests on this function being the only way a part gets
         built. A type is a committed file, a part is a leaf of the plan, and this composes
         the one with the other and executes it. There is no branch here for "and if that
         does not work, write a program": a part that cannot be instantiated is reported.
@@ -2996,11 +2990,11 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None,
                 "error": f"{type(e).__name__}: {e}",
                 "traceback": pipeline.scrub_traceback(traceback.format_exc())[-1200:]}
     # **What construction actually delivered, measured before the blocks are
-    # committed.** The closure round's construction boundary: the height clause read the
-    # planned `params.storeys` and called a one-storey cottage tall. The outcome is read
-    # off the builder's own pending blocks, the surface context beside it, and a
-    # constraint where a requested feature was lost -- so the checker measures the
-    # building that stands and the recovery ladder has a lot size to act on.
+    # committed.** A height clause that read the planned `params.storeys` would call a
+    # one-storey cottage tall. The outcome is read off the builder's own pending blocks,
+    # the surface context beside it, and a constraint where a requested feature was lost
+    # -- so the checker measures the building that stands and the recovery ladder has a
+    # lot size to act on.
     emitted = surfaces = limit = surface_record = None
     try:
         from .. import construction
@@ -3010,9 +3004,9 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None,
         emitted = construction.outcome(b, {**leaf, **sited_now, "name": name,
                                            "kind": geo["kind"]}, decl, params)
         surfaces = construction.surfaces(b, {**leaf, **sited_now, "name": name})
-        # **The owned surfaces, recorded at emission.** The expression round (worker C):
-        # who laid every block and as what role, with its exposure and what is protected
-        # -- the record a material pass may edit and nothing else may.
+        # **The owned surfaces, recorded at emission.** Who laid every block and as what
+        # role, with its exposure and what is protected -- the record a material pass may
+        # edit and nothing else may.
         from .. import surfaces as surfaces_mod
         surface_record = surfaces_mod.record(
             b, {**leaf, **sited_now, "name": name, "kind": geo["kind"],
@@ -3026,11 +3020,10 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None,
     placed = be.commit(b)
     # What this part laid as a way in, beside the plot it was laid for. The finishing
     # pass reads it and keeps off those columns. Written here because `stage_parts` is
-    # the pass now, and `settlement.add_paths` bakes its directory in from
+    # the pass, and `settlement.add_paths` bakes its directory in from
     # $ETHOSLM_SETTLEMENT at import. `stage_parts` hands a `paths_sink` -- its own record,
     # which it writes -- and so does a wave's worker; the append below is for a caller
-    # with neither, and it is the shape that let a stage run twice record every way in
-    # twice (v2, B0).
+    # with neither, and appending is how a stage run twice records every way in twice.
     if b.paths:
         if paths_sink is not None:
             paths_sink.extend(dict(r) for r in b.paths)
@@ -3129,7 +3122,7 @@ def _wave_worker(args: tuple) -> dict:
     vol = offline.load_volume(snapshot)
     be = _WaveBackend(vol)
     base = offline.load_volume(base_path) if base_path and os.path.exists(base_path) else None
-    # the build's settled ground, read back in this process (v2, B1)
+    # the build's settled ground, read back in this process
     ground = (_ground.load(ground_path) if ground_path and os.path.exists(ground_path)
               else None)
     rows, paths = [], []
@@ -3160,7 +3153,7 @@ def _wave_worker(args: tuple) -> dict:
 
 
 def record_part_floors(rnd, rows: list, plots: list) -> list:
-    """Write the floor level each built part was sited at into `plots.json`. A1.
+    """Write the floor level each built part was sited at into `plots.json`.
 
         The registry is where the passes agree about ground, and this is one more thing
         they have to agree about: `lint.Context.room_owner` reads `y0` to tell the inside
@@ -3196,7 +3189,7 @@ def record_part_floors(rnd, rows: list, plots: list) -> list:
 
 
 def stage_parts(rnd, be, results: dict) -> dict:
-    """Every leaf of the plan, instantiated, in waves. A6 lints each wave's own ground.
+    """Every leaf of the plan, instantiated, in waves, each wave linted on its own ground.
 
         No builder call and no hand-written program: that is the bar, and it is a bar about
         this function's own source as much as about the run.
@@ -3208,24 +3201,21 @@ def stage_parts(rnd, be, results: dict) -> dict:
     parts = rnd.parts()
     if not parts:
         return {"error": "no plan.json, or a plan with no leaves in it"}
-    # **Built once per candidate.** The closure round: this stage rebuilt every part on
-    # every invocation, so a replay that changed nothing re-laid the world, moved the
-    # built volume's identity under the inspection bound to it, and asked the judge to
-    # read the same place again. A built world is an artifact of the plan it was built
-    # from, stamped like any other, and reused while nothing it was made from has moved.
+    # **Built once per candidate.** Rebuilding every part on every invocation would make
+    # a replay that changed nothing re-lay the world, move the built volume's identity
+    # under the inspection bound to it, and ask the judge to read the same place again.
+    # A built world is an artifact of the plan it was built from, stamped like any
+    # other, and reused while nothing it was made from has moved.
     from .. import deps as _deps_w
-    # **The ground this is about to be built on was prepared for this design.** The
-    # review's sixth finding: preparation and planning were separate decisions and
-    # nothing connected them, so a repaired plan could be built on the terraces cut for
-    # the plan it replaced. `terrain` is the baseline and `ground` is the preparation,
-    # stamped against the plan it was cut for; this is where the two meet. **Asked
-    # before the warm return, not after it** (the composition round). This check stood
-    # eight lines below the warm return, so a build could be handed back as fresh
-    # without the question ever being put -- and `DEPENDS["built"]` did not carry ground
-    # identity either, so the freshness check could not notice the cut had moved. Both
-    # halves had to go: the dependency is real now (`deps`, evidence stream) and the
-    # order is this way round. A warm build is a claim about the world *and the ground
-    # under it*; making that claim without asking is how a stale certificate survives.
+    # **The ground this is about to be built on was prepared for this design.**
+    # Preparation and planning are separate decisions, so without this a repaired plan
+    # could be built on the terraces cut for the plan it replaced. `terrain` is the
+    # baseline and `ground` is the preparation, stamped against the plan it was cut for;
+    # this is where the two meet. **Asked before the warm return, not after it**, and
+    # `DEPENDS["built"]` carries ground identity (`deps`, evidence stream), so a build
+    # is never handed back as fresh without the question being put. A warm build is a
+    # claim about the world *and the ground under it*; making that claim without asking
+    # is how a stale certificate survives.
     ready, why = ground_for_this_design(rnd)
     if not ready:
         return {"status": "error", "stop": True, "ground": why,
@@ -3233,10 +3223,9 @@ def stage_parts(rnd, be, results: dict) -> dict:
                           f"candidate: {why}. Run the ground stages again before "
                           f"building on it")}
     fresh, why = _deps_w.check(rnd, "built", plan=rnd.plan())
-    # **...and of the extent it was asked for** (the city attempt round): a build of a
-    # registered section is not the build of the whole place, nor of another section,
-    # and the warm return handed a section's world back when the section was widened to
-    # the whole city
+    # **...and of the extent it was asked for**: a build of a registered section is not
+    # the build of the whole place, nor of another section, so a section's world is not
+    # handed back when the section is widened
     if fresh and os.path.exists(rnd.rel("parts.json")):
         _was_s = (json.load(open(rnd.rel("parts.json"))).get("sample") or {})
         _want_s = rnd.flags.get("section") or {}
@@ -3253,14 +3242,13 @@ def stage_parts(rnd, be, results: dict) -> dict:
         return {**{k: was.get(k) for k in ("built", "failed", "sample", "candidate",
                                            "voice", "voices")},
                 "skipped": why, "written": rnd.rel("parts.json"), "waves": was.get("waves")}
-    # **A round may build a sample of its plan rather than all of it.** The architecture
-    # round: the large case stops at planning and preview, and what answers "can this
-    # plan's promised geometry be built" is a compact sample spanning two adjoining
-    # districts and the boundary between them. The rule is in `sample_parts` and the
-    # round file names its two numbers; a round with no `sample` flag builds every leaf,
-    # exactly as every round before it did. ...and **a round may register the section it
-    # means** (the composition round): a bounded connected extent, chosen for the
-    # architectural questions it has to answer and written down before any candidate was
+    # **A round may build a sample of its plan rather than all of it.** A large place
+    # can stop at planning and preview, and what answers "can this plan's promised
+    # geometry be built" is a compact sample spanning two adjoining districts and the
+    # boundary between them. The rule is in `sample_parts` and the round file names its
+    # two numbers; a round with no `sample` flag builds every leaf. ...and **a round may
+    # register the section it means**: a bounded connected extent, chosen for the
+    # architectural questions it has to answer and written down before any candidate is
     # compiled. `section_parts` selects against that registration; `sample_parts` above
     # chooses its own.
     sample_rec = None
@@ -3285,14 +3273,13 @@ def stage_parts(rnd, be, results: dict) -> dict:
               f"({', '.join(sample_rec['quarters'])}) and "
               f"{len(sample_rec['joining_parts'])} joining part(s), of "
               f"{sample_rec['of_plan']['leaves']} leaves in the plan", flush=True)
-    # **The voice the place is in, not the config's field.** Voice contract, A1.
-    # `Round.voice` is the *config's* voice, and a round that carries a sentence leaves
-    # it empty on purpose -- "a coordinate in the config is a human having chosen the
-    # ground", and so is a palette. `voice_name()` is the one line that answers the
-    # question properly: the config's voice, or the one the place chose, or the one the
-    # spec wrote. the library's default palette. Nothing measured a block against the
-    # voice, so nothing said so; A2's `palette/built` clause is that measurement now,
-    # and this line is what it holds a build to.
+    # **The voice the place is in, not the config's field.** `Round.voice` is the
+    # *config's* voice, and a round that carries a sentence leaves it empty on purpose --
+    # "a coordinate in the config is a human having chosen the ground", and so is a
+    # palette. `voice_name()` is the one line that answers the question properly: the
+    # config's voice, or the one the place chose, or the one the spec wrote, rather than
+    # silently the library's default palette. The `palette/built` clause measures the
+    # built blocks against the voice, and this line is what it holds a build to.
     voice = rnd.voice_name() or None
     # a leaf with none is the place's, exactly as every leaf was before. One resolution
     # per voice name, so a city of four rings resolves four times, not 280.
@@ -3346,10 +3333,10 @@ def stage_parts(rnd, be, results: dict) -> dict:
         return out
     floors: dict = {}
     surface_records: list = []
-    # **The ground, settled once, before the first part.** v2, B1: every leaf's pad and
-    # level, every edge's footing, the lanes and the doorsteps, declared on the volume
-    # as it stands now and resolved by one contract; each part then lays what was
-    # settled for it, and no part's ground is what its neighbour left behind.
+    # **The ground, settled once, before the first part.** Every leaf's pad and level,
+    # every edge's footing, the lanes and the doorsteps, declared on the volume as it
+    # stands now and resolved by one contract; each part then lays what was settled for
+    # it, and no part's ground is what its neighbour left behind.
     resolved, ground_rec = settle_ground(rnd, be, parts, lambda p: voice_of(p)[1][0])
     out["ground"] = {k: ground_rec[k] for k in ("columns", "declared", "refused",
                                                  "owned_by_class", "seam_totals",
@@ -3358,12 +3345,11 @@ def stage_parts(rnd, be, results: dict) -> dict:
           f" of {len(parts)} parts and the network in {ground_rec['seconds']}s; seams "
           f"{ground_rec['seam_totals']}", flush=True)
     # **The record of every way in this stage lays is this stage's, written and not
-    # appended.** v2, B0. Each part's `approach()` and `flight()` paths went onto the
-    # end of whatever `paths.json` the last run left, so a `parts` stage run again
-    # duplicated every row -- the example's file read 332 rows for 32 after eight runs,
-    # and the finish pass reads it to keep off those columns. The stage owns the file:
-    # it starts empty and holds exactly what this run has laid so far, so a stage that
-    # dies half-way leaves a true record of the half.
+    # appended.** Appending each part's `approach()` and `flight()` paths to whatever
+    # `paths.json` the last run left would duplicate every row each time the stage runs
+    # again, and the finish pass reads it to keep off those columns. The stage owns the
+    # file: it starts empty and holds exactly what this run has laid so far, so a stage
+    # that dies half-way leaves a true record of the half.
     laid: list = []
     paths_path = rnd.rel("paths.json")
 
@@ -3380,7 +3366,7 @@ def stage_parts(rnd, be, results: dict) -> dict:
         # `site()` sounds the ground and answers.
         plots = record_part_floors(rnd, rows, plots)
         by = {p["label"]: p for p in plots}
-        # A6: the wave's own parts plus a margin, not the whole place.
+        # the wave's own parts plus a margin, not the whole place
         rects = [by[r["part"]] for r in rows if r["part"] in by]
         scope = None
         if rects:
@@ -3469,27 +3455,26 @@ def stage_parts(rnd, be, results: dict) -> dict:
         out["parallel"] = {"workers": n_workers, "quarter_waves": len(quarters),
                            "snapshot": os.path.relpath(snapshot, _pipeline.ROOT)}
     # **Where a structure was actually entered, written back onto the network.** The
-    # neighbourhood delivery round, and it is the rule the spatial design round set for
-    # gates applied to every part: *"the doorstep wins -- a doorway that cannot be
-    # walked into is not a way in -- and the network record is corrected to say what was
-    # laid"* (`circulate.emit`). The circulation pass reserves a doorstep from the
-    # ground it plans on; `site()` prepares the plot's own ground, chooses the door cell
-    # on the pad it made, and then **measures**, against the world it has just changed,
-    # whether a person can walk to it (`approach()`). Where a lane ramps past a plot the
-    # two disagree: `middle_ring_north_east_b0_0_02` stands on its district's terrace at
-    # y=64, the lane outside it is cut to y=60 for the ramp, and `E008` refused the
-    # build for the reserved doorstep while the door `site()` laid four columns away was
-    # measured walk-reachable from outside. So the record is corrected to the door that
+    # rule gates follow, applied to every part: *"the doorstep wins -- a doorway that
+    # cannot be walked into is not a way in -- and the network record is corrected to
+    # say what was laid"* (`circulate.emit`). The circulation pass reserves a doorstep
+    # from the ground it plans on; `site()` prepares the plot's own ground, chooses the
+    # door cell on the pad it made, and then **measures**, against the world it has just
+    # changed, whether a person can walk to it (`approach()`). Where a lane ramps past a
+    # plot the two can disagree: a plot on its district's terrace beside a lane cut
+    # lower for the ramp gets its door a few columns from the reserved doorstep, and
+    # `E008` would refuse the build for the reserved doorstep while the door `site()`
+    # laid is walk-reachable from outside. So the record is corrected to the door that
     # exists, and **only** on a measured positive: `way_in.ok` is `approach()`'s own
     # answer re-read off the built world, not a claim. The reserved cell is kept beside
     # it as `was`, and a part whose way in was *not* measured reachable is left exactly
     # as it was, so `E008` still refuses a structure nobody can enter -- which is the
     # whole of what that check is for. **...and for a leaf with a compiled site this is
-    # a check, not a correction.** The quarter design round: the router reserved the
-    # compiled door at the compiled floor (`circulate.site_way`) and `site()` built
-    # exactly that door, so the two agree by construction. A disagreement is recorded
-    # (`sites_disagree`, which should be empty) and the network is left as planned --
-    # moving it would hide the very defect the compiled site exists to remove.
+    # a check, not a correction.** The router reserves the compiled door at the compiled
+    # floor (`circulate.site_way`) and `site()` builds exactly that door, so the two
+    # agree by construction. A disagreement is recorded (`sites_disagree`, which should
+    # be empty) and the network is left as planned -- moving it would hide the very
+    # defect the compiled site exists to remove.
     with contextlib.suppress(Exception):
         net = rnd.network()
         moved = []
@@ -3552,8 +3537,8 @@ def stage_parts(rnd, be, results: dict) -> dict:
         if disagree:
             print(f"   sites: {len(disagree)} of {n_checked} compiled door(s) disagree "
                   f"with the door laid", flush=True)
-    # **Which candidate this construction is of.** The closure round: a parts record
-    # that cannot say which design it built is a record a revision can inherit.
+    # **Which candidate this construction is of.** A parts record that cannot say
+    # which design it built is a record a revision can inherit.
     from .. import deps as _deps_b
     with contextlib.suppress(Exception):
         out["candidate"] = _deps_b.candidate_id(rnd)

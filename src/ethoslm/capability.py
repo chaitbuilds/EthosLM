@@ -1,11 +1,9 @@
 """What the library can build, described by what it *is* rather than by what it is called.
 
-The audit's finding, at `growth.py:39` and `growth.py:183`: a defining part was matched
-to a type by **filename prefix**, and a gap the matcher had just opened was closed again
-two hundred lines later by `if os.path.exists(path)` -- so a `tower` of the wrong form,
-the wrong kind, or an envelope that cannot hold the part was adopted as the answer to
-"this library has no tower". The wrong-form bypass was reproducible and this module is
-where it stops.
+A defining part matched to a type by **filename prefix**, with a gap closed again by
+`if os.path.exists(path)`, adopts a `tower` of the wrong form, the wrong kind, or an
+envelope that cannot hold the part as the answer to "this library has no tower". This
+module is where that stops.
 
 A capability is five facts about a type, all of them already on disk and none of them
 its name:
@@ -117,10 +115,10 @@ def _named_for(name: str, family: str) -> bool:
         say so itself (`FAMILY = "keep"`), and where it does its own word wins; `family_of`
         is where the two come together.
 
-        This is a **necessary** condition and never a sufficient one. The audit's finding
-        was not that names were consulted -- it was that a name was consulted *instead of*
-        the declarations, so a `tower` of the wrong form was adopted as a tower. `fits`
-        asks the declarations as well, every time.
+        This is a **necessary** condition and never a sufficient one. Consulting a name is
+        not the defect; consulting it *instead of* the declarations is, because then a
+        `tower` of the wrong form is adopted as a tower. `fits` asks the declarations as
+        well, every time.
 
     """
     return name == family or name.startswith(family + "_")
@@ -145,8 +143,8 @@ def fits(c: dict, want: dict) -> tuple:
     """
     from . import pipeline as _pipeline
     # a type declaring the function the part is asked for answers the part whatever it
-    # is named (the expression round, B's R7): a `worship` chapel answers a hall part
-    # asked to be a chapel; the function clause below still holds it to the function
+    # is named: a `worship` chapel answers a hall part asked to be a chapel; the
+    # function clause below still holds it to the function
     fn_match = bool(want.get("function")) and str(
         (c.get("envelope") or {}).get("function") or "") == str(want.get("function"))
     if want.get("family") and not family_of(c, want["family"]) and not fn_match:
@@ -179,12 +177,12 @@ def fits(c: dict, want: dict) -> tuple:
                        f"through")
     if want.get("diagonal") and not c["attachment"]["diagonal"]:
         return (False, f"{c['type']} draws no diagonal run and this boundary is round")
-    # **The three construction constraints the round found missing.** The review's sixth
-    # finding was reproduced with one call: a detached, dry-ground, zero-relief cottage
-    # answered a want for an attached home on wet sloping ground, because `fits` asked
-    # five questions and none of them was about the ground the thing has to stand on. A
-    # capability that does not include "will it stand here" is a filename with extra
-    # steps, which is the defect this module was written to stop one level up.
+    # **The three construction constraints: attachment, ground and relief.** Without
+    # them a detached, dry-ground, zero-relief cottage answers a want for an attached
+    # home on wet sloping ground, because none of the other questions is about the
+    # ground the thing has to stand on. A capability that does not include "will it
+    # stand here" is a filename with extra steps, which is the defect this module
+    # exists to stop one level up.
     if want.get("attached") and not c["attachment"]["attached"]:
         return (False, f"{c['type']} builds free-standing and this part shares party "
                        f"walls with its neighbours")
@@ -405,8 +403,8 @@ def wants_of(spec: dict, *, round_boundaries: bool = False,
 
         `ground` and `relief` are the **site's** facts and they are passed through to every
         want, because whether a type will stand somewhere is a fact about the pair and not
-        about the type. The review's finding was that production never passed them at all,
-        so `fits` was answering a question with half its terms missing.
+        about the type. A want without them has `fits` answering a question with half its
+        terms missing.
 
     """
     out = []
@@ -473,14 +471,14 @@ def wants_of(spec: dict, *, round_boundaries: bool = False,
                     "part": p["name"], "family": None, "of": "fabric"}
             if ch.get("attached"):
                 want["attached"] = True
-            # **And what the fabric is FOR, where the request said.** The review's third
-            # finding in its semantic form: "An allowed plot type and a coarse role do
-            # not establish that a dwelling's function has been fulfilled." Run without
-            # this, a sentence asking for a village of houses produced a district of
-            # seven halls and two cottages -- every one of them admitted, because
-            # `rural` is what a hall, a barn and a cottage all are. A function
-            # requirement the interpretation read is the one thing that can tell them
-            # apart, and this is where it reaches the choice instead of only the check.
+            # **And what the fabric is FOR, where the request said.** An allowed plot
+            # type and a coarse role do not establish that a dwelling's function has
+            # been fulfilled: without this, a sentence asking for a village of houses
+            # can produce a district of halls with a few cottages -- every one of them
+            # admitted, because `rural` is what a hall, a barn and a cottage all are. A
+            # function requirement the interpretation read is the one thing that can
+            # tell them apart, and this is where it reaches the choice instead of only
+            # the check.
             fn = _function_wanted(intent, p)
             if fn:
                 want["function"] = fn
@@ -659,11 +657,11 @@ def _declaration(name: str, decls: dict | None):
 def _types_used(place: dict, plan: dict | None) -> dict:
     """`{defining part: [every type the place was actually built out of]}`.
 
-        **Every leaf, and every kind of want.** The review's account of the previous rule is
-        exact: it recorded the *first* type it saw per defining part, took its parts from the
-        place level only, and skipped compound components and district fabric entirely. So a
-        district whose first house was the approved type and whose remaining forty were not
-        produced no finding at all, and a palace's halls were never compared with anything.
+        **Every leaf, and every kind of want.** Recording only the *first* type seen per
+        defining part, from the place level only, skips compound components and district
+        fabric entirely: a district whose first house was the approved type and whose
+        remaining forty were not would produce no finding at all, and a palace's halls
+        would never be compared with anything.
 
     """
     from . import pipeline as _pipeline
@@ -680,21 +678,20 @@ def _types_used(place: dict, plan: dict | None) -> dict:
     for key in ("parts", "compounds", "districts"):
         for p in place.get(key) or []:
             note(p.get("defines"), p.get("type"), p.get("kind", "plot"))
-    # `answers` is the defining part a leaf inherits from the group it is in -- see
-    # `pipeline.plan_parts`. Without it a district's forty houses named no part and the
-    # fabric the whole reconciliation exists to check was invisible. **Kept by leaf
-    # kind, because a want is for one kind.** Found by running the shore village once
-    # the inheritance was in: a district's *open ground* -- its groves and gardens,
-    # which are `area` leaves -- inherited the district's defining part along with its
-    # houses, and were then reconciled against the `fabric` want, which is for a `plot`.
-    # The record said the place had built its homes out of `grove`. The ground between
-    # the houses is not the fabric, and this is where the two are told apart.
+    # `answers` is the defining part that a leaf inherits from the group it is in --
+    # see `pipeline.plan_parts`. Without it a district's houses name no part and the
+    # fabric the whole reconciliation exists to check is invisible. **Kept by leaf
+    # kind, because a want is for one kind.** A district's *open ground* -- its groves
+    # and gardens, which are `area` leaves -- inherits the district's defining part
+    # along with its houses, and reconciled against the `fabric` want, which is for a
+    # `plot`, would record the homes as built out of `grove`. The ground between the
+    # houses is not the fabric, and this is where the two are told apart.
     for p in _pipeline.plan_parts(plan or {}):
-        # **A character's landmark is not the district's fabric.** The closure round's
-        # held-out hamlet: the smithy the character declared as its landmark was
-        # reconciled against the `fabric` want and refused as "workshop is for urban
-        # work"; a landmark is the character author's own deliberate choice and is
-        # recorded under its own kind, where the fabric want does not look.
+        # **A character's landmark is not the district's fabric.** Reconciled against
+        # the `fabric` want, a smithy a hamlet's character declared as its landmark
+        # would be refused as "workshop is for urban work"; a landmark is the character
+        # author's own deliberate choice and is recorded under its own kind, where the
+        # fabric want does not look.
         kind = p.get("kind", "plot")
         if str(p.get("name") or "").startswith("landmark_"):
             kind = "landmark"
@@ -706,9 +703,9 @@ def agreements(rec: dict, place: dict, decls: dict, plan: dict | None = None) ->
     """`(record, findings)` -- does the laid-out place use the types matching approved?
 
         **The record follows the place, and a disagreement the record cannot justify is a
-        finding.** The review's third finding was that `capabilities.json` was written, then
-        layout and compilation chose types of their own, and nothing ever compared the two:
-        the round's own report recorded matching `wall` while the layout built `great_wall`.
+        finding.** Without it `capabilities.json` is written, layout and compilation choose
+        types of their own, and nothing compares the two: a report can record matching
+        `wall` while the layout builds `great_wall`.
 
         Selection is not forced to be identical -- a ring wall is also chosen by the height
         its ring needs, which matching does not know -- so what is enforced is the weaker
@@ -719,9 +716,9 @@ def agreements(rec: dict, place: dict, decls: dict, plan: dict | None = None) ->
         `capability`.
 
         `plan` is the assembled tree where the run has one. Without it only the place level
-        can be compared, which is what the review found: the fabric a district was compiled
-        out of and the halls inside a compound were never reconciled with anything, and both
-        are where the type choices actually are.
+        can be compared, and the fabric a district was compiled out of and the halls inside
+        a compound are never reconciled with anything, though both are where the type
+        choices actually are.
 
     """
     used_by = _types_used(place, plan)
@@ -806,9 +803,9 @@ def gaps(spec: dict, decls: dict | None = None, *, names=None) -> list:
 def adoptable(path: str, want: dict) -> tuple:
     """May the file already at `path` be adopted as the answer to `want`? `(bool, why)`.
 
-        The audit's `growth.py:183`: a gap was closed by the mere existence of
-        `types/<family>.py`, **including the file whose wrong form opened the gap**. A file
-        on disk is a candidate here and nothing more; it is loaded, its five facts are read,
+        The mere existence of `types/<family>.py` does not close a gap -- that file may be
+        **the one whose wrong form opened the gap**. A file on disk is a candidate here and
+        nothing more; it is loaded, its five facts are read,
         and it is adopted only if they answer the want.
 
     """

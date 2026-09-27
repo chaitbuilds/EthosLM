@@ -198,7 +198,7 @@ class Coherence(unittest.TestCase):
             self.assertEqual(set(v["roles"]) - known, set(), name)
 
     def test_the_fresh_ground_search_reads_from_a_cache_and_needs_no_second_server(self):
-        """A5: the grid is walked square by square, and a square is read once, ever.
+        """The grid is walked square by square, and a square is read once, ever.
 
                 Three things, and the third is the one that matters. A square the region files
                 cover is ground the world has; a square they do not is ground the server would
@@ -333,11 +333,11 @@ class Coherence(unittest.TestCase):
 
     def test_plan_only_round_cannot_reach_a_build_stage(self):
         rnd = pipeline.Round(name="proof", sentence="a place", flags={"plan_only": True})
-        # `reading` is the architecture round's first plan-layer stage: what the
-        # sentence requires outright, and what was found out about it, before the spec
-        # is written. A plan-only round still stops at `plan`. ...and `interpret` is the
-        # realization round's, between them: what the sentence *means*, read by an agent
-        # and cross-checked by the rules, before the programme is designed from it.
+        # `reading` is the first plan-layer stage: what the sentence requires outright,
+        # and what was found out about it, before the spec is written. `interpret` comes
+        # next: what the sentence *means*, read by an agent and cross-checked by the
+        # rules, before the programme is designed from it. A plan-only round still stops
+        # at `plan`.
         self.assertEqual(pipeline.default_stages(rnd),
                          ("reading", "interpret", "place_spec", "site_search", "site",
                           "plateau", "plan"))

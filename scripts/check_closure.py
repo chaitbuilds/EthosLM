@@ -1,13 +1,14 @@
-"""The closure round's acceptance runner: one machine-readable answer per gate.
+"""The acceptance runner: one machine-readable answer per gate.
 
     $PY scripts/check_closure.py --run c1
-    $PY scripts/check_closure.py --run c1 --rounds closure-farm --no-probes
+    $PY scripts/check_closure.py --run c1 --proof closure-farm --no-probes
 
-`out/<round>/`) and from **production entry points** run as probes in temporary copies
-of those artifacts. Nothing here is a helper the pipeline does not call. A gate that
-cannot be evidenced answers `pass: false` with the reason, and the whole record is
-written to `out/closure-<run>/acceptance/<stamp>.json` and `latest.json` so a failing
-run is retained beside the passing one that replaces it.
+Every gate is answered from a round's saved artifacts (`out/<round>/`) and from
+**production entry points** run as probes in temporary copies of those artifacts.
+Nothing here is a helper the pipeline does not call. A gate that cannot be evidenced
+answers `pass: false` with the reason, and the whole record is written to
+`out/closure-<run>/acceptance/<stamp>.json` and `latest.json` so a failing run is
+retained beside the passing one that replaces it.
 
 The runner never edits a round's state directory: probes copy what they need to a
 temporary directory and run the stage there.
@@ -126,7 +127,8 @@ def gate_preserved_meaning(g: Gate, proof: str, probes: bool) -> None:
             True, f"{len(hard_open)} unsupported hard requirement(s) carried: {hard_open}")
     if not probes:
         return
-    # the 50 -> 1 counterexample, through the production cross-check
+    # a reading that turns "50" into one house must be refused, through the production
+    # cross-check
     s = "Build exactly 50 houses."
     interp = interpret.read_answer(s, {"reads": [
         {"id": "count/houses", "kind": "count", "says": "one house",

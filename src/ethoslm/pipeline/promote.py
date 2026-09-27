@@ -386,23 +386,22 @@ def promote(rnd, *, candidate: str, why: str, evidence: dict | None = None) -> d
 #: as such; its known failures do not authorize new regressions."
 PROTECTED_STATUS = ("demonstrated",)
 
-#: **The qualities a trial is answerable for, beyond the labels.** The neighbourhood
-#: delivery round, and the audit's fifth cause in its second half: "promotion protects
-#: demonstrated relationship labels and continued presence of each type. It does not
-#: protect every explicit requirement, individual obligation, or quantitative quality of
-#: already-failing relationships. A trial can worsen an already-failing quality without
-#: changing its status." Each row is `(label, path into the section record,
+#: **The qualities a trial is answerable for, beyond the labels.** Protecting only
+#: demonstrated relationship labels and the continued presence of each type does not
+#: protect an explicit requirement, an individual obligation, or a quantitative quality
+#: of an already-failing relationship: a trial can worsen an already-failing quality
+#: without changing its status. Each row is `(label, path into the section record,
 #: "up"|"down")`, the direction being the way the number has to go to be **better**. The
 #: path walks `relationships[id]`, then `measured`, then the dotted key. They fall in
-#: two classes and the difference is the whole of how they are used: * **hard** -- an
-#: explicit requirement or an adopted obligation that was met and is not any more: a
-#: required feature that was affirmatively held and is now owed, a threshold that could
-#: be walked to and cannot, a court that held and does not. These reject a trial exactly
-#: as a lost relationship does. * **accounted** -- a composition quality: mass, count,
-#: enclosure, the contrast between the two sides. A trial may cost one of these and
-#: still be right; what it may not do is cost one silently. Every one that moved, in
-#: either direction, is written onto the promotion as a tradeoff, including the ones
-#: already failing.
+#: two classes and the difference is the whole of how they are used:
+#:   * **hard** -- an explicit requirement or an adopted obligation that was met and is
+#:     not any more: a required feature that was affirmatively held and is now owed, a
+#:     threshold that could be walked to and cannot, a court that held and does not.
+#:     These reject a trial exactly as a lost relationship does.
+#:   * **accounted** -- a composition quality: mass, count, enclosure, the contrast
+#:     between the two sides. A trial may cost one of these and still be right; what it
+#:     may not do is cost one silently. Every one that moved, in either direction, is
+#:     written onto the promotion as a tradeoff, including the ones already failing.
 PROTECTED_HARD = (
     ("features held", "features.held", "up"),
     ("features owed", "features.owed", "down"),
@@ -646,7 +645,7 @@ def regressions(rnd, want: dict | None = None) -> list:
 
 def protected_of(state: str) -> dict:
     """`protected` for a candidate kept at `state` (a directory), for comparing two
-    candidates under one ruler outside a round (`scripts/test_promotion_functions.py`)."""
+    candidates under one ruler outside a round."""
     sec = _section(state)
     return {"measured": bool(sec),
             "relationships": {k: v for k, v in _rels(sec).items()

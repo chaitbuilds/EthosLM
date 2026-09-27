@@ -2,16 +2,16 @@
 
     $PY scripts/test_flight.py
 
-A1. **flight() makes a loft walkable.** A two-storey hut with a door: before the call
+1. **flight() makes a loft walkable.** A two-storey hut with a door: before the call
 the loft is 0% walkable from the doorway, after it is 100%, and a flight aimed into a
-wall refuses and leaves the hut byte-identical. A2. from the lane, 16 of 16. A3. Scoped
-to the two plots it reserved, the report names its own rooms. A4. **The finishing pass
-keeps off a recorded way in.** A dress-ground pass over the columns an approach() laid
-leaves them byte-identical.
+wall refuses and leaves the hut byte-identical. 2. Seeded from the lane, 16 of 16
+doorsteps reachable. 3. Scoped to the two plots it reserved, the report names its own
+rooms. 4. **The finishing pass keeps off a recorded way in.** A dress-ground pass over
+the columns an approach() laid leaves them byte-identical.
 
-the pre-build cache, the network and wave5's program. They are the cases the spec's
-acceptance is written against, so a missing fixture is a failure and says so loudly
-rather than skipping.
+Cases 2 and 3 read the `site_d` fixture: the pre-build cache, the network and the
+`wave5.py` program. They are the cases the spec's acceptance is written against, so a
+missing fixture is a failure and says so loudly rather than skipping.
 """
 import json
 import os
@@ -108,7 +108,7 @@ def walked(res: dict) -> tuple[int, int]:
             sum(r["cells"] for r in res["rooms"]))
 
 
-# ------------------------------------------------- A1. the library owns the stair
+# ---------------------------------------------------- 1. the library owns the stair
 @case
 def t_a1_a_loft_with_no_stair_cannot_be_walked_into():
     """The fixture has to exhibit the defect or the next case proves nothing."""
@@ -193,7 +193,7 @@ def t_a1_a_flight_is_walked_before_it_is_reported():
     return "laid nothing: " + res["reason"][res["reason"].index("nobody"):][:44]
 
 
-# --------------------------------------------- A2. seeded from the lane, not the edge
+# ---------------------------------------------- 2. seeded from the lane, not the edge
 def _r9(*parts):
     p = offline.fixture_path("site_d", *parts)
     if not os.path.exists(p):
@@ -253,7 +253,7 @@ def t_a2_the_context_takes_its_outdoor_seeds_from_the_lane():
     return f"lane seeds, 0 of {len(net.thresholds)} doorsteps a false E002"
 
 
-# ------------------------------------------------- A3. scoped to the plot, not the box
+# -------------------------------------------------- 3. scoped to the plot, not the box
 @case
 def t_a3_check_walkable_scopes_to_the_plot_not_the_bounding_box():
     """Two structures sixty blocks apart. The bounding box of everything the program placed
@@ -368,7 +368,7 @@ def t_a3_no_label_reports_each_plot_of_the_wave():
     return f"{len(res['plots'])} plots reported separately, {len(res['rooms'])} rooms"
 
 
-# ---------------------------------------- A4. the finishing pass keeps off the way in
+# ----------------------------------------- 4. the finishing pass keeps off the way in
 @case
 def t_a4_a_recorded_way_in_is_left_byte_identical():
     """The door it fired on is served by a 48-column approach() path and the pass dressed

@@ -1,16 +1,16 @@
-"""The design round's acceptance runner: one machine-readable answer per gate.
+"""The design acceptance runner: one machine-readable answer per gate.
 
-    $PY scripts/check_design.py --run d1
+    $PY scripts/check_design.py [--run NAME]
 
 Every gate is answered from the **real driver's artifacts** (`out/des-*/`) and, where a
 question is about behaviour rather than about a retained record, from production entry
 points run as probes. A gate that cannot be evidenced answers `pass: false` with the
 reason; a gate never answers `pass` from an absence. The record is written to
-`out/des-d1/acceptance/<stamp>.json` and `latest.json`, so a failing run is retained
+`out/des-<run>/acceptance/<stamp>.json` and `latest.json`, so a failing run is retained
 beside the passing one that replaces it. Nothing here edits a round's state directory.
 
 Five for the decision chain, four for the production proofs, one for the bounded visual
-experiment. They were registered before behaviour was edited.
+experiment.
 
 demand_before_size      the selected pool, parameters, required features, requirement
 ids and scope resolve BEFORE the parent is sized, and every consumer uses that demand.
@@ -549,8 +549,8 @@ def gate_material_decision(g: Gate) -> None:
     contexts = list(rec.get("contexts") or [])
     controls = [c for c in contexts if (c.get("positive_control") or {}).get("cases")]
     # **the display has to register the thing being judged, before anything is judged.**
-    # The expression round's comparison was inconclusive because flat shading put
-    # cobblestone and andesite within a handful of grey levels of one another.
+    # Flat shading puts cobblestone and andesite within a handful of grey levels of one
+    # another, and a comparison on a display that cannot tell them apart is inconclusive.
     spreads = []
     for c in controls:
         for case in (c["positive_control"] or {}).get("cases") or []:

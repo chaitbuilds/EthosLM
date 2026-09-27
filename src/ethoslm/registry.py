@@ -1,14 +1,12 @@
 """Block id and block-state validation, against the game's own registry.
 
-The data is `src/ethoslm/data/blocks_1.21.11.json`, distilled by
-scripts/dump_block_registry.py from the vanilla server's own data generator. No jar, no
-server, no network needed at check time.
+The data is `src/ethoslm/data/blocks_1.21.11.json`, distilled from the vanilla server's
+own data generator. No jar, no server, no network needed at check time.
 
-**Do not substitute the client jar's blockstates files for this.** That was the first
-attempt and it is wrong: those files enumerate only the properties that affect the
-*model*, so every stair and slab appears to have no `waterlogged` and campfire no
-`signal_fire`. Checked against the town it called 87 of the 152 block states standing
-in the world invalid, every one of them real. Render data is not registry data."""
+**Do not substitute the client jar's blockstates files for this.** Those files enumerate
+only the properties that affect the *model*, so every stair and slab appears to have no
+`waterlogged` and campfire no `signal_fire`, and real block states standing in a world
+are rejected as invalid. Render data is not registry data."""
 from __future__ import annotations
 
 import difflib

@@ -1,5 +1,5 @@
-"""The expression round's material cases: ownership at the write, protection, and a
-deterministic pass that changes only what it owns.
+"""Material cases: ownership at the write, protection, and a deterministic pass that
+changes only what it owns.
 
     $PY scripts/test_expression_material.py
 

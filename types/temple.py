@@ -583,9 +583,9 @@ def build(b, part, seed, **params):
                 "emitted": {"requested": {"storeys": storeys, "plan": plan},
                             "storeys": 0, "attempt": None, "fallback": "no shell stood",
                             "omitted": ["storeys"], "features": {}}}
-    # **What survived, said by the type.** The closure round: the footprint caps the
-    # storeys before the first attempt and the ladder gives up the wing, the yard, the
-    # dormers and the storeys after it; the record names the rung and what it gave up.
+    # **What survived, said by the type.** The footprint caps the storeys before the
+    # first attempt and the ladder gives up the wing, the yard, the dormers and the
+    # storeys after it; the record names the rung and what it gave up.
     _first = tries[0]
     emitted = {
         "requested": {"storeys": storeys, "plan": plan},

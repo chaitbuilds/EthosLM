@@ -13,7 +13,7 @@ from ethoslm.measure import record                # noqa: E402
 #: Block colour by keyword, first match wins. Deliberately coarse: the question this
 #: answers is "is that the right shape", not "is that the right shade of andesite".
 #: Anything unmatched comes out magenta so a missing entry is visible rather than silent
-#: -- and the audit is a test now: every state in all three standing towns' palettes
+#: -- and a test holds the table to that: every state in the standing towns' palettes
 #: must resolve to a non-magenta colour (scripts/test_preview.py).
 COLOURS = [
     ("bubble_column", (58, 92, 168)), ("water", (58, 92, 168)),
@@ -39,16 +39,14 @@ COLOURS = [
     ("terracotta", (152, 94, 67)), ("blackstone", (42, 36, 42)),
     ("deepslate", (72, 72, 76)), ("basalt", (80, 78, 84)), ("obsidian", (20, 16, 30)),
     ("tuff", (108, 109, 102)), ("calcite", (223, 226, 220)),
-    # **Quartz, which two committed voices are rendered in and this table had no entry
-    # for at all.** v2, A6: the instance sheet's first outing stood `wall` in
-    # `white_render_dark_frame` -- the example round's own voice -- and drew 68 blocks
-    # of it magenta. The palette audit only ever ran over three cached towns' palettes,
-    # and none of them was built in a voice whose wall is quartz. Six names: the block,
-    # smooth, chiseled, the pillar, the stairs and the slab.
+    # **Quartz, which committed voices are rendered in** (`white_render_dark_frame`'s
+    # walls). A palette check over cached towns only covers the voices those towns were
+    # built in, so without this entry a quartz wall draws magenta unnoticed. One key
+    # covers six names: the block, smooth, chiseled, the pillar, the stairs and the slab.
     ("quartz", (232, 228, 219)),
-    # ...and purpur, the last family in `prims.MATERIALS` with no reading at all. No
-    # voice on disk is written in it, so nothing had ever drawn it -- which is exactly
-    # the case the audit above cannot reach and the reason it now reads every family.
+    # ...and purpur, a family in `prims.MATERIALS` that no voice on disk is written in,
+    # so neither a cached town nor a voice on disk exercises it; an entry for every
+    # family is the only cover for that case.
     ("purpur", (169, 125, 169)),
     ("amethyst", (150, 110, 200)), ("lapis", (40, 70, 150)),
     ("cobblestone", (127, 127, 127)), ("andesite", (136, 136, 136)),
@@ -102,17 +100,16 @@ def block_colour(state: str) -> tuple:
     return UNKNOWN
 
 
-# ------------------------------------------------------------- block textures v2,
-# design round, C1. One flat colour a block is the right instrument for massing and the
-# wrong one for judging a *material*: this table puts cobblestone at (127, 127, 127) and
-# andesite at (136, 136, 136), nine units apart and then shaded, so the expression
-# round's comparison could not see the substitution it existed to judge and reported
-# "the walls show nothing". The two stones are not nine units apart to a person -- they
-# differ in mottle. The game's own 16x16 textures are already on this host (Chunky's
-# copy of the client jar) and carry exactly that, so a close view draws real texels
-# instead of an average. Close views only. The isometric and the plan map stay flat:
-# they answer composition, where a texture is noise, and every cached judgement of them
-# stays valid.
+# ------------------------------------------------------------------- block textures
+# One flat colour a block is the right instrument for massing and the wrong one for
+# judging a *material*: this table puts cobblestone at (127, 127, 127) and andesite at
+# (136, 136, 136), nine units apart and then shaded, so a material comparison drawn flat
+# cannot see a substitution of one for the other. The two stones are not nine units
+# apart to a person -- they differ in mottle. The game's own 16x16 textures (Chunky's
+# copy of the client jar) carry exactly that, so a close view draws real texels instead
+# of an average. Close views only. The isometric and the plan map stay flat: they answer
+# composition, where a texture is noise, and every cached judgement of them stays
+# valid.
 
 #: Chunky's client jar, the one `render.py` already points the renderer at.
 MC_JAR = os.environ.get("ETHOSLM_MC_JAR") or os.path.join(
@@ -157,7 +154,7 @@ def texture_names() -> frozenset:
 def texture_name(state: str) -> str | None:
     """The texture file a block state is drawn with, or None where the atlas has none.
 
-        A pure name resolution, separate from the pixels so the audit can read it: strip
+        A pure name resolution, separate from the pixels so a test can read it: strip
         the namespace and the state, strip a shape suffix, then try the names the game
         actually files a block's side under. `scripts/test_design_material.py` asserts
         every family in `prims.MATERIALS` resolves -- those are the blocks a recipe can
@@ -243,7 +240,8 @@ def _tile(state: str, px: int) -> np.ndarray:
 
         A block with no texture (air's neighbours, a decorated pot) falls back to the flat
         table rather than dropping out, so a textured view is never *less* complete than a
-        flat one; the audit is what keeps the fallback off the material families.
+        flat one; `scripts/test_design_material.py` is what keeps the fallback off the
+        material families.
 
     """
     key = (str(state).split("[")[0], int(px))
@@ -387,8 +385,8 @@ def preview(vol: observe.Volume, scale: int = 2, grey: bool = False,
 
 def top_down(vol: observe.Volume, scale: int = 2, texture: bool = False) -> np.ndarray:
     """The built volume from above: the top block's colour, shaded by the fall to its
-    neighbours, so a roof reads as a roof and a lane as a lane. The closure round's
-    cheapest picture of an assembled place; one pixel a column.
+    neighbours, so a roof reads as a roof and a lane as a lane. The cheapest picture of
+    an assembled place; one pixel a column.
 
     `texture=True` draws the block's own texels instead, which is what a court, a
     paved floor and a roofscape need when the question is the material."""
@@ -464,10 +462,10 @@ def elevation(vol: observe.Volume, facing: str = "south", scale: int = 2,
     return _paint(grid, shade, list(vol.palette), scale, texture)
 
 
-# --------------------------------------------------------------- the plan, as a map v2,
-# A6. Everything above draws *blocks*: what a build looks like once it exists. A plan is
-# decided before any of that and there was no way to look at one -- a tree of rectangles
-# in a JSON file, read by eye or not at all. This is the same instrument one layer up,
+# ------------------------------------------------------------------ the plan, as a map
+# Everything above draws *blocks*: what a build looks like once it exists. A plan is
+# decided before any of that, and without a picture it is a tree of rectangles in a JSON
+# file, read by eye or not at all. This is the same instrument one layer up,
 # and it is the same kind of instrument: a pure function, a tenth of a second, no
 # server, byte-identical on the same input. One pixel is one column, so the map is the
 # site at 1:1 and the scale is only how many screen pixels a column gets.
@@ -605,10 +603,10 @@ def plan_map(plan: dict, network=None, site: dict | None = None,
     return img
 
 
-# -------------------------------------------------------------- the instance sheet v2,
-# A6. A type is authored blind and checked by a report of numbers; the only way to see
-# one standing has been to build a town. This stands it on a fixture as many times as
-# you like and draws each one with `preview`, at no model call and no server.
+# ----------------------------------------------------------------- the instance sheet
+# A type is authored blind and checked by a report of numbers; otherwise the only way to
+# see one standing is to build a town. This stands it on a fixture as many times as you
+# like and draws each one with `preview`, at no model call and no server.
 
 def instances(type_name: str, fixture: dict, seeds=(21, 22, 23, 24, 25),
               params: dict | None = None, voice: str | None = None,
@@ -626,8 +624,8 @@ def instances(type_name: str, fixture: dict, seeds=(21, 22, 23, 24, 25),
     from . import stages
     from .pipeline import blind, stages_build
     if rnd is not None and fixture["round"] == rnd.name:
-        # v2, C4: a round's own plot, on its own ground -- the round need not be a
-        # config under `rounds/` to be drawn from
+        # a round's own plot, on its own ground -- the round need not be a config
+        # under `rounds/` to be drawn from
         from .pipeline import OfflineBackend
         frnd, fbe = rnd, OfflineBackend(rnd, dry_run=True)
     else:

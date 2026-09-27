@@ -20,7 +20,7 @@ cleanup() {
 trap cleanup EXIT
 
 # 0. Refuse a save that is already open. Starting a second here would have taken its
-# console pipe and put two servers on one locked save (open thread 36). The world
+# console pipe and put two servers on one locked save. The world
 # directory is shared between worktrees, so the check is on the process and the lock,
 # not on this checkout.
 if pgrep -f "fabric-server-launch.jar" > /dev/null 2>&1; then

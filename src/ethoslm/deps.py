@@ -1,14 +1,14 @@
 """What each artifact was made from, so a stale one can be told from a warm one.
 
-The audit's seventh finding, reproduced in a temporary round directory: change a village
-spec into a much larger city and `stage_site_search` returns the site it chose for the
-village, because the stage's test for "already done" is `os.path.exists`. Change the
-plan and `stage_preview` returns the drawing it made of the old one, because its test is
-a `done` flag in its own record. Neither stage is *wrong* to reuse work.
+A stage whose test for "already done" is `os.path.exists`, or a `done` flag in its own
+record, reuses work it should not: change a village spec into a much larger city and the
+site search returns the site it chose for the village; change the plan and the preview
+returns the drawing it made of the old one. Neither stage is *wrong* to reuse work; what
+it needs is a way to ask whether the work is still of the same inputs.
 
-This module is the missing question. An artifact records the **fingerprint of its
-inputs**; a stage that finds one asks whether those inputs still fingerprint the same
-way; a mismatch invalidates that artifact and everything downstream of it.
+This module asks it. An artifact records the **fingerprint of its inputs**; a stage that
+finds one asks whether those inputs still fingerprint the same way; a mismatch
+invalidates that artifact and everything downstream of it.
 
 `fingerprint(rnd, *kinds)` is the whole interface. `check(rnd, artifact)` answers
 `(fresh, why)`, and `stamp(rnd, artifact)` writes the current one. Nothing here deletes
@@ -28,28 +28,25 @@ import os
 from . import contracts
 
 #: The dependency kinds, and the order they are reported in. **`terrain` and `prepared`
-#: are two different grounds and the review's last finding is that they were one.**
-#: `terrain` is the ground as it was found -- the baseline, an *input* to every design
-#: decision. `prepared` is the ground this candidate's own plateau and terraces cut into
-#: it -- an *output* of the accepted design. While both read `world.npz` a run that
-#: prepared its ground invalidated the plan that asked for the preparation, which the
-#: integration report records happening to the shoreline case, and the only ways out of
-#: a circle like that are to stop checking or to stop preparing. `sentence` is the
-#: realization round's, and it exists because `intent` stopped being a stable key for
-#: the stages that run *before* the meaning is read. The interpret stage rewrites
+#: are two different grounds.** `terrain` is the ground as it was found -- the baseline,
+#: an *input* to every design decision. `prepared` is the ground this candidate's own
+#: plateau and terraces cut into it -- an *output* of the accepted design. Were both to
+#: read `world.npz`, a run that prepared its ground would invalidate the plan that asked
+#: for the preparation, and the only ways out of a circle like that are to stop checking
+#: or to stop preparing. `sentence` exists because `intent` is not a stable key for the
+#: stages that run *before* the meaning is read. The interpret stage rewrites
 #: `intent.json` from the agent's reading, so an artifact keyed on the requirement ids
 #: -- the reading of the sources, the interpretation itself -- would go stale the moment
 #: the thing it produced was written, and the two stages would take turns invalidating
 #: each other for ever. What those artifacts actually depend on is the request, which
-#: never changes. `site_demand` is the design round's, and it exists because `spec` is
-#: the fingerprint of everything a spec says while the site search consumes a tenth of
-#: it. The expression report records a 25-minute search re-run twice on the city and
-#: choosing the same square, because a voice revision moved `_spec_print`. What a search
-#: is actually scored against is `SITE_DEMAND_SPEC` and `SITE_DEMAND_PART` below; a
-#: change to any of those still invalidates it, and a change to a voice, a character or
-#: a district's prose does not. `ground_proposal` is the other half of contract 6: the
-#: prepared ground is an artifact of the **proposal**, so a design change that leaves
-#: the proposal identical leaves the cut warm.
+#: never changes. `site_demand` exists because `spec` is the fingerprint of everything a
+#: spec says while the site search consumes a tenth of it; keyed on `spec`, a long
+#: search re-runs and chooses the same square every time a voice revision moves
+#: `_spec_print`. What a search is actually scored against is `SITE_DEMAND_SPEC` and
+#: `SITE_DEMAND_PART` below; a change to any of those still invalidates it, and a change
+#: to a voice, a character or a district's prose does not. `ground_proposal` is the same
+#: narrowing for the ground: the prepared ground is an artifact of the **proposal**, so
+#: a design change that leaves the proposal identical leaves the cut warm.
 KINDS = ("sentence", "intent", "spec", "site_demand", "site", "terrain", "prepared",
          "schema", "types", "model", "reading", "ground_proposal")
 
@@ -66,31 +63,29 @@ def baseline_path(rnd) -> str:
 #: not named here has no dependency contract yet and is reused as it always was --
 #: recorded, so "this one is not keyed" is a fact rather than a silence.
 DEPENDS = {
-    # **What the search consumes, and not what the spec says.** The design round's fifth
-    # contract. `scripts/find_site.py` scores a square against `search_needs` -- the
-    # place's needs, the core part's and the outer parts', the setting, the plateau the
-    # centre asks for and the ring shares a designed ground is terraced to -- and
-    # against nothing else. `intent` stays because a requirement can change what the
-    # place is for; `spec` goes, because it carried the voice, the characters and every
-    # district's notes into a stage that reads none of them.
+    # **What the search consumes, and not what the spec says.** `scripts/find_site.py`
+    # scores a square against `search_needs` -- the place's needs, the core part's and
+    # the outer parts', the setting, the plateau the centre asks for and the ring shares
+    # a designed ground is terraced to -- and against nothing else. `intent` stays
+    # because a requirement can change what the place is for; `spec` goes, because it
+    # carried the voice, the characters and every district's notes into a stage that
+    # reads none of them.
     "site_search": ("intent", "site_demand", "schema"),
     "plateau": ("intent", "spec", "site", "terrain", "schema"),
     "plan": ("intent", "spec", "site", "terrain", "schema", "types"),
-    # **The resolution is made out of the plan.** The review invalidated `plan` and
-    # found `resolution` still warm, because this row named every input the plan has and
-    # not the plan itself -- so a design that had been withdrawn kept a record
-    # describing it, and `findings.json` beside that record went on saying what was
-    # wrong with a plan that no longer existed.
+    # **The resolution is made out of the plan.** A row naming every input the plan has
+    # and not the plan itself would leave `resolution` warm after `plan` is invalidated
+    # -- a withdrawn design keeping a record describing it, and `findings.json` beside
+    # that record still saying what was wrong with a plan that no longer exists.
     "resolution": ("intent", "spec", "site", "terrain", "schema", "types", "plan"),
     # **The prepared ground is an artifact of the design, and is checked before anything
     # is built on it.** "Prepare ground from this design and check the result before
     # construction": the preparation reads the baseline and the **proposal**, so those
-    # are its inputs, and the volume it writes is its output. The design round keys it
-    # on `ground_proposal` rather than on the whole plan: the cut is made from the
-    # proposal, and a plan change that leaves the proposal identical -- a voice, a
-    # leaf's parameters -- did not change the ground. Until `ground.propose` writes one,
-    # `ground_proposal` falls back to the plan's identity, so this row means exactly
-    # what it meant before.
+    # are its inputs, and the volume it writes is its output. It is keyed on
+    # `ground_proposal` rather than on the whole plan: the cut is made from the proposal,
+    # and a plan change that leaves the proposal identical -- a voice, a leaf's
+    # parameters -- did not change the ground. Where `ground.propose` has written no
+    # proposal, `ground_proposal` falls back to the plan's identity.
     "ground": ("intent", "site", "terrain", "schema", "ground_proposal"),
     "preview": ("intent", "spec", "site", "plan", "schema", "types", "model"),
     "reading": ("sentence", "schema", "model"),
@@ -99,42 +94,38 @@ DEPENDS = {
     # the spec: a programme designed from a reading cannot be one of its inputs, and
     # keying it on the spec would make every scale negotiation re-ask what the sentence
     # means. `schema` is here because the record's own vocabulary is part of what an
-    # answer was written against. **...and of what was read about it.** The review's
-    # fifth finding: changing the saved research input left the interpretation warm.
-    # `reading` is the content of `reading.json` -- its sources' fingerprints and its
-    # claims -- not the file.
+    # answer was written against. **...and of what was read about it**, so a changed
+    # research input does not leave the interpretation warm. `reading` is the content of
+    # `reading.json` -- its sources' fingerprints and its claims -- not the file.
     "interpretation": ("sentence", "reading", "schema", "model"),
-    # the closure round's reading of the built world: of the plan, the types it was
-    # built with and the model that read it
+    # the reading of the built world: of the plan, the types it was built with and the
+    # model that read it
     "inspection": ("intent", "spec", "site", "plan", "schema", "types", "model"),
-    # the closure round: the assembled tree and the plot registry are outputs of their
-    # own artifact, so an interrupted write of `plan.json` is stale and not warm
+    # the assembled tree and the plot registry are outputs of their own artifact, so an
+    # interrupted write of `plan.json` is stale and not warm
     "assembled": ("intent", "spec", "site", "terrain", "schema", "types"),
     # the built world: of the assembled plan, the types it was built with and the
-    # prepared ground it was built on (the closure round) **...and the prepared ground
-    # is now actually named.** The composition round: this row said "and the prepared
-    # ground it was built on" and named `terrain`, which is the baseline -- the ground
-    # as it was *found*. Nothing here moved when a candidate's own plateau, terraces and
-    # paving changed, so `stage_parts` could return a warm build across a ground change:
-    # its warm return precedes `ground_for_this_design`, which is the only thing that
-    # asked, and even that asks about the `ground` artifact and not about this one.
-    # `prepared` is the baseline and the proposal cut into it; see `fingerprint`.
+    # prepared ground it was built on -- **`prepared`, not `terrain`**, which is the
+    # baseline, the ground as it was *found*. Keyed on `terrain`, nothing here would move
+    # when a candidate's own plateau, terraces and paving changed, so `stage_parts` could
+    # return a warm build across a ground change: its warm return precedes
+    # `ground_for_this_design`, which asks about the `ground` artifact and not about this
+    # one. `prepared` is the baseline and the proposal cut into it; see `fingerprint`.
     "built": ("intent", "spec", "site", "terrain", "prepared", "schema", "types", "plan",
               "model"),
 }
 
 #: **Which artifacts a narrow fingerprint kind is made of**, so `invalidate` cascades
-#: through the kind as well as through the artifact name. The design round narrowed two
-#: rows: `site_search` keys on `site_demand` where it used to key on the whole `spec`,
-#: and `ground` keys on `ground_proposal` where it used to key on the whole `plan`.
-#: `invalidate` drops the artifacts that name the withdrawn one in `DEPENDS`, so without
-#: this table withdrawing the plan would stop withdrawing the ground that was cut for it
-#: -- the narrower key would have bought proportional iteration at the price of a
-#: cascade the last round put in on purpose.
+#: through the kind as well as through the artifact name. Two rows are narrow:
+#: `site_search` keys on `site_demand` rather than the whole `spec`, and `ground` keys on
+#: `ground_proposal` rather than the whole `plan`. `invalidate` drops the artifacts that
+#: name the withdrawn one in `DEPENDS`, so without this table withdrawing the plan would
+#: not withdraw the ground that was cut for it -- the narrower key would buy
+#: proportional iteration at the price of the cascade.
 DERIVED_FROM = {"ground_proposal": ("plan", "ground"),
                 # `prepared` is the proposal and the baseline, so withdrawing either the
                 # plan or the ground withdraws every artifact built on the prepared
-                # ground -- which is `built`, and is the composition round's point
+                # ground -- which is `built`
                 "prepared": ("plan", "ground"),
                 "site_demand": ("spec",)}
 
@@ -150,7 +141,7 @@ INVALID = "invalidated"
 #: downstream artifact was made from. Written as exclusions, like `PLAN_PROSE`.
 SPEC_PART_PROSE = frozenset(("purpose", "why", "comment", "description",
                              # a marker of how `structures` was filled, not a decision;
-                             # `structures` itself is hashed (the closure round)
+                             # `structures` itself is hashed
                              "structures_inferred"))
 
 
@@ -169,16 +160,15 @@ def _spec_print(rnd) -> str:
                      # what mass its wall is; excluding it as "prose" meant a change
                      # that moves every boundary in the place left every artifact warm.
                      "invariants", "sentence")}
-            # **Every field of a defining part, less the prose.** The review changed a
-            # district's `land_use` from settled to farmland -- which moves the ground
-            # cover the compiler works to and the target its validator refuses on -- and
-            # this fingerprint did not move, because the field was not on a list
-            # somebody had remembered to extend. A hash of the fields somebody thought
-            # of is a hash of the fields somebody thought of, so the rule here is the
-            # one `PLAN_PROSE` already uses one level down: everything is a dependency
-            # until it is argued out. `notes` stays hashed on purpose -- a part's notes
-            # are read for its wall's mass and its roundness, so they are geometry and
-            # not comment.
+            # **Every field of a defining part, less the prose.** A district's
+            # `land_use` moves the ground cover the compiler works to and the target its
+            # validator refuses on, and is exactly the field a list somebody remembered
+            # to extend would miss. A hash of the fields somebody thought of is a hash
+            # of the fields somebody thought of, so the rule here is the one
+            # `PLAN_PROSE` already uses one level down: everything is a dependency until
+            # it is argued out. `notes` stays hashed on purpose -- a part's notes are
+            # read for its wall's mass and its roundness, so they are geometry and not
+            # comment.
             keep["parts"] = [_stable({k: v for k, v in p.items()
                                       if k not in SPEC_PART_PROSE})
                              for p in (doc.get("defining_parts") or [])]
@@ -220,20 +210,17 @@ def _site_demand_print(rnd) -> str:
 
 
 #: Where a ground proposal lives, and what its identity is inside it. **The file
-#: `stage_ground` actually writes, and the print the proposal actually computes.** The
-#: composition round's sixth evidence connection, and this constant was wrong in both
-#: halves: it named `ground.json` while `stage_ground` writes `ground_proposal.json`
-#: (`stages_plan.stage_ground`), and `ground.json` is a *live, different* artifact --
-#: `stages_build.settle_ground`'s declaration record, which `ARTIFACT_FILES["ground"]`
-#: also names. Of the seven keys this used to hash, only `levels` exists in what
-#: `ground.propose` writes, so `got` was almost always a one-key dict or empty and the
-#: fingerprint fell through to the plan's -- which is the very thing keying the cut on
-#: the proposal was for. `ground.propose` already computes its own identity:
-#: `proposal["print"]` is the digest of the baseline's print, every piece's label,
-#: rectangle, level and voice, and every part's occupied envelope (`ground.py`). That is
-#: what the cut is made from and it is what this kind is now keyed on.
-#: `GROUND_PROPOSAL_KEYS` stays as the fallback for a proposal document written before
-#: `print` existed, with the keys the record really has.
+#: `stage_ground` actually writes, and the print the proposal actually computes.**
+#: `stage_ground` writes `ground_proposal.json` (`stages_plan.stage_ground`);
+#: `ground.json` is a *live, different* artifact -- `stages_build.settle_ground`'s
+#: declaration record, which `ARTIFACT_FILES["ground"]` also names -- and hashing keys
+#: the proposal does not carry would leave the fingerprint falling through to the
+#: plan's, which is the very thing keying the cut on the proposal is for.
+#: `ground.propose` computes its own identity: `proposal["print"]` is the digest of the
+#: baseline's print, every piece's label, rectangle, level and voice, and every part's
+#: occupied envelope (`ground.py`). That is what the cut is made from and it is what
+#: this kind is keyed on. `GROUND_PROPOSAL_KEYS` is the fallback for a proposal document
+#: written before `print` existed, with the keys the record really has.
 GROUND_PROPOSAL_FILE = "ground_proposal.json"
 GROUND_PROPOSAL_PRINT = "print"
 GROUND_PROPOSAL_KEYS = ("baseline", "levels", "pieces", "protected", "occupied",
@@ -281,11 +268,11 @@ _CONTENT: dict = {}
 def content_print(path: str) -> str | None:
     """The sha256 of a file's bytes, or None where it is not there.
 
-        **A size is not an identity.** The integration review's fifth finding, twice: a
-        type file whose semantics changed without its byte length changing fingerprinted
-        the same (`HEIGHT = 10` -> `HEIGHT = 90`), and a terrain volume was keyed by its
-        file size. Both are "the cheap thing that is usually right", and the whole purpose
-        of this module is to be right when it matters rather than usually.
+        **A size is not an identity.** A type file whose semantics change without its
+        byte length changing (`HEIGHT = 10` -> `HEIGHT = 90`) fingerprints the same by
+        size, and so would a terrain volume keyed by its file size. Both are "the cheap
+        thing that is usually right", and the whole purpose of this module is to be right
+        when it matters rather than usually.
 
     """
     if not os.path.exists(path):
@@ -321,34 +308,14 @@ def _schema_print() -> str:
 #: Bumped by hand when a change to this build would make an artifact on disk mean
 #: something different. Cheap, explicit, and the one thing a content hash of the source
 #: tree cannot be: a *decision* that the old artifacts are still good. A name and not a
-#: date, so the public tree carries no round number. Bumped by the unification round.
-#: Several artifacts on disk mean something different under it: a plan carries a
-#: `fabric_types` pool and an `extent_from` rectangle, a resolution keeps promised,
-#: allocated and realized apart, a capability entry records what was `used`, and a
-#: compiled district was chosen against a ground-cover target that a settled district is
-#: no longer held to. A round that kept its old documents would be reading all four as
-#: though they still said what they used to. Bumped by the realization round. Artifacts
-#: on disk mean something different under it: an intent requirement carries a `scope`
-#: and may be a `relation`, a `hierarchy` or a `function`; a district's promise is the
-#: arrangement its ground actually holds rather than an area estimate; a stamp binds the
-#: identity of its outputs and not only of its inputs; and an import authorises the
-#: files it names rather than a directory. Bumped by the design round. Four artifacts on
-#: disk mean something different under it: `envelopes.json` is keyed on the generator
-#: that produced each answer and not only on its name, so an entry from before it is an
-#: answer to a question that cannot be recovered; `site_search.json` is keyed on what
-#: the search consumes rather than on the whole spec, so a stamp made under the old row
-#: would hold a site warm against a change this one invalidates and stale against
-#: changes it does not; a construction outcome's `features_source` distinguishes a
-#: feature observed in the assembled world from one the type declared; and
-#: `obligations.json` is the ledger findings and emitted constraints now share, so a
-#: dispositions file alone no longer says what is owed. **Not** bumped by the
-#: composition round, and that is a decision rather than an omission. Its record changes
-#: are additive: a part's row gains `emitted.required` and `emitted.owed`,
-#: `features_source` gains `not_identified`, an obligation gains `seen_on`,
-#: `closed_against` and `reopened`, and a `built` stamp gains the `prepared` kind. Every
-#: reader of an older document gets `None` from the new fields and behaves as it did,
-#: and `check` compares only the kinds a stamp actually recorded -- so a stamp made
-#: before `prepared` existed stays warm on the kinds it named.
+#: date, so the public tree carries no round number. Bump it when an existing field
+#: changes meaning -- a cache keyed on a different question, a stamp binding its outputs
+#: as well as its inputs, a promise measured a different way -- because a run that kept
+#: its old documents would read them as though they still said what they used to. Do
+#: **not** bump it for a change that is purely additive (a new field on a record, a new
+#: kind on a stamp): every reader of an older document gets `None` from the new fields
+#: and behaves as it did, and `check` compares only the kinds a stamp actually recorded,
+#: so a stamp made before a kind existed stays warm on the kinds it named.
 SCHEMA_REVISION = "records-v4-design"
 
 
@@ -375,9 +342,9 @@ def fingerprint(rnd, kinds=KINDS, *, plan=None) -> dict:
         if k == "sentence":
             out[k] = contracts.digest(rnd.sentence or "")
         elif k == "intent":
-            # **The content of every requirement, not its id.** The review changed a
-            # requirement from global dense to upper-quarter sparse under the same id
-            # and the candidate identity did not move. What a design was made from is
+            # **The content of every requirement, not its id.** A requirement changed
+            # from global dense to upper-quarter sparse under the same id is a different
+            # ask and must move the candidate identity. What a design was made from is
             # what the requirement *says* -- kind, wants, scope, whether it is hard --
             # and not the label; and not its `status`, `why` or `evidence`, which the
             # checks rewrite on every pass and which describe the design rather than the
@@ -414,17 +381,14 @@ def fingerprint(rnd, kinds=KINDS, *, plan=None) -> dict:
             out[k] = contracts.digest(os.path.basename(rnd.base_volume),
                                       content_print(p))
         elif k == "prepared":
-            # **The ground as this candidate's own cut left it.** The composition round:
-            # this kind was computed here, documented at the top of the module, and
-            # named by `KINDS` and by no `DEPENDS` row -- a dependency nothing could
-            # request, with a docstring arguing for it. It was also the wrong
-            # measurement: the digest of the *working* volume, which construction then
-            # writes into, so an artifact keyed on it would have gone stale the moment
-            # anything was built on the ground it describes. What a prepared ground is,
-            # is the baseline plus the proposal that was cut into it. Both of those are
-            # stable across construction, and either moving is exactly the change that
-            # must not be reused: `DEPENDS["built"]` names this, so a warm build cannot
-            # be returned across a ground change.
+            # **The ground as this candidate's own cut left it.** Not the digest of the
+            # *working* volume, which construction then writes into, so an artifact
+            # keyed on it would go stale the moment anything was built on the ground it
+            # describes. What a prepared ground is, is the baseline plus the proposal
+            # that was cut into it. Both of those are stable across construction, and
+            # either moving is exactly the change that must not be reused:
+            # `DEPENDS["built"]` names this, so a warm build cannot be returned across a
+            # ground change.
             out[k] = contracts.digest(
                 "prepared", _ground_proposal_print(rnd, plan=plan),
                 contracts.digest(os.path.basename(rnd.base_volume),
@@ -445,18 +409,17 @@ def fingerprint(rnd, kinds=KINDS, *, plan=None) -> dict:
         elif k == "plan":
             doc = plan if plan is not None else rnd.plan()
             # **Every leaf of the tree, not the top-level list.** A plan is a tree and
-            # `doc["parts"]` is its first level; the review changed a nested plot's
-            # extent from 10 to 50 columns and the fingerprint did not move, because the
-            # plot was two levels down. `plan_parts` is the flattening every other
-            # reader of a plan already uses.
+            # `doc["parts"]` is its first level, and a change to a nested plot's extent
+            # two levels down has to move the fingerprint too. `plan_parts` is the
+            # flattening every other reader of a plan already uses.
             from . import pipeline as _pipeline2
             leaves = _pipeline2.plan_parts(doc or {})
-            # **Every field the builder reads, not a list somebody remembered.** The
-            # review changed a leaf's `attached` -- which `buildlib` consumes to decide
-            # whether a house has party walls -- and the fingerprint did not move. A
-            # hash of an incomplete field list is a hash of the fields somebody thought
-            # of, so the rule here is the authoritative one: everything except the
-            # fields that are demonstrably prose.
+            # **Every field the builder reads, not a list somebody remembered.** A
+            # leaf's `attached` -- which `buildlib` consumes to decide whether a house
+            # has party walls -- is exactly the field such a list misses. A hash of an
+            # incomplete field list is a hash of the fields somebody thought of, so the
+            # rule here is the authoritative one: everything except the fields that are
+            # demonstrably prose.
             out[k] = contracts.digest(
                 [sorted((str(f), _stable(v)) for f, v in p.items()
                         if f not in PLAN_PROSE)
@@ -486,13 +449,12 @@ def stamp(rnd, artifact: str, *, outputs=(), plan=None, note: str = "") -> dict:
                          f"is a done marker the next run believes")
     rec[artifact] = {"inputs": fingerprint(rnd, kinds, plan=plan),
                      "outputs": list(outputs),
-                     # **What was accepted, not merely what was depended on.** The
-                     # review replaced a stamped `plan.json` with `{"parts": []}` and a
-                     # stamped prepared volume with unrelated bytes, and both artifacts
-                     # stayed warm: every *input* identity was unchanged and nothing
-                     # ever asked whether the output was still the document that was
-                     # accepted. An artifact is its inputs and its outputs, and this is
-                     # the half that was missing.
+                     # **What was accepted, not merely what was depended on.** A
+                     # stamped `plan.json` replaced with `{"parts": []}`, or a stamped
+                     # prepared volume replaced with unrelated bytes, leaves every
+                     # *input* identity unchanged; only the output's own digest says it
+                     # is no longer the document that was accepted. An artifact is its
+                     # inputs and its outputs.
                      "output_digests": {o: content_print(rnd.rel(o))
                                         for o in (outputs or [])},
                      "note": note, "schema": SCHEMA_REVISION}
@@ -522,10 +484,9 @@ OUTPUT_KEYS = {
 def _unusable(rnd, outputs) -> list:
     """The named outputs that are missing, empty, or not the document they claim to be.
 
-        **A file that is there is not an output.** The review interrupted a run by
-        truncating `plan.json` to nothing and `check` called the artifact warm, because the
-        test was `os.path.exists`. A zero-byte plan and a half-written one are exactly what
-        an interrupted run leaves, which is the state this whole module exists to notice.
+        **A file that is there is not an output.** A `plan.json` truncated to nothing passes
+        `os.path.exists`. A zero-byte plan and a half-written one are exactly what an
+        interrupted run leaves, which is the state this whole module exists to notice.
 
     """
     bad = []
@@ -544,11 +505,10 @@ def _unusable(rnd, outputs) -> list:
             except Exception as e:             # noqa: BLE001 -- reported, not raised
                 bad.append((o, f"does not read as JSON ({type(e).__name__})"))
                 continue
-            # **Parsing is not content.** The review replaced a stamped `plan.json` with
-            # `{}` and the artifact stayed warm: the identities of its *inputs* were all
-            # unchanged, and nothing ever asked whether the output still held the
-            # document it claimed to be. An empty object parses, and an empty plan is
-            # exactly what a crashed writer leaves behind.
+            # **Parsing is not content.** A stamped `plan.json` replaced with `{}` leaves
+            # the identities of its *inputs* unchanged, so the output itself has to be
+            # asked whether it still holds the document it claims to be. An empty object
+            # parses, and an empty plan is exactly what a crashed writer leaves behind.
             if not doc:
                 bad.append((o, "holds an empty document"))
                 continue
@@ -607,12 +567,12 @@ def invalidate(rnd, artifact: str, why: str = "") -> list:
         what to do with its own outputs, and this module only ever withdraws the claim that
         they are current.
 
-        **What is withdrawn is remembered.** The review's fifth finding, and it is the one
-        that turns a safety mechanism into a hazard: invalidating `preview` deleted its
-        stamp, and `stage_preview`'s rule for an artifact with no stamp is "this predates
-        the contract, reuse it as a legacy fixture" -- so invalidating an artifact *made it
-        reusable*. Removing a stamp cannot be how a known-bad artifact becomes a
-        grandfathered one, so an invalidation writes a tombstone and `legacy` asks for it.
+        **What is withdrawn is remembered.** Merely deleting a stamp would turn a safety
+        mechanism into a hazard: a stage's rule for an artifact with no stamp is "this
+        predates the contract, reuse it as a legacy fixture", so invalidating an artifact
+        would *make it reusable*. Removing a stamp cannot be how a known-bad artifact
+        becomes a grandfathered one, so an invalidation writes a tombstone and `legacy`
+        asks for it.
 
     """
     rec = _load(rnd)
@@ -623,9 +583,9 @@ def invalidate(rnd, artifact: str, why: str = "") -> list:
                and (a == artifact or artifact in DEPENDS.get(a, ())
                     or (kinds & set(DEPENDS.get(a, ()))))]
     # **An unstamped artifact is withdrawn too.** An imported fixture has no stamp, so
-    # nothing was dropped and no tombstone was written -- and `legacy` then went on
-    # saying the withdrawn document was a fixture in good standing. Withdrawing names
-    # the artifact whether or not this run had made it.
+    # without this nothing would be dropped and no tombstone written -- and `legacy`
+    # would go on saying the withdrawn document was a fixture in good standing.
+    # Withdrawing names the artifact whether or not this run had made it.
     if artifact not in dropped:
         dropped.append(artifact)
     tomb = dict(rec.get(INVALID) or {})
@@ -671,12 +631,11 @@ def legacy(rnd, artifact: str) -> bool:
         True only where it has never been stamped, has never been invalidated, **and this
         round has an import record saying its unstamped documents were adopted on purpose**.
 
-        The last clause is the unification round's. "Explicitly import legacy fixtures
-        rather than silently trusting missing stamps": a missing stamp used to mean "this
-        predates the contract, reuse it", which is indistinguishable from "a stage crashed
-        before it could stamp anything" and from "somebody dropped a file in the directory".
-        A fixture is a deliberate import and now says so; anything else is made again, which
-        costs a run and cannot be wrong.
+        The last clause is why: a missing stamp read as "this predates the contract,
+        reuse it" is indistinguishable from "a stage crashed before it could stamp
+        anything" and from "somebody dropped a file in the directory". A fixture is a
+        deliberate import and says so; anything else is made again, which costs a run and
+        cannot be wrong.
 
     """
     doc = _load(rnd)
@@ -685,11 +644,11 @@ def legacy(rnd, artifact: str) -> bool:
     rec = imported(rnd)
     if rec is None:
         return False
-    # **An import authorises the files it names and no others.** The review's
-    # counterexample: a fixture that shipped only `place.json` made an unstamped
-    # `preview` -- which nothing had imported and no stage had made -- reusable, because
-    # the permission was granted to the directory. A run that writes one document into
-    # an imported directory has not thereby adopted everything else in it.
+    # **An import authorises the files it names and no others.** Granted to the
+    # directory, a fixture that shipped only `place.json` would make an unstamped
+    # `preview` -- which nothing had imported and no stage had made -- reusable. A run
+    # that writes one document into an imported directory has not thereby adopted
+    # everything else in it.
     files = set(rec.get("files") or [])
     if not files:
         # an import record written before this rule named no files; it kept its

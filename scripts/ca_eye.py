@@ -2,12 +2,12 @@
 """**A perspective view of a built volume**, from a camera anywhere -- on foot in a lane,
 on a wall, or high above the city -- with no server and no renderer.
 
-    $PY scripts/ca_eye.py out/ca-city/world_built.npz --at X,Y,Z --look X,Y,Z \
-        --png out/ca-work/eye.png [--size 960x540] [--fov 70] [--far 420]
+    $PY scripts/ca_eye.py out/<run>/world_built.npz --at X,Y,Z --look X,Y,Z \
+        --png eye.png [--size 960x540] [--fov 70] [--far 420]
 
-The city attempt round. `ethoslm.preview` draws isometric and orthographic frames, and
-Chunky renders only a saved world, so a built candidate that has not been written could
-be seen from above and never from the street. This marches a ray per pixel through the
+`ethoslm.preview` draws isometric and orthographic frames, and Chunky renders only a
+saved world, so without this a built candidate that has not been written can be seen
+from above and never from the street. This marches a ray per pixel through the
 volume's voxels (Amanatides-Woo, vectorised over the whole frame), colours each hit with
 `preview.block_colour`, shades it by the face it entered and by distance, and paints the
 sky. It is a diagnostic view, not a render: no textures, no transparency except water,

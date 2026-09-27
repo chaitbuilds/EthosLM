@@ -1,13 +1,12 @@
-"""The closure round's spatial counterexamples, as regressions with positive controls.
+"""Spatial failures of the place planner, as regressions with positive controls.
 
     $PY scripts/test_closure_spatial.py
 
-Every case is a thing the review reproduced or the closure round's own failed first run
-showed, and every one runs through the **production entry points** -- `arrange.arrange`,
-`district_compile.compile_district`, `placesolve.solve_place`, `placeplan.district_target`,
-`placeplan.place_failures`, `repair.apply`, `intent.relation_measure` -- with a control
-that must still pass. Under a minute; the shore cases need `out/real-shore/` (skipped
-without it).
+Every case is a failure the planner has produced, and every one runs through the
+**production entry points** -- `arrange.arrange`, `district_compile.compile_district`,
+`placesolve.solve_place`, `placeplan.district_target`, `placeplan.place_failures`,
+`repair.apply`, `intent.relation_measure` -- with a control that must still pass. Under
+a minute; the shore cases need `out/real-shore/` (skipped without it).
 """
 import json
 import os
@@ -49,7 +48,7 @@ def _bits(w=110, d=80, want=20, density="low", role="rural", character=None):
 
 @case
 def t_a_the_same_proposal_lays_the_same_arrangement_after_adoption():
-    """The review: proposal 20 -> lots 15; adopt 15, regenerate with 20 -> 12."""
+    """Adopting what a proposal laid does not change what that proposal lays again."""
     dist, part, place, decls = _bits(want=20)
     first = arrange.arrange(dist, part, place, decls, seed=1, proposed=20)
     adopted = dict(dist, structures=first["realized"])
@@ -69,7 +68,7 @@ def t_a_the_same_proposal_lays_the_same_arrangement_after_adoption():
 
 @case
 def t_b_the_compiler_targets_and_the_checker_measures_the_same_band():
-    """The review: compiler floors summing to 19.4% against a checker cap of 12%."""
+    """The compiler's floor and ceiling are the checker's density band, not its own."""
     dist, part, place, decls = _bits(w=180, d=120, want=10, density="sparse")
     t = placeplan.district_target(dist, part, place, decls)
     band = intent_mod.density_target("sparse", "rural")
@@ -103,7 +102,7 @@ def t_c_a_district_over_its_ceiling_is_refused_and_a_capped_ask_is_not():
     assert rec["capped_to"] is not None and rec["lots"] <= rec["capped_to"], rec["capped_to"]
     fails = placeplan.district_failures(dist, got, place, decls, role="rural", part=part)
     assert not any(f["check"] == "cover_over" for f in fails), fails
-    # the counterexample: an exact count the ceiling cannot hold is laid whole and
+    # the other side: an exact count the ceiling cannot hold is laid whole and
     # refused by name, for the layout owner and never for the character's author
     exact = dict(dist, exact=True)
     got_e, rec_e = dc.compile_district(exact, part, place, decls, seed=1)
@@ -158,15 +157,13 @@ def t_e_the_place_validator_asks_the_compiler_before_refusing_on_its_estimate():
 
     def _district_fails(fails):
         return [f for f in fails if f["check"] == "district" and f["part"] == "homes_west"]
-    # **The counterexample is closed at its source, and the rule it was about still
-    # holds.** The neighbourhood round: `spec.columns_per_plot` answered from the
-    # density word alone, so the estimate charged every house the density's own 10x10
-    # lot however small a lot the character or the adopted arrangement declared -- which
-    # is exactly the disagreement this case reproduced. It now takes the declared lot,
-    # so on this fixture the estimate charges 7x7 and admits the 39 it used to refuse.
-    # That is the defect fixed rather than the case satisfied, so the case asserts both
-    # halves: the estimate's own arithmetic, whichever way it comes out, **and** that
-    # the validator's answer is the compiler's and not the estimate's.
+    # **The disagreement is closed at its source, and the rule it was about still
+    # holds.** `spec.columns_per_plot` takes the lot the character or the adopted
+    # arrangement declares rather than the density word's own 10x10, so on this fixture
+    # the estimate charges 7x7 and admits the 39 a density-only estimate refuses.
+    # Fixing the estimate is not the same as satisfying the case, so the case asserts
+    # both halves: the estimate's own arithmetic, whichever way it comes out, **and**
+    # that the validator's answer is the compiler's and not the estimate's.
     per_declared = spec_mod.columns_per_plot(homes)
     per_density = spec_mod.columns_per_plot(dict(homes, character=None))
     room = 102 * 69 * placeplan.DISTRICT_FILL
@@ -228,7 +225,8 @@ def _assembled(rnd, spec, site, place):
 
 @case
 def t_f_the_shore_village_gathers_round_its_square_when_the_sentence_says_so():
-    """The review's twelve passes: the square moved, the houses never did."""
+    """A relation the sentence asks for moves the houses round the square, not just the
+    square."""
     rnd, spec, site, plateau, decls, caps, it = _shore()
     req = next(r for r in it["requirements"] if r["kind"] == "relation")
     vol = rnd.volume()
@@ -294,42 +292,32 @@ def t_h_a_ringed_spec_needs_the_ground_its_rings_need_whatever_its_count_says():
         raise Skip("no fixtures/closure-rings/place.json")
     spec = spec_mod.read_spec(json.load(open(p)), "Build a walled town of twenty-four houses in two rings around a temple compound.")
     least = placeplan.least_footprint(spec)
-    # the expression round: the spec's footprint is now the larger of the count's, the
-    # parts' least and the rings' wanted ground (`wanted_footprint`); the layout's own
-    # refusal threshold is `least_footprint`. **The design round moved which of the two
-    # this is asked of.** `least_footprint` is the side the layout refuses below, and
-    # the layout now negotiates a ring's district depth against its fabric
-    # (`arrange.arrangements`) -- a dense ring one row of houses deep needs twenty
-    # columns where the constant `dmin` asked twenty-eight -- so the refusal threshold
-    # came down from 236 to 216. The claim this case makes is "the count sizes the
-    # houses; the parts size the place", and the number that carries it is the one the
-    # site search asks for: `wanted_footprint`, which is unmoved.
+    # The spec's footprint is the larger of the count's, the parts' least and the
+    # rings' wanted ground (`wanted_footprint`); the layout's own refusal threshold is
+    # `least_footprint`, and the layout negotiates a ring's district depth against its
+    # fabric (`arrange.arrangements`) -- a dense ring one row of houses deep needs
+    # twenty columns, not a constant twenty-eight. The claim this case makes is "the
+    # count sizes the houses; the parts size the place", and the number that carries it
+    # is the one the site search asks for: `wanted_footprint`.
     count_fp = spec_mod.footprint_for(int(spec["structures"]), spec["kind"])
     wanted_fp = placeplan.wanted_footprint(spec)
     assert wanted_fp and wanted_fp > count_fp, (wanted_fp, count_fp, spec["needs"])
     assert least and least < wanted_fp, (least, wanted_fp)
     # **the control**: the rings lay on a site of exactly that side, and a site well
     # below every ring's least width is refused for the ring check's own reason. **What
-    # this case no longer asserts, and why.** It asserted that the layout is refused at
-    # `least_footprint - 12` -- that the refusal threshold this function answers and the
-    # one the layout applies are the same number. They are not, and the neighbourhood
-    # round measured them apart. `least_footprint` derives a ring's district depth from
-    # `arrange.arrangements`, the enumerated catalogue; `concentric_layout` derives it
-    # from `negotiate_ring`, which compiles every alternative and takes the one it
-    # **chose**, and the shallowest on offer is not in general the one chosen because
-    # the shallow ones are refused on cover. The old assertion passed by coincidence:
-    # the two answered 216 together, and a correction at either end parted them. Worse,
-    # the coincidence was in the **unsafe** direction -- the layout refuses 216, so the
-    # threshold was admitting sites the plan would then reject. So this function no
-    # longer assumes the best case for a ring whose width is negotiated, and is
-    # conservative instead: measured on this fixture it answers 236 where the layout's
-    # own threshold is between 216 and 224. A conservative threshold costs ground; an
-    # optimistic one costs a run. The disagreement itself is a named limit of the
-    # neighbourhood round and is not closed here: closing it means running the actual
-    # compiler per ring before a site exists, which is a cost decision off that round's
-    # subject. What is asserted is what is true: the layout lays on the threshold, a
-    # site under every ring's least widths is refused, and a spec with no rings has no
-    # threshold at all.
+    # this case does not assert, and why.** The threshold `least_footprint` answers and
+    # the one the layout applies are not the same number: `least_footprint` derives a
+    # ring's district depth from `arrange.arrangements`, the enumerated catalogue, while
+    # `concentric_layout` derives it from `negotiate_ring`, which compiles every
+    # alternative and takes the one it **chose** -- in general not the shallowest,
+    # because the shallow ones are refused on cover. So this function does not assume
+    # the best case for a ring whose width is negotiated and is conservative instead:
+    # it may ask for more ground than the layout would refuse below, never less. A
+    # conservative threshold costs ground; an optimistic one admits sites the plan then
+    # rejects, and costs a run. Closing the gap would mean running the actual compiler
+    # per ring before a site exists. What is asserted is what is true: the layout lays
+    # on the threshold, a site under every ring's least widths is refused, and a spec
+    # with no rings has no threshold at all.
     _t, decls = placeplan.types_card(None, spec.get("form"))
     site = {"origin": [0, 0], "size": int(least)}
     place, fails = placeplan.concentric_layout(spec, site, None, decls, "japanese_temple")

@@ -1,13 +1,12 @@
-"""The ground contract: what a part needs of the ground, settled once. v2, B1.
+"""The ground contract: what a part needs of the ground, settled once.
 
-Until this module, each part sited its own pad as it built and the result was the
-ground for the next part -- `site()` read the volume as the parts before it had left
-it, and a courtyard house in the concentric run stood at y=38 over ground 56..62
-because its neighbour's sited record had become the ground it was sited to. Terraces
-existed only for rings, the plateau was its own stage, and a gate's approach was a
-third shape of the same idea.
+A part that sites its own pad as it builds makes the result the ground for the next
+part: `site()` reads the volume as the parts before it left it, so a house can be sited
+to its neighbour's sited record rather than to the ground under it and stand far below
+it. A ring's terrace, the plateau and a gate's approach are the same idea in three
+shapes.
 
-Now every part and every network **declares** what it needs of the ground:
+So every part and every network **declares** what it needs of the ground:
 
   * a **platform** -- one level over a set of columns: a pad, a square, a terrace, a
     podium, the level run outside a gate;
@@ -610,28 +609,26 @@ class Found:
 
 
 # ----------------------------------------------- proposed ground, owned by the design
-# The design round's third contract. The expression round's held-out village failed its
-# read on this and nothing could answer it: `stage_plateau` cut and paved **before** the
-# plan, sized by `find_site._plateau_size` -- a default of 48 -- and faced in whatever
-# voice the plan had at the time. A stone chapel ended up standing on twelve cottage
-# footprints of black paving, `shrink_anchor` was tried and rolled back because the re-
-# solve lost nine houses, and no owner re-sized or re-paved the ground. So the prepared
-# ground is an artifact of the resolved design and has three states that never mix:
-# baseline the terrain as it was observed. Immutable, `deps.baseline_path`. proposal
-# what this design asks of it -- the anchor and its apron, the paving, the levels, the
-# protected routes, and the occupied envelope of every part. Derived from the design, so
-# a voice revision re-paves it and an anchor resize re-cuts it. applied the prepared
-# volume, **always** made from the baseline. A revision regenerates the whole proposal
-# and applies it again from the baseline, so cuts never accumulate. `evaluate` runs
-# between the second and the third, against the arrangement, so a cut that no longer
-# belongs to this design is caught rather than imposed.
+# Ground cut and paved **before** the plan, at a default size and in whatever voice the
+# plan had at the time, can leave a stone chapel standing on a dozen cottage footprints
+# of paving with no owner to re-size or re-pave it. So the prepared ground is an
+# artifact of the resolved design and has three states that never mix:
+#   baseline  the terrain as it was observed. Immutable, `deps.baseline_path`.
+#   proposal  what this design asks of it -- the anchor and its apron, the paving, the
+#             levels, the protected routes, and the occupied envelope of every part.
+#             Derived from the design, so a voice revision re-paves it and an anchor
+#             resize re-cuts it.
+#   applied   the prepared volume, **always** made from the baseline. A revision
+#             regenerates the whole proposal and applies it again from the baseline, so
+#             cuts never accumulate.
+# `evaluate` runs between the second and the third, against the arrangement, so a cut
+# that no longer belongs to this design is caught rather than imposed.
 
 #: **The apron a thing at the centre stands on**, as a share of its own footprint on
 #: every side. Registered: a quarter of the anchor's own side, at least `APRON_MIN` and
 #: at most `APRON_MAX` columns, which for a 24-column chapel is 6 columns of paving and
-#: for a 72-column temple compound is 18. The default this replaces was 48 columns of
-#: plateau whatever stood on it -- for the held-out chapel, twelve cottage footprints of
-#: paving round one building.
+#: for a 72-column temple compound is 18. A fixed 48 columns of plateau whatever stood
+#: on it would be a dozen cottage footprints of paving round one chapel.
 APRON_SHARE = 0.25
 APRON_MIN = 3
 APRON_MAX = 18
@@ -679,10 +676,10 @@ def occupied_envelope(part: dict, decls: dict | None = None) -> dict:
     """**The ground one part actually fills, and the ground it needs kept free.**
 
         One envelope, four consumers: planning draws around it, the ground proposal cuts to
-        it, routing keeps off it and the checks measure against it. The review's second
-        cause: "The great wall's piers and batter extend beyond its nominal width.
-        Increasing road clearance avoids one collision but does not establish a common
-        occupied envelope for planning, terrain, circulation, ownership and checking."
+        it, routing keeps off it and the checks measure against it. A great wall's piers
+        and batter extend beyond its nominal width, and raising road clearance avoids one
+        collision without giving planning, terrain, circulation, ownership and checking a
+        common occupied envelope; this is that envelope.
 
         Returns `{"part", "type", "rects", "solid", "clearance", "envelope", "extends",
         "from"}` -- `rects` the band the layout drew, `solid` the same rectangles grown by
@@ -804,11 +801,9 @@ def propose(spec: dict, site: dict, place: dict, baseline, *,
         rect = (int(min(anchor["x0"], anchor["x1"])), int(min(anchor["z0"], anchor["z1"])),
                 int(max(anchor["x0"], anchor["x1"])), int(max(anchor["z0"], anchor["z1"])))
         grown, apron, why = apron_for(rect)
-        # **...and never more than one plateau may be** (the city attempt round): the
-        # palace's 192-square rectangle grown by an 18-column apron asked for a
-        # 228-square cut, `Builder.plateau` refused anything over 192, and the refusal
-        # was recorded while the build went on -- the whole city stood without its
-        # podium and the palace's halls on the river's own banks. The apron is what
+        # **...and never more than one plateau may be**: an anchor near the plateau
+        # bound, grown by its apron, asks for a cut `Builder.plateau` refuses, and a
+        # refused plateau leaves the whole place without its podium. The apron is what
         # gives way: it is narrowed to what the bound leaves round the anchor, to
         # nothing if need be.
         try:
@@ -920,8 +915,7 @@ def _protected(place: dict) -> list:
 def evaluate(proposal: dict, place: dict, baseline=None) -> dict:
     """**Is this proposal still the ground this arrangement needs?** Run before `apply`.
 
-        Four questions, and every one of them was a way the expression round's ground went
-        wrong:
+        Four questions, each a way prepared ground goes wrong:
 
           * is the proposal of **this** baseline? A cut made from another terrain is an
             obsolete cut and cannot be taken back once it is made;

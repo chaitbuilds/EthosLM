@@ -1,15 +1,14 @@
-"""The spatial design round: a trial is promoted on an observed improvement, or rejected.
+"""A trial is promoted on an observed improvement, or rejected.
 
     $PY scripts/test_promotion.py
     $PY scripts/test_promotion.py --case t1
 
-The neighbourhood round's rollback ended at replanning: `improve._apply_layout` restored
-the design records when the *plan* failed, and once planning succeeded `stage_improve`
-rebuilt, stopped at lint, returned `blocked` and left the failed trial on disk as the
-candidate. Both of its cycles did exactly that, and its second failed revision is what it
-delivered. These cases are about the boundary that replaces it (`ethoslm.pipeline.promote`)
-and about the two refusals in `placesolve._reallocate` that keep a revision inside the
-scope it declared.
+A rollback that ends at replanning is not enough: `improve._apply_layout` restores the
+design records when the *plan* fails, but a trial that plans, rebuilds and then stops at
+lint would be left on disk as the candidate, and a failed revision is what would be
+delivered. These cases are about the boundary that prevents that
+(`ethoslm.pipeline.promote`) and about the two refusals in `placesolve._reallocate` that
+keep a revision inside the scope it declared.
 
 Every case states the rule it establishes and prints the measurement that establishes it.
 Nothing here builds a world; the trial machinery is a directory of files, a copy out and a
@@ -306,19 +305,16 @@ def t5_the_boundary_says_what_it_covers_and_leaves_the_ledger_out():
 
 @case
 def t6_a_revision_carries_the_ground_it_is_not_revising():
-    """**The spatial design round's first finding, as a counterexample and a control.**
+    """**A revision carries the ground it is not revising.**
 
-        `placesolve._reallocate` rebuilt a `plateau` stub from `layout.plateau_rect` carrying
-        a rectangle and nothing else, and `pipeline/improve.py` handed it no volume -- so
-        `concentric_layout` found neither `plateau["terrace"]` nor a volume to take a median
-        from, and every revision in this project's history came back with `terrace: null` and
-        four `level: null` rings. Measured on the retained neighbourhood section: the baseline
-        `60c62ebbdb32933b` was laid with ring terraces at y 71/79/67/75 and its first revision
-        `90b26d9c3f075492` with none, so the revised candidates' rings were never levelled at
-        all and their houses were founded on ground running from y 16 to y 127.
+        A re-solve that rebuilds a `plateau` stub from `layout.plateau_rect` alone, with no
+        volume, gives `concentric_layout` neither `plateau["terrace"]` nor a volume to take a
+        median from, so it comes back with `terrace: null` and every ring at `level: null`:
+        the revised rings are never levelled and their houses are founded on raw ground. A
+        revision that was about a lot must not drop the ground design.
 
-        The retained plans are the evidence, and the guard that would have caught it is
-        exercised here on them.
+        Read off a retained baseline plan (with ring terraces) and its revision (without),
+        and the guard in `_reallocate` that refuses such a re-solve is checked by name.
 
     """
     base = os.path.join(ROOT, "out", "nb-city", "plan.place.stale.json")
@@ -349,10 +345,10 @@ def t6_a_revision_carries_the_ground_it_is_not_revising():
 
 @case
 def t7_a_ring_wide_decision_is_qualified_ring_wide():
-    """**The scope of a change and the evidence for it are the same set.** The review:
-        "`_reallocate` certifies one named district, then stores the arrangement on its
-        defining part; the recorded actions refabricate ten lower-ring districts. A local
-        certificate cannot establish that a ring-wide change is safe."
+    """**The scope of a change and the evidence for it are the same set.** Certifying one
+        named district and then storing the arrangement on its defining part, while the
+        recorded actions refabricate every district of the ring, is a local certificate for
+        a ring-wide change, and it cannot establish that the change is safe.
 
         Read off the code rather than run, because running it is a plan: what is asserted is
         that the scope is declared, that every rectangle in it is qualified, and that a

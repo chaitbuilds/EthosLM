@@ -4,9 +4,9 @@ column into finished ground, with its costs and bounds on the record.
 
     $PY scripts/test_designground.py [name-fragment] [--show]
 
-The design synthesis round. Offline, on synthetic volumes (a heightmap of stone under
-dirt under grass, water where asked, a tree where asked). Each case has its positive
-control -- the thing that must happen -- beside the thing that must not:
+Offline, on synthetic volumes (a heightmap of stone under dirt under grass, water where
+asked, a tree where asked). Each case has its positive control -- the thing that must
+happen -- beside the thing that must not:
 
     d1  a flat site under KEEP is untouched, block for block
     d2  a platform on a slope: a faced retaining wall on its low side, a faced cut on

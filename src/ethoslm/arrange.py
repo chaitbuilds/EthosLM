@@ -1,15 +1,11 @@
 """**One construction logic answers "how many" and "which ones".**
 
-The realization round's second boundary, and the review's second finding:
-
-  > `placeplan.fabric_fit` predicts a count from generic lot/block arithmetic. It does
-  > not consume the selected type envelopes, actual lot arrangements, terrain mask or
-  > access constraints. Extent repair reuses this estimate, so it can enlarge a region
-  > and promise more of the same unrealizable housing.
-  >
-  > **Required boundary:** planning needs an actual feasible arrangement, or a reasoned
-  > failure, from the same construction logic that will realize it. Counts alone are
-  > not capacity certificates.
+A count predicted from generic lot/block arithmetic does not consume the selected type
+envelopes, the actual lot arrangements, the terrain mask or the access constraints, and
+an extent repair that reuses such an estimate can enlarge a region and promise more of
+the same unrealizable housing. Counts alone are not capacity certificates: planning
+needs an actual feasible arrangement, or a reasoned failure, from the same construction
+logic that will realize it.
 
 So there is no second opinion here. `arrange` runs `district_compile` -- the pass that
 actually lays the streets, the blocks and the lots that get built -- and returns what it
@@ -17,19 +13,18 @@ laid. The number of houses a district is asked for is the number that pass produ
 that ground with those types, and the file it wrote is the file that is built. A
 district's promise and its plan are the same act.
 
-What was in the way was cost, not principle: one compile of an 84x35 rectangle took 2.9
-seconds and the compiler's own search runs it up to 28 times, so asking the real thing
-cost 96 seconds a district. Almost all of it was `pipeline.load_type` executing type
-source 768 times per compile; cached, the same district arranges in 0.16 seconds and
-planning can afford to ask.
+What makes this affordable is caching: the compiler's own search runs a compile up to
+28 times, and almost all of a compile's cost is `pipeline.load_type` executing type
+source; with types cached a district arranges in a fraction of a second and planning can
+afford to ask.
 
-**The recovery ladder lives here too**, and that is the other half of the finding. An
-arrangement short of its proposal is not adopted until the two spatial answers have been
-tried on the ground itself -- a bigger rectangle where there is free ground beside it,
-and a smaller-footprint approved type -- each re-arranged and *measured*, so a repair
-that changed nothing is visible as one. Only then does the promise move, and what it
-moves to is what the ground gave. `attempts` is the record of that ladder: every rung,
-what it changed, and how many lots came back.
+**The recovery ladder lives here too.** An arrangement short of its proposal is not
+adopted until the two spatial answers have been tried on the ground itself -- a bigger
+rectangle where there is free ground beside it, and a smaller-footprint approved type --
+each re-arranged and *measured*, so a repair that changed nothing is visible as one.
+Only then does the promise move, and what it moves to is what the ground gave.
+`attempts` is the record of that ladder: every rung, what it changed, and how many lots
+came back.
 
 Nothing here decides *policy*. Which rectangle a district is and which types it may use
 are the layout's and the capability record's; this says what can be built on that.
@@ -45,47 +40,45 @@ GROWTH_MAX = 0.5
 GROWTH_MIN_EDGE = 4
 
 #: The rungs of the ladder, in the order they are tried. Ground and types before the
-#: promise, which is the order the review requires and the order a designer would use.
+#: promise, which is the order a designer would use.
 #: `fill` is the rung a *cover* shortfall needs: a district short of the ground its
 #: density asks it to cover, whose own rectangle measurably holds more houses than it
 #: was asked for, is asked for them. It is tried first because it changes nothing about
 #: the place -- not the rectangle, not the approved pool -- and the other two do.
 ACTIONS = ("fill", "extent", "fabric")
 
-#: **The child arrangements a parent may negotiate over**, and the whole list. The
-#: expression round's named dead end, in one line: "the lower ring stands at its least
-#: width (insets 6+3 plus a district depth of 28 where the count needs 22), and the
-#: fabric's wider lot changed nothing because the attached row house is a fixed six-wide
-#: bay. they were simply not on anybody's list. A district's depth is two rows of lots
-#: because nothing ever asked for one; a row house's bay is six because the density
-#: word's own lot side is six and the type admits up to ten. row_depth one row of houses
-#: along a street rather than two back to back. The parent gets a band a third shallower
-#: and the same houses. bay_width the widest (or narrowest) lot the approved type
-#: actually admits, rather than the density word's own side. frontage lots a lane apart
-#: on open frontage rather than a clearance apart on a street -- more ground a house,
-#: which is what a loose fabric means. compound the houses about a court rather than
-#: along a street: a courtyard block, where the role's types and the block's depth admit
-#: one. Every one of them is **proposed** here and **certified** by `district_compile`,
-#: which stays the capacity authority. Nothing in this list is a second estimator.
-#: compact the same lots on a longer block: fewer street-ends between the houses, which
-#: is the only lever that turns the ground *between* blocks into frontage without
-#: enlarging a lot (the composition round). **The neighbourhood round's three**, added
-#: because the five above could not shape the street the round is about. Each is one
-#: decision, named, and certified like the rest: terrace party walls or none: an
-#: attached row where the fabric declares a type that can stand against its neighbours,
-#: a detached street where it already does. It is the one thing in `ARRANGEMENT_FIELDS`
-#: no action proposed -- the field was carried through `character_of` and nothing ever
-#: wrote it -- and it is the difference between a continuous street wall and buildings
-#: with gaps between them. compact_bay the narrowest bay the fabric admits, one row to a
-#: block, on the longest block: all three compaction levers at once. Every action above
-#: moves one lever from the character's own declaration, so the best crowded street any
-#: of them could offer was the best *single* move -- and a crowded quarter is not one
-#: move from a loose one. Composed deliberately and named as a composition. perimeter
-#: lots on all four faces of a block with the court in the middle: a perimeter block.
-#: `compound` raises the courtyard share, which makes the *back row* of a block its
-#: court -- open on two sides, fronting nothing, and no lot has ever been laid along the
-#: short faces of a block in this compiler. This is the arrangement that puts building
-#: on the cross streets and encloses a court on four sides.
+#: **The child arrangements a parent may negotiate over**, and the whole list. Without
+#: them a district's depth is two rows of lots and a row house's bay is the density
+#: word's own lot side, only because nothing asks for anything else -- a ring can stand
+#: at its least width with a district deeper than its count needs, and a wider lot on a
+#: fixed-bay attached type changes nothing. Every one of them is **proposed** here and
+#: **certified** by `district_compile`, which stays the capacity authority. Nothing in
+#: this list is a second estimator. Each is one decision, named:
+#:
+#:   row_depth    one row of houses along a street rather than two back to back: a band
+#:                a third shallower and the same houses.
+#:   bay_width    the widest (or narrowest) lot the approved type actually admits,
+#:                rather than the density word's own side.
+#:   frontage     lots a lane apart on open frontage rather than a clearance apart on a
+#:                street -- more ground a house, which is what a loose fabric means.
+#:   compound     the houses about a court rather than along a street: a courtyard
+#:                block, where the role's types and the block's depth admit one.
+#:   compact      the same lots on a longer block: fewer street-ends between the houses,
+#:                the only lever that turns the ground *between* blocks into frontage
+#:                without enlarging a lot.
+#:   terrace      party walls or none: an attached row where the fabric declares a type
+#:                that can stand against its neighbours, a detached street where it
+#:                already does -- the difference between a continuous street wall and
+#:                buildings with gaps between them.
+#:   compact_bay  the narrowest bay the fabric admits, one row to a block, on the
+#:                longest block: all three compaction levers at once. Every action above
+#:                moves one lever from the character's own declaration, and a crowded
+#:                quarter is not one move from a loose one, so this is composed
+#:                deliberately and named as a composition.
+#:   perimeter    lots on all four faces of a block with the court in the middle.
+#:                `compound` raises the courtyard share, which makes the *back row* of a
+#:                block its court -- open on two sides, fronting nothing; this puts
+#:                building on the cross streets and encloses a court on four sides.
 ARRANGEMENT_ACTIONS = ("row_depth", "bay_width", "frontage", "compound", "compact",
                        "terrace", "compact_bay", "perimeter")
 
@@ -179,22 +172,17 @@ def _lot_for(decl: dict, side: int, depth: int | None, *, attached: bool,
         attached or not. None where nothing does -- which is the honest answer and not a
         smaller lot.
 
-        **A depth the caller named is honoured or refused**, the neighbourhood round. This
-        took `_attached_lot`'s answer, tried the asked depth at *that width only*, and
-        returned the other depth where it did not stand -- so `arrangements` offered lots the
-        compiler would never lay, and the row was then ranked on the cover and the enclosure
-        of a fabric it did not lay. Measured on the retained section: `compact_bay` asked for
-        8x6 at one row and the compiler laid 64 lots of 8x8.
+        **A depth the caller named is honoured or refused.** Trying the asked depth at one
+        width only and returning another depth where it does not stand would let
+        `arrangements` offer lots the compiler never lays, and the row would then be ranked
+        on the cover and the enclosure of a fabric it did not lay.
 
-        **`shape` is the (frontage, depth) the density asked for**, the neighbourhood
-        delivery round, and it is the same argument `district_compile._compile_once` has
-        passed `_attached_lot` since the spatial design round. The audit's second cause is
-        that this function did not: the fresh compiler asked for the shape
-        `placeplan.fabric` resolves a dense attached fabric to and got **6x13**, and
-        `arrangements` rebuilt its base through this call without it and got **10x10** -- so
-        the incumbent and every alternative offered against it were fabrics of two different
-        lot models, and a nominal row-count change silently changed the building's geometry
-        as well. Two rules about one question, on the two sides of one comparison.
+        **`shape` is the (frontage, depth) the density asked for**, the same argument
+        `district_compile._compile_once` passes `_attached_lot`. Without it the compiler and
+        `arrangements` resolve a dense attached fabric to two different lots (6x13 against
+        10x10), so the incumbent and every alternative offered against it are fabrics of two
+        different lot models, and a nominal row-count change silently changes the building's
+        geometry as well. One rule for one question, on both sides of the comparison.
 
     """
     from . import district_compile as dc
@@ -280,16 +268,14 @@ def arrangements(part: dict, decls: dict, *, spec: dict | None = None,
         Nothing here is a capacity claim. `capacity` -- the actual compiler -- answers how
         many houses each one holds, on the ground the parent proposes for it.
 
-        **Every alternative is generated from the design that was adopted.** The
-        neighbourhood delivery round, and the audit's second cause. This read
-        `character_of(part)` with no district, so the base fabric it varied was the *brief's*
-        fabric and not the one the layout had negotiated for this rectangle -- and the
-        `allocation` argument it already took was never used for anything. So the incumbent
-        laid 6x13 lots while `compound` and `row_depth` were both offered at **10x10**, and a
-        trial that named a row count changed the building as well as the number of rows.
-        `district` carries the adopted arrangement (`character_of` puts it over the brief and
-        says that it did); `allocation` answers the same question for a caller that has the
-        spec's allocation and not the district record.
+        **Every alternative is generated from the design that was adopted.** Reading
+        `character_of(part)` with no district would vary the *brief's* fabric rather than
+        the one the layout negotiated for this rectangle, so the incumbent and the
+        alternatives would be on different lots and a trial that named a row count would
+        change the building as well as the number of rows. `district` carries the adopted
+        arrangement (`character_of` puts it over the brief and says that it did);
+        `allocation` answers the same question for a caller that has the spec's allocation
+        and not the district record.
 
     """
     from . import district_compile as dc, placeplan
@@ -578,32 +564,25 @@ def arrangements(part: dict, decls: dict, *, spec: dict | None = None,
 
 #: **The validator's clauses that a negotiation may not negotiate away.** The
 #: certificate below carries the validator's verdict whole -- every failure, unmodified.
-#: But an alternative is *offered for selection* against these, and the distinction
-#: earns its place by a measurement: certifying on the whole verdict makes every
-#: alternative of the retained hill town's dense lower ring refused, because that ring
-#: genuinely covers 5% where its word asks 43% -- which is the finding the negotiation
-#: exists to answer. A gate that refuses every candidate leaves the ring unlayable and
-#: reports nothing, which is worse than the defect it was closing. So: `cover`,
-#: `cover_over`, `ground_cover`, `count` and `farmland_cover` are the bands the
-#: arrangement is *being chosen against* -- recorded, ranked, and a finding for the
-#: layout owner where no alternative reaches them. Everything else is a statement that
-#: the arrangement is **invalid or loses something the request required**: a plot
-#: outside its own district, a plot on the arterial routed to it, a reservation the
-#: demand requires, a type or footprint the library refuses. Those are refusals, and an
-#: alternative carrying one is not offered. **`ground` is a refusal and not a band, and
-#: it took one round to earn that.** The spatial design round adds a terrain clause to
-#: `placeplan.district_failures`: a leaf most of whose columns are ground the design
-#: cannot prepare is named, and so is the district that lays them. A lot with nothing
-#: under it is invalid in exactly the way a lot standing on the arterial is. and while
-#: that was true, **every** arrangement on the section's wet and sloped districts put
-#: lots on ground that could not be prepared, so refusing them would have left the ring
-#: unlayable and reported nothing, which is the failure mode the paragraph above exists
-#: to avoid. The compiler reads the mask now
-#: (`district_compile.LAYS_ON_FEASIBLE_GROUND`), so the clause is one an arrangement can
-#: answer and a refusal is a refusal. Measured on the section's own districts at their
-#: chosen levels: `lower_ring_north_2` lays 88 lots with the mask against 96 without and
-#: refuses 9 for ground; `middle_ring_north_west` lays 3 against 14, and the 14 leaves
-#: that stood mostly on ground nothing could prepare become **0**.
+#: But an alternative is *offered for selection* against these: certifying on the whole
+#: verdict can refuse every alternative of a ring that genuinely covers far less than
+#: its density word asks -- which is the finding the negotiation exists to answer. A
+#: gate that refuses every candidate leaves the ring unlayable and reports nothing,
+#: which is worse than the defect it was closing. So: `cover`, `cover_over`,
+#: `ground_cover`, `count` and `farmland_cover` are the bands the arrangement is *being
+#: chosen against* -- recorded, ranked, and a finding for the layout owner where no
+#: alternative reaches them. Everything else is a statement that the arrangement is
+#: **invalid or loses something the request required**: a plot outside its own district,
+#: a plot on the arterial routed to it, a reservation the demand requires, a type or
+#: footprint the library refuses. Those are refusals, and an alternative carrying one is
+#: not offered. **`ground` is a refusal and not a band.** `placeplan.district_failures`
+#: names a leaf most of whose columns are ground the design cannot prepare, and the
+#: district that lays it: a lot with nothing under it is invalid in exactly the way a
+#: lot standing on the arterial is. That is only a fair refusal because the compiler
+#: reads the terrain mask (`district_compile.LAYS_ON_FEASIBLE_GROUND`) and so lays fewer
+#: lots rather than lots on unpreparable ground; if it did not, every arrangement on a
+#: wet or sloped district would be refused and the ring left unlayable, which is the
+#: failure mode the paragraph above exists to avoid.
 NEGOTIABLE_CHECKS = frozenset(("cover", "cover_over", "ground_cover", "count",
                                "farmland_cover"))
 
@@ -612,13 +591,12 @@ def certificate_for(district: dict, got: dict, place: dict, decls: dict,
                     part: dict, *, spec: dict | None = None) -> dict:
     """**The verdict of the validator that will actually judge this arrangement.**
 
-        The composition round's second change, and A4's whole content. `capacity_of` returned
-        what the compiler laid; whether that arrangement would survive
-        `placeplan.district_failures` was asked later, at
-        `pipeline/stages_plan.py`'s district loop, after selection -- and `arrange._covers`,
-        the only test selection had, is a local approximation of one of the validator's
-        clauses. So an alternative could be chosen, its ring width adopted, and then be refused
-        by the plan it was chosen for.
+        `capacity_of` returns what the compiler laid; whether that arrangement survives
+        `placeplan.district_failures` is otherwise asked only later, at
+        `pipeline/stages_plan.py`'s district loop, after selection -- and `arrange._covers` is
+        a local approximation of one of the validator's clauses. Without this an alternative
+        could be chosen, its ring width adopted, and then be refused by the plan it was chosen
+        for.
 
         This is the real thing, on the alternative's own compiled result: no ground volume
         (`ground=None`), which keeps it to the clauses a plan can answer -- the district
@@ -667,9 +645,10 @@ def capacity_of(district: dict, part: dict, place: dict, decls: dict, arrangemen
         or it is negotiating against a guess.
 
         ...and with `certificate` on it: the verdict of `placeplan.district_failures` on that
-        same compiled result (A4). `certify=False` is for a caller that only wants the count
-        -- `placeplan._arrange_capacity`, which is asking a width question and not offering an
-        alternative for selection -- and it says so in the record it returns.
+        same compiled result, from `certificate_for`. `certify=False` is for a caller that
+        only wants the count -- `placeplan._arrange_capacity`, which is asking a width
+        question and not offering an alternative for selection -- and it says so in the
+        record it returns.
 
     """
     trial = dict(district, arrangement=dict(arrangement or {}))
@@ -685,17 +664,16 @@ def capacity_of(district: dict, part: dict, place: dict, decls: dict, arrangemen
     return got
 
 
-#: **What a comparison row can say about a finding's own measure.** The neighbourhood
-#: delivery round, and the audit's fifth cause: "before an expensive rebuild, establish
-#: that the proposed change affects the finding's subjects, survives replanning and has
-#: a plausible beneficial effect". A reading names the measure it is a finding about
-#: (`pipeline/inspect.MEASURES`, and the section's own `section.<side>.<measure>`); this
-#: is the estimate of that measure each compiled alternative already carries, so the
-#: comparison can be asked which rows could move the number the finding is about. `(key,
-#: direction)`, direction being the way the measure has to go to be better. A measure
-#: that is not here has no estimate at this level and the comparison says so rather than
-#: guessing: the ranking then falls back to its standing priority, which is what it
-#: always did.
+#: **What a comparison row can say about a finding's own measure.** Before an expensive
+#: rebuild, a proposed change should be shown to affect the finding's subjects, survive
+#: replanning and have a plausible beneficial effect. A reading names the measure it is
+#: a finding about (`pipeline/inspect.MEASURES`, and the section's own
+#: `section.<side>.<measure>`); this is the estimate of that measure each compiled
+#: alternative already carries, so the comparison can be asked which rows could move the
+#: number the finding is about. `(key, direction)`, direction being the way the measure
+#: has to go to be better. A measure that is not here has no estimate at this level and
+#: the comparison says so rather than guessing: the ranking then falls back to its
+#: standing priority, which is what it always did.
 FINDING_ESTIMATE = {
     "court_share": ("courts", "up"),
     "courts": ("courts", "up"),
@@ -840,22 +818,18 @@ def alternatives(district: dict, part: dict, place: dict, decls: dict, *,
     # declares no `frontage`, which the retained city's parts all do, so the whole
     # composition round exercised this function without ever reaching it.
     from . import district_compile as dc, placeplan, spec as spec_mod
-    # **the district, so the base every alternative varies is the adopted design** --
-    # the audit's second cause, and the reason `arrangements` took an `allocation` it
-    # never read. `as_declared` is the incumbent where one was adopted, and every other
-    # row is one move from it rather than one move from the brief.
+    # **the district, so the base every alternative varies is the adopted design**:
+    # `as_declared` is the incumbent where one was adopted, and every other row is one
+    # move from it rather than one move from the brief.
     opts = arrangements(part, decls, spec=spec, district=district,
                         pool=list(district.get("fabric_types") or []) or None)
     # **An arrangement is asked for the count its own lot earns**, not for the count the
-    # incumbent fabric earned. The neighbourhood round's last seam: every option was
-    # compiled at `district["structures"]`, which is a number derived from the lot the
-    # district already had -- so an arrangement of smaller lots, whose whole claim is
-    # that the rectangle then holds more houses, was measured at the old ceiling and
-    # came back with the old count. Measured on the retained crowded ring: 6x6 asked at
-    # the baseline's 69 lays 82 and asked at its own band's number lays 94. **Except
-    # where the count is the sentence's own.** An `exact` district, or a spec carrying
-    # an explicit count that is not an approximation, lays the number it was given and
-    # nothing here moves it.
+    # incumbent fabric earned. `district["structures"]` is derived from the lot the
+    # district already had, so an arrangement of smaller lots, whose whole claim is that
+    # the rectangle then holds more houses, would be capped at the old ceiling and come
+    # back with the old count. **Except where the count is the sentence's own.** An
+    # `exact` district, or a spec carrying an explicit count that is not an
+    # approximation, lays the number it was given and nothing here moves it.
     exact = bool(district.get("exact")) or bool(
         (spec or {}).get("explicit_count")
         and not ((spec or {}).get("explicit_count") or {}).get("about"))
@@ -894,26 +868,24 @@ def alternatives(district: dict, part: dict, place: dict, decls: dict, *,
                   for p in (q.get("plots") or [])
                   if p.get("kind", "plot") == "plot"]
         cert = got.get("certificate") or {}
-        # **Every proposal is measured on its own geometry.** The spatial design round,
-        # and the review's words: "`arrange.alternatives` passes the previous
-        # candidate's `parts_record` into `region_columns` and `street_enclosure` for
-        # hypothetical newly compiled leaves. Both match emitted measurements by part
-        # name, without proving unchanged geometry. A reused leaf name can therefore
-        # attach the old footprint to a new arrangement." The compiler's leaf names are
-        # positional -- `b2_0_06` is block 2, row 0, lot 6 -- so a *different*
-        # arrangement of the same rectangle re-uses almost every one of them for a lot
-        # of a different size in a different place. Joining the previous build's emitted
-        # footprints to those names does not reuse an observation; it mislabels an
-        # estimate. There is no test available at this level that the relevant
-        # construction inputs agree, because the parts record does not carry the plot
-        # each part was laid on -- so none is reused here, and every row is the
-        # compiler's own pad arithmetic, uniformly, which is what makes the ranking a
-        # comparison of like with like. The observation has a place and it is after the
-        # build: `improve._estimate_vs_built` writes the estimate this row was chosen on
-        # beside what construction emitted over the same ground, per district the action
-        # refabricated. `parts_record` is still taken -- callers pass it and a later
-        # reader may want the incumbent's figures -- and it is recorded as unused rather
-        # than silently ignored.
+        # **Every proposal is measured on its own geometry.** `region_columns` and
+        # `street_enclosure` match emitted measurements by part name, without proving
+        # unchanged geometry, so passing them the previous candidate's `parts_record`
+        # for newly compiled leaves could attach an old footprint to a new arrangement.
+        # The compiler's leaf names are positional -- `b2_0_06` is block 2, row 0, lot 6
+        # -- so a *different* arrangement of the same rectangle re-uses almost every one
+        # of them for a lot of a different size in a different place. Joining the
+        # previous build's emitted footprints to those names does not reuse an
+        # observation; it mislabels an estimate. There is no test available at this
+        # level that the relevant construction inputs agree, because the parts record
+        # does not carry the plot each part was laid on -- so none is reused here, and
+        # every row is the compiler's own pad arithmetic, uniformly, which is what makes
+        # the ranking a comparison of like with like. The observation has a place and it
+        # is after the build: `improve._estimate_vs_built` writes the estimate this row
+        # was chosen on beside what construction emitted over the same ground, per
+        # district the action refabricated. `parts_record` is still taken -- callers
+        # pass it and a later reader may want the incumbent's figures -- and it is
+        # recorded as unused rather than silently ignored.
         cols = placeplan.region_columns(district, place, decls,
                                         record=got.get("record"), leaves=leaves,
                                         parts_record=None)
@@ -948,9 +920,9 @@ def alternatives(district: dict, part: dict, place: dict, decls: dict, *,
             "lot": list(a["lot"]), "rows": int(a["rows"]),
             "house": a.get("house"), "revises": a.get("revises") or [],
             "lots": int(got["lots"]),
-            # **the count this row was measured at, and where it came from.** Rows may
-            # be measured at different counts -- that is the point, an arrangement's
-            # count is part of what it proposes -- and a row that was must say so.
+            # **the count this row is asked at, and where it came from.** Rows may be
+            # asked at different counts -- that is the point, an arrangement's count is
+            # part of what it proposes -- and each row says which.
             "asked": (None if ask is None else int(ask)),
             "asked_from": ("the district's own `structures`, which the sentence fixed"
                            if exact else
@@ -1047,24 +1019,21 @@ def alternatives(district: dict, part: dict, place: dict, decls: dict, *,
 
     # an arrangement that lays no house is last whatever else it measures: a rectangle
     # with nothing on it has no cover, no frontage and no fabric to compare **...and the
-    # ground, above the street.** The spatial design round's one addition to this order,
-    # and it is above enclosure deliberately: a terrace of houses on a lake measures
-    # frontage exactly as a terrace of houses on land does, and the retained section's
-    # denser revision is what that looks like built -- 128 houses, 31.8% mass, decks
-    # over water and a walk network with 973 unreachable stances. A street nobody can
-    # stand in is not a better street. The share, not the count, so an arrangement is
-    # not punished for laying more lots. **...and, above the standing priority, whether
-    # this row can move the number the finding is about.** The neighbourhood delivery
-    # round, and the audit's fifth cause. The order below is a stated priority over
-    # measured quantities and it is about a fabric in general; a *trial* is applied for
-    # one finding, and a proposal that cannot affect that finding's own measure is a
-    # rebuild spent on something else. Measured on the spatial design round: three
-    # actions were spent resizing the palace in answer to a question about the crowded
-    # ring's courtyards. It sits **below** the obligations -- the reservations, the kind
-    # of street the brief declared, and the ground -- because helping one finding at the
-    # cost of a required reservation is not help; and **above** enclosure and mass,
-    # because those are the comparison's general preferences and this is what the trial
-    # is for. Where the reading names no measure this comparison can estimate, `helps`
+    # ground, above the street.** It is above enclosure deliberately: a terrace of
+    # houses on a lake measures frontage exactly as a terrace of houses on land does,
+    # and built it is decks over water and a walk network full of unreachable stances. A
+    # street nobody can stand in is not a better street. The share, not the count, so an
+    # arrangement is not punished for laying more lots. **...and, above the standing
+    # priority, whether this row can move the number the finding is about.** The order
+    # below is a stated priority over measured quantities and it is about a fabric in
+    # general; a *trial* is applied for one finding, and a proposal that cannot affect
+    # that finding's own measure (resizing a palace in answer to a question about a
+    # ring's courtyards) is a rebuild spent on something else. It sits **below** the
+    # obligations -- the reservations, the kind of street the brief declared, and the
+    # ground -- because helping one finding at the cost of a required reservation is not
+    # help; and **above** enclosure and mass, because those are the comparison's general
+    # preferences and this is what the trial is for. Where the reading names no measure
+    # this comparison can estimate, `helps`
     # is None on every row and the order is exactly what it was.
     want_key, want_way = finding_measure(finding)
     incumbent = next((r for r in out if r.get("incumbent")), None)
@@ -1203,7 +1172,7 @@ def _grown(place: dict, d: dict, site: dict | None) -> list | None:
                 break
             got = nxt
     # **never into the water**: a shoreline district grows inland and along the shore,
-    # and the shore road and setback stay between it and the water (the closure round)
+    # and the shore road and setback stay between it and the water
     from .placeshore import clamp_to_land
     clamped = clamp_to_land(place, got)
     if clamped is None:
@@ -1225,11 +1194,10 @@ def _smaller_fabric(d: dict, decls: dict) -> list | None:
         The **capability** alternative: the compiler reaches for the widest-envelope type of
         the role first, which is right by default and wrong in a thirty-column strip.
 
-        The review found the previous version of this ineffective rather than wrong:
-        `district_compile.house_types` sorted the pool by role and name, so a re-ordering
-        never reached the compiler. The order is now honoured there (`preferred`), and this
-        returns None where re-ordering would change nothing -- a repair that cannot move its
-        consumer reports that it cannot, instead of being counted as an action tried.
+        `district_compile.house_types` honours the pool's order (`preferred`); if it sorted
+        the pool by role and name instead, a re-ordering would never reach the compiler.
+        This returns None where re-ordering would change nothing -- a repair that cannot move
+        its consumer reports that it cannot, instead of being counted as an action tried.
 
     """
     from .district_compile import _plot_range
@@ -1285,13 +1253,12 @@ def arrange(district: dict, part: dict, place: dict, decls: dict, *,
 
     """
     want = int(proposed if proposed is not None else (district.get("structures") or 0))
-    # **Compiled from the proposal, never from the adopted count.** The review's second
-    # finding, reproduced: an unchanged rectangle with a proposal of 20 laid 15;
-    # adopting 15 and regenerating with the same proposal laid 12, because this compiled
-    # `district["structures"]` -- the adopted number -- while `want` was only the bar it
-    # was measured against. The compiler sizes its lots from the ask, so the ask has to
-    # be the proposal every time, and the same proposal on the same rectangle with the
-    # same pool is the same arrangement.
+    # **Compiled from the proposal, never from the adopted count.** The compiler sizes
+    # its lots from the ask, so compiling `district["structures"]` -- the adopted number
+    # -- would lay a different arrangement each time a count is adopted and regenerated
+    # (a proposal of 20 lays 15; adopting 15 and regenerating lays fewer again). The ask
+    # has to be the proposal every time, and the same proposal on the same rectangle
+    # with the same pool is the same arrangement.
     base = dict(district, structures=int(want))
     # an exact count is the district's whatever `intent` says; the flag is the solver's
     if intent is not None and (spec or {}).get("explicit_count") \
@@ -1362,10 +1329,9 @@ def arrange(district: dict, part: dict, place: dict, decls: dict, *,
             continue
         trial["structures"] = int(trial.get("structures") or want)
         got = compile_once(trial, part, place, decls, spec=spec, seed=seed)
-        # **Did the consumer's decision actually change?** The review's test of a
-        # repair, applied to the repair itself: a rung that produces the identical
-        # arrangement is recorded as having changed nothing and is not counted as
-        # recovery.
+        # **Did the consumer's decision actually change?** The test of a repair, applied
+        # to the repair itself: a rung that produces the identical arrangement is
+        # recorded as having changed nothing and is not counted as recovery.
         moved = (got["ok"] and (got["lots"] != best["lots"]
                                 or got.get("types") != best.get("types")
                                 or got.get("lot") != best.get("lot")

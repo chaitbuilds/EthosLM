@@ -1,10 +1,9 @@
-"""**Built findings govern completion.** The expression round's loop that matters.
+"""**Built findings govern completion.**
 
-The closure round could observe the built world (`stage_inspect`) and could not act on
-what it saw: the farm finished with its square thirteen times its cottages, thin fields
-and nine cottages a storey short, every one of them recorded and none of them anybody's
-to fix. This stage sits between the inspection and the qualification and does three
-things, in this order:
+Observing the built world (`stage_inspect`) is not the same as acting on it: a finding
+that is recorded and is nobody's to fix -- a square thirteen times its cottages, thin
+fields, cottages a storey short -- stays in the finished place. This stage sits between
+the inspection and the qualification and does three things, in this order:
 
   1. **Every finding of the built reading gets a disposition** -- `inspection/
      dispositions.json` -- and so does every emitted construction constraint. A material
@@ -30,15 +29,15 @@ Bounded: `flags.improve.cycles_per_candidate` (1) and `cycles_per_lineage` (2).
 Exhausted budget leaves the finding `open`, and `stage_place_check` blocks completion on
 an open material finding. Nothing here weakens a check.
 
-**The design round moved the bookkeeping into `ethoslm.obligation`.** This stage used to
-keep two lists -- the judge's findings and the emitted constraints -- and select actions
-from the first only, closing a cycle when the next reading's `closed` list happened to
-name it. Four things followed, and all four are now the ledger's rules rather than this
-stage's: a reading that omits an old finding does not close it; an applied action that
-did not move the cited measure leaves the row open **and leaves the other actions
-admissible**; a missing measurement closes nothing; and an emitted constraint is an
-obligation of the same shape, so it reaches action selection like any other. This stage
-is what *applies* an owner's action; what is owed is the ledger's.
+**The bookkeeping lives in `ethoslm.obligation`.** Two lists -- the judge's findings and
+the emitted constraints -- with actions selected from the first only, and a cycle closed
+when the next reading's `closed` list happened to name it, go wrong in four ways, and
+all four are the ledger's rules rather than this stage's: a reading that omits an old
+finding does not close it; an applied action that did not move the cited measure leaves
+the row open **and leaves the other actions admissible**; a missing measurement closes
+nothing; and an emitted constraint is an obligation of the same shape, so it reaches
+action selection like any other. This stage is what *applies* an owner's action; what is
+owed is the ledger's.
 """
 from __future__ import annotations
 
@@ -54,21 +53,18 @@ RECORD = "improve.json"
 DISPOSITIONS = os.path.join("inspection", "dispositions.json")
 DEFAULT_BOUNDS = {"cycles_per_candidate": 1, "cycles_per_lineage": 2}
 #: The owners this stage can route to, and the action families each admits.
-#: **Discoverable and executable are one list** (the composition round). This table and
-#: `placesolve.REALLOCATE_ACTIONS` disagreed in both directions, and the design round
-#: paid for both halves of the disagreement: `move_object` was offered to the `layout`
-#: owner here and refused unconditionally by `placesolve._reallocate` -- *"moving a part
-#: is the relation repair's action, not an allocation"* -- so one of the five
-#: alternatives was guaranteed to burn a ledger attempt and do nothing; and the four
-#: arrangement actions the same round had just built and certified through the real
-#: compiler (`row_depth`, `bay_width`, `frontage`, `compound`) were absent here, so they
-#: could never be offered, never be a retry, and never appear in the list an exhausted
-#: owner is said to have tried. "Every bounded action the layout owner has" was fifteen
-#: attempts over three rows, and the composition actions were not among them. So the
-#: table below is the *static* statement of which owner is responsible for what, and
-#: `owner_actions()` is what selection uses: the static list, restricted to actions the
-#: spatial layer will actually attempt, plus the actions it exports and this table does
-#: not know about yet. A list that cannot be executed is not an inventory.
+#: **Discoverable and executable are one list.** Where this table and
+#: `placesolve.REALLOCATE_ACTIONS` disagree, both halves of the disagreement cost: an
+#: action offered here and refused unconditionally by `placesolve._reallocate` (such as
+#: `move_object` -- *"moving a part is the relation repair's action, not an
+#: allocation"*) burns a ledger attempt and does nothing; and an action the spatial layer
+#: certifies but this table omits (`row_depth`, `bay_width`, `frontage`, `compound`) can
+#: never be offered, never be a retry, and never appear in the list an exhausted owner is
+#: said to have tried. So the table below is the *static* statement of which owner is
+#: responsible for what, and `owner_actions()` is what selection uses: the static list,
+#: restricted to actions the spatial layer will actually attempt, plus the actions it
+#: exports and this table does not know about yet. A list that cannot be executed is not
+#: an inventory.
 OWNER_ACTIONS = {
     "layout": ("regroup", "resize_anchor", "shrink_anchor", "enlarge_anchor",
                "resize_ring", "grow_land", "enlarge_lots", "redistribute",
@@ -316,20 +312,19 @@ def _apply_layout(rnd, be, spec: dict, finding: dict, action_hint: str | None) -
         # `street_enclosure` read emitted footprints rather than the plan's pads where
         # there are any; the controller adopts that comparison's first eligible row, so
         # the record has to reach it. **An action this stage routed is not an action the
-        # reading named.** The neighbourhood round: this stage overwrites `action` with
-        # its own hint, so `_reallocate` could not tell a reader who asked for a depth
-        # decision from a dispatcher walking the owner's list -- and it restricts the
-        # certified comparison to the named action, correctly, for the first and wrongly
-        # for the second. `action_routed` carries that difference, and `action_from` on
-        # the record then says which rule chose.
+        # reading named.** This stage overwrites `action` with its own hint, so without
+        # a mark `_reallocate` could not tell a reader who asked for a depth decision
+        # from a dispatcher walking the owner's list -- and it restricts the certified
+        # comparison to the named action, correctly for the first and wrongly for the
+        # second. `action_routed` carries that difference, and `action_from` on the
+        # record then says which rule chose.
         routed = bool(action_hint and not finding.get("action"))
-        # **The re-solve is given the ground.** The spatial design round: this call
-        # passed no volume, so `placesolve._reallocate` -> `concentric_layout` fell
-        # through `plateau["terrace"]` (a stub with a rectangle and nothing else) to
-        # `site_median(None, site)` -- and every revision of this project's history was
-        # laid out by a layout that could not read the terrain it was laying out on. The
-        # backend's volume is the prepared ground of the candidate being revised, which
-        # is what the re-solve is a revision *of*.
+        # **The re-solve is given the ground.** Without a volume,
+        # `placesolve._reallocate` -> `concentric_layout` falls through
+        # `plateau["terrace"]` (a stub with a rectangle and nothing else) to
+        # `site_median(None, site)` -- a layout that cannot read the terrain it is
+        # laying out on. The backend's volume is the prepared ground of the candidate
+        # being revised, which is what the re-solve is a revision *of*.
         vol = None
         with contextlib.suppress(Exception):
             vol = be.volume
@@ -766,27 +761,23 @@ def _rebuild(rnd, be, results: dict) -> dict:
     for f in ("world_built.npz", "parts.json", "surfaces.json"):
         if os.path.exists(rnd.rel(f)):
             os.replace(rnd.rel(f), rnd.rel(f"stale.improve.{f}"))
-    # **The ground is asked for again, from the baseline.** The design round: an action
-    # that moved the anchor or the voice changes what the design asks of the ground, and
-    # the expression round's held-out village kept its first voice's paving under a
-    # chapel that had been re-sized. `stage_ground` re-proposes from
-    # `deps.baseline_path` and re-applies from it, so the second cut of a design that
-    # changed its mind is the first cut of the design it changed to; the terraces stage
-    # then re-lays on it. Both run before construction, else the parts stage refuses
-    # ground "cut for a different candidate". **...and the lanes are laid again on the
-    # ground that was just re-cut.** The neighbourhood round, found by running the
-    # loop's own rebuild. `_apply_layout` routes the roads and lays the lanes while it
-    # re-plans, and this list then re-cuts the ground and re-lays the terraces *under*
-    # them -- so construction met a world whose cobblestone was laid for the levels the
-    # previous candidate had. The cost, on the first rebuild after an applied
-    # arrangement action: **57 row houses refused**, each with the same sentence -- "the
-    # cell this door opens onto is cobblestone -- something is standing in the way of
-    # walking through it" -- and 89 `E002` doors unreachable on foot behind them. The
-    # cold order is `ground, terraces, circulation, parts` (`round.PLACE_DRY`); a
-    # rebuild that re-cuts ground has to be the same order or it is a different pipeline
-    # that looks alike. This is the round's own rule about a road: "if geometry or
-    # access changes, update affected roads, entrances, compounds, districts and ground
-    # before qualifying the candidate".
+    # **The ground is asked for again, from the baseline.** An action that moved the
+    # anchor or the voice changes what the design asks of the ground; without this, a
+    # re-sized chapel keeps the first voice's paving under it. `stage_ground`
+    # re-proposes from `deps.baseline_path` and re-applies from it, so the second cut of
+    # a design that changed its mind is the first cut of the design it changed to; the
+    # terraces stage then re-lays on it. Both run before construction, else the parts
+    # stage refuses ground "cut for a different candidate". **...and the lanes are laid
+    # again on the ground that was just re-cut.** `_apply_layout` routes the roads and
+    # lays the lanes while it re-plans, and this list then re-cuts the ground and re-lays
+    # the terraces *under* them -- so without circulation here, construction meets a
+    # world whose cobblestone was laid for the levels the previous candidate had, and
+    # refuses houses whose door opens onto cobblestone, with doors unreachable on foot
+    # behind them. The cold order is `ground, terraces, circulation, parts`
+    # (`round.PLACE_DRY`); a rebuild that re-cuts ground has to be the same order or it
+    # is a different pipeline that looks alike. If geometry or access changes, update
+    # affected roads, entrances, compounds, districts and ground before qualifying the
+    # candidate.
     for name in ("ground", "terraces", "circulation", "parts", "finish", "lint",
                  "material", "section", "inspect"):
         res = _pipeline.STAGES[name](rnd, be, results)
@@ -934,7 +925,7 @@ def _routed(rnd, spec: dict, row: dict, finding: dict | None) -> str | None:
 
 
 def _judge_trial(rnd, rec: dict, here: str) -> dict | None:
-    """**The open trial, judged on the world it built.** The spatial design round.
+    """**The open trial, judged on the world it built.**
 
         Called on the re-entry pass, where the rebuilt world has been read and the cycle has
         been offered to `obligation.close`. Three questions in this order, because the first
@@ -1026,7 +1017,7 @@ def stage_improve(rnd, be, results: dict) -> dict:
     # --- everything owed, in one ledger ---------------------------------------------
     # **Both producers, one shape.** A judged finding of the built reading and an
     # emitted construction constraint are the same kind of thing -- something the place
-    # owes -- and the expression round kept them in two lists and acted on one.
+    # owes -- and two lists would mean acting on one of them.
     led = obligation.load(rnd.state)
     obligation.upsert(led, [obligation.from_finding(f, source=f"reading/{here}")
                             for f in findings],
@@ -1158,19 +1149,17 @@ def stage_improve(rnd, be, results: dict) -> dict:
             if want and want in left:
                 left = [want] + [a for a in left if a != want]
             # **...and the rest of the queue is the same kind of decision as the
-            # first.** The spatial design round. `_routed` above fixed which action a
-            # finding's *first* attempt is, and left the fallback exactly as it was: the
-            # owner's declaration list, in declaration order. So the second and third
-            # attempts on a finding walk an inventory that has nothing to do with it.
-            # two whole rebuilds, sixteen minutes, spent making the market square a
-            # different size in answer to a question about courtyards, and each one duly
-            # rejected for changing nothing. An inventory is a statement of what an
-            # owner *can* do; it was never an answer to what this finding asks, which is
-            # the argument `_routed` makes one function above. Where the router's answer
-            # is an arrangement decision, the alternatives offered are the other
-            # arrangement decisions; where it is not, the list is unchanged. An owner
-            # with nothing else of the right kind is exhausted for this row, which is a
-            # state the ledger already records.
+            # first.** `_routed` above fixes which action a finding's *first* attempt
+            # is; left as the owner's declaration list, in declaration order, the second
+            # and third attempts on a finding would walk an inventory that has nothing
+            # to do with it -- whole rebuilds spent making the market square a different
+            # size in answer to a question about courtyards, each rejected for changing
+            # nothing. An inventory is a statement of what an owner *can* do; it is not
+            # an answer to what this finding asks, which is the argument `_routed` makes
+            # one function above. Where the router's answer is an arrangement decision,
+            # the alternatives offered are the other arrangement decisions; where it is
+            # not, the list is unchanged. An owner with nothing else of the right kind
+            # is exhausted for this row, which is a state the ledger already records.
             if want:
                 from .. import arrange as _arrange
                 fam = set(_arrange.ARRANGEMENT_ACTIONS)
@@ -1353,28 +1342,25 @@ def stage_improve(rnd, be, results: dict) -> dict:
 
     # --- before the build: can this proposal have helped? -----------------------------
     # **A proposal that reproduces a design already built is refused before the build
-    # budget is spent.** The neighbourhood delivery round, and the audit's fifth cause,
-    # measured on the spatial design round's own `trials.json`: candidate
-    # `8b0a5f3932466d30` is recorded for **four** applied trials. Each of those spent a
-    # full production cycle -- reallocate, the whole plan again, ground, terraces,
-    # circulation, the build, the check and the inspection, about eight minutes -- to
-    # rebuild a world byte-identical in its design to the one already on disk, and each
-    # was then rejected for changing nothing. Naming an owner and an action does not
-    # establish that the action can affect the subject, and the cheapest place to find
-    # out is here: the plan has been laid out again and the candidate identity is known,
-    # and nothing has been built yet. The check is deliberately about the **design**,
-    # not about the measures: two candidates with the same id are the same plan, so no
-    # build could tell them apart. A trial refused here is a trial that ran -- its
-    # action stays recorded as tried, so the loop does not re-offer it -- and the
+    # budget is spent.** A trial that rebuilds a world byte-identical in its design to
+    # the one already on disk spends a full production cycle -- reallocate, the whole
+    # plan again, ground, terraces, circulation, the build, the check and the inspection
+    # -- and is then rejected for changing nothing. Naming an owner and an action does
+    # not establish that the action can affect the subject, and the cheapest place to
+    # find out is here: the plan has been laid out again and the candidate identity is
+    # known, and nothing has been built yet. The check is deliberately about the
+    # **design**, not about the measures: two candidates with the same id are the same
+    # plan, so no build could tell them apart. A trial refused here is a trial that ran
+    # -- its action stays recorded as tried, so the loop does not re-offer it -- and the
     # accepted candidate comes back.
     replanned = deps.candidate_id(rnd)
     chosen["replanned_candidate"] = replanned
     tried_designs = {here: "the candidate this action was applied to"}
-    # **A design rejected by a ruler since corrected is not a design already judged**
-    # (the fabric reset round). The promotion guard compared held-court and feature
-    # *totals*; it now compares subjects (`promote._subject_regressions`). A trial whose
-    # only regressions were those totals was rejected on a question the guard no longer
-    # asks, so its design may be built and judged again -- recorded on the cycle.
+    # **A design rejected by a ruler since corrected is not a design already judged.**
+    # The promotion guard compares subjects (`promote._subject_regressions`), not
+    # held-court and feature *totals*. A trial whose only regressions were those totals
+    # was rejected on a question the guard no longer asks, so its design may be built
+    # and judged again -- recorded on the cycle.
     rejudge = set()
     for t_ in (promote.load(rnd).get("trials") or []):
         regs_ = ((t_.get("evidence") or {}).get("regressions") or [])

@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """`ethoslm.feasible`: which columns construction can stand on, and why not, where not.
 
-The neighbourhood review's first remaining cause is that *"a district's developable
-ground and the ground its count is derived from are still two different numbers"* --
-`developable_columns` subtracts roads and standing parts but not water and not an
-impossible grade, and `arrange.certificate_for` certifies with `ground=None`. These cases
-establish that `feasible.terrain` answers that question, that each of its four clauses is
-separately measurable (a counterexample and a positive control for each), and that its
-answer survives being written onto a district record and read back.
+A district's developable ground and the ground its count is derived from have to be one
+number, and roads and standing parts are not the whole of it: water and an impossible
+grade are ground construction cannot stand on either. These cases establish that
+`feasible.terrain` answers that question, that each of its four clauses is separately
+measurable (a refusal case and a positive control for each), and that its answer
+survives being written onto a district record and read back.
 
     F1  flat dry ground at the design's own level is wholly feasible -- the control, so
         no later refusal can be dismissed as a mask that refuses everything.
@@ -99,8 +98,8 @@ def consistent(got: dict) -> None:
 
 @case
 def t_f1_flat_dry_ground_at_the_designs_level_is_wholly_feasible():
-    """The control. A mask that refused everything would pass every counterexample
-    below, so the first thing to establish is that good ground comes back good."""
+    """The control. A mask that refused everything would pass every refusal case below,
+    so the first thing to establish is that good ground comes back good."""
     n, y = 60, 66
     vol = world(np.full((n, n), y))
     got = F.terrain(vol, (0, 0, n - 1, n - 1), level=y,
@@ -407,8 +406,8 @@ def ring_levels(vol, plan: dict, spec: dict, site: dict) -> tuple:
 
 @case
 def t_f9_the_sections_own_districts_measured_at_their_ring_level():
-    """**The number the review says does not exist.** *"A district's developable ground
-        and the ground its count is derived from are still two different numbers."*
+    """**One number for a district's developable ground and the ground its count is
+        derived from**, measured on real terrain.
 
         Asserted: the answer is produced, its arithmetic closes, no clause double-counts,
         and the record persists. Reported and not asserted: the figures themselves. This

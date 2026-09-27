@@ -369,8 +369,8 @@ def stub_router(env, *answers, doc=DOC):
 
 
 def sleeping_http(delay, answer, refuse=None):
-    """A transport that waits on its socket, the way a real one does: the thing A3 is
-    about is time spent waiting, so a fake that answers instantly measures nothing.
+    """A transport that waits on its socket, the way a real one does: batching is
+    about time spent waiting, so a fake that answers instantly measures nothing.
     `refuse` is a substring of a brief whose call raises instead."""
     import threading
     import time as _t
@@ -491,7 +491,7 @@ class RoleTests(unittest.TestCase):
         return res
 
     def test_a_batch_of_independent_asks_is_answered_together(self):
-        """A3: a plan's districts cost the longest call, not the sum of them."""
+        """A plan's districts cost the longest call, not the sum of them."""
         import time
         delay, n = 0.25, 6
         env = {"ETHOSLM_MODEL_API": "anthropic", "ANTHROPIC_API_KEY": "k"}

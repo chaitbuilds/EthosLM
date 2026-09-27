@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
 """**One ground policy decides both capacity and earthwork.**
 
-The neighbourhood delivery round's third connected cause. Two rules were in play about
-one question and they disagreed:
+Two rules answer one question, and they have to agree:
 
   * `placeplan.district_ground` measures a district's ground through
     `feasible.record(..., relief=DISTRICT_TERRACE_REACH, fill=DISTRICT_TERRACE_REACH)`
     -- a column needing a deeper cut or fill leaves the developable set, and every
     count, band and cover clause in the place divides by what is left;
-  * `Builder.terrace_annulus` levelled **every** column of the rectangle it was handed,
-    with no per-column bound at all. `TERRACE_MAX_BLOCKS` is a total budget and a budget
-    is not a bound.
+  * `Builder.terrace_annulus` levels the rectangle it is handed. Without a per-column
+    bound it levels **every** column: `TERRACE_MAX_BLOCKS` is a total budget and a
+    budget is not a bound.
 
-So housing was excluded from a hillside because that hillside should not be cut, and
-construction cut it anyway. Measured here on the retained section's own observed
-baseline, `out/nd-city/world.before-plateau.npz`, which is the immutable observation
-every number in this project is taken against.
+If they disagree, housing is excluded from a hillside because that hillside should not
+be cut, and construction cuts it anyway. The real-ground cases are measured on the
+retained section's own observed baseline (`BASELINE`), the immutable observation every
+number is taken against.
 
     P1  a column the mask refuses for grade is a column the terrace does not move, and a
-        column the mask accepts is brought to the level. The counterexample and the
+        column the mask accepts is brought to the level. The failing case and the
         positive control in one fixture, against the unbounded call on the same ground
         so the bound is visibly what changed it.
     P2  the same, for water: a lake the level does not stand over is kept, and a puddle
@@ -139,7 +138,7 @@ def plan():
 
 @case
 def p1_the_grade_the_mask_refuses_is_the_grade_the_terrace_does_not_cut():
-    """A counterexample and a positive control on one hillside.
+    """A failing case and a positive control on one hillside.
 
         Twelve columns of a 40-column strip stand twenty blocks over the design's level and
         the rest stand three below it. At `reach=8` the mask refuses the first twelve for
@@ -169,7 +168,7 @@ def p1_the_grade_the_mask_refuses_is_the_grade_the_terrace_does_not_cut():
     rec = b.terrace_annulus(rect, LVL, label="bounded", reach=REACH, base=vol)
     assert rec["ok"], rec["reason"]
     d = rec["disposition"]
-    # the counterexample: not one block, not one `_sited` entry, in the refused columns
+    # the refusal: not one block, not one `_sited` entry, in the refused columns
     for (x, z) in ((0, 0), (5, 20), (11, 39)):
         assert not column_touched(b, x, z), (x, z, "a refused column was moved")
     # the positive control: the accepted ones are at the level
@@ -282,10 +281,10 @@ def p3_the_terrace_record_reconciles_with_the_mask_over_the_same_ground():
 def p4_a_district_on_a_mesa_keeps_a_buildable_envelope():
     """`middle_ring_north_west`: 11,400 columns of hillside, bed y=58..127.
 
-        The audit's case. It records 2,969 feasible columns of 11,400 at the middle ring's
-        settled level, proposed nineteen houses and realized one, and was written down as
-        "open ground with an owner" while the ring's strip levelled the whole rectangle
-        under it. Two things have to be true together and this case asserts both:
+        Only a fraction of its columns are feasible at the middle ring's settled level, and
+        a ring strip that levels the whole rectangle under it turns the district into a
+        plateau while its programme is still owed. Two things have to be true together and
+        this case asserts both:
 
           * the **terrace** leaves the mesa where it is -- the columns the mask refuses are
             not moved, so the district does not become a levelled plateau;

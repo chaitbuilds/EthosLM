@@ -3,13 +3,13 @@
 
     $PY scripts/test_attached_forms.py [name-fragment]
 
-The fabric reset round, form worker. A hutong is "formed by lines of siheyuan" joined one
-to another along a lane, and a market street is a continuous terrace of shop houses; both
-types declare `ATTACHED` and this is the focused check that they are built that way, not
-merely allowed to be. Offline, no cached world, no model call: each row is sited and
-built through `Builder.site()` / `type_builder()` exactly as `scripts/type_needs.py`
-stands an instance, on lots cut the way `district_compile` cuts a terraced run (the pad
-inset `PAD_SITE_INSET` on free sides and 0 on attached ones, `site_pad_rect`), with the
+A hutong is "formed by lines of siheyuan" joined one to another along a lane, and a
+market street is a continuous terrace of shop houses; both types declare `ATTACHED` and
+this is the focused check that they are built that way, not merely allowed to be.
+Offline, no cached world, no model call: each row is sited and built through
+`Builder.site()` / `type_builder()` exactly as `scripts/type_needs.py` stands an
+instance, on lots cut the way `district_compile` cuts a terraced run (the pad inset
+`PAD_SITE_INSET` on free sides and 0 on attached ones, `site_pad_rect`), with the
 compiled site's door in the middle of the pad's street edge and its landing on the lane.
 
     a1  four courtyard houses 15, 13, 17 and 15 wide by 17 deep, ends free, on a plane
@@ -19,8 +19,8 @@ compiled site's door in the middle of the pad's street edge and its landing on t
         lane over its counter beside the door
     a4  the same shop row on the bank
 
-(front north here; `build_row(front=...)` also stands a run on the other three fronts,
-which the form worker swept with mixed widths, depths, seeds and parameters) and each asserts:
+(front north here; `build_row(front=...)` also stands a run on the other three fronts)
+and each asserts:
 every part stands (no refusal, no `SiteRefused`); the build family of
 the linter reports no error on the row's plots, with the lane as the network (so E002 is
 "the door cannot be reached on foot from the lane"); no gap column between neighbours

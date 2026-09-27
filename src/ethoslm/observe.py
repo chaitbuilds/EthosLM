@@ -23,9 +23,8 @@ loader the way setup_runtime.sh does for the JDK, then babysitting a bot over a 
 namespace that is destroyed at the end of every shell call -- all before learning
 anything. The BFS is one file, needs no new dependency, runs in-process during a pass,
 and answers exactly the question the linter asks. The cost is that its movement rules
-are a *model* of the game rather than the game, so they are stated explicitly in RULES
-and checked against the real thing by scripts/nav_course.py, which builds every rule as
-an obstacle in-world for a human to walk.
+are a *model* of the game rather than the game, so they are stated explicitly in RULES,
+each one small enough to build as an obstacle in-world and check by walking it.
 
 Heights are in **half-blocks** throughout, because every surface a player stands on in
 Minecraft is at a whole or half block: a slab top is 0.5, a full block is 1.0. Integer
@@ -72,8 +71,7 @@ JUMP_CLEAR = 6    # headroom needed at the source of a jump
 #: models a body **straddling two tread columns mid-step**. Halfway up a step your feet
 #: are already at the upper tread's height while you are still over the lower one, so
 #: your head is in the third cell above the lower tread. Two cells there is a ceiling
-#: you walk into. Nothing but a person could see it, which is what open thread 2 was
-#: for.
+#: you walk into, and only a person walking the stair would notice it.
 STAIR_CLEAR = 6
 FALL = 6          # damage-free fall
 
@@ -379,7 +377,7 @@ class Volume:
                 i = index[s] = len(self.palette)
                 self.palette.append(s)
             self.codes[x - self.x0, y - self.y0, z - self.z0] = i
-        # **The tables are updated, not thrown away.** v2, A2. A row of `tables()` is a
+        # **The tables are updated, not thrown away.** A row of `tables()` is a
         # fact about a *palette entry* -- is this block state solid, liquid, a door, a
         # ladder, which way a stair faces -- and an overlay changes which entry a cell
         # holds, never what an entry means. Dropping them made every part of a place re-
@@ -441,8 +439,8 @@ def _classify_palette(palette: list) -> tuple:
     """`(columns, unknown)` for these palette entries, in order.
 
         A pure function of the strings: nothing here reads a volume, which is what lets an
-        overlay classify the handful of entries a write added and leave the rest alone
-        (A2). Every row is decided by `_classify` and the tables below it, exactly as the
+        overlay classify the handful of entries a write added and leave the rest alone.
+        Every row is decided by `_classify` and the tables below it, exactly as the
         whole-palette pass decided it.
 
     """
@@ -1488,7 +1486,7 @@ def backwards_stairs(vol: Volume, region=None, window: int = 2) -> list[dict]:
         # rule below exempts a tread whose flight climbs on the way it faces; a profile
         # that holds level for a course -- an upturned eave beside a shallow segment --
         # is the same run before it climbs, and its first tread reads "ahead lower" only
-        # because a stair is not a surface to `local_top`. Same round, same fixture.
+        # because a stair is not a surface to `local_top`.
         same = int(faces[a, b, d])
         if 0 <= fa < sx and 0 <= fd < sz and int(faces[fa, b, fd]) == same:
             continue

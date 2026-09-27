@@ -782,10 +782,10 @@ def build(b, part, seed, storeys=2, dormers=1, use=None):
                 "emitted": {"requested": {"storeys": st, "dormers": nd},
                             "storeys": 0, "attempt": None, "fallback": "no shell stood",
                             "omitted": ["storeys"], "features": {}}}
-    # **What survived, said by the type.** The closure round: the ladder above gives up
-    # the jetty, the porch, the oriel, the dormers and the chimney one at a time, then
-    # most of them, then everything, then the whole pad with no stair; the record names
-    # the rung and what it gave up, and `construction.outcome` measures beside it.
+    # **What survived, said by the type.** The ladder above gives up the jetty, the
+    # porch, the oriel, the dormers and the chimney one at a time, then most of them,
+    # then everything, then the whole pad with no stair; the record names the rung and
+    # what it gave up, and `construction.outcome` measures beside it.
     _feat = ("jetty", "porch", "oriel", "dormers", "chimney", "brackets")
     emitted = {
         "requested": {"storeys": st, "dormers": nd},

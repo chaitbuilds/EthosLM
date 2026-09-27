@@ -171,8 +171,8 @@ def scene_parts(scene: str, hall: tuple | None = None) -> dict:
                 "oblique": ((0.0, g + 34.0, -2.0), (36.0, g + 3.0, 32.0), 58.0)}
     elif scene == "wall":
         # a city wall seen from the street at its foot, with houses for scale: what a
-        # wall's palette is judged on (the design synthesis round: walls were adopted in
-        # a palette nobody had seen on a wall)
+        # wall's palette is judged on, so a wall is never adopted in a palette nobody
+        # has seen on a wall
         houses = _run("row_house", [6, 6, 6, 6, 6, 6], 10, "south", 20, 58,
                       [{"storeys": 1, "front": "lattice"}, {"storeys": 2, "front": "open"}])
         wall = {"label": "city_wall", "kind": "edge", "type": "great_wall", "width": 5,

@@ -61,11 +61,10 @@ MAX_TOKENS = {"spec": 8192, "plan": 16384, "type": 8192, "build": 8192,
 
 APIS = ("anthropic", "openai")
 
-#: How many routed text asks of one batch are in flight at once. v2, A3. A place asks
-#: for its districts as a batch and they are independent of each other, so the batch
-#: costs the longest call rather than the sum of them; the bound is here because a
-#: provider's rate limit is the other side of that trade and thirteen districts at once
-#: is the largest batch the record has. Threads, not processes: this is a wait on a
+#: How many routed text asks of one batch are in flight at once. A place asks for its
+#: districts as a batch and they are independent of each other, so the batch costs the
+#: longest call rather than the sum of them; the bound is here because a provider's rate
+#: limit is the other side of that trade. Threads, not processes: this is a wait on a
 #: socket, and every answer writes its own file.
 ROUTED_WORKERS = 8
 
@@ -466,8 +465,8 @@ class Router:
     def answer(self, role: str, request: str, write: str, images=None) -> dict:
         """One text role: the brief in, the file out. A JSON answer is parsed before it
         is written, and a reply that is not JSON is sent back once with the error.
-        `images` (v2, C4: the preview's map, landmark and buildings) go in with the
-        brief, and a route that cannot see is refused by name."""
+        `images` (the preview's map, landmark and buildings) go in with the brief, and a
+        route that cannot see is refused by name."""
         r = self.route(role)
         if r is None:
             raise RuntimeError(f"role {role!r} is not routed")
@@ -567,15 +566,15 @@ class Router:
                 n += 1
                 continue
             # ...and a judge asked for a *reading* rather than a judgement -- the
-            # preview's (v2, C4), with images and a file to write -- is a text ask.
+            # preview's, with images and a file to write -- is a text ask.
             if (role in ("spec", "plan") or (role == "judge" and rec.get("write"))) \
                     and self.route(role) is not None:
-                # **Independent calls go together.** v2, A3. A place's thirteen
-                # districts arrive here as one batch of `needs_model` records -- that is
-                # what `district_asks` is for -- and they were answered one after the
-                # other, so a plan cost the sum of thirteen round trips when it owes the
-                # longest of them. They share nothing: each reads its own brief and
-                # writes its own file, and `answer()` holds no state.
+                # **Independent calls go together.** A place's districts arrive here as
+                # one batch of `needs_model` records -- that is what `district_asks` is
+                # for -- and answered one after the other a plan would cost the sum of
+                # the round trips when it owes the longest of them. They share nothing:
+                # each reads its own brief and writes its own file, and `answer()` holds
+                # no state.
                 text_asks.append(rec)
                 continue
             if role == "judge" and rec.get("staged") and self.route(role) is not None:
@@ -603,7 +602,7 @@ class Router:
 
     def _answer_text(self, asks: list) -> int:
         """The spec and plan asks of one batch, together. Returns how many were
-                answered. A3.
+                answered.
 
                 Bounded by `ROUTED_WORKERS`, reported in the order they were asked for however
                 they finish, and the first failure is raised after the rest have landed --

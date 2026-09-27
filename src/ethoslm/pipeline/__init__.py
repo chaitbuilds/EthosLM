@@ -331,7 +331,7 @@ def _design_stage(name):                                     # noqa: ANN202
 
 
 STAGES = {
-    # The design synthesis round: the designed place (`pipeline/stages_design.py`).
+    # The designed place (`pipeline/stages_design.py`).
     "design_references": _design_stage("design_references"),
     "design": _design_stage("design"),
     "design_compare": _design_stage("design_compare"),
@@ -339,13 +339,13 @@ STAGES = {
     "regions": _design_stage("regions"),
     "region_views": _design_stage("region_views"),
     "region_write": _design_stage("region_write"),
-    # The architecture round: **before** the spec. What the sentence requires outright
-    # (`intent.json`, by rule, no model) and what was found out about it
-    # (`reading.json`, with the source of every claim on it).
+    # **Before** the spec. What the sentence requires outright (`intent.json`, by rule,
+    # no model) and what was found out about it (`reading.json`, with the source of
+    # every claim on it).
     "reading": _place_stage("reading"),
-    # The realization round: **what the sentence means**, read by an agent and cross-
-    # checked by the phrase rules. Between the reading and the spec, so the programme is
-    # designed from the meaning rather than described after it.
+    # **What the sentence means**, read by an agent and cross-checked by the phrase
+    # rules. Between the reading and the spec, so the programme is designed from the
+    # meaning rather than described after it.
     "interpret": _place_stage("interpret"),
     # The top of the plan layer. A sentence becomes a spec, the spec chooses its ground,
     # the ground is levelled where it has to be, and only then is there a site to plan
@@ -353,32 +353,31 @@ STAGES = {
     "place_spec": _place_stage("place_spec"),
     "site_search": _place_stage("site_search"),
     "plateau": _place_stage("plateau"),
-    # The design round: **the ground this design asks for**, proposed from the plan,
-    # evaluated before anything is cut and applied from the immutable baseline, so a
-    # revision's cut replaces the last one instead of adding to it. After the plan,
-    # because there is no anchor to size an apron from until the layout has drawn one.
+    # **The ground this design asks for**, proposed from the plan, evaluated before
+    # anything is cut and applied from the immutable baseline, so a revision's cut
+    # replaces the last one instead of adding to it. After the plan, because there is
+    # no anchor to size an apron from until the layout has drawn one.
     "ground": _place_stage("ground"),
     "terraces": _place_stage("terraces"),
     "site": _place_stage("site"),
     "plan": _place_stage("plan"),
     "preview": stage_preview,
     "parts": _place_stage("parts"),
-    # The realization round: the inspection that closes what no measurement can --
-    # identity and tradition -- bound to the candidate it looked at, and consumed by
-    # `place_check` below rather than stored beside it. The closure round: **look at
-    # what was built.** The assembled world drawn from its own volume and read by the
-    # judge, bound to the candidate, before qualification. The composition round: what
-    # the registered section demonstrates, measured off this build's own artifacts
-    # rather than asserted by the agent that ran it.
+    # The inspection that closes what no measurement can -- identity and tradition --
+    # bound to the candidate it looked at, and consumed by `place_check` below rather
+    # than stored beside it. It **looks at what was built**: the assembled world drawn
+    # from its own volume and read by the judge, bound to the candidate, before
+    # qualification. What the registered section demonstrates is measured off this
+    # build's own artifacts rather than asserted by the agent that ran it.
     "section": _section_stage,
-    # The composition round's bounded visual experiment, wired but off by default: a
-    # finished volume beside the built one, for a view to read. `flags.material`.
+    # A bounded visual experiment, wired but off by default: a finished volume beside
+    # the built one, for a view to read. `flags.material`.
     "material": _material_stage,
     "inspect": _inspect_stage,
-    # The expression round: **the built findings govern completion.** Every finding of
-    # the built reading gets a disposition, one material finding is routed to its
-    # owner's bounded action, the affected output is rebuilt and read again, and an open
-    # material finding blocks the place check. See `pipeline/improve.py`.
+    # **The built findings govern completion.** Every finding of the built reading gets
+    # a disposition, one material finding is routed to its owner's bounded action, the
+    # affected output is rebuilt and read again, and an open material finding blocks
+    # the place check. See `pipeline/improve.py`.
     "improve": _improve_stage,
     "qualify": _place_stage("qualify"),
     "place_check": _place_stage("place_check"),
@@ -397,8 +396,8 @@ STAGES = {
     "measures": stage_measures,
     "lint": stage_lint,
     "write": stage_write,
-    # v2, A6: the two ways of looking that cost no server and no model call -- the plan
-    # as a map, and a type standing on a fixture at five seeds.
+    # The two ways of looking that cost no server and no model call -- the plan as a
+    # map, and a type standing on a fixture at five seeds.
     "map": stage_map,
     "sheet": stage_sheet,
     "render": stage_render,

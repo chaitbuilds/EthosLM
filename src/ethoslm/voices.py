@@ -106,28 +106,23 @@ ROOF_CIVIC = "roof_civic"
 #: palette, which is a legitimate thing for a model to author in one line.
 NOTE_KEYS = ("blurb", "construction", "roofs", "ground", "signature")
 
-#: **The material recipe, optional.** The expression round. `variants` is `{role:
-#: [{"family", "weight", "when"}, ...]}`: compatible families a material pass may lay in
-#: a role's place, the share of that role's surface each may take, and the condition it
-#: answers to (`ethoslm.material.WHEN`). A voice with none is a voice of one material per
-#: role and the pass leaves it alone. Validated by `material.recipe_for`, and the pass
-#: is off in production until the controlled comparison says otherwise. **What a
-#: restrained recipe is, and why the two city voices were cut back to one.** The
-#: composition round. The design round's comparison judged `leave_off` on a recipe that
-#: reached six roles and used `patch` on four of them, and its criterion 5 named three
-#: specific harms: the palace courts' laid paving and both market floors' chequers
-#: became grey noise (`footing` and `floor` variants on `when: damp`, which is true of
-#: every cell of a paved floor), and vertical stains cut through the great wall's purpur
-#: string course (a `cherry` wall variant on `when: patch`, whose field is stretched in
-#: y). So `pale_quartz_and_gilt` and `ochre_stone_green_tile` now carry only the
-#: variants that are **flow**: `wall` and `footing`, `when` in (`damp`, `runoff`) --
-#: masonry wicking at its foot and streaking under an opening, which is the one thing
-#: the source this pass cites is about (Dorsey, Pedersen and Hanrahan on weathering as
-#: flow, `sources/INDEX.md`). Every `patch` variant, every `roof` variant and every
-#: `trim` variant is gone: a laid tile roof is replaced rather than stained, and a
-#: scatter over a whole roof plane at a per-cell hash is not flow but noise. The three
-#: voices of the other candidates (`drystone_and_thatch`, `japanese_minka`,
-#: `japanese_temple`) are deliberately left as they were.
+#: **The material recipe, optional.** `variants` is `{role: [{"family", "weight",
+#: "when"}, ...]}`: compatible families a material pass may lay in a role's place, the
+#: share of that role's surface each may take, and the condition it answers to
+#: (`ethoslm.material.WHEN`). A voice with none is a voice of one material per role and
+#: the pass leaves it alone. Validated by `material.recipe_for`, and the pass is off in
+#: production until the controlled comparison says otherwise. **What a restrained
+#: recipe is.** Only the variants that are **flow**: `wall` and `footing`, `when` in
+#: (`damp`, `runoff`) -- masonry wicking at its foot and streaking under an opening,
+#: which is the one thing the source this pass cites is about (Dorsey, Pedersen and
+#: Hanrahan on weathering as flow). A recipe that reaches further makes noise: `footing`
+#: and `floor` variants on `when: damp`, which is true of every cell of a paved floor,
+#: turn laid paving and chequered floors grey; a wall variant on `when: patch`, whose
+#: field is stretched in y, cuts vertical stains through a string course; and a laid
+#: tile roof is replaced rather than stained, so a scatter over a whole roof plane at a
+#: per-cell hash is not flow but noise. `pale_quartz_and_gilt` and
+#: `ochre_stone_green_tile` carry only flow variants; `drystone_and_thatch`,
+#: `japanese_minka` and `japanese_temple` keep their recipes as they are, deliberately.
 VARIANTS = "variants"
 
 #: `hall` is `civic` and civic is admitted into every tradition, so the great hall of an
@@ -232,10 +227,9 @@ def validate(voice: dict, where: str = "a voice") -> dict:
                 f"in stairs and slabs as well as cubes. Name one of "
                 f"{', '.join(sorted(fams))} -- or, if this exact block is wanted "
                 f"somewhere no shape is needed, that is what 'roles.floor' is for")
-    # **...and the footing is laid as a wall too** (the city attempt round): a hall's
-    # skirt and a yard's low wall are the footing's `wall` shape, and a voice whose
-    # footing is quartz -- which has stairs and a slab and no wall -- validated here and
-    # then crashed 67 parts of a city at construction
+    # **...and the footing is laid as a wall too**: a hall's skirt and a yard's low wall
+    # are the footing's `wall` shape, so a voice whose footing has stairs and a slab and
+    # no wall (quartz) is refused here rather than crashing its parts at construction
     from .prims import shape as _shape
     try:
         _shape(str(roles["footing"]), "wall")

@@ -598,12 +598,11 @@ WALK_IN = {"north": "south", "south": "north", "east": "west", "west": "east"}
 def pad_insets(w: int, d: int, attached=None, inset: int = PAD_SITE_INSET) -> tuple:
     """(west, north, east, south): how far a plot's pad is inset on each side.
 
-    **One definition for the compiler and the builder.** The quarter design round: the
-    compiler validated a pad of its own reckoning and `Builder._site_pad` cut another,
-    so the pad a lot was admitted for was not the pad it was built on. `inset` on a free
-    side, one where two would leave less than five columns across, and **nothing on an
-    attached side** (v2, C2): the next house stands against it and the party wall is on
-    the plot's edge."""
+    **One definition for the compiler and the builder.** If the compiler validated a pad
+    of its own reckoning and `Builder._site_pad` cut another, the pad a lot was admitted
+    for would not be the pad it is built on. `inset` on a free side, one where two would
+    leave less than five columns across, and **nothing on an attached side**: the next
+    house stands against it and the party wall is on the plot's edge."""
     a = set(attached or ())
     i = int(inset)
     ins = [0 if s in a else i for s in ("west", "north", "east", "south")]
@@ -670,13 +669,13 @@ class Builder(Primitives):
         #: ground a part stands on. See `Builder.site`.
         self.world_site = site
         self._pending: dict[tuple[int, int, int], str] = {}
-        #: **Who laid each standing block, and as what.** The expression round. One
-        #: packed int per cell beside `_pending`: the role (`prims.ROLE_ID`), whether
-        #: the block is protected (a tread, a door, a fitting, a light: the physical
-        #: behaviour of the place), how the role was decided (0 the primitive's own
-        #: context, 1 the material's tag, 2 the voice's family, 3 the family broken by
-        #: the last role the type asked the voice for) and which part it belongs to.
-        #: `surfaces.record` reads it; a material pass edits nothing this does not own.
+        #: **Who laid each standing block, and as what.** One packed int per cell beside
+        #: `_pending`: the role (`prims.ROLE_ID`), whether the block is protected (a
+        #: tread, a door, a fitting, a light: the physical behaviour of the place), how
+        #: the role was decided (0 the primitive's own context, 1 the material's tag, 2
+        #: the voice's family, 3 the family broken by the last role the type asked the
+        #: voice for) and which part it belongs to. `surfaces.record` reads it; a
+        #: material pass edits nothing this does not own.
         self._owner: dict[tuple[int, int, int], int] = {}
         self._role_stack: list = []
         #: **What a type drew on purpose.** The composition round. `_owner` says whose a
@@ -717,7 +716,7 @@ class Builder(Primitives):
         self._sited: dict[tuple[int, int], int] = {}
         #: The ground contract's resolution for the build this part is in
         #: (`ground.Resolved`), or None: `site()` lays what it settled, and `grade()`
-        #: answers with a settled level for any column the contract owns. v2, B1.
+        #: answers with a settled level for any column the contract owns.
         self.ground = None
         #: The cells `fitting()` has laid, and the cells `dais()` has. see
         #: `observe.floor_stances`. A dais is recorded too and is **floor**.
@@ -1275,8 +1274,8 @@ class Builder(Primitives):
         out, shut, natural = [], 0, 0
         for r in rooms:
             # A porch or an overhang, not an interior. One threshold, read from the
-            # linter's own constant since A4 -- this check, E011 and `interior_walk` are
-            # three readers of the same question and they now agree by construction.
+            # linter's own constant -- this check, E011 and `interior_walk` are three
+            # readers of the same question and they agree by construction.
             if r.get("enclosure", 1.0) < _Ctx.ENCLOSED:
                 continue
             # ...and a space this much of whose walls are natural is a cave under the
@@ -1431,13 +1430,12 @@ class Builder(Primitives):
 
         fam = mat or (net.notes.get("material") if net else None) or "cobblestone"
         full, _stairs, slab = _material(fam)
-        # **The reserved doorway takes a half step, never a tread.** The closure round's
-        # proof: two cottages on decks one course above their lane had the flight's
-        # tread laid on the very cell the pass reserved as the doorway, and a tread
-        # reads as a full block to the navigator -- the doorway the pass reserved at one
-        # height stood a whole block higher and E008 called it unenterable. A bottom
-        # slab there is half a step off the lane and half a step onto the deck, which is
-        # what a person walks and what `stance_near(..., tol=1)` accepts.
+        # **The reserved doorway takes a half step, never a tread.** A tread on the cell
+        # the pass reserved as the doorway reads as a full block to the navigator, so a
+        # doorway reserved at one height stands a whole block higher and E008 calls it
+        # unenterable. A bottom slab there is half a step off the lane and half a step
+        # onto the deck, which is what a person walks and what `stance_near(..., tol=1)`
+        # accepts.
         half_at = set()
         # the network's own record, by id: `threshold()` merges the sited door over the
         # reserved one, and the reserved cell is the one the check is about
@@ -2341,7 +2339,7 @@ class Builder(Primitives):
                 somebody else's building. `part['roof']` is the voice's silhouette, as `roof()`'s
                 own four parameters, for a type that wants to take that from the voice too.
 
-                **The ground is settled before it is laid.** v2, B1. What this part needs of the
+                **The ground is settled before it is laid.** What this part needs of the
                 ground -- its pad and its level, or a wall's footing along its run -- is a
                 declaration of the ground contract (`ethoslm.ground`), and what is laid here is
                 the contract's resolution of it: the level held within reach of the part's own
@@ -2417,14 +2415,13 @@ class Builder(Primitives):
     def _way_in(self, part: dict) -> list:
         """The cells that have to stay open for a person to get in at this part's door.
 
-                B2. `site()` has just levelled the doorstep, laid whatever
-                path the ground needed and checked -- against the world as it now stands --
-                that a person can walk from the lane to the door. Every one of those columns is
-                a decision the library has already made and measured, and the type that is
-                about to be handed the part has no business in any of them. Four halls in a
-                city walled their own way in and the readout called it four unreachable doors
-                and four rooms nobody can walk into; `TypeBuilder` holds these open now, so the
-                class cannot come back through a different type.
+                `site()` has just levelled the doorstep, laid whatever path the ground
+                needed and checked -- against the world as it now stands -- that a person can
+                walk from the lane to the door. Every one of those columns is a decision the
+                library has already made and measured, and the type that is about to be handed
+                the part has no business in any of them. A type that walls its own way in
+                leaves an unreachable door and a room nobody can walk into; `TypeBuilder`
+                holds these open, so no type can do that.
 
                 Two cells per column -- the one a person stands in and the one their head is in
                 -- read off the world as the library leaves it, so a path that climbs is held
@@ -2501,10 +2498,10 @@ class Builder(Primitives):
             gone += 1
         return gone
 
-    # --- the ground contract: decide, then lay ------------------------------ v2, B1.
-    # `site()` used to decide and lay in one breath, and the deciding half read the
-    # volume as the parts before it had left it. The deciding half is `declare()` now:
-    # what this part needs of the ground, read off the ground as found and handed to
+    # --- the ground contract: decide, then lay ------------------------------------
+    # Deciding and laying are separate so the deciding half never reads the volume as
+    # the parts before it have left it. The deciding half is `declare()`: what this
+    # part needs of the ground, read off the ground as found and handed to
     # `ground.Contract`, which settles every part's columns at once, before a block is
     # placed. The laying half reads the settled decision and lays it.
 
@@ -2566,20 +2563,18 @@ class Builder(Primitives):
         fr = self.floor_from_threshold(part.get("label"),
                                        (x0 + x1) // 2, (z0 + z1) // 2) or {}
         want = fr.get("floor_y") if fr.get("source") == "threshold" else None
-        # **A doorstep moves a floor by a step; it does not sink a house.** The block
-        # design round, and the audit's first cause. The doorstep decides the floor (the
-        # law above) and `_within_reach` bounded that at `SITE_RELIEF`, which is three
-        # blocks -- so `lower_ring_north_2_b1_0_00`, whose lane ramps past its terrace,
-        # was sited at y=63 over prepared ground at y=66, three blocks into a pit, with
-        # a stair inside it facing down-slope (`E004`). Nothing had refused it: the
-        # threshold rank preferred a level doorstep and still returned the best bad one,
-        # and siting followed wherever that led. Where the plan says which level this
-        # plot's ground was designed at (`floor`, `pipeline.PART_GEOMETRY`), a doorstep
-        # further than `PLANNED_STEP` from it is **not this plot's doorstep**: the floor
-        # is the prepared ground and the difference between the lane and the door is
-        # realized as a flight by `approach()`, which is what an intentional step or
-        # ramp is. The refusal is recorded on the decision so a reader can see which
-        # houses were entered over a step and how big it was.
+        # **A doorstep moves a floor by a step; it does not sink a house.** The doorstep
+        # decides the floor (the law above), but `_within_reach` alone bounds that only
+        # at `SITE_RELIEF`, three blocks -- enough to site a house whose lane ramps past
+        # its terrace three blocks into a pit, with a stair inside facing down-slope
+        # (`E004`), because the threshold rank still returns the best bad doorstep.
+        # Where the plan says which level this plot's ground was designed at (`floor`,
+        # `pipeline.PART_GEOMETRY`), a doorstep further than `PLANNED_STEP` from it is
+        # **not this plot's doorstep**: the floor is the prepared ground and the
+        # difference between the lane and the door is realized as a flight by
+        # `approach()`, which is what an intentional step or ramp is. The refusal is
+        # recorded on the decision so a reader can see which houses were entered over a
+        # step and how big it was.
         planned = part.get("floor")
         step_over = None
         if planned is not None and want is not None:
@@ -2770,7 +2765,7 @@ class Builder(Primitives):
         rect = tuple(int(v) for v in dec["rect"])
         x0, z0, x1, z1 = rect
         self.clear_trees(x0 - 2, z0 - 2, x1 + 2, z1 + 2)
-        # B2: this clearing is the library's own, so what it takes off the ground is
+        # This clearing is the library's own, so what it takes off the ground is
         # written down and `_dress_worked` puts the level back. See
         # `prims.clear_ground_cover` and `_restore_stripped`.
         self._library_ground = True
@@ -2845,13 +2840,12 @@ class Builder(Primitives):
                 "floor_block_y": int(floor_y), "stand_y": int(floor_y) + 1,
                 "door": [door[0], int(floor_y) + 1, door[1]]}
         # **A deck one course above its threshold gets a half step on the reserved
-        # door.** The closure round's proof: two cottages on the lake edge stood on
-        # decks at y=63 over a lane at 62, the approach laid a tread on the reserved
-        # door cell, and a tread reads as a full block to the navigator -- so the
-        # doorway the pass reserved at 63 stood at 64 and E008 called it unenterable. A
-        # bottom slab of the footing on that cell is half a step off the lane and half a
-        # step onto the deck, which is what a person walks; laid before the approach, so
-        # the approach finds the door reachable and lays nothing over it.
+        # door.** A tread the approach lays on the reserved door cell reads as a full
+        # block to the navigator, so the doorway stands one block above where the pass
+        # reserved it and E008 calls it unenterable. A bottom slab of the footing on
+        # that cell is half a step off the lane and half a step onto the deck, which is
+        # what a person walks; laid before the approach, so the approach finds the door
+        # reachable and lays nothing over it.
         step = None
         rd = fr.get("door") if fr.get("source") == "threshold" else None
         if rd is not None and len(tuple(rd)) == 3 and int(tuple(rd)[1]) == int(floor_y) \
@@ -2953,8 +2947,8 @@ class Builder(Primitives):
             p = [int(v) for v in st["pad"]]
             return (p[2] - p[0] + 1, p[3] - p[1] + 1)
         # A plot, and `_site_pad`'s own two cases: inset by `SITE_INSET` on every side,
-        # and by one where two would leave less than five columns across -- and, v2 C2,
-        # by nothing on a side the plan says is **attached**.
+        # and by one where two would leave less than five columns across -- and by
+        # nothing on a side the plan says is **attached**.
         ix0, iz0, ix1, iz1 = cls._insets(w, d, part.get("attached"))
         return (max(0, w - ix0 - ix1), max(0, d - iz0 - iz1))
 
@@ -3089,12 +3083,11 @@ class Builder(Primitives):
                 the snow. `grade()` or the bed, whichever is higher.
 
                 `bed()` is how deep a cut has to go and this is how high it has to start, and
-                the two parted company the moment `bed()` stopped returning the air under a
-                neighbour's oak (see `bed`). A cut measured from the bed leaves everything
-                standing over it: on `scripts/test_ground_contract.py`'s ring fixture the farm
-                belt read y=85 over a terrace laid at y=69, because the canopy the old `bed()`
-                had counted as ground was no longer in the range being cleared. One function
-                for each of the two questions, and neither answering the other's.
+                the two differ wherever `bed()` skips the air under a neighbour's oak (see
+                `bed`). A cut measured from the bed leaves everything standing over it: a
+                terrace cut under a canopy keeps the canopy, because what `bed()` does not
+                count as ground is not in the range being cleared. One function for each of
+                the two questions, and neither answering the other's.
 
         """
         return max(int(self.grade(int(x), int(z))), int(self.bed(int(x), int(z))))
@@ -3140,11 +3133,10 @@ class Builder(Primitives):
     # instead of looking for it. It is `terrace()`'s shape.
 
     #: The **least** a plateau's retaining face is carried below its own level. It is
-    #: always carried to grade as well -- a face that stopped short left a cavity
-    #: between its own bottom course and the hillside, which `scripts/test_place.py`'s
-    #: A4 case read as "a room of 78 cells cannot be walked into" the first time it ran.
-    #: This is the minimum for the case the fall is shallow: a face shorter than four
-    #: reads as a kerb rather than as retaining.
+    #: always carried to grade as well -- a face that stops short leaves a cavity
+    #: between its own bottom course and the hillside, which the linter reads as a
+    #: sealed room nobody can walk into. This is the minimum for the case the fall is
+    #: shallow: a face shorter than four reads as a kerb rather than as retaining.
     PLATEAU_FACE = 4
 
     #: The **least** wide the feathered ring outside a plateau is, as `terrace()` takes
@@ -3201,7 +3193,7 @@ class Builder(Primitives):
     def plateau(self, area, y: int | None = None, *, mat=None,
                 feather: int | None = None, label: str | None = None,
                 bound: int | None = None) -> dict:
-        """Level an area to `y`, retain it, feather it, sweep it and re-skin it. A4.
+        """Level an area to `y`, retain it, feather it, sweep it and re-skin it.
 
         Refuses by name and lays nothing where the area is bigger than `PLATEAU_MAX` on
         a side, or where it is smaller than three. Never writes on a lane cell or a
@@ -3305,7 +3297,7 @@ class Builder(Primitives):
         # **to grade**, and never less than `PLATEAU_FACE` courses. Without it a cut
         # plateau on a fall is a rectangle of ground with air under its low side; with a
         # face that stops short it is a rectangle of ground with a sealed room under its
-        # low side, which is what a fixed depth gave and what A4's case caught.
+        # low side, which is what a fixed depth gives.
         retained = 0
         ring = ([(x, z) for x in range(x0 - 1, x1 + 2) for z in (z0 - 1, z1 + 1)]
                 + [(x, z) for z in range(z0, z1 + 1) for x in (x0 - 1, x1 + 1)])
@@ -4016,10 +4008,10 @@ class Builder(Primitives):
         """The columns a wall `width` wide sweeps along the run a -> b, sorted.
 
         An axial run: the spine and `(width - 1) // 2` columns either side. **A diagonal
-        band is solid**, the design synthesis round: offsetting the spine along the
-        perpendicular diagonal (as this did) lays every cell on one parity of x+z -- a
-        checkerboard, columns touching only at their corners, a walk nobody can walk and
-        a footing with a hole in every other cell. A diagonal run's band is every cell
+        band is solid**: offsetting the spine along the perpendicular diagonal would lay
+        every cell on one parity of x+z -- a checkerboard, columns touching only at
+        their corners, a walk nobody can walk and a footing with a hole in every other
+        cell. A diagonal run's band is every cell
         whose distance to the run is under the half-width plus a half: K lattice
         diagonals either side of the spine, K = floor((half + 0.5) * sqrt 2), at least
         one, clipped to the run's own length. The one rule `_decide_edge` sites by, the
@@ -4139,10 +4131,10 @@ class Builder(Primitives):
         near = sorted({(x + dx, z + dz) for (x, z) in cols
                        for dx in (-1, 0, 1) for dz in (-1, 0, 1)})
         self.clear_trees(0, 0, 0, 0, columns=near)
-        # the design synthesis round: the library's own clearing, so the turf it takes
-        # off a column it then builds nothing in is written down and put back at its
-        # level (`_restore_stripped`) -- not left as a slot one block deep along the
-        # wall's foot, which is what a ring cut into runs showed at every seam
+        # the library's own clearing, so the turf it takes off a column it then builds
+        # nothing in is written down and put back at its level (`_restore_stripped`) --
+        # not left as a slot one block deep along the wall's foot, at every seam of a
+        # ring cut into runs
         self._library_ground = True
         try:
             self.clear_ground_cover(0, 0, 0, 0, columns=near)
@@ -4282,8 +4274,8 @@ class Builder(Primitives):
         x0, z0, x1, z1 = (int(v) for v in dec["rect"])
         rect = (x0, z0, x1, z1)
         self.clear_trees(x0 - 2, z0 - 2, x1 + 2, z1 + 2)
-        # ...and the same for a point's or an area's margin: the design synthesis round
-        # found a ring of one-deep holes two columns round every gate's pad on a plane
+        # ...and the same for a point's or an area's margin, which would otherwise leave
+        # a ring of one-deep holes two columns round every gate's pad on a plane
         self._library_ground = True
         try:
             self.clear_ground_cover(x0 - 2, z0 - 2, x1 + 2, z1 + 2)
@@ -4679,9 +4671,9 @@ class Builder(Primitives):
         # --- the doorstep, then the door ------------------------------------
         self._building_doorstep(door, facing, floor_y, foot_full)
         # **The leaf comes from the voice.** `doorway()` defaults to `oak_door`, so
-        # every building this project has ever made -- in the fell voice, in blackstone,
-        # in two Japanese voices -- has hung an oak door and nothing said so. A1's rule
-        # is that the palette is the voice's; a door is part of the palette.
+        # without this every building -- in a blackstone voice, in a Japanese one --
+        # would hang an oak door and nothing would say so. The palette is the voice's;
+        # a door is part of the palette.
         dres = self.doorway(door[0], stand_y, door[1], facing, m["wall"],
                             leaf=joinery(m, "door"), jamb="build", lintel=trim_full)
         if not dres["ok"]:
@@ -5955,13 +5947,11 @@ class TypeBuilder:
         held += [(int(c[0]), int(c[1]), int(c[2])) for c in (part.get("way") or [])]
         self._doorstep = tuple(dict.fromkeys(held))
 
-    #: The silhouette keys a voice owns. Voice contract, B2: `roof()` and `building()`
-    #: are handed these from `part["roof"]` **whatever the type passes**, so a type can
-    #: neither ignore the voice's roof nor quietly override it. fourteen types never did
-    #: and six read it and assumed their own where it was silent, and a whole city was
-    #: composed in one silhouette and checked in another. This is the same law applied a
-    #: tenth time: the thing is done by the library, by construction, and a type that
-    #: names one of these is refused at preflight (E015).
+    #: The silhouette keys a voice owns. `roof()` and `building()` are handed these from
+    #: `part["roof"]` **whatever the type passes**, so a type can neither ignore the
+    #: voice's roof nor quietly override it -- otherwise a city is composed in one
+    #: silhouette and checked in another. The thing is done by the library, by
+    #: construction, and a type that names one of these is refused at preflight (E015).
     SILHOUETTE = ("profile", "ends", "eave", "tiers")
 
     def _silhouette(self, k: dict) -> dict:
@@ -6282,12 +6272,11 @@ class TypeBuilder:
                     footing: str | None = None) -> dict | None:
         """Keep the doorway the circulation pass reserved for this area walkable.
 
-                The closure round's assembled proof, two E008s on area parts: a grove sited as a
-                deck one block above its lane laid its turf over the reserved doorway, so the
-                doorway stood a full block above the threshold -- `stance_near(..., tol=1)`
-                is half a block -- and a field whose reserved doorway fell on its own corner
-                put a border post on it, because its gates never included a corner. Both
-                types honoured the *side* the way in was on and neither honoured the cell.
+                An area type left to itself honours the *side* the way in is on and not the
+                cell: a grove sited as a deck one block above its lane lays its turf over the
+                reserved doorway, so the doorway stands a full block above the threshold --
+                `stance_near(..., tol=1)` is half a block -- and a field whose reserved
+                doorway falls on its own corner puts a border post on it. Either is E008.
 
                 So this is the library's, called by every area type after it has laid its
                 floor and its border: the doorway cell (`door_cell`) is cleared to head height,

@@ -28,8 +28,8 @@ PARAMS = {
     "top": ("choice", ["pavilion", "open"]),
 }
 
-#: Measured by `scripts/cf_forms.py altar` and a sweep of square pads 11..64: under 11
-#: across three tiers do not step and a flight does not fit.
+#: Measured by a sweep of square pads 11..64: under 11 across three tiers do not step
+#: and a flight does not fit.
 NEEDS = {
     "footprint": (11, 11, 72, 72),
     "except": (),

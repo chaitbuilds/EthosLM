@@ -1,7 +1,6 @@
 """**The designed-place stages**: the model designs, the compiler resolves, regions build.
 
-The design synthesis round. A round with `flags.design` runs, after the reading, the
-interpretation and the spec:
+A round with `flags.design` runs, after the reading, the interpretation and the spec:
 
   - `design`         -- the staged design job: request, claims, references, a review of
                         the last built candidate, candidate sites off the terrain atlas

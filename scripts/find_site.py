@@ -1,8 +1,7 @@
 """Choose the ground a place stands on. Deterministic, by its needs.
 
-Every round before this one was told where to build. nine structures against a
-registered thirty -- is that decision being wrong and nothing in the system being able
-to say so. **The system chooses now, and the record shows why.**
+A site chosen by hand can be wrong with nothing in the system able to say so. **The
+system chooses, and the record shows why.**
 
 How, end to end:
 
@@ -23,7 +22,7 @@ How, end to end:
 Two escapes, in order, each recorded rather than silent:
 
   - **no candidate is flat enough at the footprint.** The innermost defining part is
-    marked for terraforming -- `Builder.plateau()`, A4 -- and the scan is scored again
+    marked for terraforming -- `Builder.plateau()` -- and the scan is scored again
     with the plateau's relief allowance instead of the ground's.
   - **still none.** The spec drops one size band, which is a smaller footprint, and the
     scan is scored again. The drop is written into the answer.
@@ -34,12 +33,12 @@ blocks are not in a heightmap, so they are measured on the **shortlist** only, b
 the surface of each of the best `SHORTLIST` candidates. That is the one place this file
 reads the world twice and it is reported in the answer.
 
-{"surface": "green", "water": "some"}` is scored on it: the wanted surface must be at
-least `spec.SURFACE_SHARE` of the land, "some" water at least `spec.WATER_SOME_PCT` of
-the footprint, and among the squares that meet it more of the surface ranks higher. A
-square read before the setting existed has no surface in its cache; it is re-read where
-a session is open and is otherwise **stale** -- scorable on everything but the setting,
-and refused by name against one.
+A spec's setting -- `{"surface": "green", "water": "some"}` -- is scored too: the wanted
+surface must be at least `spec.SURFACE_SHARE` of the land, "some" water at least
+`spec.WATER_SOME_PCT` of the footprint, and among the squares that meet it more of the
+surface ranks higher. A square cached in the older format has no surface in its cache;
+it is re-read where a session is open and is otherwise **stale** -- scorable on
+everything but the setting, and refused by name against one.
 """
 from __future__ import annotations
 
@@ -74,13 +73,12 @@ RADII = (512, 1024, 1536, 2048, 3072, 4096, 6144, 8192)
 #: How many candidates are measured for gravity blocks and reported with scores.
 SHORTLIST = 12
 
-#: How many go on the record. The spec's number was three, and three is what a reader
-#: wants to see. The realization round raised it because the record is now *used*: a
-#: square whose padded ground the save cannot read is refused at the caching stage and
-#: the search takes the next one it ranked (`stages_plan._dry_site_search`), and with
-#: three on the record a run that hit three unreadable squares had nothing left to try
-#: while a hundred and ninety-two scored squares sat outside the list. A ranking nobody
-#: can walk down is a ranking of one.
+#: How many go on the record. Three is what a reader wants to see, but the record is
+#: *used*: a square whose padded ground the save cannot read is refused at the caching
+#: stage and the search takes the next one it ranked (`stages_plan._dry_site_search`).
+#: With only three on the record, three unreadable squares leave nothing to try while
+#: every other scored square sits outside the list. A ranking nobody can walk down is a
+#: ranking of one.
 RECORDED = 12
 
 #: The tile the world is read in. 512 is one region file and loads in about five
@@ -107,9 +105,10 @@ PLATEAU_DEFAULT = 48
 OUTER_RELIEF = 40
 
 #: What an outer ring over `OUTER_RELIEF` costs in the score, against relief, water,
-#: forest and plateau at 1.0 each and gravity at 0.25. Below them all: the whole of A1
-#: is that a steep outer ring is a thing a city may have, and this weight is what keeps
-#: it from silently becoming the thing every candidate is chosen on.
+#: forest and plateau at 1.0 each and gravity at 0.25. Below them all: the core is
+#: scored apart from the outer ring so that a steep outer ring is a thing a city may
+#: have, and this weight is what keeps it from silently becoming the thing every
+#: candidate is chosen on.
 OUTER_WEIGHT = 0.25
 
 #: The blocks that fall when what is under them goes. `scripts/terrain_bank.py`'s list,
@@ -138,11 +137,11 @@ def generated_regions(directory: str | None = None) -> set:
     """Every `(rx, rz)` the world save already has a region file for.
 
         Read off the file names and nothing else. This is the one fact that separates
-        ground the world has and ground the world would have to *make*, and until A5 the
-        search could not tell the difference: it asked the server for a slice, the server
-        generated whatever was missing without a word, and a scan past 2,048 -- where this
-        world's generated terrain ends -- would have quietly created terrain and reported a
-        site on it as though it had found one.
+        ground the world has and ground the world would have to *make*. Without it the
+        search cannot tell the difference: it asks the server for a slice, the server
+        generates whatever is missing without a word, and a scan past the edge of the
+        generated terrain would quietly create terrain and report a site on it as though
+        it had found one.
 
     """
     import re
@@ -224,7 +223,7 @@ def _field_from_cache(got, x0, z0, w, d, source) -> "Field":
 
 def read_tile(x0: int, z0: int, w: int, d: int, *, editor=None, regions=None,
               directory: str | None = None, log=print):
-    """One grid square of ground, from the cache or -- once -- from the world. A5."""
+    """One grid square of ground, from the cache or -- once -- from the world."""
     p = tile_cache(x0, z0, w, d, directory)
     if os.path.exists(p):
         got = np.load(p)
@@ -515,7 +514,7 @@ def _window_relief(h: np.ndarray, p: int) -> np.ndarray:
 
 
 def core_window(size: int, core: int) -> tuple:
-    """The central `core x core` square of a footprint, as `(i, j)` into it. A1.
+    """The central `core x core` square of a footprint, as `(i, j)` into it.
 
         The **middle**, and not the flattest window in it: `plateau` already answers "where
         is the best level ground anywhere in this candidate" and that is a different
@@ -532,7 +531,7 @@ def measure(field: Field, x0: int, z0: int, size: int, plateau: int,
             core: int | None = None, design: dict | None = None) -> dict | None:
     """One candidate footprint, on the terrain bank's measures plus its best plateau.
 
-        A1 adds two more, and they are the whole of why a city can be sited at all: the
+        Two more measures are the whole of why a city can be sited at all: the
         relief of the **core** -- the middle of the footprint, where the thing at the centre
         stands -- and the relief of everything outside it. One number over 512x512 says
         nothing a plan can act on; these two say "level in the middle, hillside at the edge",
@@ -626,9 +625,8 @@ def excess(m: dict, needs: dict, *, plateau_relief: int,
         if got is None or cap in (None, 0):
             return 0.0
         return round(max(0.0, (float(got) - float(cap)) / float(cap)), 4)
-    # A1: the **core's** ground is what the core's needs are read against. `core_relief`
-    # is the place's `max_relief` unless the part at the centre declared its own, which
-    # is the whole of the per-part needs change arriving where it is used. ...and the
+    # The **core's** ground is what the core's needs are read against. `core_relief`
+    # is the place's `max_relief` unless the part at the centre declared its own. The
     # **terraforming escape relaxes it**, because the core is precisely what a plateau
     # levels. A palace compound that declares it needs four blocks of relief is
     # declaring what it needs *to stand on*, not what the hillside has to be before
@@ -743,9 +741,9 @@ def excess(m: dict, needs: dict, *, plateau_relief: int,
     if needs.get("relief_band"):
         lo, hi = needs["relief_band"]
         e["relief_band"] = [lo, hi]
-        # **A1: the band is read on the core and not on the footprint.** A city's band
-        # is 4-15 and no 512x512 of this world is within a hundred of it, so applied to
-        # the whole footprint the preference was a constant offset that ordered
+        # **The band is read on the core and not on the footprint.** A city's band
+        # is 4-15 and a whole 512x512 footprint is nowhere near it, so applied to the
+        # whole footprint the preference would be a constant offset that orders
         # candidates by nothing. Applied to the middle -- which is where the palace goes
         # and where the ground is levelled -- it orders them by the thing it is about.
         got = m.get("core", {}).get("relief", m["relief"])
@@ -800,11 +798,11 @@ def candidates_at(radius: int, size: int, stride: int = STRIDE) -> list:
 
 
 def search_needs(spec: dict) -> dict:
-    """The needs a candidate is scored against, per-part needs folded in. A1.
+    """The needs a candidate is scored against, per-part needs folded in.
 
         One place, so the three searches -- the live scan, the cached scan and the fresh
         grid walk -- read the same answer, and so that a spec whose parts say nothing
-        produces exactly the dictionary this file scored against before A1.
+        produces exactly the place's own needs, unchanged.
 
     """
     needs = dict(spec["needs"])
@@ -878,7 +876,7 @@ def setting_record(spec: dict, needs: dict) -> dict:
 
 
 def core_size(spec: dict) -> int:
-    """How much of the middle is the core. A1."""
+    """How much of the middle is the core."""
     c = spec_mod.core_needs(spec)
     want = max(int(c.get("plateau") or 0), _compound_plateau(spec)) or _plateau_size(spec)
     return int(min(int(want), int(spec["needs"]["footprint"])))
@@ -906,7 +904,7 @@ def _plateau_size(spec: dict) -> int:
         because that number is the library's and the spec's is a guess about a building.
 
     """
-    # A1: the part at the centre may say how much level ground it needs, and it is the
+    # The part at the centre may say how much level ground it needs, and it is the
     # one that knows -- a palace compound is not a market square. The place's own
     # `needs.plateau` still wins where it gives one, because that is the spec speaking
     # about the place rather than about a part of it.
@@ -919,7 +917,7 @@ def _plateau_size(spec: dict) -> int:
 
 
 def innermost(spec: dict) -> dict | None:
-    """The defining part a plateau would be cut for. A4 is bounded to this one.
+    """The defining part that a plateau would be cut for; terraforming is bounded to it.
 
         The one at the centre, and where two are, the one that is not a group: a palace at
         the centre is what the ground is levelled for and the districts round it follow the
@@ -1022,7 +1020,7 @@ def _drop_band(spec: dict) -> dict | None:
         place that was asked for. It is recorded as such and the readout reports it.
 
     """
-    # v2, C0: the order is the spec's one table (`SIZE_BANDS`) and is not declared here.
+    # The order is the spec's one table (`SIZE_BANDS`) and is not declared here.
     lower = spec_mod.kind_below(spec["kind"])
     if lower is None:
         return None
@@ -1036,7 +1034,7 @@ def _drop_band(spec: dict) -> dict | None:
 
 
 def _compound_ground_record(spec: dict) -> dict | None:
-    """Why the plateau is the size it is, where a compound decided it. Thread 38.
+    """Why the plateau is the size it is, where a compound decided it.
 
         `None` where the part at the centre is not a compound, which is every place that has
         no great thing in it -- so the record of a plain settlement's search is unchanged.
@@ -1073,9 +1071,9 @@ def _answer(spec, label, size, plateau, rows, rounds, dropped, allow,
         out["terraform"] = {
             "part": p["name"], "family": p["family"], "kind": p["kind"],
             "plateau": int(plateau), "relief_allowed": int(allow),
-            # open thread 18 is two entries of exactly that -- and a city is big enough
-            # that "terraform where you need to" would be a licence to flatten a quarter
-            # of a square kilometre. One part, named here, before any of it is cut.
+            # The core only: a city is big enough that "terraform where you need to"
+            # would be a licence to flatten a quarter of a square kilometre. One part,
+            # named here, before any of it is cut.
             "scope": "core",
             "why": ("no candidate within the radii is flat enough at the footprint, "
                     "so the innermost defining part -- and only that one -- is marked "
@@ -1202,7 +1200,7 @@ def search_cached(spec: dict, stride: int = 32, log=print) -> dict:
 
 
 def _score(rows: list, needs: dict, attempts, force: bool = False) -> str | None:
-    """Score every row under each attempt in turn; stop at the first that meets. A5.
+    """Score every row under each attempt in turn; stop at the first that meets.
 
         Returns the label of the attempt that produced a candidate, or None. `force` scores
         under the last attempt anyway, so a failed search still has a ranked list to report
@@ -1220,7 +1218,7 @@ def _score(rows: list, needs: dict, attempts, force: bool = False) -> str | None
 
 
 def _terraform(spec: dict, plateau: int, allow: int) -> dict:
-    """What the terraforming escape marks, as it goes on the record. A5."""
+    """What the terraforming escape marks, as it goes on the record."""
     p = innermost(spec)
     return {"part": p["name"], "family": p["family"], "kind": p["kind"],
             "plateau": int(plateau), "relief_allowed": int(allow), "scope": "core",

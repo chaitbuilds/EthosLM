@@ -1,12 +1,14 @@
-"""The shell moves into the library, and the walk model grows a head.
+"""The library's building shell, and a walk model with a head.
 
     $PY scripts/test_building.py
 
+Each label below is the prefix of its cases' names.
+
   A1. **`building()` lays a whole shell.** One call on flat ground and one on a
       six-block slope: no lint error, every floor walkable from the door under the
-      corrected model, the chimney attached with no hole in the roof beside it, and the
-      sloped one's door walk-reachable. Plus the two refusals the spec names, and the
-      third the walkability bar demands.
+      headroom-aware model, the chimney attached with no hole in the roof beside it, and
+      the sloped one's door walk-reachable. Plus three refusals: a footprint off the
+      plot, a wing over the door, and a footprint too small for its stair.
   A2. **Headroom.** A flight under a ceiling two cells above its treads is unwalkable
       to `Nav`, and `flight()` clears the third cell so that the same flight built
       through the library is walkable.
@@ -58,7 +60,7 @@ MAT = {"wall": "cobblestone", "roof": "dark_oak", "footing": "mossy_cobblestone"
 #: The footprint. Odd on both sides so a door has a true centre block.
 BOX = (14, 14, 26, 24)
 
-#: ...and the one A3's courtyard needs. 21x21 of plot, because `site()` insets four
+#: ...and the one the courtyard case needs. 21x21 of plot, because `site()` insets four
 #: before the type sees it: the pad is 17x17, which holds a 5x5 yard with six-deep
 #: ranges, and a range six deep has a room four deep in it.
 COURT_BOX = (12, 10, 32, 30)

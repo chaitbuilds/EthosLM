@@ -4,11 +4,11 @@
     resolve(state_dir)                                  -> {path, kind, source, note, ...}
     adopted(state_dir)                                  -> the absolute path, note logged
 
-The finishing pass wrote `world_finished.npz` beside `world_built.npz`, while the live
-write (`stages_media.stage_write`) and the view scripts (`scripts/ca_views.py`,
-`scripts/ca_eye.py`) read `world_built.npz`, so the user could be shown a different
-volume from the one that was judged. This module makes the delivered artifact an explicit
-record rather than a file-name convention.
+The finishing pass writes `world_finished.npz` beside `world_built.npz`; if the live
+write (`stages_media.stage_write`) and the view script (`scripts/ca_eye.py`) simply read
+`world_built.npz`, the user could be shown a different volume from the one that was
+judged. This module makes the delivered artifact an explicit record rather than a
+file-name convention.
 
 **The rule** (`resolve`), in order:
 

@@ -1,11 +1,10 @@
-"""The composition round's false-pass routes, through the real consumers.
+"""Composition evidence: the false-pass routes, through the real consumers.
 
     $PY scripts/test_composition_evidence.py
 
-Cheap production counterexamples, each with a positive control, in the style of
-`scripts/test_design_evidence.py`. Not a suite: this is the set of measurements that
-would go green again if somebody quietly undid the six things the round's evidence
-connections are for.
+Cheap production failing cases, each with a positive control. Not a suite: this is the
+set of measurements that would go green again if somebody quietly undid the six evidence
+connections below.
 
 **E1 -- a function needs affirmative evidence for its applicable required predicates**
 (`construction.confirm`, `construction.evidence_for`, `construction.wants_for`):
@@ -594,7 +593,7 @@ def t7_a_market_want_and_a_stalls_constraint_agree():
 # reuse
 
 class _Rnd:
-    """The smallest thing `deps` reads. `scripts/test_realization.py`'s shim."""
+    """The smallest thing `deps` reads: a stand-in for a round."""
 
     def __init__(self, state, sentence="Build a walled city."):
         self.state, self.sentence = state, sentence

@@ -1,5 +1,6 @@
-"""**One deterministic material pass over owned surfaces.** The expression round's
-bounded experiment, and nothing more than that until the comparison says otherwise.
+"""**One deterministic material pass over owned surfaces.** A bounded experiment, and
+nothing more than that until the comparison (`scripts/material_compare.py`) says
+otherwise.
 
     recipe_for(voice)                   the voice's `variants` block, validated
     apply(built, surfaces, recipe,      -> (finished volume, record)
@@ -31,8 +32,8 @@ from the finished volume rather than from the neighbourhood one part saw;
 protected cells (treads, doors, glass, fittings, lights, the ground) never;
 **a cell the type declared part of a figure** never (`surfaces.FLAGS["figure"]`, out of
 `Primitives.figure`: the market's chequer, a court's laid paving, a wall's string
-course -- the three patterns the design round's pass replaced with camouflage because
-the record said who owned a cell and not what the cell was for);
+course -- patterns a pass would replace with camouflage if the record said only who
+owned a cell and not what the cell was for);
 the substitute is **the same shape of a compatible family** -- a stair stays a stair
 with its state, a slab a slab, a wall a wall -- or the block is left; where the family
 has no such shape nothing is invented. The decision for a cell is a hash of `(seed,
@@ -232,17 +233,14 @@ def _conditions(flags: int, floor_y, y: int, weather_bit: int) -> dict:
     sheltered = bool(flags & F["sheltered"])
     exposed_face = bool(flags & (F["open_north"] | F["open_south"] | F["open_east"]
                                  | F["open_west"]))
-    # **Damp needs a face for the water to come out of.** The design round's cause 2:
-    # `damp` was `ground_contact | water_near | base_course` alone, and a floor is in
-    # ground contact by definition -- every cell of it, everywhere -- so a `footing` or
-    # `floor` variant with `when: damp` repainted a whole paved court at its full
-    # weight. That is what turned the city's market floor and the palace courts grey
-    # (`out/des-material/comparison.json`, criterion 5). Damp is what wicks out of the
-    # ground into a **vertical** surface somebody looks at, so it wants one of the four
-    # side faces open as well. Measured on `out/des-city/surfaces.json`: the share of
-    # cells this calls damp falls from 35.2% to 4.1% on `footing` and 9.3% to 0.7% on
-    # `floor` -- the inside of the paving -- and from 11.26% to 10.76% on `wall` and not
-    # at all on `frame`, which is the base course the condition was written for.
+    # **Damp needs a face for the water to come out of.** A floor is in ground contact
+    # by definition -- every cell of it, everywhere -- so with `damp` as
+    # `ground_contact | water_near | base_course` alone, a `footing` or `floor` variant
+    # with `when: damp` repaints a whole paved court grey at its full weight. Damp is
+    # what wicks out of the ground into a **vertical** surface somebody looks at, so it
+    # wants one of the four side faces open as well. That cuts the damp share of
+    # `footing` and `floor` cells (the inside of the paving) by roughly a factor of ten
+    # and barely moves `wall` and `frame`, which is the base course the condition is for.
     damp = exposed_face and bool(flags & (F["ground_contact"] | F["water_near"]
                                           | F["base_course"]))
     weather = bool(flags & weather_bit)
@@ -297,13 +295,12 @@ def _decide_random(role: str, rates: dict, cell: list, seed: int) -> str | None:
 def context_of(prec: dict) -> str:
     """The architectural context a part's surfaces belong to: its voice and its type.
 
-        **The unit the random arm has to be matched on.** The expression round pooled
-        variant rates by role across the whole place, so a town of two voices scattered one
-        voice's stone over the other's walls and a wall type was matched against a house
-        -- which is a different palette at a different rate, not a control for *where* the
-        variants went. Rates are collected per context and the random arm draws from the
-        context's own; a context whose voice has no recipe for a role gets nothing in
-        either arm.
+        **The unit the random arm has to be matched on.** Variant rates pooled by role
+        across the whole place would let a town of two voices scatter one voice's stone over
+        the other's walls and match a wall type against a house -- which is a different
+        palette at a different rate, not a control for *where* the variants went. Rates are
+        collected per context and the random arm draws from the context's own; a context
+        whose voice has no recipe for a role gets nothing in either arm.
 
     """
     return f"{prec.get('voice_name') or '-'}|{prec.get('type') or prec.get('kind') or '-'}"

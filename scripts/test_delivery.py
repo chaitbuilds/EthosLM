@@ -1,11 +1,12 @@
-"""The neighbourhood delivery round: one spatial decision, through every consumer.
+"""Delivery cases: one spatial decision, through every consumer.
 
     $PY scripts/test_delivery.py
     $PY scripts/test_delivery.py --case d1
 
-The four seams the architectural audit. Every case states the rule it establishes,
-carries a **positive control** beside its counterexample, and prints the measurement
-that establishes it. Nothing here builds a city; what it builds is a compile, a
+Each case checks one seam where a planning decision can be lost on its way to
+construction or to the record. Every case states the rule it establishes, carries a
+**positive control** beside the failing case, and prints the measurement that
+establishes it. Nothing here builds a city; what it builds is a compile, a
 generated production program and a few records.
 
   d1  the plan's attachment, frontage and second stone reach `site()`, and the generated
@@ -106,15 +107,14 @@ def _leaves(got):
 def d1_the_plans_attachment_and_frontage_reach_the_generated_production_call():
     """**`pipeline.PART_GEOMETRY` is the whole of what a leaf hands `site()`.**
 
-        The audit's first cause. `stages_build.instantiated_source` filters every leaf
-        through this tuple before it writes the program that builds it, and `settle_ground`
-        filters it again before `declare()` reads the ground. A field the compiler decided
-        and this tuple drops is a decision that never reached a block: `Builder._insets` then
-        sees four free sides, a 6x13 attached lot hands `build()` a 4x11 pad, and the row
-        house that stands on it is four columns wide with its party walls four columns short
-        of its neighbours'.
+        `stages_build.instantiated_source` filters every leaf through this tuple before it
+        writes the program that builds it, and `settle_ground` filters it again before
+        `declare()` reads the ground. A field the compiler decided and this tuple drops is a
+        decision that never reached a block: `Builder._insets` then sees four free sides, a
+        6x13 attached lot hands `build()` a 4x11 pad, and the row house that stands on it is
+        four columns wide with its party walls four columns short of its neighbours'.
 
-        The counterexample and its control are the same lot, sited both ways.
+        The failing case and its control are the same lot, sited both ways.
 
     """
     for f in ("attached", "front", "wall_alt"):
@@ -153,14 +153,13 @@ def d1_the_plans_attachment_and_frontage_reach_the_generated_production_call():
 def d2_no_leaf_asks_for_more_storeys_than_its_own_flanks_admit():
     """**Variation moves inside what the lot admits, not over the top of it.**
 
-        The audit's first cause in its second half. The storeys were drawn in `leaf()`
-        against the envelope, and `lots_along`'s "no two neighbours are the same building"
-        step then moved `params.storeys` *afterwards* -- so the delivered candidate records
-        `storeys_admitted: 1` beside `params.storeys: 2` on the same leaf, which is the plan
-        disagreeing with itself in writing. And the flanks are not known when a lot is drawn:
-        a lot dropped for the road frees its neighbour's flank and an end of a terrace has
-        one free flank whatever the fabric intended, so the question has to be asked again
-        once the row is complete (`district_compile.settle_storeys`).
+        The storeys are drawn in `leaf()` against the envelope, and `lots_along`'s "no two
+        neighbours are the same building" step can move `params.storeys` *afterwards* --
+        leaving `storeys_admitted: 1` beside `params.storeys: 2` on the same leaf, which is
+        the plan disagreeing with itself in writing. And the flanks are not known when a lot
+        is drawn: a lot dropped for the road frees its neighbour's flank and an end of a
+        terrace has one free flank whatever the fabric intended, so the question has to be
+        asked again once the row is complete (`district_compile.settle_storeys`).
 
     """
     got, ch, d, place, decls = _compile(_part(character={"attached": True}))
@@ -194,12 +193,11 @@ def d2_no_leaf_asks_for_more_storeys_than_its_own_flanks_admit():
 def d3_a_court_the_form_owes_is_composed_and_entered():
     """**A court is a realizable composition, not a share rounded to zero.**
 
-        The audit's fourth cause. `demand.court_obligation` publishes the obligation off the
-        district's `courtyard_share`, and the compiler laid `round(share * blocks)` courts --
-        so a district at 0.05 over eight blocks *owed* a court and laid **none**, which is
-        the whole of "the crowded ring has no court" on the delivered candidate. And the
-        court it did lay when the share was large enough was the block's back row, open along
-        both short faces, with the cross streets carrying nothing.
+        `demand.court_obligation` publishes the obligation off the district's
+        `courtyard_share`, and laying `round(share * blocks)` courts would leave a district
+        at 0.05 over eight blocks *owing* a court and laying **none**. And a court is
+        composed and entered, not the block's back row left open along both short faces with
+        the cross streets carrying nothing.
 
         The control is the same district compiled with the share at zero: nothing is owed and
         nothing is laid.
@@ -237,12 +235,11 @@ def d3_a_court_the_form_owes_is_composed_and_entered():
 def d4_alternatives_are_generated_from_the_adopted_design():
     """**The comparison varies the fabric that is standing.**
 
-        The audit's second cause. `arrangements` read `character_of(part)` with no district,
-        so the base it varied was the *brief's* fabric and not the one the layout had
-        negotiated for this rectangle -- and the `allocation` argument it already took was
-        never read. Measured on the delivered candidate: the incumbent lays 6x13 and both
-        `compound` and `row_depth` were offered at **10x10**, so a trial that named a row
-        count changed the building as well as the number of rows.
+        `arrangements` reading `character_of(part)` with no district would vary the
+        *brief's* fabric and not the one the layout negotiated for this rectangle: an
+        incumbent laying 6x13 would be offered `compound` and `row_depth` at the brief's lot,
+        so a trial that named a row count would change the building as well as the number of
+        rows.
 
         And a proposal has to be able to move the number the finding is about: naming an
         owner and an action does not establish that the action can affect the subject.
@@ -286,12 +283,12 @@ def d4_alternatives_are_generated_from_the_adopted_design():
 def d5_the_section_measures_its_own_scope_and_walks_its_own_world():
     """**A section is a section, and a route verdict is a walk.**
 
-        Two of the audit's evidence limits. `_courts` took its denominator from every
-        court-owing district of the *city*, so a section record failed on eighteen subjects
-        of which five were in it; and `_route` read `circulate.walk_check`, which re-derives
-        reachability over the **planned lane graph** -- the right check at planning time and
-        a different question afterwards, because it cannot see a pad laid over a lane or a
-        wall closed across a threshold.
+        `_courts` takes its denominator from the court-owing districts the section's own
+        rectangle reaches, not every one in the *city*, or a section record fails on
+        subjects outside it. And `_route` walks the assembled world rather than reading
+        `circulate.walk_check`, which re-derives reachability over the **planned lane
+        graph** -- the right check at planning time and a different question afterwards,
+        because it cannot see a pad laid over a lane or a wall closed across a threshold.
 
     """
     inside = {"name": "a", "x0": 0, "z0": 0, "x1": 50, "z1": 50}
@@ -336,11 +333,11 @@ def d5_the_section_measures_its_own_scope_and_walks_its_own_world():
 def d6_promotion_protects_the_requirements_and_accounts_for_the_tradeoffs():
     """**Type survival and one improving scalar are too weak.**
 
-        The audit's fifth cause. Promotion protected demonstrated relationship *labels* and
-        the continued presence of each type; it did not protect an explicit requirement that
-        was met and is not any more, and it could not see a quality worsening inside a
-        relationship that was already failing -- so a trial could lose a required feature, or
-        make an already-failed court verdict worse, and promote on one scalar.
+        Protecting only demonstrated relationship *labels* and the continued presence of
+        each type does not protect an explicit requirement that was met and is not any more,
+        and cannot see a quality worsening inside a relationship that was already failing --
+        so a trial could lose a required feature, or make an already-failed court verdict
+        worse, and promote on one scalar.
 
     """
     def sec(features_held, features_owed, unreached, crowded_cover):

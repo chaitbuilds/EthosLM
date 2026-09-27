@@ -2,13 +2,13 @@
 end away from the door, benches facing it down an open middle aisle, and a bell hung on
 the wall over the door.
 
-The expression round's first type authored through the growth path for a **function**
-gap: the orchard hamlet asks for worship (`function/worship`) and no committed type of
-`european_vernacular` declared it. This is a form and not a voice -- every block is a
-role on `b.voice` and the roof is the voice's profile -- and what it delivers is said in
-`emitted` with a rectangle per feature, so `construction.outcome` verifies the dais, the
-altar, the benches and the bell on the built blocks rather than taking `FUNCTION` on
-trust. The lot it needs is small on purpose: a chapel of a hamlet is a room, not a nave.
+A type authored through the growth path for a **function** gap: a hamlet that asks for
+worship (`function/worship`) needs a committed `european_vernacular` type that declares
+it. This is a form and not a voice -- every block is a role on `b.voice` and the roof is
+the voice's profile -- and what it delivers is said in `emitted` with a rectangle per
+feature, so `construction.outcome` verifies the dais, the altar, the benches and the
+bell on the built blocks rather than taking `FUNCTION` on trust. The lot it needs is
+small on purpose: a chapel of a hamlet is a room, not a nave.
 """
 
 

@@ -143,7 +143,7 @@ def main():
         else:
             print(f"ok   roof_cone pitch={pitch}")
 
-    # A1. The presets are the parameters at their defaults, block for block.
+    # The presets are the parameters at their defaults, block for block.
     moved = []
     want = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                        "roof_presets.json")))
@@ -166,11 +166,10 @@ def main():
         print(f"ok   presets byte-identical  ({len(want)} roofs, "
               f"{len({k.split('|')[2] for k in want})} styles)")
 
-    # A1. ...and the roof the presets could not draw: an irimoya on an upturned eave
-    # over two tiers, which is the silhouette a Japanese hall has. Three things about
-    # it, and each was broken once while it was being written: it stands up, every block
-    # of it is held by another block, and the ridge is not a line of slabs hanging over
-    # the hip at either end of it.
+    # ...and the roof the presets could not draw: an irimoya on an upturned eave over
+    # two tiers, which is the silhouette a Japanese hall has. Three things about it, each
+    # easy to get wrong: it stands up, every block of it is held by another block, and
+    # the ridge is not a line of slabs hanging over the hip at either end of it.
     b = FakeBuilder()
     ridge = b.roof(0, 0, 14, 18, 70, "thatch", style="hip", pitch=(1, 2),
                    profile=[(1, 2), (2, 1)], ends=("irimoya", "irimoya"),
@@ -190,7 +189,7 @@ def main():
         print(f"ok   irimoya, upturned eave, 2 tiers  ({len(b.blocks)} blocks, ridge "
               f"{ridge}, 0 floating, no hole beside the ridge)")
 
-    # A1. The other two ends and the other eave, on the same fixture: each has to be a
+    # The other two ends and the other eave, on the same fixture: each has to be a
     # different roof from a plain hip and each has to stand up.
     for kind, eave in (("half-hip", "flared"), ("gable", "flared"),
                        ("hip", "upturned")):
@@ -209,22 +208,19 @@ def main():
             print(f"ok   ends={kind:9s} eave={eave:9s} ({len(b.blocks)} blocks, "
                   f"ridge {r})")
 
-    # ---- A2. an upturned eave leaves no enclosed void, at any tier. It went into the
-    # record unconfirmed. This is the fixture that answers it: a walled hall with the
-    # roof that reported it -- irimoya ends, an upturned eave, two tiers, a (1,2)/(2,1)
-    # profile -- built into a world and read by the same `observe.shelter` every
-    # interior check is built on. **What is there and what is not.** The lift places a
-    # full cube under the raised course, so where the tier above overhangs the tier
-    # below its eave roofs over the gap between the two: 168 covered air cells on this
-    # fixture that a straight eave does not produce, in a band one column wide round the
-    # junction. None of it is *enclosed* -- it is open sideways, under the eave, which
-    # is what the shadow gap between two tiers of a Japanese roof is -- and
-    # `observe.rooms` reads it at enclosure 0.0, an edge rather than an interior. So the
-    # void the report named is not there, and the band that is there is architecture.
-    # What it exposes instead is an inconsistency between three readers of one question,
-    # and that is on the record as an open thread rather than fitted to here:
-    # `check_walkable` and E011 both drop a component below `lint.Context.ENCLOSED` and
-    # `Context.interior_walk` does not.
+    # ---- an upturned eave leaves no enclosed void, at any tier. The fixture: a walled
+    # hall with irimoya ends, an upturned eave, two tiers and a (1,2)/(2,1) profile,
+    # built into a world and read by the same `observe.shelter` every interior check is
+    # built on. **What is there and what is not.** The lift places a full cube under the
+    # raised course, so where the tier above overhangs the tier below its eave roofs over
+    # the gap between the two: 168 covered air cells on this fixture that a straight
+    # eave does not produce, in a band one column wide round the junction. None of it is
+    # *enclosed* -- it is open sideways, under the eave, which is what the shadow gap
+    # between two tiers of a Japanese roof is -- and `observe.rooms` reads it at
+    # enclosure 0.0, an edge rather than an interior. So there is no enclosed void, and
+    # the band that is there is architecture. Three readers of this one question do not
+    # agree, and this test does not paper over it: `check_walkable` and E011 both drop a
+    # component below `lint.Context.ENCLOSED` and `Context.interior_walk` does not.
     from ethoslm import lint as lint_mod                                # noqa: PLC0415
     hall = FakeBuilder()
     for x in range(0, 15):

@@ -1,6 +1,6 @@
 """Finish the seam between what was built and what was there.
 
-    ETHOSLM_SETTLEMENT=<name> bash scripts/mcrun.sh scripts/finish_run.py
+    ETHOSLM_SETTLEMENT=<name> bash scripts/mcrun.sh src/ethoslm/pipeline/_commands/finish_run.py
 
 Runs last, after every structure stands. Rounds the lip of each cut face, fills the foot
 of each fill face, and dresses the ground it touched -- bounded so it finishes edges

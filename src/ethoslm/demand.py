@@ -432,8 +432,8 @@ def _pool(part: dict, spec: dict, decls: dict | None, caps: dict | None,
         The part's own `fabric_types` first, because that is where `placesolve._write_fabric`
         puts the capability record's approval; then the record itself, for a caller asking
         before the place has been written; the general library **last and labelled**, because
-        the review's first finding is that `fabric_lot` estimated a parent from a type the
-        record had not approved, and a pool nothing approved should be visible rather than
+        a parent estimated (by `fabric_lot`) from a type the record never approved is wrong
+        in a way that looks right, and a pool nothing approved should be visible rather than
         indistinguishable.
 
     """
@@ -689,26 +689,24 @@ def storeys_admitted(d: dict, w: int, depth: int, *, flanks: int = 0,
 
         **`flanks` is how many party walls this particular lot has**: 2 for a lot in the
         middle of a row, 1 for each of its ends, 0 for a lot that stands free. It is the
-        lot's, not the district's -- the neighbourhood delivery round's measurement is that
-        the same 6x13 lot is a 4x11 pad with four free sides and a 6x9 pad between two party
-        walls, and `types/row_house.py` needs a 5x9 **pad** for two storeys. Asked free, that
-        lot admits one storey; asked as the terrace leaf it is, it admits two. The default is
-        0, which is the question every existing caller was already asking.
+        lot's, not the district's -- the same 6x13 lot is a 4x11 pad with four free sides
+        and a 6x9 pad between two party walls, and `types/row_house.py` needs a 5x9
+        **pad** for two storeys. Asked free, that lot admits one storey; asked as the
+        terrace leaf it is, it admits two. The default is 0, which is the question every
+        existing caller was already asking.
 
         **`storeys: None` is not "one".** Where not even the band's floor fits, `holds` is
         False and `storeys` is None, and the caller keeps asking for the floor: the ask is
         what a requirement made it, and the shortfall belongs in the emitted constraint where
         the obligation ledger can see it, not in a silently lowered parameter.
 
-        **`type_name` is the leaf that was actually selected**, and it is the block design
-        round's answer to the audit's third cause. A district's demand carries the whole pool
-        its mix may draw from (`d['types']`), and this asked `next(iter(...))` -- the first
-        type of a set -- so a `shop_house` standing on the market street was certified by
-        whatever `court_large` admits, and the record said so in writing
-        (`storeys_admitted: null`, `why: ... of court_large`, on a leaf of another type).
-        A capability answer is about **one** building on **one** lot: where the caller knows
-        which leaf it selected, that is the type the envelope is asked about, and a name the
-        demand does not approve is refused rather than silently swapped.
+        **`type_name` is the leaf that was actually selected.** A district's demand
+        carries the whole pool its mix may draw from (`d['types']`); asking about the
+        first type of that set would certify a `shop_house` on the market street by
+        whatever `court_large` admits, and write that into the record of a leaf of another
+        type. A capability answer is about **one** building on **one** lot: where the
+        caller knows which leaf it selected, that is the type the envelope is asked about,
+        and a name the demand does not approve is refused rather than silently swapped.
 
     """
     band = d.get("storeys_band")

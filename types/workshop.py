@@ -417,9 +417,9 @@ def build(b, part, seed, **params):
         rooms = [(bx0 + 1, fy, bz0 + 1, bx1 - 1, bz1 - 1)]
     out = _dress(b, rng, part, res, rooms, label, fy, n, trade,
                  (bx0, bz0, bx1, bz1), yard, ys, dedge, inset, (dx, dz))
-    # **What survived, said by the type.** The closure round: the one fallback drops the
-    # trade's chimney and the voice's roof for a plain gable, and a shell the library
-    # refused twice is a bare box; the record says which stood.
+    # **What survived, said by the type.** The one fallback drops the trade's chimney
+    # and the voice's roof for a plain gable, and a shell the library refused twice is a
+    # bare box; the record says which stood.
     stood = bool(res.get("ok"))
     out["emitted"] = {
         "requested": {"storeys": n, "trade": trade},
@@ -434,9 +434,9 @@ def build(b, part, seed, **params):
         "rects": {"main": [bx0, bz0, bx1, bz1]},
         "floors": list(res.get("floors") or [fy]),
     }
-    # **The trade's equipment, where it stands.** The expression round: a declared
-    # `trade` is a label; the forge, the hearth, the oven and the anvil are reported
-    # with their cells so `construction.outcome` verifies the working floor.
+    # **The trade's equipment, where it stands.** A declared `trade` is a label; the
+    # forge, the hearth, the oven and the anvil are reported with their cells so
+    # `construction.outcome` verifies the working floor.
     for kind, x, z in out.pop("fittings", []) or []:
         if kind in ("forge", "hearth", "oven", "anvil", "workbench") \
                 and kind not in out["emitted"]["rects"]:

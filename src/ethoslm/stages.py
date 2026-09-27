@@ -320,17 +320,14 @@ def _finish(rep, out_dir, t_start):
            error=rep.get("error"))
 
 
-# ------------------------------------------------------- place, look, adjust The
-# `sight` flag above is one look at a finished program: write the whole thing, render it
-# once, revise once. It lost to control in step 3 and the record has said "sight does
-# not help" ever since. That is a code review with a photograph attached. The audit's
-# prescription was "a human builder places, steps back, looks, adjusts", and *sight
-# during construction* has never been implemented here. The rule this obeys is the
-# determinism rule, applied to a mechanism that adds model turns: **the loop is code and
-# the prompts are data, frozen before the run.** The model never decides when to look,
-# what to look at, or how many passes to take, because every one of those decisions is a
-# place improvisation would creep back into a harness the pipeline round just finished
-# making deterministic.
+# ----------------------------------------------------------- place, look, adjust
+# The `sight` flag above is one look at a finished program: write the whole thing, render
+# it once, revise once -- a code review with a photograph attached. This is *sight during
+# construction*, the way a human builder works: place, step back, look, adjust. The rule
+# it obeys is the determinism rule, applied to a mechanism that adds model turns: **the
+# loop is code and the prompts are data, frozen before the run.** The model never decides
+# when to look, what to look at, or how many passes to take, because every one of those
+# decisions is a place improvisation would creep back into a deterministic harness.
 
 #: The one difference between the arm that sees and the arm that does not. Both get
 #: byte-identical cycle text; this sentence is appended for the arm holding the images,

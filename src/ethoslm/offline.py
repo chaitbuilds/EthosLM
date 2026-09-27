@@ -77,9 +77,9 @@ class OfflineSite:
         self.vol = vol
         sx, _, sz = vol.shape
         self.x, self.z, self.sx, self.sz = vol.x0, vol.z0, sx, sz
-        # `heights` is the surface heightmap the ground contract fixed at resolution
-        # (v2, B1): a build reads one heightmap for the whole of it rather than one
-        # recomputed from the volume as each part left it. Taken only where it is the
+        # `heights` is the surface heightmap the ground contract fixed at resolution: a
+        # build reads one heightmap for the whole of it rather than one recomputed from
+        # the volume as each part left it. Taken only where it is the
         # same shape over the same origin; else read off the volume, as always.
         self.heights = (np.asarray(heights) if heights is not None
                         and np.shape(heights) == (sx, sz) else surface_heights(vol))
@@ -141,7 +141,7 @@ def run_program(path: str, vol: observe.Volume, network=None, plots=None,
     """
     from .buildlib import Builder
     from .frontage import Frontage
-    # `ground` is the build's resolved ground contract (`ground.Resolved`), v2 B1:
+    # `ground` is the build's resolved ground contract (`ground.Resolved`):
     # `site()` lays what it settled for this part, `grade()` reads its levels, and the
     # heightmap the program reads is the one the resolution fixed, where it holds one
     # over this volume's origin.

@@ -7,7 +7,7 @@
     $PY scripts/type_needs.py --merge temple ring_gate   # re-sweep these, write their rows
     $PY scripts/type_needs.py --envelope [--transcribe] cottage   # the ENVELOPE rows
 
-`NEEDS` is a type's own declaration and A1 says every type file carries one. This is the
+`NEEDS` is a type's own declaration and every type file carries one. This is the
 instrument that says whether a declaration is true, and it is the same shape of answer
 as `scripts/terrain_bank.py`: one command, off nothing but the committed files, writing
 a registered JSON that reproduces byte for byte.
@@ -21,9 +21,8 @@ combination of them, which is what makes "the type is clean from 11 up" a statem
 about the type rather than about the four plots its checker happened to run on.
 
 A plane and a bank** (`GROUNDS`, `SLOPE_FALL`). A size passes only when every instance
-of it passes on both. The plane alone was the whole sweep for four rounds and it made
-every declared band a statement about level ground, which is not the ground a city is
-on. See `GROUNDS`.
+of it passes on both. A plane alone would make every declared band a statement about
+level ground, which is not the ground a city is on. See `GROUNDS`.
 
 An instance **passes** when `build()` stands (returns no refusal, raises nothing) and
 the build family of the linter reports no error on its plot. A run is an unbroken
@@ -523,7 +522,7 @@ def build_bank(names=None, verbose: bool = True) -> dict:
                   "slope_fall": SLOPE_FALL},
         "types": {},
     }
-    # **One pool over every type**, not one per type. A6, and the reason is measured:
+    # **One pool over every type**, not one per type, and the reason is measured:
     # `wall`'s longest single job -- a 128-column run three wide -- is a large fraction
     # of the whole sweep, so parallelising *within* a type leaves that type's wall-clock
     # exactly where it was and the whole bank barely moves. Flattened, the long job runs

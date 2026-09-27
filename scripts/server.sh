@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # start | stop | cmd <console command> | log Console stdin is held open by a FIFO so we
-# can push commands (save-all, setbuildarea). ETHOSLM_SERVER_DIR serves another save (e.g.
-# run/ds-server, the design synthesis round's separate delivery save on port 25566);
-# ETHOSLM_SERVER_HEAP bounds its heap (default 8G).
+# can push commands (save-all, setbuildarea). ETHOSLM_SERVER_DIR serves another save
+# (default run/server); ETHOSLM_SERVER_HEAP bounds its heap (default 8G).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/scripts/env.sh"

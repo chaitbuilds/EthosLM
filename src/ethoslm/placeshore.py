@@ -1,9 +1,8 @@
 """The second whole-place layout policy: a settlement laid out along a shoreline.
 
-It does not prove that *anything else* does, and the architecture audit's third finding
-is exactly that: there was one whole-place layout with its own arithmetic, and
-everywhere else the relation solver cut four strips round a centre. A place asked to
-follow the water got a square town beside some.
+One whole-place layout with its own arithmetic does not prove that *anything else*
+works: with only that one, everywhere else the relation solver cuts four strips round a
+centre, and a place asked to follow the water gets a square town beside some.
 
 So there are two policies, and they are deliberately built on **one** mechanism:
 `ShoreSolver` is `placesolve.Solver` with its district step replaced. Every leaf part is
@@ -198,9 +197,9 @@ class ShoreSolver(placesolve.Solver):
                                    // (self.row_depth + gap)))
         rows = max(1, (max(self.row_depth, int(self.S * regions.SHORE_DEPTH)) + gap)
                    // (self.row_depth + gap))
-        # **Two rows at least where the districts gather round something in the band**
-        # (the closure round): a ribbon one row deep flanks a square on two sides and
-        # never reaches behind it, and "around" is at least three sides. ...**and as
+        # **Two rows at least where the districts gather round something in the band**:
+        # a ribbon one row deep flanks a square on two sides and never reaches behind
+        # it, and "around" is at least three sides. ...**and as
         # deep as the bound admits**: a diagonal shore's ribbons fit where the staircase
         # leaves room, and the square stands among them. The band's depth is an inferred
         # choice the district step deepens anyway when it is short.
@@ -234,8 +233,8 @@ class ShoreSolver(placesolve.Solver):
 
     def _gathered_about(self, d: dict) -> bool:
         """Is this part the object of an `around` relation whose subjects are the
-        districts? The review's counterexample in one question: the square a village is
-        gathered around belongs *in* the band the village is built in."""
+        districts? If so it belongs *in* the band the districts are built in: the square
+        a village is gathered around has to stand among its houses."""
         return any(r["relation"] == "around" and r.get("object_part") == d["name"]
                    and r.get("subject_groups") for r in self.relations)
 
@@ -244,7 +243,7 @@ class ShoreSolver(placesolve.Solver):
         the shore path, set inland by the shore road and the setback so the part stands
         in the band, on the landward side of the road along the water. None with no
         anchor. `stage_plateau` may cut its level ground here rather than at the site's
-        middle (adapter request A8)."""
+        middle."""
         if self.anchor is None:
             return None
         path = self.anchor["path"]
@@ -258,12 +257,11 @@ class ShoreSolver(placesolve.Solver):
 
     def _cands_centre(self, d, name, k) -> tuple:
         """The centre of a shoreline place: at the site's middle as the parent has it,
-        **unless the districts are gathered around it** (the closure round), in which
-        case it stands in the band, at the shore's middle, where the ribbons the tiling
-        cuts on either side of it and behind it are what "gathered around" means on a
-        shore. The saved shore village put its square at the site's centre, forty
-        columns inland of both its districts, and spent twelve repair passes moving it
-        without ever being able to move the houses."""
+        **unless the districts are gathered around it**, in which case it stands in the
+        band, at the shore's middle, where the ribbons the tiling cuts on either side of
+        it and behind it are what "gathered around" means on a shore. At the site's
+        centre it can stand far inland of every district, and no repair pass that moves
+        the square can move the houses to it."""
         if not self._gathered_about(d) or spec_mod.compound(d):
             return super()._cands_centre(d, name, k)
         spots = self._centre_spots(d)
@@ -292,9 +290,9 @@ class ShoreSolver(placesolve.Solver):
     def _gathering_least(self, at: tuple) -> tuple | None:
         """The least side a centre at `at` may have for the band's ribbons to stand
         within the gathering's reach of it: `intent.AROUND_REACH` times the anchor's
-        half-diagonal has to reach the farthest ribbon's far corner. The expression
-        round: an anchor sized from the programme is smaller than the band, and the
-        ribbons stand where the shore puts them."""
+        half-diagonal has to reach the farthest ribbon's far corner. An anchor sized
+        from the programme is smaller than the band, and the ribbons stand where the
+        shore puts them."""
         import math as _m
         from .intent import AROUND_REACH
         cols = getattr(self, "_band_cols", None)
@@ -327,9 +325,9 @@ class ShoreSolver(placesolve.Solver):
         if not rects:
             return []
         got = self._type_of(d)
-        # sized from the programme where the rule sizes it (the expression round) -- and
-        # never so small that the ribbons the band tiles into fall out of the relation's
-        # reach (`intent.AROUND_REACH` times the anchor's half-diagonal)
+        # sized from the programme where the rule sizes it -- and never so small that the
+        # ribbons the band tiles into fall out of the relation's reach
+        # (`intent.AROUND_REACH` times the anchor's half-diagonal)
         self._ribbon_rects = list(rects)
         _ii, _jj = np.nonzero(np.asarray(mask, bool))
         self._band_cols = np.stack([_ii + self.X, _jj + self.Z], axis=1).astype(float)
@@ -344,10 +342,10 @@ class ShoreSolver(placesolve.Solver):
         m = np.asarray(mask, bool)
         half = side // 2
         # **First, on the landward side of the shore road, at the depth a part of this
-        # size stands** (the expression round): a centre sized from the programme is
-        # smaller than the band, and set at the ribbons' centroid it stood between the
-        # rows with neither in reach; on the road's side of the band the first row
-        # flanks it and the second stands behind it, which is what gathered means here.
+        # size stands**: a centre sized from the programme is smaller than the band, and
+        # set at the ribbons' centroid it stands between the rows with neither in reach;
+        # on the road's side of the band the first row flanks it and the second stands
+        # behind it, which is what gathered means here.
         path = self.anchor["path"]
         inland = {"north": 1, "south": -1, "west": 1, "east": -1}[self.anchor["water_side"]]
         depth = SHORE_SETBACK + SHORE_ROAD + half
@@ -514,12 +512,11 @@ class ShoreSolver(placesolve.Solver):
                     keep_rects.append((x0, z0, x1, z1))
         self.band_tiling = "rows"
         if not keep_rects and rows > 1:
-            # **A band that follows the shore's own depth** (the closure round's held-
-            # out hamlet). On a shore that runs at a slope, each row is a diagonal
-            # ribbon whose axis-aligned rectangles are shallower than the row -- 21 and
-            # 26 columns deep in rows of 38 on a 156 site, under the 28 a district needs
-            # -- so a row at a time found nothing where the band as a whole holds a
-            # 116x40 ribbon. The whole band is tiled instead, and only rectangles longer
+            # **A band that follows the shore's own depth.** On a shore that runs at a
+            # slope, each row is a diagonal ribbon whose axis-aligned rectangles are
+            # shallower than the row, and can fall under the depth a district needs, so
+            # a row at a time can find nothing where the band as a whole holds a long
+            # ribbon. The whole band is tiled instead, and only rectangles longer
             # along the shore than across it are kept, which is the rule that puts the
             # streets along the water and the lots' fronts on them.
             reg = regions.region("shore_band", whole, self.X, self.Z, policy="shoreline",
@@ -614,8 +611,8 @@ class ShoreSolver(placesolve.Solver):
 
         def holds(rects: list) -> int:
             """The most the ribbons hold at the group's word (the band's ceiling at the
-            smallest lot), from the one density definition -- the closure round; the
-            block-share estimate asked a sloped shore's ribbon for six of ten."""
+            smallest lot), from the one density definition; a block-share estimate
+            undercounts what a sloped shore's ribbon holds."""
             n = 0
             for r in rects:
                 p = groups[0]
@@ -898,10 +895,9 @@ def faces_water(place: dict) -> tuple:
         district's longer side and puts the lots' fronts on them. A layout that merely
         *says* the houses face the water fails this.
 
-        **This is a necessary condition and it is not the requirement.** The integration
-        review's second finding, and it is the sharpest thing in the review: the saved
-        village passed this check with nine of its fifteen homes fronting *away* from the
-        water it recorded. Both facts were true. A ribbon district has its streets parallel
+        **This is a necessary condition and it is not the requirement.** A village can pass
+        this check with most of its homes fronting *away* from the water, and both facts
+        are true at once. A ribbon district has its streets parallel
         to the shore, and a lot on the landward side of such a street faces inland -- the
         aspect ratio says where the streets run and says nothing at all about which way a
         door is. `fronts_facing_water` below is the requirement; this is a property of the

@@ -23,18 +23,18 @@ FORM = "east_asian"
 #: and a shop-house are both east Asian.
 ROLE = "urban"
 
-#: **What this type is for.** The realization round: a `ROLE` says what work a building
-#: is for and is satisfied by a hall, a barn or a temple alike; a sentence asking for
-#: houses people live in is asking for a `dwelling`. Declared so that the function can
-#: be checked rather than inferred from a label.
+#: **What this type is for.** A `ROLE` says what work a building is for and is satisfied
+#: by a hall, a barn or a temple alike; a sentence asking for houses people live in is
+#: asking for a `dwelling`. Declared so that the function can be checked rather than
+#: inferred from a label.
 FUNCTION = "dwelling"
 
-#: **A shop house stands in a terrace.** The fabric reset round: a market street is a
-#: continuous frontage of shop houses, lot against lot, and the district compiler lays a
-#: row of party walls only of a type that declares this. The plan says which sides a
-#: neighbour stands on (`part["attached"]`, world sides); on those the house reaches the
-#: plot line, keeps no veranda, cuts no window and lets no eave oversail, and its roof
-#: ends in a verge on the party wall -- see "the terrace" in `build()`.
+#: **A shop house stands in a terrace.** A market street is a continuous frontage of
+#: shop houses, lot against lot, and the district compiler lays a row of party walls
+#: only of a type that declares this. The plan says which sides a neighbour stands on
+#: (`part["attached"]`, world sides); on those the house reaches the plot line, keeps no
+#: veranda, cuts no window and lets no eave oversail, and its roof ends in a verge on
+#: the party wall -- see "the terrace" in `build()`.
 ATTACHED = True
 
 
@@ -67,12 +67,12 @@ NEEDS = {
     "clearance": 2,
 }
 
-#: **The lots this type needs, measured** by `envelope.table('shop_house', n_flanks=k)
-#: for k in 0, 1, 2 (out/fr-work-types/envelope_flanks.py; `scripts/type_needs.py
-#: --envelope` measures k=0 only)`: each row is the least lot on which the parameters
-#: stand with the features named, at one seed (`lot_min`) and at seeds [1, 2, 3]
-#: (`lot_pref`). Read by `ethoslm.envelope.lot_for` before a lot is drawn; the outcome
-#: construction measures afterwards remains authoritative.
+#: **The lots this type needs, measured** by `envelope.table('shop_house', n_flanks=k)`
+#: for k in 0, 1, 2 (`scripts/type_needs.py --envelope` measures k=0 only): each row is
+#: the least lot on which the parameters stand with the features named, at one seed
+#: (`lot_min`) and at seeds [1, 2, 3] (`lot_pref`). Read by `ethoslm.envelope.lot_for`
+#: before a lot is drawn; the outcome construction measures afterwards remains
+#: authoritative.
 ENVELOPE = [
  {
   "params": {
@@ -2230,9 +2230,9 @@ def build(b, part, seed, **params):
             if bb[1] <= fy:
                 continue
             b.place_cuboid(bb[0], bb[1], bb[2], bb[3], bb[4], bb[5], "air")
-    # **What survived, said by the type.** The closure round: a plot that cannot carry a
-    # flight cannot carry a floor over the shop, and the storeys fell above; here the
-    # record says so beside what `construction.outcome` measures.
+    # **What survived, said by the type.** A plot that cannot carry a flight cannot
+    # carry a floor over the shop, so the storeys above fall back; the record says so
+    # beside what `construction.outcome` measures.
     return {"ok": True, "ridge": ridge_y, "storeys": storeys, "trade": trade,
             "emitted": {"requested": {"storeys": asked_storeys, "trade": trade},
                         "storeys": int(storeys), "attempt": 0,
@@ -2245,7 +2245,7 @@ def build(b, part, seed, **params):
                         "attached": sorted(party & {"north", "south", "east", "west"}),
                         "verge": int(verge),
                         # the walled body, not the pad: the veranda and the yard are
-                        # open ground beside it (the fabric reset round; it was the pad)
+                        # open ground beside it
                         "rects": {"main": [min(P(bu0, bv0)[0], P(bu1, bv1)[0]),
                                            min(P(bu0, bv0)[1], P(bu1, bv1)[1]),
                                            max(P(bu0, bv0)[0], P(bu1, bv1)[0]),

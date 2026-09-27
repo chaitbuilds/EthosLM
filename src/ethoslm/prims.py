@@ -11,13 +11,13 @@ import math
 class Material(str):
     """A material name that remembers the **voice role** it was drawn from.
 
-        The expression round. `b.voice["wall"]` and `b.voice["floor"]` are both
-        `cobblestone` in the drystone voice, and a block id alone cannot say which of the
-        two a laid block is. A `Material` is a plain `str` to every caller -- it formats,
-        compares and hashes as one -- and carries `.role` for the one reader that cares:
-        the builder's write path, which records the role beside every emitted block. The
-        shape helpers below hand the role on (`shape`, `solid`, `material`); an f-string
-        drops it, and the builder then falls back to the role context or the family.
+        `b.voice["wall"]` and `b.voice["floor"]` are both `cobblestone` in the drystone
+        voice, and a block id alone cannot say which of the two a laid block is. A
+        `Material` is a plain `str` to every caller -- it formats, compares and hashes as
+        one -- and carries `.role` for the one reader that cares: the builder's write path,
+        which records the role beside every emitted block. The shape helpers below hand
+        the role on (`shape`, `solid`, `material`); an f-string drops it, and the builder
+        then falls back to the role context or the family.
 
     """
     role = None
@@ -160,9 +160,9 @@ def family(name: str) -> str | None:
         else:
             # A shape word in the *middle* of a name: copper's stairs and slabs are
             # `oxidized_cut_copper_stairs`, so stripping the suffix leaves
-            # `oxidized_cut_copper`, which the prefix rule cannot see. Voice contract,
-            # A2: the palette clause read a green copper roof as belonging to no family
-            # and E014 and S001 had been blind to it the same way.
+            # `oxidized_cut_copper`, which the prefix rule cannot see. Without this the
+            # palette clause reads a green copper roof as belonging to no family, and
+            # E014 and S001 are blind to it the same way.
             if "_cut_" in n:
                 n = n.replace("_cut_", "_", 1)
                 continue
@@ -359,14 +359,13 @@ def _has_block(block_id: str) -> bool:
     """Is this a real block in this Minecraft version? Offline, against the server's own
         registry — the same data `preflight` rejects a program with.
 
-        A yes or a no, and nothing composed on the way to a no. This went through
-        `registry.check_all`, whose refusal of an unknown id carries the three nearest
-        names from `difflib` over the whole registry -- fourteen milliseconds a miss, and
-        `shape()` asks this of every candidate form of a family until one exists, so most
-        of its asks are misses by design. v2 B0's profile of the example's parts stage:
-        6,390 misses, 85 of the 97 profiled seconds the fourteen parts took, every one of
-        them spent suggesting a name to a caller that only asked whether one existed.
-        Memoised, because the registry does not change under a running build.
+        A yes or a no, and nothing composed on the way to a no. `registry.check_all`'s
+        refusal of an unknown id carries the three nearest names from `difflib` over the
+        whole registry -- fourteen milliseconds a miss -- and `shape()` asks this of every
+        candidate form of a family until one exists, so most of its asks are misses by
+        design. Routed through `check_all`, those misses dominate a parts stage's time,
+        every one of them spent suggesting a name to a caller that only asked whether one
+        existed. Memoised, because the registry does not change under a running build.
 
     """
     from . import registry
@@ -455,10 +454,10 @@ class _Figure:
 class Primitives:
     def laying(self, role: str, protected: bool = False):
         """`with b.laying("roof"):` -- every block placed inside is recorded as that
-        role (and as protected, where said). The expression round: the primitive that
-        lays a roof knows it is a roof, and that knowledge was thrown away at the
-        write. Nesting takes the innermost; an explicit context outranks the material's
-        own tag and the family rule (see `buildlib.Builder._tag`)."""
+        role (and as protected, where said). The primitive that lays a roof knows it is
+        a roof, and this keeps that knowledge at the write. Nesting takes the innermost;
+        an explicit context outranks the material's own tag and the family rule (see
+        `buildlib.Builder._tag`)."""
         return _Laying(self, role, protected)
 
     def figure(self, name: str):
@@ -1372,17 +1371,14 @@ class Primitives:
         """Strip grass, flowers, ferns and snow off the surface of an area.
 
                 **And write down where it took the ground rather than the cover.** `VEGETATION`
-                contains the string `grass` and so does `grass_block`, which is A6's finding:
-                this call has been lifting the turf off every pad it has ever prepared. A6
-                answered it by putting a skin back on afterwards, and that fixed what the
+                contains the string `grass` and so does `grass_block`, so this call lifts the
+                turf off every pad it prepares. Putting a skin back on afterwards fixes what the
                 ground *looks* like and not what it is: a column whose grass block is taken and
                 whose subsoil is then re-skinned is a column **one block lower than it was
                 found**, and a one-block rise is a jump in the walk model. On the edge of a
-                deck that is the difference between walking in at the door and not: four halls
-                on decks were sealed by exactly that step and by the footing course a type laid
-                over ground it could not walk to. `_dress_worked` reads this register and puts
-                the level back; nothing else does, so what a stored program places here is byte
-                for byte what it placed before.
+                deck that is the difference between walking in at the door and not.
+                `_dress_worked` reads this register and puts the level back; nothing else does,
+                so what a stored program places here is byte for byte what it placed before.
 
         """
         from .observe import is_growing
@@ -1432,9 +1428,9 @@ class Primitives:
             g = s.get((int(x), int(z)))
             if g is not None:
                 return g
-        # Not the ground contract's settled level (v2, B1): that is where a pad *will*
-        # be, and `_site_lay` sounds the bed under a pad to fill up to it -- read the
-        # settled level as the bed and the fill under every platform is air. The
+        # Not the ground contract's settled level: that is where a pad *will* be, and
+        # `_site_lay` sounds the bed under a pad to fill up to it -- read the settled
+        # level as the bed and the fill under every platform is air. The
         # contract decides the rect and the level; the bed is always the world's.
         top = int(self.get_height(x, z))
         y = top

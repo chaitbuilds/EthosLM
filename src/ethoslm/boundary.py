@@ -1,11 +1,11 @@
 """**Explicit boundary geometry**: the outline a place, a ring or a compound is enclosed by.
 
-The design synthesis round. A boundary was a half-side and a word: `placeplan` drew
-squares, and a "round" ring clipped its corners by `RING_CHAMFER`, so a round city read
-square at city scale and left unowned wedges at the corners. Here the outline is a
-record the design states and every consumer shares -- the wall's path, the gates on it,
-the land each ring owns and the ring roads that follow it are all derived from one
-`Outline`, so they cannot disagree.
+A boundary that is only a half-side and a word draws squares: a "round" ring made by
+clipping a square's corners by `placeplan.RING_CHAMFER` reads square at city scale and
+leaves unowned wedges at the corners. Here the outline is a record the design states and
+every consumer shares -- the wall's path, the gates on it, the land each ring owns and
+the ring roads that follow it are all derived from one `Outline`, so they cannot
+disagree.
 
     {"shape": "circle"}                                   radius = the extent's radius
     {"shape": "ellipse", "aspect": 0.8, "rotation": 20}   minor/major, degrees

@@ -319,7 +319,7 @@ def t_k_the_textured_display_registers_the_pair_the_flat_one_collapses():
         got[tag] = int(np.abs(ia.astype(int) - ib.astype(int)).max())
         assert (ia == preview.elevation(a, facing="south", scale=16, clip=False,
                                         texture=texture)).all(), "the display wobbles"
-    assert got["flat"] <= 12, got          # the defect the review named, as a number
+    assert got["flat"] <= 12, got          # the flat display's blind spot, as a number
     assert got["textured"] >= 40, got      # and the display that does not have it
     return (f"cobblestone against andesite: the flat display differs by at most "
             f"{got['flat']}/255, the textured one by {got['textured']}/255")

@@ -406,14 +406,13 @@ def ring_section(f: dict, *, road: int, lane_least: int = LANE_LEAST,
                  place: str | None = None) -> dict:
     """**The depth across a ring strip that its complete neighbourhood needs.**
 
-        The city attempt round. `sections` names what one strip of a given depth holds and
-        what it is short of, but the parent that set the depth -- the ring's width in
-        `placeplan.concentric_layout` -- never read it: a ring's width came from its share
-        of the site, and the section's shortfall was a note. This turns the same form plans
-        and composer units into the **least district depth** at which every strip of the
-        ring holds the owed relationship: courtyard houses facing each other across a
-        residential lane of at least `lane_least` houses a side, behind the principal
-        street's own frontage.
+        `sections` names what one strip of a given depth holds and what it is short of,
+        but a parent that sets a ring's width from its share of the site
+        (`placeplan.concentric_layout`) never reads it, and the section's shortfall stays a
+        note. This turns the same form plans and composer units into the **least district
+        depth** at which every strip of the ring holds the owed relationship: courtyard
+        houses facing each other across a residential lane of at least `lane_least` houses
+        a side, behind the principal street's own frontage.
 
         For each street arrangement (`along`, `across`) the depth one side of the principal
         street needs; for each street place (`STREET_PLACES`) the district depth that gives:

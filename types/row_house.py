@@ -20,16 +20,16 @@ KIND = "plot"
 FORM = "east_asian"
 ROLE = "urban"
 
-#: **What this type is for.** The realization round: a `ROLE` says what work a building
-#: is for and is satisfied by a hall, a barn or a temple alike; a sentence asking for
-#: houses people live in is asking for a `dwelling`. Declared so that the function can
-#: be checked rather than inferred from a label.
+#: **What this type is for.** A `ROLE` says what work a building is for and is
+#: satisfied by a hall, a barn or a temple alike; a sentence asking for houses people
+#: live in is asking for a `dwelling`. Declared so that the function can be checked
+#: rather than inferred from a label.
 FUNCTION = "dwelling"
 
-#: v2, C2: the two long flanks are party walls, so this type may stand **attached** --
-#: the next house against it, the pad reaching the plot's edge on that side, the way in
-#: on the street. The plan says which sides (`part["attached"]`); the type builds its
-#: flanks blank whatever the plan says, as it always has.
+#: The two long flanks are party walls, so this type may stand **attached** -- the next
+#: house against it, the pad reaching the plot's edge on that side, the way in on the
+#: street. The plan says which sides (`part["attached"]`); the type builds its flanks
+#: blank whatever the plan says.
 ATTACHED = True
 
 PARAMS = {
@@ -38,57 +38,33 @@ PARAMS = {
 }
 
 NEEDS = {
-    # **The depth is taken, and the whole of the measurement is declared.** The band
-    # read 4x4 to 6x6 against the 6x6 to 16x24 its author declared, and open thread 15
-    # recorded the disagreement as unresolved: "the two instruments disagree by a factor
-    # of four on the same file". The neighbourhood round re-ran the sweep's own
-    # instrument (`type_needs.instance`, nine parameter sets x two seeds x flat and bank
-    # = 36 instances a size) over the **square** sizes 4, 6, 8, 9, 10, 11, 12, 13, 16,
-    # 20, 24 and 32 and found 0 of 36 failing at every one of them. Two things had
-    # moved. The `E004` down-slope readings at 7, 8 and 9 that closed the old band were
-    # the roof-stair carve-outs, fixed two rounds ago and never re-swept; the
-    # `E003`/`E011` pairs at 10 and 11 were this file's own storey-line lip laid under
-    # the main eave, fixed above. A square sweep cannot widen a band whose two axes are
-    # different numbers, and this type's whole sentence is that they are. The spatial-
-    # design round swept the **rectangle**: short sides 4, 5 and 6 against long sides 7
-    # to 32 -- 38 sizes, 36 instances each, **1368 instances, 0 failures**, on the plane
-    # and on the bank: 4x8 4x9 4x10 4x11 4x12 4x13 4x16 4x20 4x24 4x32 0 of 36 fail at
-    # each 5x8 5x9 5x10 5x11 5x12 5x13 5x14 5x16 5x20 5x24 5x32 6x7 6x8 6x9 6x10 6x11
-    # 6x12 6x13 6x14 6x16 6x18 6x20 6x24 6x28 6x32 4x4 5x5 6x6 (the old band's own
-    # sizes, re-stood) So the long side is clean to the end of what was swept and the
-    # declaration is that end, which is this file following the rule `type_needs` states
-    # for every type: the band is the measured envelope, and where the envelope reaches
-    # the end of the sweep the ceiling is a bound on the measurement rather than on the
-    # type. **Why the short side stays at 6 and the long side moves to 32.** Two
-    # reasons, and the second is not a reason and says so. The first is architectural
-    # and is this type's own. `needs_footprint_failure` sorts a pad before it compares,
-    # so `hi_w` is the ceiling on the *short* side and `hi_d` on the long one. it is a
-    # hall with two party walls. A declaration is allowed to ask for less ground than
-    # the sweep stood it on, and `test_types` holds it to exactly that: the measurement
-    # is recorded in the bank, the frontage this house is for is declared here, and the
-    # two do not disagree. The second is that `placeplan.dense_plot` reads only the
-    # **square** sizes a type admits, takes the urban type whose square ceiling is
-    # lowest, and makes that the lot every dense district in the library is built of --
-    # so at `hi_w` of 32 the dense lot would be a 36-column square. Measured through the
-    # real path after this edit: `dense_plot` 6/10/100 unchanged, and `density_lot`
-    # 20/15/12/10 a side for sparse/low/medium/dense unchanged. Widening the **depth**
-    # does not move any of them, because nothing on that path reads the depth. **What
-    # the stale band cost**, on the retained section: ninety-six row houses on 5x6 and
-    # 5x7 pads, every one of them one storey and six blocks high, half of them having
-    # asked for two. `top` needs eight columns of house depth to carry a longitudinal
-    # flight and the band admitted six. A ring with no variation in height was a ring
-    # whose houses were never offered a lot they could vary on. Pad 5x6, 6x6 asked 1/2/3
-    # -> stood 1,1,1 one height, 6 blocks pad 5x9 asked 1/2/3 -> stood 1,2,2 heights 5,
-    # 7, 9, 11 pad 6x11 asked 1/2/3 -> stood 1,2,2|3 heights 7, 11, 13, 15 pad 6x12
-    # asked 1/2/3 -> stood 1,2,2|3 heights 6,7,11,13,14,15,17 pad 6x16, 7x11 asked 1/2/3
-    # -> stood 1,2,3 three storeys at every seed The ceiling used to be held down by a
-    # coupling that is now cut. `_attached_lot` ranked candidate lots by nearness to the
-    # density's own **square side**, so a wider band moved the dense fabric lot from 6x8
-    # to 9x10 and then to 10x10 and the ground a dense house cost from 102 columns to
-    # 166 and 182. It ranks by area and by the **shape the density asks for** now
-    # (`placeplan.density_lot` carries a width and a depth), so this type's own sentence
-    # -- narrow to the lane, deep into the plot -- is a thing the layout can ask for and
-    # this band is a thing it can answer with.
+    # **The whole of the measured envelope is declared.** Swept by `type_needs.instance`
+    # (nine parameter sets x two seeds x flat and bank = 36 instances a size) over the
+    # **rectangle** -- short sides 4, 5 and 6 against long sides up to 32, on the plane
+    # and on the bank -- with no failures. A square sweep cannot widen a band whose two
+    # axes are different numbers, and this type's whole sentence is that they are. The
+    # long side is clean to the end of what was swept and the declaration is that end,
+    # which is the rule `type_needs` states for every type: the band is the measured
+    # envelope, and where the envelope reaches the end of the sweep the ceiling is a bound
+    # on the measurement rather than on the type. **Why the short side stays at 6 and the
+    # long side is 32.** The first reason is architectural: `needs_footprint_failure`
+    # sorts a pad before it compares, so `hi_w` is the ceiling on the *short* side and
+    # `hi_d` on the long one, and this is a house with two party walls, narrow to the
+    # lane. A declaration is allowed to ask for less ground than the sweep stood it on.
+    # The second is not about the type: `placeplan.dense_plot` reads only the **square**
+    # sizes a type admits, takes the urban type whose square ceiling is lowest, and makes
+    # that the lot every dense district in the library is built of -- so at `hi_w` of 32
+    # the dense lot would be a 36-column square. Widening the **depth** does not move
+    # `dense_plot` or `density_lot`, because nothing on that path reads the depth. **Why
+    # the depth matters.** `top` needs eight columns of house depth to carry a
+    # longitudinal flight, so a band that stops at six stands every house at one storey,
+    # and a ring with no variation in height. On 5x6 and 6x6 pads a house asked for one,
+    # two or three storeys stands one; on 5x9, up to two; on 6x16 and 7x11, all three at
+    # every seed. `_attached_lot` ranks candidate lots by area and by the **shape the
+    # density asks for** (`placeplan.density_lot` carries a width and a depth), not by
+    # nearness to the density's square side, so this type's own sentence -- narrow to
+    # the lane, deep into the plot -- is a thing the layout can ask for and this band is
+    # a thing it can answer with.
     "footprint": (4, 4, 6, 32),
     "frontage": "lane",
     "ground": "any",
@@ -167,13 +143,11 @@ def _sizes(rng, pad_d, pad_w, att_lo=False, att_hi=False):
         house_d -= rng.choice([0, 1, 2])
     avail = pad_w - side
     if n_att >= 2:
-        # **Between two party walls the house is exactly as wide as its pad.** The
-        # neighbourhood delivery round, measured on `out/nd-block`. v2 C2 drops the
-        # pad's inset on an attached side *so that* the terrace is continuous; this line
-        # then chose a width anyway, and a 6-wide pad got a 5-wide house in about half
-        # the seeds. The spare column is a slot between two party walls, and both
-        # neighbours' eaves roof over it: five `E003`/`E011` pairs, 10 to 15 cells each,
-        # at the flank of every one-storey house in the block. Width is not a lever on a
+        # **Between two party walls the house is exactly as wide as its pad.** The pad's
+        # inset is dropped on an attached side *so that* the terrace is continuous; a
+        # house narrower than its pad leaves a spare column, a slot between two party
+        # walls that both neighbours' eaves roof over (`E003`/`E011` pairs at the flank
+        # of every one-storey house in the row). Width is not a lever on a
         # lot with two party walls -- depth, the rear strip, the roof and the storeys
         # are, and the pad's own width still varies lot to lot. The plan cannot hand
         # this branch a pad wider than this type is written for:
@@ -464,9 +438,9 @@ def build(b, part, seed, storeys=None, front=None, **kw):
         return dict(res or {"ok": False}, emitted={
             "requested": {"storeys": asked_storeys}, "storeys": 0, "attempt": None,
             "fallback": "no shell stood", "omitted": ["storeys"], "features": {}})
-    # **What survived, said by the type.** The closure round: the lot's depth and width
-    # cap the storeys before anything is built, and the ladder then walks the storeys
-    # down; both are on the record beside the geometry `construction.outcome` measures.
+    # **What survived, said by the type.** The lot's depth and width cap the storeys
+    # before anything is built, and the ladder then walks the storeys down; both are on
+    # the record beside the geometry `construction.outcome` measures.
     emitted = {
         "requested": {"storeys": asked_storeys},
         # the rung of the ladder that stood, by position: `held()` may have widened the

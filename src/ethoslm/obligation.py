@@ -110,10 +110,9 @@ def from_constraint(c: dict, required=(), *, part: str | None = None,
                     source: str = "", at: str | None = None) -> dict:
     """An emitted construction constraint, as an obligation **of the same shape**.
 
-        The review's fourth escape: a constraint was dispositioned into its own list and no
-        action was ever selected from it, so "the layout gave a 12x10 lot where 15x17
-        delivers the storeys" was recorded by the run that could have fixed it and acted on
-        by nobody. Here it is a row like any other, with the lot it needs as its
+        A constraint dispositioned into its own list, with no action ever selected from it,
+        records "the layout gave a 12x10 lot where 15x17 delivers the storeys" and is acted
+        on by nobody. Here it is a row like any other, with the lot it needs as its
         `acceptance` and `enlarge_lots` as the action its owner admits.
 
         `required` is what the request **requires**, in any of three shapes: the feature
@@ -121,15 +120,14 @@ def from_constraint(c: dict, required=(), *, part: str | None = None,
         `demand.required_by_part` answers (`{part: {token: [ids]}}`). Whichever it is, both
         sides are normalised through `envelope.feature_token` before they are compared.
 
-        **A word is not a token, and comparing them refused every constraint the round cares
-        about.** The composition round's fifth evidence connection, measured on the imported
-        code: `pipeline/improve._required_tokens` collects the sentence's own words, so
-        `feature/market` yields `{"market"}`; a construction constraint about the same
-        requirement emits `what = "stalls"`; and this line computed
-        `material = "stalls" in {"market"}` -- False. The row was created, was never material,
-        was never in `open_rows(led, material=True)` and was never selected, on a hard
-        requirement. `feature_token` maps the word to the token the emission uses, and where
-        the binding is given the answer is about **this part** rather than about the place.
+        **A word is not a token, and comparing them refuses every constraint that matters.**
+        `pipeline/improve._required_tokens` collects the sentence's own words, so
+        `feature/market` yields `{"market"}`, while a construction constraint about the same
+        requirement emits `what = "stalls"`; `"stalls" in {"market"}` is False, so the row
+        would never be material, never in `open_rows(led, material=True)` and never
+        selected, on a hard requirement. `feature_token` maps the word to the token the
+        emission uses, and where the binding is given the answer is about **this part**
+        rather than about the place.
 
     """
     what = str(c.get("what"))
@@ -471,9 +469,9 @@ def admissible(ledger: dict, rid: str, candidate: str, among) -> list:
     """The bounded actions still open on this row, on this candidate.
 
         **An applied action that did not move the measure leaves the row open and leaves
-        the other actions admissible.** The review's second escape, negated: `improve`
-        excluded every finding in `acted` from further selection, so a `resize_ring` that
-        was applied and did nothing ended the ring's chances. What is refused is the
+        the other actions admissible.** Excluding every finding in `acted` from further
+        selection would let a `resize_ring` that was applied and did nothing end the ring's
+        chances. What is refused is the
         *unchanged retry* -- the same action on the same candidate -- and nothing else.
 
     """

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""**The city attempt round's allocation contracts.** Seconds, no state.
+"""**The allocation contracts of a city's rings.** Seconds, no state.
 
     $PY scripts/test_city_attempt.py
 
@@ -10,7 +10,7 @@
     a2  the section governs an **inferred** ring's width: a ring whose count is the
         ground's own and whose share gives it less than its section is widened to it,
         the rings with slack are squeezed, and no counted sentence is needed
-    a3  a counterexample: a ring whose fabric is not composed from its streets asks for
+    a3  the control: a ring whose fabric is not composed from its streets asks for
         no section and keeps its share's width
     a4  a site too small for the sections refuses by name, with the shortfall and the
         rings whose sections set their least widths, instead of clipping them

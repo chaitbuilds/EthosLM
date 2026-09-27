@@ -93,23 +93,22 @@ def columns(r: dict) -> int:
     return int(np.asarray(r["mask"], bool).sum())
 
 
-# ----------------------------------------------------- the four columns of a region The
-# design round's second contract. The expression round's defect, in one line: the ring
-# layout shortened a dense sector to what its count needs and called the remainder
-# `surface: open`, and `intent.lot_cover` then dropped every open region from its
-# denominator -- so the ground the requirement was about shrank as the allocation
-# shrank, and "27.5% of a dense ring" was 27.5% of the part of the ring that happened to
-# have houses on it. A measurement whose denominator moves with the answer is not a
-# measurement. So a region carries **four** counts and no consumer may substitute one
-# for another: scope_columns the ground the requirement is about. Fixed when the design
-# is resolved and independent of every later allocation: an inferred open remainder is
-# still the ring's ground and is still in here. developable_columns of that, what the
-# compiler may build on -- the arterial's band and the standing parts' clearances
-# removed. allocated_columns the lots the compiler drew. A lot is ground promised to a
-# building; it is not a building. built_columns the footprint that actually stands.
-# Larger empty lots raise `allocated_columns` and leave this where it was, which is the
-# whole point of keeping them apart. Only ground an **explicit** requirement asks to be
-# open leaves the scope, and then it says which requirement asked and how much it took
+# ----------------------------------------------------- the four columns of a region
+# A measurement whose denominator moves with the answer is not a measurement. A ring
+# layout may shorten a dense sector to what its count needs and call the remainder
+# `surface: open`; were open regions dropped from `intent.lot_cover`'s denominator, the
+# ground the requirement is about would shrink as the allocation shrank, and "27.5% of a
+# dense ring" would be 27.5% of the part of the ring that happened to have houses on it.
+# So a region carries **four** counts and no consumer may substitute one for another:
+# scope_columns the ground the requirement is about. Fixed when the design is resolved
+# and independent of every later allocation: an inferred open remainder is still the
+# ring's ground and is still in here. developable_columns of that, what the compiler may
+# build on -- the arterial's band and the standing parts' clearances removed.
+# allocated_columns the lots the compiler drew. A lot is ground promised to a building;
+# it is not a building. built_columns the footprint that actually stands. Larger empty
+# lots raise `allocated_columns` and leave this where it was, which is the whole point
+# of keeping them apart. Only ground an **explicit** requirement asks to be open leaves
+# the scope, and then it says which requirement asked and how much it took
 # (`open_requested`). An inferred remainder records where it was cut from (`scope_of`)
 # and stays in.
 

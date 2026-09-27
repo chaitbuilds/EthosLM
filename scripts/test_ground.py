@@ -7,10 +7,9 @@
 stood on every fixture of `rounds/terrain-bank.json` at seeds 1 and 2 and one and two
 storeys, and held to five assertions per instance. 36 x 2 x 2 = **144**.
 
-The type decides nothing, so a failure is the library's. That is the whole design:
-rounds 12, 13 and 14 each found one or two ground defects with a model-authored type on
-a new site, at a session and a million tokens apiece, and each time the first argument
-was about whose fault it was. Here there is nobody to blame.
+The type decides nothing, so a failure is the library's. That is the whole design: a
+ground defect found with a model-authored type on a new site is expensive to find and
+leaves open whose fault it is. Here there is nobody to blame.
 
 The suite is **binary**: it is done when every instance passes. A defect it exposes is
 fixed in the library and its fixture kept -- the rule against fitting to a test set is
@@ -195,7 +194,7 @@ def _top_block(vol: observe.Volume, x: int, z: int) -> str:
 
 
 def _surround(base: observe.Volume, plot: dict) -> str:
-    """What the undisturbed ground just outside a plot is made of. A6.
+    """What the undisturbed ground just outside a plot is made of.
 
         The commonest top block on the ring four columns out, which is past everything
         `site()` clears and is the answer `dress_ground` gives itself when nobody names a
@@ -253,8 +252,8 @@ def assertions(key: int, seed: int, storeys: int) -> dict:
 
     # **The interior is the one `building()` says it built.** `Context.interior_walk`
     # measures rooms found by flooding sheltered space, and on a cliff the sheltered
-    # ground under an overhang joins the interior through its own doorway. That is the
-    # walk metric's own open thread and it is not a fact about the ground, so the floor
+    # ground under an overhang joins the interior through its own doorway. That is a
+    # limit of the walk metric and not a fact about the ground, so the floor
     # counted here is the rectangle per storey the shell returned, walked from the lane
     # by the flood every other from-outdoors measurement in this project uses.
     cells, walk = 0, 0
@@ -303,8 +302,8 @@ def assertions(key: int, seed: int, storeys: int) -> dict:
     path = {(c[0], c[1]) for p in b.paths for c in p["cells"]}
     # ...and the columns the ground pass put the skin back on. `clear_trees` reaches
     # past the plot by however far a tree rooted outside it leaned in, and leaving the
-    # dirt it stood on bare is the defect A6 exists for, so putting grass back on it is
-    # ground work rather than somebody building off their plot. By record --
+    # dirt it stood on bare is the defect assertion 6 exists for, so putting grass back
+    # on it is ground work rather than somebody building off their plot. By record --
     # `Builder.dressed` -- and not by rectangle, for the reason the fitting register is
     # by record.
     outside = sorted({(p[0], p[2]) for p, blk in b._pending.items()
@@ -332,20 +331,18 @@ def assertions(key: int, seed: int, storeys: int) -> dict:
                        f"first at {left[0]}")
 
     # Reported, never asserted: `entry_lines` holds a room to *every* floor cell being
-    # walk-reachable. `observe.floor_stances`) and **132 of the 144 now read zero**. The
-    # twelve that remain are three fixtures -- `round8_seeded`, `round11_steepest`,
-    # `round11_most_treed` -- and none of them is furniture or ground: they are the
-    # merged-room case this function's own note above describes, sheltered natural space
-    # that joins the interior or sits under the plot and is attributed to it by
-    # `plot_at`. That is the walk metric's remaining open thread, and it is still not a
-    # fact about the ground. See STATE.md.
+    # walk-reachable. Where an instance still reports lines it is not furniture or
+    # ground but the merged-room case this function's own note above describes,
+    # sheltered natural space that joins the interior or sits under the plot and is
+    # attributed to it by `plot_at`. That is a limit of the walk metric, not a fact
+    # about the ground.
     lines = pipeline.entry_lines(pipeline.diagnose_entry(ctx, plot["label"]))
     note = f"{pct:5.1f}% of {cells:3d} walk, {len(lines)} entry line(s)"
     return {"bad": bad, "note": note}
 
 
 def _one(work) -> dict:
-    """One instance, read and reported, in whatever process this is. A6.
+    """One instance, read and reported, in whatever process this is.
 
         Everything that crosses a process boundary is a string or a list of strings: the
         builder, the volume and the lint report stay in the worker, because the answer this
@@ -481,7 +478,7 @@ def main(argv: list) -> int:
             bad += 1
             print(f"FAIL {name:52s} {e}")
 
-    # A6: 144 instances that share nothing, run across processes and read back in the
+    # 144 instances that share nothing, run across processes and read back in the
     # order a serial loop produces them. `ETHOSLM_WORKERS=1` is the serial arm.
     work = [(key, seed, storeys) for key in keys for seed in SEEDS
             for storeys in STOREYS]

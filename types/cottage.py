@@ -15,10 +15,10 @@ FORM = "european_vernacular"
 #: and a shop-house are both east Asian.
 ROLE = "rural"
 
-#: **What this type is for.** The realization round: a `ROLE` says what work a building
-#: is for and is satisfied by a hall, a barn or a temple alike; a sentence asking for
-#: houses people live in is asking for a `dwelling`. Declared so that the function can
-#: be checked rather than inferred from a label.
+#: **What this type is for.** A `ROLE` says what work a building is for and is
+#: satisfied by a hall, a barn or a temple alike; a sentence asking for houses people
+#: live in is asking for a `dwelling`. Declared so that the function can be checked
+#: rather than inferred from a label.
 FUNCTION = "dwelling"
 
 
@@ -693,9 +693,8 @@ def _furnish_hall(b, rect, y, blocked, rng, stack_side, flue):
     if area >= 20:
         _put(b, "rug", [c for c in mid if c not in used], y, rect, room=room,
              mat=b.voice["floor"])
-    # the expression round: the fire is the hall's function, and where it stands is
-    # reported so `construction.outcome` can verify a hearth rather than take it on
-    # trust
+    # the fire is the hall's function, and where it stands is reported so
+    # `construction.outcome` can verify a hearth rather than take it on trust
     return hearth
 
 
@@ -820,15 +819,12 @@ def build(b, part, seed, **params):
             "chimney": plan["chimney"], "flashing": True}
     if plan["dormers"]:
         base["dormers"] = plan["dormers"]
-    # **A porch only where the door stands at its lane.** The expression round's farm,
-    # found by the improve loop: three one-storey cottages on platforms (the ground
-    # falling four to seven blocks under the pad) each got the porch fallback, and
-    # `building()` then re-laid the way in from the porch's deck down the platform's
-    # face -- straight through the doorway cell the circulation pass had reserved at the
-    # foot of the bank, three courses of masonry in it, E008 on every one. The same lots
-    # asked for two storeys took the ladder past the porch and passed. A porch is a roof
-    # over a doorstep, and a doorstep at the top of a bank has the bank for its approach
-    # already; the type does not add one there.
+    # **A porch only where the door stands at its lane.** On a raised pad (the floor two
+    # or more blocks above its lane) a porch makes `building()` re-lay the way in
+    # from the porch's deck down the platform's face, straight through the doorway cell
+    # the circulation pass reserved at the foot of the bank -- masonry in it and E008. A
+    # porch is a roof over a doorstep, and a doorstep at the top of a bank has the bank
+    # for its approach already; the type does not add one there.
     lane = b.nearest_lane(part["door"][0], part["door"][-1])
     lane_y = lane.get("y") if isinstance(lane, dict) else None
     raised = isinstance(lane_y, int) and fy - lane_y >= 2
@@ -870,12 +866,12 @@ def build(b, part, seed, **params):
                 "emitted": {"requested": {"storeys": asked_storeys, "outshot": use},
                             "storeys": 0, "attempt": None, "fallback": "no shell stood",
                             "omitted": ["storeys", "outshot"], "features": {}}}
-    # **What survived, said by the type itself.** The closure round. Two things reduce a
-    # cottage below what it was asked for and neither used to be reported: `_plan` drops
-    # storeys the inner block cannot carry, and the ladder above drops the dormers, then
-    # the lean-to and the porch, then a storey, then the roof it was given. The record
-    # names which rung stood and what each rung gave up; `construction.outcome` measures
-    # the geometry beside it and the measurement wins where they disagree.
+    # **What survived, said by the type itself.** Two things reduce a cottage below what
+    # it was asked for: `_plan` drops storeys the inner block cannot carry, and the
+    # ladder above drops the dormers, then the lean-to and the porch, then a storey,
+    # then the roof it was given. The record names which rung stood and what each rung
+    # gave up; `construction.outcome` measures the geometry beside it and the
+    # measurement wins where they disagree.
     gave_up = []
     if plan["storeys"] < asked_storeys:
         gave_up.append(f"plan: storeys {asked_storeys} -> {plan['storeys']} for a "

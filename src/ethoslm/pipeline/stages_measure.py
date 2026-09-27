@@ -110,22 +110,20 @@ def stage_lint(rnd: Round, be, results: dict) -> dict:
                       note="re-stamped after the assembled-world confirmation rewrote "
                            "the parts record")
     # **A construction check that fails is an outcome, not a number in a report.** The
-    # review's fifth finding: "`stage_lint` returns errors and `stage_place_check`
-    # returns `holds: false`, but the driver's stop protocol requires `stop`; these
-    # outputs do not become corresponding controller outcomes." So a place whose
-    # buildings do not stand went on to be read, judged and reported as a finished run
-    # while its own physical check said otherwise. `blocks: construction` is the state
-    # this is: the place is built and it is not soundly built, which is distinct from a
-    # plan that is infeasible and from a place that is not the one asked for. **What
-    # this backend cannot measure is unmeasured, not absent and not harmless.** E005 is
-    # "connective blocks that never joined to their neighbours", and the join is
-    # computed by the *server*, in `Builder.flush`'s second pass with block updates on
-    # -- which `LiveBackend.publish` runs and a dry run, by construction, never does. So
-    # offline every fence, wall and pane in the place reports a missed join, and neither
-    # available answer was honest: blocking calls a place unsound for a pass nobody ran,
-    # and ignoring it is the "declare all errors harmless" the review named. It is
-    # reported by name, with the reason it is not measurable here, and the round says so
-    # rather than deciding.
+    # driver's stop protocol reads `stop`, so lint errors have to become one here;
+    # otherwise a place whose buildings do not stand is read, judged and reported as a
+    # finished run while its own physical check says otherwise. `blocks: construction`
+    # is the state this is: the place is built and it is not soundly built, which is
+    # distinct from a plan that is infeasible and from a place that is not the one asked
+    # for. **What this backend cannot measure is unmeasured, not absent and not
+    # harmless.** E005 is "connective blocks that never joined to their neighbours", and
+    # the join is computed by the *server*, in `Builder.flush`'s second pass with block
+    # updates on -- which `LiveBackend.publish` runs and a dry run, by construction,
+    # never does. So offline every fence, wall and pane in the place reports a missed
+    # join, and neither available answer is honest: blocking calls a place unsound for a
+    # pass nobody ran, and ignoring it declares every error harmless. It is reported by
+    # name, with the reason it is not measurable here, and the round says so rather than
+    # deciding.
     unmeasured = [f for f in rep.errors if f.code in LIVE_ONLY_CODES] \
         if not getattr(be, "live", False) else []
     real = [f for f in rep.errors if f not in unmeasured]
@@ -316,14 +314,9 @@ def _doors_from_the_lane(ctx, net, entries=None) -> dict:
         walk-only end to end by construction, and it does not move when the cache does. So
         this is the same check seeded from it.
 
-        **From the entries, and the whole lane reported beside it.** The review:
-
-          > The sample's zero unreachable-door result does not establish one connected
-          > network: `_doors_from_the_lane` seeds its walk from every lane stance, across
-          > all components. E007 simultaneously reports a disconnected component of 5,922
-          > stances.
-
-        Seeding every stance asks each island whether it can reach itself. So the walk now
+        **From the entries, and the whole lane reported beside it.** Seeding the walk from
+        every lane stance asks each island whether it can reach itself, so zero
+        unreachable doors would not establish one connected network. So the walk
         starts at the gates the plan draws -- `entries`, as `(x, z)` columns -- and the
         number of lane components is reported whether or not a door is short, because a
         place whose lanes are in three pieces has not got one network however its doors
@@ -347,12 +340,12 @@ def _doors_from_the_lane(ctx, net, entries=None) -> dict:
     at = entry_stances(seeds, entries)
     entries_from = "the plan's passage points"
     if not at and not entries:
-        # **An unwalled place is entered where its lanes reach the outside.** The
-        # closure round's proof: a village with no wall draws no gate, so this check had
-        # no justified seed and answered `unresolved` for a place whose lanes were one
-        # piece. The lane stances at the outer edge of the lane network -- within
-        # `ENTRY_REACH` of its own bounding box -- are where a walk in begins, and the
-        # record says that is the rule it used.
+        # **An unwalled place is entered where its lanes reach the outside.** A village
+        # with no wall draws no gate, so without this the check has no justified seed
+        # and answers `unresolved` for a place whose lanes are one piece. The lane
+        # stances at the outer edge of the lane network -- within `ENTRY_REACH` of its
+        # own bounding box -- are where a walk in begins, and the record says that is the
+        # rule it used.
         xs = [x for x, _z, _s in seeds]
         zs = [z for _x, z, _s in seeds]
         x0, x1, z0, z1 = min(xs), max(xs), min(zs), max(zs)
@@ -376,13 +369,11 @@ def _doors_from_the_lane(ctx, net, entries=None) -> dict:
         if s is None or (x, z, s) not in reach:
             bad.append([x, y, z])
     stranded = len([s for s in seeds if s not in reach])
-    # **One network, not one network per gate.** The review: this returned `connected`
-    # for two disconnected components whenever each of them happened to have an entry
-    # near it -- the flood is seeded from every entry at once, so a place in two pieces
-    # with a gate into each piece reaches every door and strands no stance, and the
-    # number this check exists to produce says the place is joined up. It is not: a
-    # walker cannot get from one piece to the other. So the lane's own connectedness is
-    # a clause of the answer and not a figure printed beside it.
+    # **One network, not one network per gate.** The flood is seeded from every entry
+    # at once, so a place in two pieces with a gate into each piece reaches every door
+    # and strands no stance, and door reachability alone would call it joined up. It is
+    # not: a walker cannot get from one piece to the other. So the lane's own
+    # connectedness is a clause of the answer and not a figure printed beside it.
     one_network = len(pieces) <= 1
     return {"doors": len(ctx.doors), "not_walkable_from_the_lane": len(bad),
             "lane_stances": len(seeds), "entry_stances": len(at),
@@ -475,9 +466,8 @@ def measure_program(rnd: Round, be, prog: str, mine: set, margin: int = 6) -> di
             continue
         # `floor_cells` and `walk_pct` are read off the room's floor -- the surface you
         # walk on -- and not off every stance in the component. See
-        # `observe.floor_stances`. This is the one change to this function since it was
-        # lifted out of `stage_measures`, and it moves recorded rows: they are re-read
-        # and superseded with the cause in `scripts/test_types.py`.
+        # `observe.floor_stances`. Rows recorded with the whole-component count are
+        # not comparable with these.
         st = set(map(tuple, r["floor"]))
         n_rooms += 1
         cells += len(st)
@@ -485,9 +475,8 @@ def measure_program(rnd: Round, be, prog: str, mine: set, margin: int = 6) -> di
         reach += got
         zero += 0 if got else 1
 
-    # variety over what this candidate built, exactly as scripts/variety.py --program
-    # measures a pass: crop to the built mass, overlay the pending set, and keep only
-    # the plots inside that crop.
+    # variety over what this candidate built, measured as a whole pass is: crop to the
+    # built mass, overlay the pending set, and keep only the plots inside that crop.
     xs = [p[0] for p in pending]
     zs = [p[2] for p in pending]
     vsub = vol.sub(min(xs) - margin, min(zs) - margin,
@@ -539,9 +528,9 @@ def build_context(rnd: Round, be, prog: str | None, pending: dict | None = None,
         network and region. `prog=None` is the bare pre-build volume -- the lint floor every
         candidate on that ground shares.
 
-        Shared by `stage_revise`, `check_program` and `scripts/entry_diagnosis.py` so the
-        diagnosis that registered this experiment, the loop that runs it and the check the
-        builder holds in its own hand all read the same world.
+        Shared by `stage_revise`, `check_program` and the fixture checks in `blind` so
+        the revision loop, the fixtures and the check the builder holds in its own hand
+        all read the same world.
 
         `pending` is that program's block set when the caller has already executed it.
         Executing a settlement wave twice to answer one question is thirty seconds a builder
@@ -566,7 +555,7 @@ def build_context(rnd: Round, be, prog: str | None, pending: dict | None = None,
     base = be.volume if pending is not None else None
     if pending is not None:
         vol = stages.apply_pending(vol, pending)
-    # B3: the same question the round asks -- a door this program did not hang is not
+    # The same question the round asks -- a door this program did not hang is not
     # this program's door. Here the "before" is the ground the program was executed
     # against, which is `be.volume` untouched by the pending set.
     return lint.Context.build(vol, plots=plots, network=rnd.network(),
@@ -577,10 +566,9 @@ def build_context(rnd: Round, be, prog: str | None, pending: dict | None = None,
 def diagnose_entry(ctx, mine: str) -> dict:
     """Why you cannot walk into it, room by room and door by door, for one plot.
 
-        Lifted verbatim out of `scripts/entry_diagnosis.py`, which is where it was written
-        and where step 0 of the pre-registration was run. It lives here now because the
-        revision loop composes its brief out of exactly these rows, and a second
-        implementation of "which rooms cannot be reached" would be a second answer.
+        It lives here because the revision loop composes its brief out of exactly these
+        rows, and a second implementation of "which rooms cannot be reached" would be a
+        second answer.
 
         Classes, in the order they are tested:
 
@@ -911,8 +899,8 @@ def region_diff(pre, built, x0: int, z0: int, x1: int, z1: int) -> list:
 
         The undo log for a readout that has to borrow the standing world: the region is
         written to `pre_state` before the first candidate and back to `built_state` after
-        the last, so the town ends as it began. Step 3's readout is where this comes from
-        and `scripts/step3_render.py` still calls it.
+        the last, so the town ends as it began. The render stages in `stages_media` call
+        it.
 
     """
     import numpy as np
@@ -983,15 +971,14 @@ MEASURE_ALIASES = {"e002_walk_only": "e002_from_the_lane",
 def _m_walk_from_outdoors_pct(rnd, be, results, bar) -> dict:
     """The interior floor a person can walk to from outdoors, over the finished town.
 
-        `scripts/walk_fraction.py`'s own `measure`, imported rather than reimplemented:
-        there is one definition of this number and it is the one every round since 7 has
-        been read against.
+        `walk_fraction.measure`, imported rather than reimplemented: there is one
+        definition of this number and every readout is read against it.
 
     """
     from .. import walk_fraction as mod
-    # A4: the context this readout has already built, rather than a fifth one over the
-    # same volume. The two differed only in the region's last column and in whether the
-    # pre-build cache was handed over, and neither reaches this number.
+    # The context this readout has already built, rather than another one over the same
+    # volume. A context of its own would differ only in the region's last column and in
+    # whether the pre-build cache was handed over, and neither reaches this number.
     row, _rep = mod.measure(rnd.name, context=_town_context(rnd, be))
     return {"got": row["from_outdoors_walking_pct"],
             "rooms": row["rooms_on_plots"], "floor_cells": row["floor_cells"],
@@ -1032,15 +1019,15 @@ def _built_digest(rnd) -> str:
 
 
 def _town_context(rnd, be):
-    """The whole place as the linter sees it, built once per readout. A4.
+    """The whole place as the linter sees it, built once per readout.
 
-        **It was built four times, and `walk_fraction` built a fifth.** Every measure that
-        asks a question about the finished town -- E002 from the lane, own lint errors, the
-        place read -- built its own `lint.Context` over the same volume, and building one is
-        the expensive half of a readout: a minute and a half on a walled town, where the
-        measure that follows it is under a second. Nothing between them changes the volume,
-        so this is one memo on the built volume's digest, and `walk_fraction.measure` takes
-        the same object rather than making a fifth.
+        Every measure that asks a question about the finished town -- E002 from the lane,
+        own lint errors, the place read, the walk fraction -- needs a `lint.Context` over
+        the same volume, and building one is the expensive half of a readout: a minute and
+        a half on a walled town, where the measure that follows it is under a second.
+        Nothing between them changes the volume, so this is one memo on the built volume's
+        digest, and `walk_fraction.measure` takes the same object rather than making its
+        own.
 
     """
     key = (rnd.state, _built_digest(rnd))
@@ -1056,7 +1043,7 @@ def _build_town_context(rnd, be):
     from .. import lint, offline
     from ..circulate import Network
     vol = offline.load_volume(rnd.rel("world_built.npz"))
-    # A1: with `y0` per part, so E002, E003 and E011 are asked about the buildings and
+    # With `y0` per part, so E002, E003 and E011 are asked about the buildings and
     # not about the ground under them. See `lint.Context.room_owner`.
     plots = settlement.registry_with_floors(rnd.state)
     net = (Network.load(rnd.rel("network.json"))
@@ -1069,7 +1056,7 @@ def _build_town_context(rnd, be):
 
 
 def _prebuild(rnd):
-    """B3: `lint.Context.build` takes this to tell the build's own
+    """`lint.Context.build` takes this to tell the build's own
         doors from the ones that were already in the ground. It is the round's own base
         volume -- the cached world the run was planned against -- and it is missing only
         where a round has no cache, which is where the correction cannot be made and the
@@ -1285,11 +1272,11 @@ def _m_instantiation(rnd, be, results, bar) -> dict:
 def _m_hand_programs(rnd, be, results, bar) -> dict:
     """Programs in this build that are not an instance of a committed type.
 
-        Part C's whole claim, as a number. Every part is composed by
-        `place.instantiate_part` from a file under `types/`; a part that could not be
-        instantiated is reported and left empty, and this counts anything that was built
-        any other way. It is zero by construction and is measured anyway, because "by
-        construction" is what this project checks rather than asserts.
+        The claim that every building is an instance of a type, as a number. Every part
+        is composed by `place.instantiate_part` from a file under `types/`; a part that
+        could not be instantiated is reported and left empty, and this counts anything
+        that was built any other way. It is zero by construction and is measured anyway,
+        because "by construction" is what this project checks rather than asserts.
 
     """
     rec = _parts_record(rnd, results)
@@ -1373,7 +1360,7 @@ def _m_tokens_whole_round(rnd, be, results, bar) -> dict:
 
 
 def _m_whole_place_lint_seconds(rnd, be, results, bar) -> dict:
-    """How long the one whole-place lint took. A6, reported and not barred here."""
+    """How long the one whole-place lint took. Reported and not barred here."""
     got = results.get("lint") or {}
     if not got:
         p = _pipeline._report_path(rnd)
@@ -1439,7 +1426,7 @@ def _m_building_calls_per_type(rnd, be, results, bar) -> dict:
 
 
 def _m_place_read(rnd, be, results, bar) -> dict:
-    """A6: the built place against the sentence's own spec. 1 or 0, and what failed."""
+    """The built place against the sentence's own spec. 1 or 0, and what failed."""
     from .. import placeread
     got = results.get("place_check")
     if not got or "clauses" not in got:
@@ -1464,7 +1451,7 @@ def _m_place_read(rnd, be, results, bar) -> dict:
 
 
 def _m_site_chosen(rnd, be, results, bar) -> dict:
-    """A3: was the ground chosen by the system, and is the record of why on disk?
+    """Was the ground chosen by the system, and is the record of why on disk?
 
         1 when a site search ran, chose, and recorded its top three with their scores, and
         the round's config named no site. 0 when a human wrote a coordinate. Registered as a
@@ -1852,7 +1839,7 @@ def _m_search_cost(rnd, be, results, bar) -> dict:
             "seconds": secs, "concentric_run_seconds": 4 * 3600 + 12 * 60}
 
 
-#: **Registered before it was read** (v2, C5): the fabric of the compiled districts. The
+#: **Registered before it was read**: the fabric of the compiled districts. The
 #: least share of a compiled district's houses whose way in is on the front the compiler
 #: named; the most of a compiled district's rectangle no rule assigned.
 FRONTAGE_FLOOR = 0.9
@@ -1860,7 +1847,7 @@ UNDEVELOPED_MAX = 0.15
 
 
 def _m_fabric(rnd, be, results, bar) -> dict:
-    """**The fabric of the compiled districts.** v2, C5. Four clauses, each with its
+    """**The fabric of the compiled districts.** Four clauses, each with its
         registered number and the miss named where it misses:
 
           columns_per_house  the columns of ground per house in the compiled districts of
@@ -2020,8 +2007,8 @@ def stage_readout(rnd: Round, be, results: dict) -> dict:
     bars = prereg.get("bars") or {}
     # A re-read of named rows under the instruments as they now stand -- `round.py
     # --stage readout --measure own_lint_errors`. The recorded readout is a record and
-    # is not written over; this goes beside it as `readout.reread.json`, and the row it
-    # moves belongs in `scripts/test_types.py`'s SUPERSEDED with the cause named.
+    # is not written over; this goes beside it as `readout.reread.json`, with the
+    # recorded value next to the new one so any row it moves is visible.
     only = list(rnd.flags.get("measures") or [])
     if only:
         missing = [m for m in only if m not in bars]
@@ -2084,9 +2071,8 @@ def stage_readout(rnd: Round, be, results: dict) -> dict:
             print(f"  re-read  {k:26} recorded {out['recorded'].get(k)!s:>8}   "
                   f"now {r.get('got', r.get('error'))}", flush=True)
         return {**out, "written": p}
-    # A readout this stage did not write is a record: rounds 9, 10, 11 and 12 each ended
-    # with one made by a script that no longer exists, and `out/` is not in Git. Put it
-    # beside rather than under.
+    # A readout this stage did not write (it carries no `_by`) is a record that may not
+    # be reproducible, and `out/` is not in Git. Put it beside rather than under.
     was = (json.load(open(p)) if os.path.exists(p) and os.path.getsize(p) else {})
     if os.path.exists(p) and "_by" not in was:
         import shutil
@@ -2095,8 +2081,7 @@ def stage_readout(rnd: Round, be, results: dict) -> dict:
             shutil.copyfile(p, keep)
             out["superseded"] = keep
     # A readout written over one read under a different walk model is not an update, it
-    # is a different question answered on the same town, and the file says so. Rows this
-    # moves belong in `scripts/test_types.py`'s SUPERSEDED with a cause.
+    # is a different question answered on the same town, and the file says so.
     if was and was.get("walk_model", 3) != observe.WALK_MODEL:
         out["walk_model_moved"] = {
             "from": was.get("walk_model", "unversioned (<= 3)"),
@@ -2120,8 +2105,8 @@ def stage_readout(rnd: Round, be, results: dict) -> dict:
 
 def built_volumes(rnd) -> tuple:
     """(the built world, the ground before it) off the round's own state, or (None,
-    None) where nothing has been built. A2 of the voice contract: the place read asks
-    what the place is made of whenever there is a built world to ask it of."""
+    None) where nothing has been built. The place read asks what the place is made of
+    whenever there is a built world to ask it of."""
     from .. import offline
     bp = rnd.rel("world_built.npz")
     if not os.path.exists(bp):
@@ -2191,11 +2176,10 @@ def _open_obligations(rnd) -> list:
 def stage_qualify(rnd, be, results: dict) -> dict:
     """**The inspection that closes what no measurement can**, bound to this candidate.
 
-        The review's fifth finding, both halves of it: this build had an identity evaluator
-        that no production call ever supplied a judgment to, and a final place reader that
-        supplied neither reading, capabilities nor judgment to the requirements -- an
-        isolated false-pass interface beside an unreachable success route. This stage is the
-        production path between them.
+        Without it, the identity evaluator has no production call supplying it a judgment,
+        and the final place reader has no reading, capabilities or judgment to hand the
+        requirements -- an isolated false-pass interface beside an unreachable success
+        route. This stage is the production path between them.
 
         It runs after construction and before the place is read, because the question is
         about what was built. Its answer is a `judgment` record naming the candidate it is
@@ -2237,12 +2221,11 @@ def stage_qualify(rnd, be, results: dict) -> dict:
     job_p = rnd.rel("judgment.job.json")
     job = json.load(open(job_p)) if os.path.exists(job_p) else None
     if job is not None and job.get("candidate") != here:
-        # **A pending answer is bound to the candidate it was asked of.** The review's
-        # counterexample through this very stage: a job staged for candidate A, its
-        # answer written, the plan replaced by B, the stage resumed -- and A's answer
-        # was adopted as B's judgment. The job record carries the candidate; an answer
-        # that arrives for a candidate that is gone is set aside by name and the
-        # question is asked again of the design in hand.
+        # **A pending answer is bound to the candidate it was asked of.** A job staged
+        # for candidate A, its answer written, the plan replaced by B, the stage resumed
+        # -- without this, A's answer would be adopted as B's judgment. The job record
+        # carries the candidate; an answer that arrives for a candidate that is gone is
+        # set aside by name and the question is asked again of the design in hand.
         for f in ("judgment.answer.json", "judgment.job.json", "qualify_prompt.md"):
             if os.path.exists(rnd.rel(f)):
                 os.replace(rnd.rel(f), rnd.rel(f"stale.{job.get('candidate')}.{f}"))
@@ -2253,10 +2236,10 @@ def stage_qualify(rnd, be, results: dict) -> dict:
     if not os.path.exists(answer_p):
         built = _built_says(rnd, plan, results)
         looked = _looked_at(rnd)
-        # **A plan is not something built.** The review's counterexample through this
-        # stage: `plan.json` alone counted as inspectable output and a judge was asked
-        # about a place nobody had constructed. A judge looks at the built volume or at
-        # pictures of it; with neither, the obligation stays open and says why.
+        # **A plan is not something built.** `plan.json` alone is not inspectable output:
+        # a judge asked about it would be judging a place nobody had constructed. A judge
+        # looks at the built volume or at pictures of it; with neither, the obligation
+        # stays open and says why.
         if not any(str(x).endswith("world_built.npz") or str(x).endswith(".png")
                    for x in looked):
             return {"status": "unresolved", "plan_only": True,

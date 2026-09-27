@@ -1,11 +1,10 @@
 """**What construction actually delivered**, measured off the emitted geometry.
 
-The closure round's construction boundary, and the review's second finding in its
-constructed form: `cottage.build(storeys=3)` on a 9x9 lot emits one storey and returns
-`ok`; the production height clause read the *planned* `params.storeys` and called the
-place tall. A type reduces its storeys and drops its features internally, for reasons of
-its own that are usually right, and nothing downstream could tell a house built as asked
-from a house built as the pad allowed.
+The construction boundary. `cottage.build(storeys=3)` on a 9x9 lot emits one storey and
+returns `ok`; a height clause that reads the *planned* `params.storeys` calls the place
+tall. A type reduces its storeys and drops its features internally, for reasons of its
+own that are usually right, and without a measurement nothing downstream can tell a
+house built as asked from a house built as the pad allowed.
 
 So every built part gets an **outcome**: what was attempted, what stands, and the
 difference -- read off the blocks the builder emitted, not copied from the parameters
@@ -16,7 +15,7 @@ build result), that is recorded beside the measurement and never instead of it.
     surfaces(builder, part)                compact material-role / exposure context
     constraint(part, decl, emitted)        an actionable constraint where a requested
                                            feature was lost, found by probing the type
-    probe_storeys(...)                     the cottage counterexample, as a measurement
+    probe_storeys(...)                     the cottage case above, as a measurement
 
 `instantiate_part` (the coordinator's) calls the first three and writes them onto the
 part's row in `parts.json`; the checker's height clause and the recovery ladder read
@@ -59,14 +58,10 @@ def _rect(part: dict) -> tuple:
         ground" the rest of the project uses -- an **edge** is its swept polyline and a
         **point** is its pad.
 
-        **A gate is not a rectangle and this used to raise.** The neighbourhood delivery
-        round. This fell through to `part["x0"]`, which a `point` (`at`, `size`) and an
-        `edge` (`path`, `width`) do not carry, so `outcome` raised `KeyError: 'x0'` and
-        the caller swallowed it into a status: `out/sd-city/parts.json` has both boundary
-        gates `status: "built"` with `emitted: {"measured": false, "why": "the outcome
-        could not be measured: KeyError: 'x0'"}`, beside `failed: 0`. The geometry was
-        never missing -- `Builder.pad_extent` has known how to turn both kinds into an
-        extent since A1 -- this line just never asked for it.
+        **A gate is not a rectangle.** A `point` (`at`, `size`) and an `edge` (`path`,
+        `width`) carry no `part["x0"]`; reading it raises `KeyError`, and a caller that
+        swallows that records a built gate as unmeasured. `part_rect` turns both kinds
+        into an extent, so everything that is not a sited plot goes through it.
 
     """
     from .pipeline import part_rect
@@ -952,11 +947,11 @@ def surfaces(builder, part: dict) -> dict:
         part did not lay is not in the builder's pending set and is not charged here.
 
     """
-    # **Recorded at the write, where the builder has the record.** The expression round:
-    # the role is what the primitive laid the block as, not a guess from its family; a
-    # cobblestone floor and a cobblestone wall are told apart, the part that laid a
-    # block is known, and a tread or a door is protected. The census below is the
-    # fallback for a builder that predates the record.
+    # **Recorded at the write, where the builder has the record.** The role is what the
+    # primitive laid the block as, not a guess from its family; a cobblestone floor and a
+    # cobblestone wall are told apart, the part that laid a block is known, and a tread
+    # or a door is protected. The census below is the fallback for a builder that
+    # predates the record.
     if getattr(builder, "_owner", None):
         from . import surfaces as _surfaces
         rec = _surfaces.record(builder, part)
@@ -1104,7 +1099,7 @@ def probe_build(type_name: str, w: int, d: int, params: dict | None = None, *,
 def probe_storeys(type_name: str, storeys: int, small_lot, control_lot, *,
                   seed: int = 1, params: dict | None = None,
                   voice: str | None = None) -> dict:
-    """The counterexample as a measurement: the same request on two lots.
+    """The lost-storey case as a measurement: the same request on two lots.
 
         `{"small": {"planned", "emitted", "lot"}, "control": {...}}`, each `emitted` read off
         the geometry by `outcome` and never off the parameters.

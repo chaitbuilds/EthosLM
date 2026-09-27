@@ -49,11 +49,11 @@ def c_every_shipped_round_config_loads():
     # `terrain-bank.json` sits here because it is registered ground rather than a round:
     # `scripts/terrain_bank.py` writes it, `scripts/test_ground.py` reads it, and
     # nothing runs it. `type-needs.json` is the same shape of thing for the types --
-    # `scripts/type_needs.py` writes it and A1's declarations are read against it. What
-    # three isolated schema calls made of the three sentences A1 registers, recorded
-    # with the tokens they reported. `scripts/test_place.py` reads it and nothing runs
-    # it. Skipped by name, not by shape, so a real config that failed to parse could
-    # never slip through by looking like data.
+    # `scripts/type_needs.py` writes it and the types' declarations are read against
+    # it. `place-specs.json` is what three isolated schema calls made of three
+    # registered sentences, recorded with the tokens they reported; nothing runs it.
+    # Skipped by name, not by shape, so a real config that failed to parse could never
+    # slip through by looking like data.
     names = sorted(f for f in os.listdir(ROUNDS) if f.endswith(".json")
                    and not f.startswith(("replay-", "card-"))
                    and f not in ("terrain-bank.json", "type-needs.json",
@@ -1095,7 +1095,7 @@ place_block(17, FLOOR + 2, 22, "oak_door[facing=north,half=upper]")
 
 @case
 def c_check_py_tells_a_builder_its_door_is_a_jump_and_stops_when_it_is_not():
-    """The registered acceptance for part B.
+    """`check.py` names a door a builder cannot walk to, and stops once it can.
 
         A stub builder writes a hut whose door is a block above the lane, runs the
         `check.py` it was given, and the on-foot line is in `findings.md`. It appends one
@@ -1229,7 +1229,7 @@ def c_round_json_is_merged_by_every_stage_never_overwritten():
     return "waves then judge: both halves survive, the re-run half is replaced"
 
 
-# A5 a type program instantiated per plot, A6 two voices.
+# Types: a type program instantiated per plot, and two voices.
 # ==============================================================================
 
 #: A fixture *type*: `build(b, plot, seed, **params)`, written the way a builder would
@@ -1277,8 +1277,8 @@ def _type_world(d, plots, ground=64):
 
 @case
 def c_a_type_instantiated_on_three_plots_is_three_different_buildings():
-    """A5, as the spec registers it: one program, three plots, three lint-clean
-        walkable buildings with three distinct ridge heights.
+    """One program, three plots, three lint-clean walkable buildings with three
+        distinct ridge heights.
 
         Distinct ridges is the discriminating half. A type that ignored its seed would
         build the same building three times, pass every other assertion here, and be the
@@ -1410,9 +1410,9 @@ def c_a_type_round_stages_one_builder_call_and_writes_the_composed_program():
 
 @case
 def c_the_two_japanese_voices_are_readable_and_roofable():
-    """A6. A voice is text and nothing else, so the only thing to assert is that the
-    text says what the spec registered and that the roof it asks for is a roof the
-    library can now draw -- which before A1 it could not."""
+    """A voice is text and nothing else, so the only thing to assert is that the text
+    says what the spec registered and that the roof it asks for is a roof the library
+    can draw."""
     from ethoslm import styles
     from ethoslm.prims import Primitives
     for name in ("japanese_minka", "japanese_temple"):
@@ -1449,18 +1449,17 @@ def c_the_two_japanese_voices_are_readable_and_roofable():
             f"{len(b.blocks)} blocks, ridge {r}")
 
 
-# ------------------------------------------------------ A4. the plan is a tree
+# ---------------------------------------------------------- the plan is a tree
 
 @case
 def t_a4_a_tree_flattens_to_the_plots_a_flat_plan_gives():
-    """A4's acceptance, and the whole of the compatibility it is held to.
+    """The plan tree's acceptance, and the whole of the compatibility it is held to.
 
-        The plan was a flat list of building footprints, which is why the architecture could
-        say "a village" and could not say "a castle": a keep with towers and a curtain wall
-        is parts of parts and there was nowhere to write the "of". A4 makes it a tree -- and
-        every stage downstream reads plots, so the tree has to flatten to exactly the list
-        the flat plan gave, or the change is a rewrite of the pipeline rather than an
-        addition to the plan.
+        A flat list of building footprints can say "a village" and cannot say "a castle":
+        a keep with towers and a curtain wall is parts of parts, and a flat list has
+        nowhere to write the "of". So the plan is a tree -- and every stage downstream
+        reads plots, so the tree has to flatten to exactly the list the flat plan gives, or
+        the change is a rewrite of the pipeline rather than an addition to the plan.
 
     """
     rnd = pipeline.Round.load(os.path.join(ROUNDS, "site_f.json"))
@@ -1532,15 +1531,14 @@ def t_a4_the_tree_survives_a_round_trip_through_the_round():
             f"wall and a gate and neither is a plot")
 
 
-# --------------------------------------------- A6. lint scoped per wave, once at the
-# end
+# ------------------------------------------ lint scoped per wave, once at the end
 
 @case
 def t_a6_the_per_wave_findings_union_equals_the_whole_town():
-    """A6's acceptance, on the last town this project built.
+    """Per-wave lint scoping, on a built town.
 
-        Every wave of every round so far linted the **whole town**, so a five-wave round
-        linted wave 1's buildings five times and the last wave paid for all of them. A wave
+        Linting the **whole town** every wave means a five-wave round lints wave 1's
+        buildings five times and the last wave pays for all of them. A wave
         is answerable for its own parts plus a margin, and the whole place is linted once at
         the end. The thing that has to be true is that nothing falls between: the union of
         the per-wave findings, each restricted to that wave's own plots, is exactly the
@@ -1587,9 +1585,10 @@ def t_a6_the_per_wave_findings_union_equals_the_whole_town():
 
 @case
 def t_a6_e010_reports_every_floating_mass_on_a_plot_not_the_first_sixty():
-    """The library defect A6 found, and it had been hiding in the record for two rounds.
+    """E010's cap of sixty masses must not be spent off the plots.
 
-        The fix is that a cap is a cap on the answer: the rectangles the caller is
+        Capped over the whole region, the sixty can be almost all hillside and hide the
+        masses on a plot. A cap is a cap on the answer: the rectangles the caller is
         answerable for go in, and only what is inside them is counted against it.
 
     """

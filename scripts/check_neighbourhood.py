@@ -11,8 +11,7 @@ evidenced answers `pass: false` with the reason. The record is written to
 `out/<state-prefix>-accept/<stamp>.json` and `latest.json`, so a failing run is retained
 beside the passing one that replaces it. Nothing here edits a round's state directory.
 
-The rules are the composition runner's, kept because they are the reason that runner
-exists, plus the two rounds since:
+The rules every gate keeps:
 
   - a relationship is established by a measurement of the built world or it is not
     established. `section.json` is derived, not written by hand;
@@ -25,18 +24,17 @@ exists, plus the two rounds since:
     where the record does not say which it read;
   - **an arrangement that reached blocks through a round-file override is not evidence of
     revision.** `arrangement_governs` fails if the round file carries one;
-  - **a check's expression is its stated question.** The spatial design round's own rule,
-    and it exists because this file broke it three times in one gate. `bool(mixes)` stood
-    for "every compiled district"; `bool(kinds)` stood for a named list of five
-    functions; and one check ended `... or True`. Each passed on evidence that did not
-    answer it. They are repaired in `programme_composed` and each repair says what the
-    old expression actually tested.
+  - **a check's expression is its stated question.** An expression that stands in for the
+    question -- `bool(mixes)` for "every compiled district", `bool(kinds)` for a named
+    list of five functions, a check ending `... or True` -- passes on evidence that does
+    not answer it. `programme_composed` says what each of those actually tested.
 
-`ground_is_feasible`, `change_is_scoped`, `promotion_is_earned` -- are the neighbourhood
-review's three remaining causes asked as questions of the artifacts. They are not a
-parallel scoring system: each one reads the production records the driver already writes
-(`plan.place.json`'s terrain records, `improve.json`'s certificates, `trials.json`) and
-none of them scores anything.
+`ground_is_feasible`, `change_is_scoped` and `promotion_is_earned` ask whether the ground
+a count was derived from can carry a building, whether a change was qualified over
+everything it affects, and whether the delivered candidate earned its promotion. They
+are not a parallel scoring system: each one reads the production records the driver
+already writes (`plan.place.json`'s terrain records, `improve.json`'s certificates,
+`trials.json`) and none of them scores anything.
 """
 from __future__ import annotations
 
@@ -53,9 +51,9 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 GATES = ("arrangement_governs", "finding_repaired", "street_is_inhabited",
          "courts_are_courts", "programme_composed", "measures_are_honest",
          "shown_and_read",
-         # the spatial design round's three
+         # ground, scope and promotion
          "ground_is_feasible", "change_is_scoped", "promotion_is_earned",
-         # the neighbourhood delivery round's five.
+         # one decision, through every consumer
          "decision_survives_construction", "ground_is_one_policy",
          "both_sides_inhabited", "routes_are_walked", "improvement_is_earned")
 
@@ -429,13 +427,12 @@ def gate_courts_are_courts(g: Gate) -> None:
             "visible as one", bool(per) and len(areas) == len(per),
             (f"{len(areas)} of {len(per)} per-part answer(s) report the court's columns; "
              f"{sorted(areas)[:12]}") if per else "no per-part answer")
-    # **The clause this gate's own wording promised and never asked.** The block design
-    # round, and the audit's fourth cause. "entered, open and enclosed" was answered by
-    # `court_accessible` alone -- paved, open to the sky, reachable -- so the delivered
-    # section's two paved tiles standing in open cobble passed a gate whose name is
-    # `courts_are_courts`, with `courts_enclosed: 0` in the compiler's own record.
-    # `usable.court_enclosed` reads the blocks round each court a block claims to
-    # enclose; a court that claims an enclosure and does not hold one fails here.
+    # **The enclosure clause of this gate's own wording.** "entered, open and enclosed"
+    # answered by `court_accessible` alone -- paved, open to the sky, reachable -- would
+    # pass two paved tiles standing in open cobble as `courts_are_courts`, with
+    # `courts_enclosed: 0` in the compiler's own record. `usable.court_enclosed` reads
+    # the blocks round each court a block claims to enclose; a court that claims an
+    # enclosure and does not hold one fails here.
     claim = [q for q in per if isinstance(q, dict) and q.get("claims_enclosure")]
     shut = [q for q in claim
             if ((q.get("court_enclosed") or {}).get("holds") is True)]
@@ -469,22 +466,23 @@ def gate_courts_are_courts(g: Gate) -> None:
 def gate_programme_composed(g: Gate) -> None:
     """N5: the mix is inferred from this neighbourhood's own design and recorded.
 
-        **Three shortcuts repaired, the spatial design round.** The review found all three and
-        each one is the same defect -- a check whose stated question and whose expression are
-        different questions:
+        **Each check's expression is its stated question.** Three shortcuts that are the
+        same defect -- a check whose stated question and whose expression are different
+        questions -- and what stands in their place:
 
-          * `bool(mixes)` was checked for *"every compiled district records the mix"*. It
-            passes when one district of forty-three records one. The denominator is the
-            districts that were **compiled**, which is a set this runner can build.
-          * `bool(kinds)` was checked for *"the section stands homes, trade or work space, a
-            market, streets and courts"*. It passes when the section stands anything at all --
-            a wall would do. Each named function is now asked for by name, against the
-            library's own `FUNCTION` declarations and the compiled districts' own `use_of`
-            table, and the check reports which ones are missing.
-          * `... or True` made the no-unasked-civic-buildings check unconditionally true. The
-            compiled record already lists, per district, the types its role admits that its
-            programme did **not** ask for (`use_mix.unasked`); the check asks whether any of
-            those stood, which is the question the sentence was always about.
+          * *"every compiled district records the mix"* is not `bool(mixes)`, which passes
+            when one district of many records one. The denominator is the districts that
+            were **compiled**, which is a set this runner can build.
+          * *"the section stands homes, trade or work space, a market, streets and courts"*
+            is not `bool(kinds)`, which passes when the section stands anything at all -- a
+            wall would do. Each named function is asked for by name, against the library's
+            own `FUNCTION` declarations and the compiled districts' own `use_of` table, and
+            the check reports which ones are missing.
+          * the no-unasked-civic-buildings check is not `... or True`, which is
+            unconditionally true. The compiled record lists, per district, the types its
+            role admits that its programme did **not** ask for (`use_mix.unasked`); the check
+            asks whether any of those stood, which is the question the sentence was always
+            about.
 
     """
     place = _doc(CITY, "plan.place.json")
@@ -715,11 +713,10 @@ def gate_shown_and_read(g: Gate) -> None:
             bool(read) and (read or {}).get("user_acceptance") in (None, False,
                                                                    "not claimed"),
             f"user_acceptance {(read or {}).get('user_acceptance')!r}")
-    # **The verdict is about the artifact being delivered, and it says so.** The spatial
-    # design round, and the review's words: "The final frames identify candidate
-    # `829...`, but `inspection/views.json` identifies `90b...`. The independent reader
-    # describes the first revision and lacks candidate/digest fields; the shown-and-read
-    # gate accepts an existing verdict without binding it to the final candidate."
+    # **The verdict is about the artifact being delivered, and it says so.** The frames,
+    # `inspection/views.json` and the independent reader each name a candidate, and a
+    # verdict that is not bound to the final candidate and its built digest may describe
+    # an earlier revision.
     pr = _doc(CITY, "parts.json") or {}
     us = _doc(CITY, "usable.json") or {}
     cand = pr.get("candidate")
@@ -749,11 +746,11 @@ def gate_ground_is_feasible(g: Gate) -> None:
     """S1: capacity, arrangement, earthworks and entrances are one account of where
         construction can stand.
 
-        The review's first remaining cause: *"Planning capacity is not terrain-and-access
-        feasibility. `district_compile` explicitly does not read terrain.
-        `placeplan.developable_columns` subtracts roads and standing-part clearances from a
-        rectangle, but not water or infeasible grades. `arrange.certificate_for` calls the
-        district validator with `ground=None`."*
+        Planning capacity is not terrain-and-access feasibility: a rectangle less its roads
+        and standing-part clearances (`placeplan.developable_columns`) still counts water and
+        infeasible grades, and a district validated with `ground=None` is never asked about
+        terrain. Each district's own ground has to be measured, and the count, the terraces
+        and the routes have to agree with it.
 
     """
     place = _doc(CITY, "plan.place.json")
@@ -854,10 +851,10 @@ def gate_change_is_scoped(g: Gate) -> None:
     """S2: a change is qualified over what it affects, and proposals are compared on
         their own geometry.
 
-        The review: *"`_reallocate` certifies one named district, then stores the arrangement
-        on its defining part; the recorded actions refabricate ten lower-ring districts."* and
-        *"`arrange.alternatives` passes the previous candidate's `parts_record` into
-        `region_columns` and `street_enclosure` for hypothetical newly compiled leaves."*
+        A certificate on one named district does not qualify an arrangement stored on its
+        defining part, which refabricates every district of that part. And alternatives are
+        measured on their own compiled geometry, not on a previous candidate's
+        `parts_record` joined to hypothetical newly compiled leaves by name.
 
     """
     imp = _doc(CITY, "improve.json")
@@ -931,10 +928,9 @@ def gate_change_is_scoped(g: Gate) -> None:
 def gate_promotion_is_earned(g: Gate) -> None:
     """S3: the delivered candidate is the best retained result, and it earned that.
 
-        The review: *"Once planning succeeds, `stage_improve` rebuilds; when that fails at
-        lint it returns `blocked` without restoring the previous candidate. Both recorded
-        cycles stopped at lint. The next cycle operates on the failed first revision, and the
-        second failed revision remains the delivered candidate."*
+        A trial whose rebuild fails (at lint, say) has to restore the best retained result;
+        otherwise the next cycle operates on a failed revision and a failed revision is left
+        as the delivered candidate.
 
     """
     rec = _doc(CITY, "trials.json")
@@ -996,10 +992,10 @@ GATES_NEW_DOC = """
 
 
 def gate_decision_survives_construction(g: Gate) -> None:
-    """D1: the attachment, frontage, lot geometry and admitted storeys a planned leaf
+    """The attachment, frontage, lot geometry and admitted storeys a planned leaf
     carries are the ones construction sited and built.
 
-    The audit's first cause, asked at the boundary it is lost at. `pipeline.PART_GEOMETRY`
+    Asked at the boundary the decision is lost at. `pipeline.PART_GEOMETRY`
     is the whole of what a leaf hands `site()`; a field the plan decided and this tuple
     drops is a decision that never reached a block. The evidence is the **generated
     production programs** under `out/<state>/parts/`, not a type test."""
@@ -1033,13 +1029,12 @@ def gate_decision_survives_construction(g: Gate) -> None:
             f"{len(att) - len(missing)} of {len(att)} program(s) name it"
             + (f"; missing {missing[:4]}" if missing else ""))
     # **the house is as wide as its lot.** An attached lot sited with free flanks loses
-    # `2 * Builder.SITE_INSET` columns of frontage, which is the four-column-wide house
-    # on a six-column lot the audit measures. **On the axis the party walls are on, and
-    # on that axis only.** A row house is narrow to the lane and deep into the plot and
-    # keeps a rear strip it does not build on, so its *depth* is its own business; what
-    # a lost attachment costs is the frontage, `2 * Builder.SITE_INSET` of it, which is
-    # the four-column-wide house on a six-column lot the audit measures. `attached`
-    # names sides of the world, so the axis is the sides' own.
+    # `2 * Builder.SITE_INSET` columns of frontage: a four-column-wide house on a
+    # six-column lot. **On the axis the party walls are on, and on that axis only.** A
+    # row house is narrow to the lane and deep into the plot and keeps a rear strip it
+    # does not build on, so its *depth* is its own business; what a lost attachment costs
+    # is the frontage. `attached` names sides of the world, so the axis is the sides'
+    # own.
     narrow, over = [], []
     inset = 2 * pipeline.Builder.SITE_INSET if hasattr(pipeline, "Builder") else 4
     for p in att:
@@ -1105,13 +1100,13 @@ def gate_decision_survives_construction(g: Gate) -> None:
 
 
 def gate_ground_is_one_policy(g: Gate) -> None:
-    """D2: one recorded ground decision governs both what may be developed and what is
+    """One recorded ground decision governs both what may be developed and what is
     cut, filled, retained or left alone.
 
-    The audit's third cause: `placeplan.district_ground` excludes columns needing cuts or
-    fills beyond `DISTRICT_TERRACE_REACH`, and `Builder.terrace_annulus` levels full
-    rectangles without that limit -- so housing is excluded because a hillside should not
-    be cut while construction cuts it anyway."""
+    `placeplan.district_ground` excludes columns needing cuts or fills beyond
+    `DISTRICT_TERRACE_REACH`; a terrace (`Builder.terrace_annulus`) that levelled full
+    rectangles without that limit would exclude housing because a hillside should not be
+    cut while construction cut it anyway."""
     from ethoslm import placeplan
     ter = _doc(CITY, "terraces.json")
     place = _doc(CITY, "plan.place.json")
@@ -1182,7 +1177,7 @@ def gate_ground_is_one_policy(g: Gate) -> None:
 
 
 def gate_both_sides_inhabited(g: Gate) -> None:
-    """D3: both sides read as inhabited neighbourhoods with distinct grain, convincing
+    """Both sides read as inhabited neighbourhoods with distinct grain, convincing
         streets, usable courts, supported variation and a working market.
 
         Built geometry and a reader's view of the delivered artifact together. A numerical
@@ -1245,7 +1240,7 @@ def gate_both_sides_inhabited(g: Gate) -> None:
 
 
 def gate_routes_are_walked(g: Gate) -> None:
-    """D4: the required routes are traversable on the final assembled blocks, including
+    """The required routes are traversable on the final assembled blocks, including
     the gate passages, thresholds and sample connections. A connected planned network
     graph alone fails this."""
     sec = _section(CITY)
@@ -1280,7 +1275,7 @@ def gate_routes_are_walked(g: Gate) -> None:
 
 
 def gate_improvement_is_earned(g: Gate) -> None:
-    """D5: a consequential finding of the built result improved through production and
+    """A consequential finding of the built result improved through production and
         earned promotion on current built evidence, without losing the protected programme
         and without silently worsening another adopted architectural obligation.
 

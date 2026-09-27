@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The composition round's spatial escape routes, through the real consumers.
+"""Composition's spatial escape routes, through the real consumers.
 
 Every case runs the actual entry points -- `district_compile.compile_district`,
 `arrange.capacity_of`, `arrange.arrange`, `placeplan.district_failures`,
@@ -171,20 +171,19 @@ THIN = {"x0": 0, "z0": 0, "x1": 199, "z1": 16, "structures": 8,
 
 @case
 def t_s1a_a_required_landmark_that_cannot_fit_returns_unmet_demand():
-    """The review's own words: "a middle-ring market can disappear during compilation".
+    """A middle-ring market must not disappear during compilation.
 
         The middle ring's character names a `market` landmark and `function/market` is scoped
         to the ring, so the reservation is **required**. `market` delivers its `stalls` and
         `aisle` from a 14-column lot (`district_compile.landmark_least`, measured by
-        `envelope.lot_for`), and the area branch used to size it
-        `max(lo, min(hi, 17, block_w, block_d))` -- a `max` over a `min` against the block --
-        then test the result against the same block, so a block shallower than 14 produced a
-        side the block refused, the leaf fell through to `kind = "row"`, and the houses took
-        the ground. Nothing recorded it and the validator had nothing to refuse.
+        `envelope.lot_for`). Sizing it `max(lo, min(hi, 17, block_w, block_d))` -- a `max`
+        over a `min` against the block -- and then testing the result against the same block
+        means a block shallower than 14 produces a side the block refuses, the leaf falls
+        through to `kind = "row"`, and the houses take the ground with nothing recorded and
+        nothing for the validator to refuse.
 
-        The counterexample is a real middle-ring arrangement: one row of houses along a
-        street (`row_depth`, which the design round built) on a band 22 columns deep. The
-        houses fit; the market does not.
+        The case is a real middle-ring arrangement: one row of houses along a street
+        (`row_depth`) on the thin band `THIN`. The houses fit; the market does not.
 
     """
     spec, place, part, decls, _d = city()
@@ -259,13 +258,13 @@ def t_s1b_the_positive_control_the_same_fabric_on_ground_that_holds_it():
 
 @case
 def t_s1c_an_arrangement_that_keeps_the_market_outranks_one_that_loses_it():
-    """`compile_district.score` had no landmark term and the search stopped as soon as the
-        count, the cover and the ceiling were met -- so an arrangement that housed the market's
-        ground ended the search, and a retry that kept the market and laid *fewer* houses
-        ranked below it. The compiler was selecting, by those two lines, the arrangement that
-        loses the thing the request requires.
+    """`compile_district.score` needs a landmark term. Without one, the search stops as soon
+        as the count, the cover and the ceiling are met -- so an arrangement that houses the
+        market's ground ends the search, and a retry that keeps the market and lays *fewer*
+        houses ranks below it: the compiler selects the arrangement that loses the thing the
+        request requires.
 
-        The counterexample is one rectangle, one fabric, two demands: the middle ring's own
+        The case is one rectangle, one fabric, two demands: the middle ring's own
         resolved demand, which carries `function/market`, and the same demand with that
         requirement taken out. Nothing else differs. The required reading gives up a house to
         keep the market; the optional reading keeps the house -- which is why a score without
@@ -362,10 +361,9 @@ def t_s1e_a_plan_cannot_pass_by_leaving_the_field_out():
 
 @case
 def t_s1d_a_court_share_spent_to_meet_a_lot_count_is_on_the_record():
-    """"courtyard/open shares can be spent to fit housing" -- the review, and it was
-        invisible. `compile_district`'s second lever gives the character's open blocks and
-        then its courts back to the fabric when the count is short, and the only trace was a
-        `raised` entry that reads like a raise.
+    """Courtyard and open shares spent to fit housing must be visible. `compile_district`'s
+        second lever gives the character's open blocks and then its courts back to the fabric
+        when the count is short, and a `raised` entry alone reads like a raise.
 
         One middle-ring rectangle, asked for far more houses than its ground fits at its own
         lot, so the lever fires; and the positive control, the same rectangle at the count its
@@ -478,14 +476,14 @@ def t_s1f_district_uses_govern_type_selection():
 
 @case
 def t_s2a_an_alternative_the_validator_would_refuse_is_not_offered():
-    """A4: "Every arrangement offered for selection is certified by the **actual district
-        validator**, not by a compiler return."
+    """Every arrangement offered for selection is certified by the **actual district
+        validator**, not by a compiler return.
 
-        `capacity_of` returned what the compiler laid and `arrange._covers` -- a local
-        approximation of one of the validator's clauses -- was all selection had; the real
-        `district_failures` ran later, at the plan stage, after the width had been adopted. So
-        the thin band above, whose compiler return is a perfectly good count of houses, is
-        exactly the alternative that could be selected and then refused.
+        `capacity_of` returns what the compiler laid, and `arrange._covers` is only a local
+        approximation of one of the validator's clauses; the real `district_failures` runs
+        at the plan stage, after the width has been adopted. So the thin band above, whose
+        compiler return is a perfectly good count of houses, is exactly the alternative
+        that could be selected and then refused.
 
     """
     spec, place, part, decls, _d = city()
@@ -542,11 +540,10 @@ def t_s2a_an_alternative_the_validator_would_refuse_is_not_offered():
 
 @case
 def t_s2b_a_rings_alternatives_carry_the_verdict_and_both_occupations():
-    """`negotiate_ring` selected on `(holds_count, allocated_cover, -width)`, where
-        `allocated_cover` is the lots' share of the ring -- the one figure the review says
-        cannot establish density. Selection still happens there, on certified alternatives,
-        with the built occupation recorded beside the allocated one and the reservations
-        counted.
+    """`negotiate_ring` selects on `(holds_count, allocated_cover, -width)`, where
+        `allocated_cover` is the lots' share of the ring -- a figure that cannot establish
+        density on its own. So selection happens on certified alternatives, with the built
+        occupation recorded beside the allocated one and the reservations counted.
 
         Run on the retained hill town through `concentric_layout`, which is how production
         calls it.
@@ -724,13 +721,12 @@ def t_s2c_three_certified_arrangements_for_the_sections_own_districts():
 
 @case
 def t_s3a_two_probes_differing_only_in_demand_do_not_share_an_answer():
-    """The review's named omission: "The ring-probe cache also omits
-        demand/type/context/seed identities."
+    """The ring-probe cache key carries the demand, type, context and seed identities.
 
-        The key was `(width, depth, count, arrangement items, region name)`. The probe body
-        reads `r["demand"]`, `r["fabric_types"]`, the form, the role, the density, the seed,
-        the ceiling and the exact flag -- so a capability revision that narrowed a ring's
-        approved pool, or a demand that raised its least lot, was answered from the old
+        The probe body reads `r["demand"]`, `r["fabric_types"]`, the form, the role, the
+        density, the seed, the ceiling and the exact flag, so a key of only `(width, depth,
+        count, arrangement items, region name)` would answer a capability revision that
+        narrowed a ring's approved pool, or a demand that raised its least lot, from the old
         certificate. Checked on `probe_key` itself and then on the cache through
         `_arrange_capacity`, which is the function that reads it.
 

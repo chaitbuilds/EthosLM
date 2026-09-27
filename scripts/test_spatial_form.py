@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""The spatial-design round's building-form and court-obligation work, measured.
+"""Building form and court obligations, measured.
 
-Two things the round's brief says the library cannot do, and the cases that hold them.
+Two things the library has to do, and the cases that hold them.
 
     F1  **a building form determines the space it needs.** `row_house` has been a 6x6
         box since it was written and the retained section is a hundred and thirty-one
@@ -498,12 +498,11 @@ def hard_district():
 def t_f3_the_compiler_lays_its_lots_on_ground_that_can_carry_a_building():
     """`district_compile` against `ethoslm.feasible`'s mask, on the section's own terrain.
 
-        The review's first finding at the level it bites. `placeplan.developable_columns`
-        subtracts the ground that cannot be prepared, so a district's **count** is honest;
-        the block grid was still laid over the whole rectangle, so the count was right and
-        the lots were on the lake. The arterial's band and a standing part's clearance are
-        ground this compiler has always refused to build on, and water and a grade the
-        terrace cannot reach are the same kind of fact.
+        `placeplan.developable_columns` subtracts the ground that cannot be prepared, so a
+        district's **count** is honest; a block grid laid over the whole rectangle can
+        still put a correct count of lots on the lake. The arterial's band and a standing
+        part's clearance are ground this compiler has always refused to build on, and
+        water and a grade the terrace cannot reach are the same kind of fact.
 
         Two things have to hold together and only one of them is obvious:
 
@@ -540,18 +539,16 @@ def t_f3_the_compiler_lays_its_lots_on_ground_that_can_carry_a_building():
         return out
 
     bad0, bad1 = off_ground(plain), off_ground(onto)
-    # **the district still compiles, and on this mesa it now lays no house at all.** The
-    # block design round. The two lots this case used to keep were kept by a *share*:
-    # half a lot and half its skirt over the mask, which the audit's first cause is
-    # exactly about -- "the critical cells can lie in the rejected half of both
-    # rectangles". With the hard conditions beside it (`ENTRY_RUN`: a run of named
-    # columns on the lot's own street face that the design prepares, outside for the
-    # doorstep and inside for the floor it opens onto; `pad_founded`: a rectangle the
-    # size this type needs, all of it prepared) both of them go, and the record says
-    # which rule took each one. A mesa whose shelf cannot carry a house with a way into
-    # it is open ground with an owner, which is what this district's own
-    # `undeveloped_share` of 0.64 says; laying two houses nobody can walk to on it was
-    # the flattering answer.
+    # **the district still compiles, and on this mesa it lays no house at all.** A lot
+    # kept by a *share* -- half a lot and half its skirt over the mask -- can have its
+    # critical cells in the rejected half of both rectangles. With the hard conditions
+    # beside it (`ENTRY_RUN`: a run of named columns on the lot's own street face that
+    # the design prepares, outside for the doorstep and inside for the floor it opens
+    # onto; `pad_founded`: a rectangle the size this type needs, all of it prepared)
+    # such lots go, and the record says which rule took each one. A mesa whose shelf
+    # cannot carry a house with a way into it is open ground with an owner, which is
+    # what this district's own `undeveloped_share` of 0.64 says; laying houses nobody
+    # can walk to on it would be the flattering answer.
     assert leaves(onto), r1
     assert r1["dropped"]["entrance"] or r1["dropped"]["pad"], r1["dropped"]
     # ...and nothing it laid stands mostly on ground the design cannot prepare

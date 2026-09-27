@@ -1,11 +1,10 @@
-"""The relation solver: the place level, placed by relation. v2, B2.
+"""The relation solver: the place level, placed by relation.
 
-The spec's relation words existed and only `concentric` was resolved; every other
-place was drawn freehand by a model as rectangles, and a walled town was never
-checked to stand inside its own wall. This is the place-level planner now: the
-defining parts **declare relations** -- `centre`, `perimeter`, `gateway`, `edge`,
-`beside_the_centre`, `throughout`, `quarter`, `near`, `along`, `on`, and `concentric`
--- and the solver places them. The model never writes a coordinate at any level.
+The place-level planner. The defining parts **declare relations** -- `centre`,
+`perimeter`, `gateway`, `edge`, `beside_the_centre`, `throughout`, `quarter`, `near`,
+`along`, `on`, and `concentric` -- and the solver places them, so a walled town is
+checked to stand inside its own wall and no place is drawn freehand as rectangles. The
+model never writes a coordinate at any level.
 
 How it solves, in order:
 
@@ -205,17 +204,13 @@ def _leaf_rects(leaf: dict) -> list:
 
 
 # ------------------------------------------------------------ allocation from purpose
-# The expression round. The review's first remaining cause: `_rect_for` chose the
-# largest rectangle a type admits for the thing at the centre and for every civic part
-# beside it, and the strips round them were cut from the site's extent -- so a market
-# square for sixteen cottages was forty columns a side because `square` admits forty,
-# the hall beside it thirty-six because `hall` admits thirty-two, and the fields a
-# farming village works were whatever strip was left. Nothing about the *purpose* of the
-# place -- how many households, at what density, of what envelope, working what land --
-# reached the dimension. What follows is the one sizing rule the relation solver and the
-# ring layout both read: a parent allocation is derived from the programme, and the
-# derivation is recorded as a `target` with its `from` list, so a reader can see why a
-# square is the size it is and a built finding can move the input it cites.
+# The one sizing rule the relation solver and the ring layout both read. A parent is
+# sized from the *purpose* of the place -- how many households, at what density, of what
+# envelope, working what land -- and not from the largest rectangle its type admits: a
+# market square for sixteen cottages is not forty columns a side because `square`
+# admits forty. The allocation is derived from the programme, and the derivation is
+# recorded as a `target` with its `from` list, so a reader can see why a square is the
+# size it is and a built finding can move the input it cites.
 
 #: **How much open anchor one counted household brings to the thing the place is
 #: gathered about**, as a share of one fabric lot. Registered, with its derivation: a
@@ -248,9 +243,9 @@ CIVIC_LOTS_DEFAULT = 1.5
 #: household -- two and a half field tiles of 10x10 -- which over `LAND_FILL` of a
 #: district's ground (lanes and verges take the rest) is 400 columns of district a
 #: household; sixteen cottages want 6,400 columns of fields, an eighty-square, and not
-#: the belt of three tiles the closure round's judge called thin. An orchard is half a
-#: field; pasture a third again more. A place's own explicit count is the number of
-#: households, wherever its houses stand.
+#: a belt of three tiles, which reads as thin. An orchard is half a field; pasture a
+#: third again more. A place's own explicit count is the number of households, wherever
+#: its houses stand.
 LAND_PER_HOUSE = {"farmland": 240, "orchard": 120, "pasture": 320, "garden": 60,
                   "industrial": 120, "civic": 40}
 LAND_FILL = 0.6                  # `placeplan.RURAL_COVER`: the land's share of its district
@@ -500,23 +495,17 @@ def fabric_lot(part: dict, decls: dict, spec: dict | None = None, *,
     house = None
     pool = list((demand or {}).get("types") or part.get("fabric_types") or [])
     admits = dc.house_types(decls, role, (spec or {}).get("form"), approved=pool or None)
-    # **A district's lot is not sized by the alphabet.** The neighbourhood round, found
-    # by the generator stream while repairing `court_large`: `house_types` ranks a pool
-    # it was *given* by that pool's own order -- which is the layout owner's decision
-    # and is preserved -- and ranks the **unrestricted library** by role and then by
-    # *name*. So the lot of every district with no approved pool was clamped into the
-    # band of whichever admitted type sorts first alphabetically. For role `urban` that
-    # is `court_large`, and when its declared floor rose from 6 to 9 -- an honest
-    # correction: at 6x6 the type raised `empty range in randint` and at 8x8 it
-    # published a 2x2 light well as a court -- the ringed fixture's `lower_ring` lot
-    # went 10x10 to 13x13, its land need 5,495 to 9,286 columns, and a town that had
-    # laid on its own least footprint was refused on the shares check. No decision
-    # anywhere had changed. A lot the fabric's own arithmetic produced is clamped into
-    # the band of the **smallest** admitted type, because that is the type the lot has
-    # to fit *at least* one of; a bigger type's floor is a statement about that type and
-    # not about the district. Where a pool was given, its first entry is the fabric
-    # decision somebody made and it stays authoritative (the review's second finding:
-    # re-ordering an approved pool must reach the compiler).
+    # **A district's lot is not sized by the alphabet.** `house_types` ranks a pool it
+    # was *given* by that pool's own order -- which is the layout owner's decision and
+    # is preserved -- and ranks the **unrestricted library** by role and then by
+    # *name*. Clamping into the first admitted type would size every district with no
+    # approved pool by whichever type sorts first alphabetically, so raising one type's
+    # declared floor could refuse a town that no decision had changed. A lot the
+    # fabric's own arithmetic produced is clamped into the band of the **smallest**
+    # admitted type, because that is the type the lot has to fit *at least* one of; a
+    # bigger type's floor is a statement about that type and not about the district.
+    # Where a pool was given, its first entry is the fabric decision somebody made and
+    # it stays authoritative: re-ordering an approved pool must reach the compiler.
     if admits:
         house = admits[0]
         if not pool:
@@ -684,10 +673,9 @@ def land_need(part: dict, n: int, decls: dict, spec: dict | None = None, *,
            f"(the middle of the band {lo:.0%}-{hi if hi is None else format(hi, '.0%')})",
            *src]
     # over the ground the compiler can DEVELOP, not the rectangle: the arterial's band
-    # and the standing parts' clearances take a share of every district (the city's
-    # middle ring measured 5776 developable of 7560), and a rectangle sized at the
-    # band's middle over its whole area laid its lots at the band's ceiling and was
-    # refused by thirteen columns (the coordinator, the expression round's city)
+    # and the standing parts' clearances take a share of every district, so a rectangle
+    # sized at the band's middle over its whole area lays its lots at the band's ceiling
+    # and can be refused
     need = int(math.ceil(n * lot / max(mid * LAND_DEVELOPABLE, 0.02))) if n else 0
     # the least ground the word admits at all: at the top of the band (a `dense` word
     # has none and takes the fabric's own share); what a site is held to
@@ -842,15 +830,15 @@ class Solver:
                  caps: dict | None = None, intent: dict | None = None,
                  allocation: dict | None = None):
         self.spec = spec
-        # **The allocation in force** (the expression round): the spec's recorded
-        # `allocation` rows under the caller's, and every derived dimension goes on
-        # `targets` with its inputs by name.
+        # **The allocation in force**: the spec's recorded `allocation` rows under the
+        # caller's, and every derived dimension goes on `targets` with its inputs by
+        # name.
         self.allocation = allocation_of(spec, allocation)
         self.targets: list = []
-        # **The sentence's relations, resolved to this spec's parts** (the closure
-        # round). `around` between a group and a solid part is what `_districts` lays
-        # the strips for; `beside`/`near` between a solid part and the centre is what
-        # `_cands_near` keeps the strips clear for. A word neither the spec nor the
+        # **The sentence's relations, resolved to this spec's parts.** `around` between
+        # a group and a solid part is what `_districts` lays the strips for;
+        # `beside`/`near` between a solid part and the centre is what `_cands_near`
+        # keeps the strips clear for. A word neither the spec nor the
         # library can name resolves to nothing and the record says so.
         self.intent = intent
         self.relations = _relations_of(spec, intent)
@@ -1108,10 +1096,10 @@ class Solver:
         if self.plateau_rect:
             cap = min(self.plateau_rect[2] - self.plateau_rect[0] + 1,
                       self.plateau_rect[3] - self.plateau_rect[1] + 1)
-        # **The centre is sized from what gathers about it** (the expression round): an
-        # area (a square, a plaza) from the households, the anchor share and the civic
-        # parts the spec puts on it; a plot (a keep, a hall at the centre) in civic
-        # lots. Never `_rect_for`'s largest admitted rectangle.
+        # **The centre is sized from what gathers about it**: an area (a square, a
+        # plaza) from the households, the anchor share and the civic parts the spec puts
+        # on it; a plot (a keep, a hall at the centre) in civic lots. Never
+        # `_rect_for`'s largest admitted rectangle.
         sized = self._sized(d, decl, kind, cap=cap)
         cands = []
         for dx, dz in ((0, 0), (4, 0), (-4, 0), (0, 4), (0, -4)):
@@ -1203,8 +1191,8 @@ class Solver:
         # where nothing is named for it
         named = [w for w in walls if w[0] == d["family"]] or walls
         tname, tdecl, lo_h, hi_h = named[0]
-        # **a town wall over the storeys of its fabric** (the expression round), not the
-        # top of the type's band; `_write_hierarchy` records the kind and why
+        # **a town wall over the storeys of its fabric**, not the top of the type's
+        # band; `_write_hierarchy` records the kind and why
         kind, _ksrc = wall_kind_for(d, self.spec, outermost=True)
         if kind == "great":
             tname, tdecl, lo_h, hi_h = max(walls, key=lambda w: (w[3], w[0]))
@@ -1219,9 +1207,9 @@ class Solver:
         # inset, at the coverage the strips round a centre are held to
         need = self._ground_needed() / RING_COVERAGE
         h_min = max(int(math.ceil(math.sqrt(need) / 2.0)) + inset, self.dmin + inset)
-        # **...and a district's depth on every side of the core** (the expression
-        # round): a gathered group stands on three sides of its centre, and a wall that
-        # leaves the strips beside the core under `dmin` deep leaves one side of four
+        # **...and a district's depth on every side of the core**: a gathered group
+        # stands on three sides of its centre, and a wall that leaves the strips beside
+        # the core under `dmin` deep leaves one side of four
         gathered = any(r["relation"] == "around" and r.get("subject_groups")
                        and r.get("object_part") == (self.core or {}).get("name")
                        for r in self.relations)
@@ -1279,10 +1267,9 @@ class Solver:
     def _ground_needed(self) -> float:
         """The columns the districts and the centre need inside a perimeter wall, by
         the one sizing rule (`land_need`: houses at their density's target cover, land
-        by the households that work it) plus the core and the lanes round it. The
-        expression round: the estimate before this charged a house its lot over
-        `DISTRICT_FILL`, knew nothing of an orchard, and drew a hamlet's wall so tight
-        that one strip of the four fit inside it."""
+        by the households that work it) plus the core and the lanes round it. Charging
+        a house its lot over `DISTRICT_FILL` alone, with no account of the land, draws a
+        hamlet's wall so tight that one strip of the four fits inside it."""
         cols = 0.0
         groups = [p for p in self.spec["defining_parts"]
                   if p["kind"] == "group" and not spec_mod.compound(p)]
@@ -1367,9 +1354,9 @@ class Solver:
         """Candidates of this type on the four sides of a rectangle, a gap away."""
         tx0, tz0, tx1, tz1 = target_rect
         gap = max(_clearance(self.decls, tname), 0) + 1 + BESIDE_GAP
-        # **A part beside the centre is sized from the programme too** (the expression
-        # round): a hall on the square in civic lots, a green beside it by the anchor
-        # share, and never at the type's largest.
+        # **A part beside the centre is sized from the programme too**: a hall on the
+        # square in civic lots, a green beside it by the anchor share, and never at the
+        # type's largest.
         sized = self._sized(d, decl, kind)
         side_len = (int(sized["side"]) if sized else
                     _clean_side(decl) + (0 if kind in ("edge", "point", "area") else 4))
@@ -1642,10 +1629,10 @@ class Solver:
         core_names = {(self.core or {}).get("name")}
         core_names |= {p["name"] for p in self.spec["defining_parts"]
                        if p["relation"] in ("beside_the_centre",)}
-        # **...and what stands `near` the centre by name** (the closure round): a hall
-        # on the square is part of the middle of the place, and the strips are cut round
-        # the two of them together rather than trimmed round the hall afterwards --
-        # which took a whole side with it.
+        # **...and what stands `near` the centre by name**: a hall on the square is part
+        # of the middle of the place, and the strips are cut round the two of them
+        # together rather than trimmed round the hall afterwards -- which would take a
+        # whole side with it.
         core_names |= {p["name"] for p in self.spec["defining_parts"]
                        if p["relation"] == "near"
                        and p.get("of") == (self.core or {}).get("name")}
@@ -1667,28 +1654,25 @@ class Solver:
             cx0, cz0, cx1, cz1 = self.cx, self.cz, self.cx, self.cz
         strips = {"north": (bx0, bz0, bx1, cz0 - 1), "south": (bx0, cz1 + 1, bx1, bz1),
                   "west": (bx0, cz0, cx0 - 1, cz1), "east": (cx1 + 1, cz0, bx1, cz1)}
-        # **Clamped to the place's own bounds.** v2, C5: the strips are cut from the
-        # core's box, and a core part at the *edge* of the site -- a village's hard on
-        # the water, anything placed `edge` where no part is at the centre -- puts the
-        # box's margin outside the site, so the strips beside it reached two columns
-        # past the ground the place stands on and the place level refused its own layout
-        # by name. A strip is what is left of the site, never more than it.
+        # **Clamped to the place's own bounds.** The strips are cut from the core's box,
+        # and a core part at the *edge* of the site -- a village's hard on the water,
+        # anything placed `edge` where no part is at the centre -- puts the box's margin
+        # outside the site, so unclamped strips beside it reach past the ground the place
+        # stands on and the place level refuses its own layout. A strip is what is left
+        # of the site, never more than it.
         strips = {k: (max(bx0, r[0]), max(bz0, r[1]), min(bx1, r[2]), min(bz1, r[3]))
                   for k, r in strips.items()}
         strips = {k: r for k, r in strips.items() if r[0] <= r[2] and r[1] <= r[3]}
-        # **A side too thin for a strip gives its corners to its neighbours** (the
-        # expression round): a place whose centre stands near the site's south edge has
-        # no south strip, and the west and east strips were cut to the core's own depth,
-        # so the houses beside the centre could not reach past its axis **...and a side
-        # too thin for the fabric that has to stand in it** (the design round's first
-        # contract, at the place level). `dmin` is a constant about what a district
-        # *is*; how deep a band has to be to hold a row of the houses this request
-        # requires is a fact about the resolved demand. Found by running the farming
-        # village whose two-storey cottages need a 24x24 lot: the west and east bands
-        # were 28 deep, `_fabric_depth` says 34, the bands were cut anyway, the
-        # allocator promised them houses and the compiler laid none -- fourteen of the
-        # sentence's sixteen. A band no house of this demand can stand in is not a band
-        # for houses; its ground goes to its neighbours, as a thin side's always has.
+        # **A side too thin for a strip gives its corners to its neighbours**: a place
+        # whose centre stands near the site's south edge has no south strip, and west
+        # and east strips cut only to the core's own depth would keep the houses beside
+        # the centre from reaching past its axis. **...and so does a side too thin for
+        # the fabric that has to stand in it.** `dmin` is a constant about what a
+        # district *is*; how deep a band has to be to hold a row of the houses this
+        # request requires is a fact about the resolved demand (`_fabric_depth`). A band
+        # cut shallower than that is promised houses the compiler cannot lay. A band no
+        # house of this demand can stand in is not a band for houses; its ground goes to
+        # its neighbours, as a thin side's always has.
         depth_min = self._fabric_depth(groups)
         # the depth of a band is its **shorter side**, whichever axis that is: the side
         # a row of lots has to fit across. Naming the axis from the compass point is
@@ -1788,11 +1772,11 @@ class Solver:
         assign: dict = {}
         remaining = list(sectors)
         # **A group the sentence gathers *around* the centre takes at least three sides
-        # of it** (the closure round). The strips are one per side; where fewer than
-        # three sides are left after the `quarter` groups have taken theirs, the largest
-        # strip is split and the quarter takes one piece, so the gathered group keeps
-        # every side. Where the ground itself leaves fewer than three sides, the record
-        # says so and the checker's finding names the layout, which is right.
+        # of it.** The strips are one per side; where fewer than three sides are left
+        # after the `quarter` groups have taken theirs, the largest strip is split and
+        # the quarter takes one piece, so the gathered group keeps every side. Where the
+        # ground itself leaves fewer than three sides, the record says so and the
+        # checker's finding names the layout, which is right.
         gathered = [r for r in self.relations
                     if r["relation"] == "around" and r.get("object_part")
                     and r["object_part"] == (self.core or {}).get("name")
@@ -1878,10 +1862,10 @@ class Solver:
                     for s in mine[:max(1, int(p["count"]))]:
                         assign[s[0]] = p
                         remaining.remove(s)
-        # **A land quarter the sentence puts beside the houses adjoins them** (the
-        # expression round's orchard): the sector it takes is a piece of a strip a
-        # gathered group holds, split along the strip, so `_compact` draws it beside the
-        # gathered row on that side rather than in a strip of its own across the place.
+        # **A land quarter the sentence puts beside the houses adjoins them**: the sector
+        # it takes is a piece of a strip a gathered group holds, split along the strip,
+        # so `_compact` draws it beside the gathered row on that side rather than in a
+        # strip of its own across the place.
         adjoining: dict = {}
         by_side = {}
         for label, r in sectors:
@@ -1991,12 +1975,11 @@ class Solver:
                          "cap": cap, "band": band,
                          "from_ground": max(1, min(cap, band["mid"])),
                          "most": max(1, min(cap, band["hi"]))})
-        # **The count is spent only on counted buildings** (the expression round). The
-        # falsification pass's orchard: a land district is a group like any other, the
-        # apportionment gives every district at least one, and a house was laid on the
-        # orchard. `entity_of` says which groups hold counted buildings; a land district
-        # the programme puts no houses in is asked for none, keeps its sector, and lays
-        # its land.
+        # **The count is spent only on counted buildings.** A land district is a group
+        # like any other, and the apportionment gives every district at least one, which
+        # would lay a house on an orchard. `entity_of` says which groups hold counted
+        # buildings; a land district the programme puts no houses in is asked for none,
+        # keeps its sector, and lays its land.
         counted = {p["name"]: bool(entity_of(p, self.spec).get("counted")) for p in groups}
         land = {p["name"] for p in groups if entity_of(p, self.spec).get("class") == "land"}
         few = max(1, int(math.ceil(self._households() * LAND_HOUSE_SHARE)))
@@ -2107,15 +2090,14 @@ class Solver:
             short_total = 0
         self.count_short = int(short_total)
         # **A sector the place cannot ask for `DISTRICT_MIN_STRUCTURES` in is not a
-        # district.** v2, C5: a district is a division of the place that holds houses,
-        # and the strips cut round a centre leave slivers -- a 35x46 corner beside a
-        # village's hard, asked for one house -- which are then held to the same count
-        # and cover as a quarter of a city and can meet neither: a sliver is lanes and
-        # clearances almost all the way through. Left-over ground is what it is, and
-        # nothing has ever asked for every column of a place to be in a district.
-        # ...**but a `quarter` the spec named is a district at any count** (the closure
-        # round): a quarter of fields is fields, and dropping it as a sliver because it
-        # holds one farm cottage made the place lose the part the sentence named.
+        # district.** A district is a division of the place that holds houses, and the
+        # strips cut round a centre leave slivers -- a corner beside a village's hard,
+        # asked for one house -- which would be held to the same count and cover as a
+        # quarter of a city and can meet neither: a sliver is lanes and clearances almost
+        # all the way through. Left-over ground is what it is, and nothing asks for every
+        # column of a place to be in a district. ...**but a `quarter` the spec named is a
+        # district at any count**: a quarter of fields is fields, and dropping it as a
+        # sliver because it holds one farm cottage loses the part the sentence named.
         if len(rows) > 1 and any(n >= DISTRICT_MIN_STRUCTURES for n in counts):
             small = [(row, n) for row, n in zip(rows, counts)
                      if n < DISTRICT_MIN_STRUCTURES
@@ -2149,27 +2131,24 @@ class Solver:
                         counts[i] += int(c)
                     self.count_short += max(0, extra - sum(more))
         # **A gathered group's district is drawn to what its share of the count needs,
-        # not to the strip it stands in** (the closure round's revision loop). Each
-        # `around` district took the whole strip on its side of the square, so the
-        # compiler spread five cottages over nine thousand columns, forty columns of
-        # verge between them, and the judge read the village as scattered. The rectangle
-        # now hugs the anchor's box on its side -- the strip's inner edge -- with the
-        # depth and length its count needs at the density's target cover (the band's
-        # middle) at the lot the compiler will lay, plus lanes; what is left of the
-        # strip is unclaimed ground and the record says so. A `quarter` named beside the
-        # gathered group on the same side (the fields) is sized to its own count at its
-        # own word and drawn adjoining the gathered district, so `beside` holds on the
-        # geometry. Only where the count is the sentence's own: an inferred count is the
-        # ground's to fill. **...or where the layout owner's `regroup` action asked for
-        # it.** The composition round's fifth change. Compaction was gated on the count
-        # being the *sentence's* (`self.exact`) -- an inferred count "is the ground's to
-        # fill" -- and that is right as a default and wrong as the only possibility: a
-        # built reading that says the fabric is scattered is a finding, and the answer
-        # to it is to gather the fabric, whatever kind of count asked for the houses.
-        # `regroup` is that answer as a bounded allocation (`reallocate`), so the
-        # decision is recorded where every other inferred dimension is and a place laid
-        # out again from the spec is this place. It changes no count: `_compact` moves
-        # rectangles and `_straddle` splits one in two with its count split by length.
+        # not to the strip it stands in.** An `around` district given the whole strip on
+        # its side of the square spreads a handful of cottages over thousands of columns
+        # of verge, and the village reads as scattered. The rectangle hugs the anchor's
+        # box on its side -- the strip's inner edge -- with the depth and length its
+        # count needs at the density's target cover (the band's middle) at the lot the
+        # compiler will lay, plus lanes; what is left of the strip is unclaimed ground
+        # and the record says so. A `quarter` named beside the gathered group on the same
+        # side (the fields) is sized to its own count at its own word and drawn adjoining
+        # the gathered district, so `beside` holds on the geometry. Only where the count
+        # is the sentence's own: an inferred count is the ground's to fill. **...or where
+        # the layout owner's `regroup` action asked for it.** Gating on `self.exact` is
+        # right as a default and wrong as the only possibility: a built reading that
+        # says the fabric is scattered is a finding, and the answer to it is to gather
+        # the fabric, whatever kind of count asked for the houses. `regroup` is that
+        # answer as a bounded allocation (`reallocate`), so the decision is recorded
+        # where every other inferred dimension is and a place laid out again from the
+        # spec is this place. It changes no count: `_compact` moves rectangles and
+        # `_straddle` splits one in two with its count split by length.
         regroup = bool((self.allocation.get("regroup") or {}).get("gather"))
         if gathered and (self.exact or regroup):
             self._compact(rows, counts, (cx0, cz0, cx1, cz1), g)
@@ -2183,9 +2162,9 @@ class Solver:
                               "fabric scattered over its strips, so the districts are "
                               "drawn to what their count needs and hugged to the anchor "
                               "and its streets rather than spread over the whole strip"]})
-        # **Every district records what it was sized from** (the expression round),
-        # whether or not it was compacted: the need its count and land use imply, by the
-        # one sizing rule, with every input by name.
+        # **Every district records what it was sized from**, whether or not it was
+        # compacted: the need its count and land use imply, by the one sizing rule, with
+        # every input by name.
         for row, n in zip(rows, counts):
             if "need" not in row:
                 row["need"] = land_need(row["part"], n, self.decls, self.spec,
@@ -2486,13 +2465,12 @@ class Solver:
 
     def _straddle(self, rows: list, counts: list, core_box: tuple, g: int) -> None:
         """**A gathered row stands on both sides of the axis it crosses, or wholly on
-        the side that adds a quadrant** (the expression round). The checker reads
-        `around` as bearings from the anchor's centre, and a row centred on that axis
-        promises both quadrants while the compiler fills its blocks from one end: the
-        orchard hamlet's eleven houses all landed north-west of the chapel. A row long
-        enough is cut at the axis into a district each side, its count split by
-        length; a short row is moved to the side of the axis whose quadrant no row has
-        yet, and the record says so."""
+        the side that adds a quadrant.** The checker reads `around` as bearings from
+        the anchor's centre, and a row centred on that axis promises both quadrants
+        while the compiler fills its blocks from one end, so its houses can all land in
+        one quadrant. A row long enough is cut at the axis into a district each side,
+        its count split by length; a short row is moved to the side of the axis whose
+        quadrant no row has yet, and the record says so."""
         cx0, cz0, cx1, cz1 = core_box
         ax, az = (cx0 + cx1) / 2.0, (cz0 + cz1) / 2.0
         subj = {n for r in self.relations if r["relation"] == "around"
@@ -2659,16 +2637,16 @@ class Solver:
                 part = next((p for p in self.spec["defining_parts"]
                              if p["name"] == d.get("defines")), {})
                 # a land district's probes are its land (a field, an orchard, a
-                # pasture), a settled district's its houses (the expression round)
+                # pasture), a settled district's its houses
                 ent = entity_of(part, self.spec)
                 use = ent.get("land_use") if ent.get("class") == "land" else None
                 land = use if use in ("farmland", "orchard", "pasture") else None
                 fam = {"farmland": "field", "orchard": "orchard", "pasture": "pasture"}.get(land)
-                # **the probes stand where the leaves will** (the expression round): a
-                # house lot keeps the compiler's edge margin and a lot's clearance from
-                # its district's edge, an open block of land its margin only, so a
-                # `beside` predicted here is the gap the checker measures on the
-                # assembled plan and not the gap between two rectangles of ground
+                # **the probes stand where the leaves will**: a house lot keeps the
+                # compiler's edge margin and a lot's clearance from its district's edge,
+                # an open block of land its margin only, so a `beside` predicted here is
+                # the gap the checker measures on the assembled plan and not the gap
+                # between two rectangles of ground
                 from . import district_compile as _dc
                 inset = _dc.EDGE_MARGIN if land else _dc.EDGE_MARGIN + _dc.LOT_GAP
                 if d.get("surface") == "open":
@@ -2739,10 +2717,10 @@ class Solver:
                                  "shape": self.wall["shape"]} if self.wall else None),
                        "solved": self.record, "demoted": self.demoted,
                        "districts": getattr(self, "district_record", None),
-                       # **What every dimension was derived from** (the expression
-                       # round): the anchor's and the civic parts' targets, and the
-                       # allocation overrides in force, so a place re-solved from the
-                       # spec is the same place and a reader can see why.
+                       # **What every dimension was derived from**: the anchor's and
+                       # the civic parts' targets, and the allocation overrides in
+                       # force, so a place re-solved from the spec is the same place
+                       # and a reader can see why.
                        "targets": list(self.targets),
                        "allocation": dict(self.allocation),
                        "registered": {"VETOES": [list(v) for v in VETOES],
@@ -2778,8 +2756,8 @@ def _parts_for_word(spec: dict, word: str) -> list:
     # resolved to nothing with no one to say so.
     if head in intent_mod._HOUSE_WORDS or head in _HOUSE_FAMILIES \
             or head.rstrip("s") in _HOUSE_FAMILIES:
-        # the districts of houses are the building entities (the expression round): an
-        # orchard is land whatever word its land use is, and is not "the houses"
+        # the districts of houses are the building entities: an orchard is land
+        # whatever word its land use is, and is not "the houses"
         got = [p for p in groups if entity_of(p, spec).get("class") == "building"]
         return got or groups
     if head in ("field", "fields", "farmland", "farm", "farms", "fieldland"):
@@ -2965,10 +2943,10 @@ def _write_fabric(place: dict | None, caps: dict | None,
                   approved: dict | None = None) -> None:
     """Tell each district which types the capability record approved for its fabric.
 
-        **The one seam where the record reaches the compiler.** The review's first finding
-        was that a capability record was written and then not consulted; for a district that
-        is not a missing keyword argument but a missing field, because the compiler is
-        reached one level down through the district document rather than through this call.
+        **The one seam where the record reaches the compiler.** A capability record that is
+        written and then not consulted describes a decision nobody made; for a district the
+        consultation is a field, not a keyword argument, because the compiler is reached
+        one level down through the district document rather than through this call.
 
     """
     pools = {**(approved or {}), **approved_fabric(caps)}
@@ -3000,11 +2978,10 @@ def resolved_spec(spec: dict, caps: dict | None, intent: dict | None = None, *,
                   demands: dict | None = None) -> tuple:
     """**The spec with every district's demand resolved, before anything is sized.**
 
-        The review's first cause, at its timing end: `_solve_place` applied `approved_fabric`
-        through `_write_fabric` *after* the policy had already sized the place, so
-        `fabric_lot` estimated a parent from a type the general library offered and the
-        district was eventually built of another. A parent sized against a type the child
-        does not use is a parent sized against nothing.
+        `_write_fabric` reaches the districts only *after* the policy has sized the place,
+        so without this step `fabric_lot` would estimate a parent from a type the general
+        library offers while the district is built of another. A parent sized against a
+        type the child does not use is a parent sized against nothing.
 
         So the approved pool and the resolved demand -- the type pool in its approved order,
         the required parameters and features, the requirement ids that made them required,
@@ -3067,11 +3044,11 @@ def solve_place(spec: dict, site: dict, plateau: dict | None, decls: dict, voice
         `caps` is the capability record, and it is the **authority on which type each
         defining part is built as**. A call that passes none behaves as it always did.
 
-        `intent` is the checked intent record (the closure round): its `relation`
-        requirements reach the relation solver as constraints on where the districts stand
-        -- "gathered around a market square" puts the houses on at least three sides of the
-        square before any rectangle is filled -- and its explicit count is laid exactly. A
-        call that passes none lays the place as it always did.
+        `intent` is the checked intent record: its `relation` requirements reach the
+        relation solver as constraints on where the districts stand -- "gathered around a
+        market square" puts the houses on at least three sides of the square before any
+        rectangle is filled -- and its explicit count is laid exactly. A call that passes
+        none lays the place as it always did.
 
     """
     from . import placeshore
@@ -3206,22 +3183,18 @@ def _apply_structures(place, allocation: dict | None, spec: dict) -> None:
 # ------------------------------------------------------------ the owner's action
 
 #: The bounded actions the layout owner has for a built finding, and nothing else. **The
-#: four arrangement actions are the design round's.** The expression round's dense ring
-#: had two owner actions. A district's depth in rows, its bay, its frontage and whether
-#: its houses stand along a street or about a court are four more, they are the
-#: compiler's own (`arrange.arrangements`), and each is certified by `district_compile`
-#: before it is adopted. They are tried in this order, one per finding, so an action
-#: that moved nothing leaves the next one available rather than ending the selection.
-#: **One list, and it is the compiler's.** The neighbourhood round: this was four names
-#: written here by hand while `arrange.ARRANGEMENT_ACTIONS` grew to eight, so the four
-#: operations the spatial stream added -- `compact`, `terrace`, `compact_bay`,
-#: `perimeter` -- existed, were certified, were ranked, and were **unreachable by the
-#: improvement loop**, which routes a finding through this tuple. The crowding answer
-#: for the section is `compact_bay`; a list kept in the module that dispatches and a
-#: list kept in the module that enumerates will drift, and this one had. Read from
-#: `arrange` at import, with the four the loop has always had first so the order a
-#: finding walks is unchanged for every place in the record, and a name `arrange` no
-#: longer offers drops out rather than routing to nothing.
+#: arrangement actions** -- a district's depth in rows, its bay, its frontage, whether
+#: its houses stand along a street or about a court, and the rest `arrange` offers --
+#: are the compiler's own (`arrange.arrangements`), and each is certified by
+#: `district_compile` before it is adopted. They are tried in this order, one per
+#: finding, so an action that moved nothing leaves the next one available rather than
+#: ending the selection. **One list, and it is the compiler's.** A list kept in the
+#: module that dispatches and a list kept in the module that enumerates will drift, and
+#: an operation `arrange` certifies and ranks but this tuple omits is **unreachable by
+#: the improvement loop**, which routes a finding through this tuple. Read from
+#: `arrange` at import, with the four base actions first so the order a finding walks
+#: is unchanged for every place in the record, and a name `arrange` no longer offers
+#: drops out rather than routing to nothing.
 def _arrangement_actions() -> tuple:
     from . import arrange as _arrange
     first = ("row_depth", "bay_width", "frontage", "compound")
@@ -3250,17 +3223,14 @@ REALLOCATE_ACTIONS = (*RESIZE_ANCHOR_ACTIONS, "resize_ring", "grow_land", "enlar
 RING_STEP = {"down": 0.7, "up": 1.4}
 
 #: **One discoverable and executable action inventory, published from the side that
-#: executes them.** The composition round's fifth change, and the review's words: the
-#: inventory disagreed across layers. `pipeline/improve.py`'s `OWNER_ACTIONS` listed
-#: `move_object` for `layout`, which `_reallocate` refuses, and omitted the four
-#: `ARRANGEMENT_ACTIONS` the design round built -- so an action that existed was
-#: undiscoverable and an action that was discoverable did not exist. A list kept in the
-#: stage that dispatches and a list kept in the module that acts will drift; this is the
-#: one the actions are in, so `improve` reads it rather than repeating it. `move_object`
-#: stays on the layout's list on purpose: `_reallocate` refuses it *and* names the owner
-#: that has it (`owner_of_action`) and, for a district's own fabric, the layout action
-#: that does move it (`alternative`). A refusal that routes is worth more to the
-#: dispatcher than an absence.
+#: executes them.** A list kept in the stage that dispatches and a list kept in the
+#: module that acts will drift -- an action that exists becomes undiscoverable, and an
+#: action that is discoverable does not exist. This is the one the actions are in, so
+#: `pipeline/improve.py` reads it rather than repeating it. `move_object` stays on the
+#: layout's list on purpose: `_reallocate` refuses it *and* names the owner that has it
+#: (`owner_of_action`) and, for a district's own fabric, the layout action that does
+#: move it (`alternative`). A refusal that routes is worth more to the dispatcher than
+#: an absence.
 ACTIONS_BY_OWNER = {
     "layout": (*RESIZE_ANCHOR_ACTIONS, "resize_ring", "grow_land", "enlarge_lots",
                "regroup", "redistribute", "move_object", *ARRANGEMENT_ACTIONS),
@@ -3692,21 +3662,17 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
         if not part:
             rec.update(refused=True, why=f"no defining part named `{subject}`")
             return place, rec
-        # **The comparison the round certifies is the one the controller adopts.** The
-        # neighbourhood round's first connected cause, and the review's words: "the
-        # comparison path (`arrange.alternatives`) and controller
-        # (`placesolve._reallocate`) currently choose differently; `bay_width` in the
-        # latter selects the largest lot". What stood here was a private pick over
-        # `arrange.arrangements` -- the *catalogue* of what a fabric offers, which is
-        # uncompiled, uncertified and measured on nothing. `max(lot area)` is not a
+        # **The comparison that certifies is the one the controller adopts.** A private
+        # pick here over `arrange.arrangements` -- the *catalogue* of what a fabric
+        # offers, which is uncompiled, uncertified and measured on nothing -- would let
+        # the comparison and the controller choose differently. `max(lot area)` is not a
         # density decision: a bigger lot is exactly the move that raises allocated cover
-        # and lowers built cover, which is the escape the whole round exists to refuse.
-        # `arrange.alternatives` compiles each option on the district's **own
-        # rectangle**, puts it through the district validator, and orders by a stated
-        # priority over measured quantities -- reservations kept, the frontage the
-        # character asked for, built occupation, street enclosure, then the count. One
-        # ranking authority; the controller takes its first eligible row of this action
-        # and records what it was measured on.
+        # and lowers built cover. `arrange.alternatives` compiles each option on the
+        # district's **own rectangle**, puts it through the district validator, and
+        # orders by a stated priority over measured quantities -- reservations kept, the
+        # frontage the character asked for, built occupation, street enclosure, then the
+        # count. One ranking authority; the controller takes its first eligible row of
+        # this action and records what it was measured on.
         mine = [d for d in place.get("districts") or []
                 if (d.get("defines") == subject or d.get("name") == subject)
                 and int(d.get("structures") or 0) > 0]
@@ -3723,15 +3689,13 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
         # comparison is run on the one the reading named -- the biggest piece of the
         # fabric it is a finding about -- rather than averaged over rectangles the
         # finding never mentions. The record says which. **...and the arrangement it
-        # chooses is then qualified on every rectangle it will govern.** The spatial
-        # design round, and the review's words: "`_reallocate` certifies one named
-        # district, then stores the arrangement on its defining part; the recorded
-        # actions refabricate ten lower-ring districts. A local certificate cannot
-        # establish that a ring-wide change is safe." The scope is stated below
-        # (`scope`), qualified below (`qualified`), and a refusal on any rectangle in it
-        # refuses the action. The cost is one compile per rectangle for the chosen
-        # arrangement, not thirteen: the *comparison* stays local and the
-        # *qualification* is as wide as the decision.
+        # chooses is then qualified on every rectangle it will govern.** The arrangement
+        # is stored on the defining part, so it refabricates every district of that part,
+        # and a certificate on one district cannot establish that a part-wide change is
+        # safe. The scope is stated below (`scope`), qualified below (`qualified`), and a
+        # refusal on any rectangle in it refuses the action. The cost is one compile per
+        # rectangle for the chosen arrangement, not one for every alternative: the
+        # *comparison* stays local and the *qualification* is as wide as the decision.
         scope = sorted(mine, key=lambda d: (-int(d.get("structures") or 0),
                                             str(d.get("name"))))
         on = sorted(on, key=lambda d: -int(d.get("structures") or 0))[:1]
@@ -3780,9 +3744,8 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
                                 for a in here)
                                or f"no alternative of `{action}` for `{subject}`")))
             return place, rec
-        # **A proposal has to be able to help the finding it is offered for.** The
-        # neighbourhood delivery round, and the audit's fifth cause: "naming an owner
-        # and an action does not establish that the action can affect the subject".
+        # **A proposal has to be able to help the finding it is offered for.** Naming an
+        # owner and an action does not establish that the action can affect the subject.
         # Where the comparison could estimate the reading's own measure, only the rows
         # whose estimate moves it the way the finding asks are eligible; where none
         # does, the action is refused **before** the build budget is spent, with the

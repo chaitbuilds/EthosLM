@@ -2,7 +2,7 @@
 
 These are synthetic worlds built in memory -- no server, no world, sub-second. They
 check that the model does what it claims to do. They cannot check that what it claims
-matches Minecraft; that is what scripts/nav_course.py builds in-world for a human.
+matches Minecraft; that takes building each rule in-world and walking it.
 """
 import os
 import sys
@@ -314,7 +314,7 @@ def t_floor_is_the_surface_not_what_stands_on_it():
             f"in; with no register all {len(none)} are")
 
 
-# ------------------------------------------------------- the palette tables, v2 A2
+# ------------------------------------------------------------------ the palette tables
 def t_tables_updated_not_rebuilt():
     """An overlay adds palette entries; it never changes what an entry means.
 

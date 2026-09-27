@@ -1,4 +1,4 @@
-"""The closure round's construction outcomes, as measurements with positive controls.
+"""Construction outcomes, as measurements with positive controls.
 
     $PY scripts/test_closure_construction.py
 
@@ -7,8 +7,9 @@ Every case builds a real type on a flat offline volume through the same `site()`
 (`ethoslm.construction`). A type's own account of what it delivered is checked against
 that measurement and never stands in for it.
 
-  1. The three-storey cottage counterexample: on a 9x9 and a 12x10 lot one storey
-     stands; on a 28x12 control three do. Read off floor levels, not `params.storeys`.
+  1. A three-storey cottage asked for on lots too small for it: on a 9x9 and a 12x10
+     lot one storey stands; on a 28x12 control three do. Read off floor levels, not
+     `params.storeys`.
   2. A requested feature survives after a real adjustment to its cause: the constraint
      names the lot the cottage needs, the cottage is rebuilt on it, three storeys stand.
   3. Every plot type the proofs use returns what survived, and the type's storeys agree

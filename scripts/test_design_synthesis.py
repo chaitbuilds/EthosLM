@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Focused checks of the design synthesis round's changed contracts, with controls.
+"""Focused checks of the design synthesis contracts, with controls.
 
     $PY scripts/test_design_synthesis.py
 
 Probes of the production compiler (`ethoslm.cityresolve`) on synthetic ground, each a
-counterexample to one contract or a positive control:
+case that would break one contract or a positive control:
 
 1. a round request's walls read round: the wall path hugs the circle and every segment
    is axial or 45 degrees; the ring land ends at the wall (no unowned corner);

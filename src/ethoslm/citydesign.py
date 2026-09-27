@@ -1,11 +1,11 @@
 """**The spatial design of a place**: the record the model writes and the compiler consumes.
 
-The design synthesis round. Before it, the model chose types and counts and the
-arithmetic laid everything else: `concentric_layout` squares, `district_asks` strips of
-cardinal lanes, `_lay_court_city`'s fixed court sequence. No prompt could express a
-design outside that vocabulary. This record is the intermediate the model *designs in*:
-hierarchy, boundaries, streets, block grain, courts, landmarks, entrances, levels, and the
-visual choice of materials -- at the level of organisation, never as voxels or a city-sized
+When the model only chooses types and counts, fixed arithmetic lays everything else --
+`concentric_layout` squares, `district_asks` strips of cardinal lanes,
+`_lay_court_city`'s fixed court sequence -- and no prompt can express a design outside
+that vocabulary. This record is the intermediate the model *designs in*: hierarchy,
+boundaries, streets, block grain, courts, landmarks, entrances, levels, and the visual
+choice of materials -- at the level of organisation, never as voxels or a city-sized
 coordinate list. `ethoslm.cityresolve` resolves it deterministically (dimensions, lots,
 feasibility, ground) and returns what it could not honour as findings addressed to the
 design, which is the parent that can change them.

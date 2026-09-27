@@ -136,7 +136,7 @@ def main():
     else:
         print("skip speed: no site_b cache")
 
-    # --- v2 A6: the map and the instance sheet -------------------------------- Two
+    # --- the map and the instance sheet -------------------------------------- Two
     # more drawings, held to the same contract as the two above: a pure function of
     # their input, byte-identical on the same input, and fast enough that looking is
     # never the reason not to.

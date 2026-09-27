@@ -68,11 +68,11 @@ def requirement_read(spec: dict, plan: dict, parts_record: dict,
                      judgment: dict | None = None) -> tuple:
     """The **sentence's** own requirements, checked against what stands. One clause each.
 
-        Every other clause in this file is generated from the spec, and the architecture
-        audit's counterexample is why that is not enough: a sentence asking for a walled
-        village whose spec omitted the wall passed every one of them, because a clause
-        generated from a document cannot notice what the document left out. These come from
-        `ethoslm.intent`, which reads the sentence and has never seen the spec.
+        Every other clause in this file is generated from the spec, and that is not enough:
+        a sentence asking for a walled village whose spec omitted the wall would pass every
+        one of them, because a clause generated from a document cannot notice what the
+        document left out. These come from `ethoslm.intent`, which reads the sentence and
+        has never seen the spec.
 
         Silent where the sentence states nothing this build reads by rule -- "Build Ba Sing
         Se" states no requirement outright, and a clause that holds vacuously is a clause
@@ -83,14 +83,11 @@ def requirement_read(spec: dict, plan: dict, parts_record: dict,
     rec = intent_rec or intent_mod.read(spec.get("sentence") or "")
     if not rec.get("requirements"):
         return [], []
-    # **Everything the requirements are answerable against, and three of them were
-    # missing.** The review's fifth finding, in its second half: this is the place
-    # reader that decides whether the finished place meets the sentence, and it supplied
-    # neither the sourced reading, nor the capability record, nor the inspection's
-    # verdicts. So a named place could never be more than "nothing has been read about
-    # this name yet" however much research the run had done and however the inspection
-    # had judged it -- an unreachable success route beside an isolated false-pass
-    # interface.
+    # **Everything the requirements are answerable against.** This is the place reader
+    # that decides whether the finished place meets the sentence, so it passes the sourced
+    # reading, the capability record and the inspection's verdicts. Without them a named
+    # place could never be more than "nothing has been read about this name yet", however
+    # much research the run had done and however the inspection had judged it.
     checked, found = intent_mod.coverage(rec, spec, plan=plan,
                                          parts_record=parts_record,
                                          resolution=resolution, site=site,
@@ -184,11 +181,10 @@ RING_RELIEF = 3
 def ring_words(spec: dict, layout: dict | None) -> list:
     """**A ring's rank, its elevation and the word the sentence used, kept apart.**
 
-        The expression round put a Japanese hill town's *dense lower ring* on the terrace
-        four blocks **above** its sparse upper ring, and nothing noticed, because `lower`
-        and `upper` had been taken as names for ring 0 and ring 1. They are not names. On a
-        hill they are statements about height, and a place whose rings differ in elevation
-        can be asked whether it honoured them.
+        Taking `lower` and `upper` as names for ring 0 and ring 1 lets a hill town's *dense
+        lower ring* stand on a terrace **above** its sparse upper ring with nothing noticing.
+        They are not names. On a hill they are statements about height, and a place whose
+        rings differ in elevation can be asked whether it honoured them.
 
         Returns one row per ring word the spec's part names carry:
         `{"part", "word", "means", "ring", "level", "agrees", "why"}`. `agrees` is None
@@ -198,11 +194,10 @@ def ring_words(spec: dict, layout: dict | None) -> list:
     rings = [r for r in ((layout or {}).get("rings") or []) if r.get("name")]
     if len(rings) < 2:
         return []
-    # **Social rank is the third thing, and it is not elevation either.** The round's
-    # own instruction: keep radial order, social rank and terrain elevation distinct. a
-    # Lower Ring of the poor and an Upper Ring of the elite -- and reading `upper` there
-    # as a statement about height asks a city to put its rich quarter on a hill because
-    # of a word. Where the rings' own record says the order is social (they differ in
+    # **Social rank is the third thing, and it is not elevation either.** Radial order,
+    # social rank and terrain elevation are kept distinct. Take a Lower Ring of the poor
+    # and an Upper Ring of the elite: reading `upper` there as a statement about height
+    # asks a city to put its rich quarter on a hill because of a word. Where the rings' own record says the order is social (they differ in
     # density, role or voice, which is what a class ranking is in this build), the word
     # is a rank and this clause has nothing to hold it to. A hill town whose rings
     # differ only in where they stand is the case that remains. ...and what decides
@@ -274,7 +269,7 @@ def read(spec: dict, plan: dict, parts_record: dict, *, voice: str | None = None
 
     `built` and `base` are `observe.Volume`s: the place as the waves left it and the
     cached ground before the first part was laid. With both, the `palette/built` clause
-    is asked (A2 of the voice contract); without them it is not, and a stage that has a
+    is asked (see `BUILT_SHARE`); without them it is not, and a stage that has a
     built world always gives it."""
     from . import intent as intent_mod
     parts = pipeline.plan_parts(plan)
@@ -297,8 +292,8 @@ def read(spec: dict, plan: dict, parts_record: dict, *, voice: str | None = None
     #: See `intent.METHODS`. The default is `plan`, because the great majority of the
     #: clauses below are measured on the planned geometry, and a clause that reads the
     #: built world or the construction record says so by passing `method="observed"`.
-    #: The expression round had no such field and promoted every clause to `built_place`
-    #: the moment the last leaf stood.
+    #: Without it every clause would be promoted to `built_place` the moment the last
+    #: leaf stood.
     def clause(name, ok, says, method="plan", **more):
         clauses.append({"clause": name, "holds": bool(ok), "says": says,
                         "method": method, **more})
@@ -324,22 +319,20 @@ def read(spec: dict, plan: dict, parts_record: dict, *, voice: str | None = None
         if d["kind"] == "group":
             # A group defining part is districts, and a district is not built: what it
             # is answerable for is that **its own** quarters have plots in them, and
-            # that those plots stand. **Its own, and standing.** The architecture
-            # audit's second finding, with a probe that reproduced it: this counted the
-            # *global* set of quarters holding planned plots, so a spec declaring
-            # `homes` and `missing_district` passed both presence clauses on a plan
-            # whose only plot was in `homes_row` -- and the plot did not have to stand.
-            # A district nobody drew was present because a different district was, which
-            # is the clearest possible case of a clause generated from the plan rather
-            # than asked of it.
+            # that those plots stand. **Its own, and standing.** Counting the *global*
+            # set of quarters holding planned plots would let a spec declaring `homes`
+            # and `missing_district` pass both presence clauses on a plan whose only plot
+            # was in `homes_row` -- and the plot would not have to stand. A district
+            # nobody drew would be present because a different district was: a clause
+            # generated from the plan rather than asked of it.
             linked = bool(links) or any(
                 a == d["name"] or a.startswith(d["name"] + "_")
                 for p in parts for a in (p.get("in") or []))
-            # **A land district is present when its ground stands.** The expression
-            # round's held-out village: the pasture, a district of no houses, holds only
-            # area leaves (grazing strips, groves), and a clause counting plots read it
-            # as absent. A district asked for no structures is answerable for its areas;
-            # one asked for houses is answerable for its plots, as before.
+            # **A land district is present when its ground stands.** A pasture, a
+            # district of no houses, holds only area leaves (grazing strips, groves), and
+            # a clause counting plots would read it as absent. A district asked for no
+            # structures is answerable for its areas; one asked for houses is answerable
+            # for its plots.
             land = int(d.get("structures") or 0) == 0
             kinds = ("area", "plot") if land else ("plot",)
             mine, up = set(), set()
@@ -446,12 +439,11 @@ def read(spec: dict, plan: dict, parts_record: dict, *, voice: str | None = None
         clauses.append(c)
 
     # --- count ----------------------------------------------------------- **A count is
-    # a count of the thing the sentence counted.** The closure round's proof: sixteen
-    # cottages and a hall stood, the sentence's own clause held at 16, and this clause
-    # failed at 17 because it counted every standing plot. Where the spec carries an
-    # explicit count with a subject, `intent.select` -- the one rule for which leaves a
-    # word names -- picks the plots counted; a spec with no explicit subject counts
-    # every plot, as before.
+    # a count of the thing the sentence counted.** "Sixteen cottages" beside a hall is
+    # sixteen, not seventeen: counting every standing plot would fail a place that the
+    # sentence's own clause passes. Where the spec carries an explicit count with a
+    # subject, `intent.select` -- the one rule for which leaves a word names -- picks the
+    # plots counted; a spec with no explicit subject counts every plot.
     from . import intent as intent_mod
     what = str(((spec.get("explicit_count") or {}) if isinstance(
         spec.get("explicit_count"), dict) else {}).get("what") or "")
@@ -519,17 +511,16 @@ def read(spec: dict, plan: dict, parts_record: dict, *, voice: str | None = None
                                     judgment=judgment)
     clauses += asked
 
-    # **Every clause says what evidence it rests on.** The expression round; the closure
-    # review's fourth finding. A clause measured over the plan while a sample was built,
-    # a clause measured on the sampled leaves, a clause on a place built whole, and a
-    # clause whose subject was never built are four different statements, and they
-    # collapsed into one `holds` flag. An outside-sample clause is `unobserved` and its
-    # `holds` is None -- neither met nor missed -- and it never makes a read hold.
-    # **...and standing leaves do not promote a plan measurement.** The design round;
-    # the expression review's third finding. Coverage and method are two independent
-    # questions, and `built_place` is the conjunction of both: the whole place stood
-    # *and* this clause was read off what stands. A relation measured on the drawing is
-    # `plan` evidence on a village built to the last thatch.
+    # **Every clause says what evidence it rests on.** A clause measured over the plan
+    # while a sample was built, a clause measured on the sampled leaves, a clause on a
+    # place built whole, and a clause whose subject was never built are four different
+    # statements, and one `holds` flag would collapse them. An outside-sample clause is
+    # `unobserved` and its `holds` is None -- neither met nor missed -- and it never
+    # makes a read hold.
+    # **...and standing leaves do not promote a plan measurement.** Coverage and method
+    # are two independent questions, and `built_place` is the conjunction of both: the
+    # whole place stood *and* this clause was read off what stands. A relation measured
+    # on the drawing is `plan` evidence on a village built to the last thatch.
     every_leaf = [p for p in parts if p.get("kind", "plot") in ("plot", "edge", "point",
                                                                   "area")]
     all_stood = bool(every_leaf) and all(stood.get(p["name"], False) for p in every_leaf)
@@ -599,17 +590,15 @@ def read(spec: dict, plan: dict, parts_record: dict, *, voice: str | None = None
                     "with no model call anywhere in it"}
 
 
-# ------------------------------------------------------------- A2, concentric A place
-# of one wall needed one question asked of it: is the wall a closed loop with a gate on
+# ----------------------------------------------------------------- concentric A place
+# of one wall needs one question asked of it: is the wall a closed loop with a gate on
 # it. A place of three needs five more, because "three concentric ring walls" is a
 # statement about how they sit relative to each other and to everything inside them, and
 # every one of those relations is a fact about geometry that no model call has to be
-# spent on. A plan that drew three closed loops side by side would pass every clause the
-# place read had before this one. It also closes open thread 17, which is the same
-# defect a size smaller: nothing in this project has ever checked that a town is
-# **inside** its own wall. they were vanilla worldgen, and no instrument could say so.
-# `inside()` is the one point-in-polygon test that thread says closes it, and every plot
-# is now put through it.
+# spent on. A plan that drew three closed loops side by side would pass every other
+# clause of the place read. The same defect a size smaller is a town that is not
+# **inside** its own wall: `inside()` is the point-in-polygon test for that, and every
+# plot is put through it.
 
 #: How near a gate an arterial may cross a ring and still be crossing it at the gate.
 #: `placeplan.arterial_failures` uses two either way at plan time and this is the same
@@ -653,7 +642,7 @@ def ring_area(path: list) -> float:
 
 
 def rings(spec: dict, parts: list) -> list:
-    """The concentric ring walls of a plan, outermost first. A2."""
+    """The concentric ring walls of a plan, outermost first."""
     out = []
     for d in spec["defining_parts"]:
         if d["relation"] != "concentric" or d["kind"] != "edge":
@@ -667,7 +656,7 @@ def rings(spec: dict, parts: list) -> list:
 
 def concentric_clauses(spec: dict, plan: dict, parts: list, decls: dict,
                        stood: dict) -> list:
-    """The five things "concentric" claims, each as its own clause. A2.
+    """The five things "concentric" claims, each as its own clause.
 
         Silent where the spec asks for no concentric part: a hamlet round a green is not a
         place this has anything to say about, and a clause that holds vacuously on every
@@ -779,8 +768,8 @@ def concentric_clauses(spec: dict, plan: dict, parts: list, decls: dict,
               "innermost ring"),
            innermost=innermost["name"], centre=named, outside=outside)
 
-    # 5. every structure is inside the outermost ring, and a quarter is in one ring.
-    # Open thread 17: one point-in-polygon test per plot, which nothing had.
+    # 5. every structure is inside the outermost ring, and a quarter is in one ring:
+    # one point-in-polygon test per plot.
     outermost = got[0]
     plots = [p for p in parts if p.get("kind", "plot") == "plot"]
     bands = {r["name"]: set() for r in got}
@@ -835,8 +824,8 @@ def compound_clauses(spec: dict, plan: dict, parts: list, decls: dict, stood: di
 
         Silent where the spec has no compound. Three clauses per compound:
 
-          present/<name>   the composition stands -- **its family's** (v2, C0;
-                           `placeplan.compound_composition`): a closed wall of its own with
+          present/<name>   the composition stands -- **its family's**
+                           (`placeplan.compound_composition`): a closed wall of its own with
                            a standing gate on it where the family is walled and gated, and
                            at least the family's standing plots and areas inside the wall
                            (inside the rectangle, where there is none);
@@ -1109,9 +1098,8 @@ def _gates_on(wall: dict, parts: list, decls: dict) -> list:
     return out
 
 
-#: A2 of the voice contract: the share of a part's family-bearing blocks that have to
-#: belong to the voice's six families for the part to have been built in it. Registered
-#: before the first reading. A build in the library's default palette -- cobblestone and
+#: The share of a part's family-bearing blocks that have to belong to the voice's six
+#: families for the part to have been built in it. Registered before the first reading. A build in the library's default palette -- cobblestone and
 #: dark oak -- inside a voice that names neither reads near zero; one that shares a
 #: timber with it reads whatever that timber's share is, a fifth or a third; a build in
 #: the voice reads over nine tenths, the residue being a door hung in a fallback timber
@@ -1119,7 +1107,7 @@ def _gates_on(wall: dict, parts: list, decls: dict) -> list:
 BUILT_SHARE = 0.9
 
 #: **How many family-bearing cells a part has to lay before its share is a reading.**
-#: The craft round, registered before the number that tests it. A part under this is
+#: Registered before the number that tests it. A part under this is
 #: `unread` and not `failed`: a garden of worked earth and planting lays almost nothing
 #: the palette can resolve, and one stray fence made it 0% in the voice.
 BUILT_MIN_CELLS = 24
@@ -1153,10 +1141,10 @@ def built_palette(voice: str | None, parts: list, stood: dict, built, base) -> d
         name = p["name"]
         if not stood.get(name, False):
             continue
-        # **Open ground is not read against a building voice.** The expression round's
-        # town: the temple compound's courts are paved in the podium's stone and read
-        # 60% "in the voice" of the ring they stand in; a square, a court, a field or a
-        # grove is laid in the ground's materials and is unread here, not failed.
+        # **Open ground is not read against a building voice.** A temple court paved in
+        # its podium's stone reads only partly "in the voice" of the ring it stands in;
+        # a square, a court, a field or a grove is laid in the ground's materials and is
+        # unread here, not failed.
         if p.get("kind") == "area":
             unread.append(name)
             continue
@@ -1176,12 +1164,11 @@ def built_palette(voice: str | None, parts: list, stood: dict, built, base) -> d
                 by_fam[f] = by_fam.get(f, 0) + n
         total = sum(by_fam.values())
         # **A part with almost nothing the palette can read is unread, not failed.** The
-        # craft round, and the third time this project has had to write the rule
-        # (`Context.ENCLOSED` at 0.85, `walk_fraction`'s seed): a garden is planted
-        # ground, and since E6 its paths are the setting's own worked earth and its
-        # planting the ground's -- none of which belongs to a material family. One stray
-        # fence left it reading `oak x1, 0% in the voice` and failing the clause for
-        # being exactly what a garden should be. A share of one block is not a share.
+        # same rule as `Context.ENCLOSED` at 0.85: a garden is planted ground, its paths
+        # are the setting's own worked earth and its planting the ground's -- none of
+        # which belongs to a material family. One stray fence would read `oak x1, 0% in
+        # the voice` and fail the clause for being exactly what a garden should be. A
+        # share of one block is not a share.
         if total < BUILT_MIN_CELLS:
             unread.append(name)
             continue

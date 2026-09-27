@@ -1,9 +1,8 @@
 """**What the sentence means, read by an agent and cross-checked by the rules.**
 
-The realization round's first boundary. `intent.read` is a phrase table, and the review
-showed what a phrase table does to an open domain -- not that it misses things, but that
-missing everything reads exactly like asking for nothing, and that a near miss reads as
-the opposite of what was asked:
+`intent.read` is a phrase table, and a phrase table on an open domain does not merely
+miss things: missing everything reads exactly like asking for nothing, and a near miss
+reads as the opposite of what was asked:
 
     "without a wall or a temple"                 wall absent; temple **required**
     "not dense"                                  dense required; `not` an unread word
@@ -219,10 +218,10 @@ def cross_check(sentence: str, interp: dict) -> dict:
             seen.update(others)
             continue
         # **The same subject read to a different value is a disagreement, not an
-        # agreement.** The review reproduced `Build exactly 50 houses.` interpreted as
-        # one house with "one agreement, no contradiction": the count subject matched
-        # and the numbers were never compared. A quoted span establishes where words
-        # occurred, not that the reading preserves their meaning.
+        # agreement.** Matching on subject alone would read `Build exactly 50 houses.`
+        # interpreted as one house as "one agreement, no contradiction": the count
+        # subject matches and the numbers are never compared. A quoted span establishes
+        # where words occurred, not that the reading preserves their meaning.
         differs = _value_disagreement(r, by_rule.get(key, []))
         if differs:
             contradicts.append({"id": r["id"], "subject": list(key),

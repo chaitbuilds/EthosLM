@@ -1,4 +1,4 @@
-"""The unification round: every counterexample the integration review reproduced.
+"""Integration regressions: cross-stage defects, each reproduced through the real path.
 
     $PY scripts/test_unification.py
 
@@ -7,8 +7,7 @@ path** -- `intent.read`, `capability.match` as `stage_plan_levels` calls it, the
 driver loop, the actual preview stage -- and every negative case is paired with a
 positive control, so a check cannot be made to pass by refusing everything.
 
-this records what it must do instead, and the two are kept apart on purpose. Grouped by
-the invariant each belongs to:
+Grouped by the invariant each belongs to:
 
   1. **meaning survives.** A quality the sentence states is a requirement; a negation
      scopes over the feature it negates, not only over walls; a stated setting is
@@ -138,12 +137,10 @@ def t_setting_is_checked_against_the_site():
     flat = {"origin": [0, 0], "size": 64, "relief": 2, "water_pct": 0.0}
     got, _ = intent.coverage(rec, {"defining_parts": []}, site=flat)
     assert _req(got, "setting/cliff")["status"] == "failed", _req(got, "setting/cliff")
-    # **And relief alone is not a cliff.** The realization round: the review found this
-    # clause certifying a property it never measured -- "Site relief alone certifies a
-    # cliff; no local slope, enclosure or channel geometry is needed" -- so 40 blocks
-    # falling evenly across a site is a hillside and says so, 40 blocks falling across
-    # one step of the site's own grid is a face, and a site record with no height grid
-    # answers `unresolved` rather than passing on the relief.
+    # **And relief alone is not a cliff.** Site relief says nothing about local slope,
+    # so 40 blocks falling evenly across a site is a hillside and says so, 40 blocks
+    # falling across one step of the site's own grid is a face, and a site record with
+    # no height grid answers `unresolved` rather than passing on the relief.
     even = {"origin": [0, 0], "size": 64, "relief": 40, "water_pct": 0.0,
             "mean_grid": [[64] * 8 for _ in range(8)]}
     got, _ = intent.coverage(rec, {"defining_parts": []}, site=even)
@@ -175,9 +172,9 @@ def t_unclaimed_word_control():
 def t_source_needs_content_identity():
     """A source is a title, a URL, an access date and a content fingerprint.
 
-        The review: a reading was accepted whose only source was `{"id": "invented"}`. The
-        referenced-id check is real and it checks that a citation points *somewhere*; it did
-        not check that the somewhere is a source.
+        A reading whose only source is `{"id": "invented"}` must be refused. The
+        referenced-id check proves a citation points *somewhere*; it does not prove the
+        somewhere is a source.
 
     """
     claim = {"id": "claim", "says": "Three rings", "source": "s1", "inferred": False}
@@ -211,10 +208,10 @@ def t_dangling_citation_control():
 def t_reading_stages_a_research_job():
     """With no retrieval provider the reading stage **asks**; it does not succeed empty.
 
-        The review's second finding, second half: `stage_reading` completed a reading with
-        no sources and no claims, and the agent job that extracts claims only runs once
-        sources exist -- so a terminal agent, which is a supported runtime, had no route to
-        do the research at all. That is a missing state, not a missing API key.
+        Completing a reading with no sources and no claims would strand a terminal agent,
+        which is a supported runtime: the agent job that extracts claims only runs once
+        sources exist, so it would have no route to do the research at all. That is a
+        missing state, not a missing API key.
 
     """
     with tempfile.TemporaryDirectory(prefix="ethoslm-unify-reading-") as tmp:
@@ -234,10 +231,9 @@ def t_reading_stages_a_research_job():
 def t_capability_reaches_the_solver():
     """`stage_plan_levels` passes the capability record to `solve_place`.
 
-        The review's first finding, reproduced through the production path: matching was
-        called with `names` alone and solving with `vol` and `seed` alone, so the record
-        naming each part's type was written and then not consulted by the thing that chooses
-        each part's type.
+        Through the production path: if matching is called with `names` alone and solving
+        with `vol` and `seed` alone, the record naming each part's type is written and then
+        not consulted by the thing that chooses each part's type.
 
     """
     with tempfile.TemporaryDirectory(prefix="ethoslm-unify-caps-") as tmp:
@@ -344,10 +340,10 @@ def t_agreement_reads_every_realized_leaf():
 def t_pending_agent_work_stops_the_round():
     """A stage waiting on an agent does not let the next stage run.
 
-        The review drove the actual driver: a preview returning an unanswered judge job was
-        followed by `parts`, because `wait=0` skips the wait loop entirely and nothing after
-        it asks whether the stage is still pending. A terminal runtime must get a resumable
-        pending state, not a person remembering to restrict the stage list.
+        Drives the actual driver: a preview returning an unanswered judge job must not be
+        followed by `parts`, even with `wait=0`, which skips the wait loop entirely. A
+        terminal runtime must get a resumable pending state, not a person remembering to
+        restrict the stage list.
 
     """
     with tempfile.TemporaryDirectory(prefix="ethoslm-unify-driver-") as tmp:
@@ -433,9 +429,9 @@ def t_open_feasibility_is_not_planned():
 def t_stale_preview_is_redrawn():
     """A preview whose plan moved is drawn again, not answered from the old reading.
 
-        The review reproduced the bypass in the actual stage: the dependency check noticed
-        the changed plan, the stamp was invalidated, and the early `done` branch returned
-        the original drawing and `reading_1.md` without redrawing anything.
+        Exercises the actual stage: once the dependency check notices the changed plan and
+        invalidates the stamp, the early `done` branch must not return the original drawing
+        and `reading_1.md` without redrawing anything.
 
     """
     home = {"name": "home", "kind": "plot", "type": "cottage", "x0": 10, "x1": 20,
@@ -523,11 +519,10 @@ def t_invalidation_propagates_to_consumers():
 def t_baseline_and_prepared_ground_are_two_grounds():
     """Cutting a terrace does not make the plan that asked for it stale.
 
-        The review's sixth finding, last part: `terrain` fingerprinted `world.npz`, which is
-        the file the plateau and terraces cut into -- so a run that prepared its ground
-        invalidated the plan that decided on the preparation, and the report records exactly
-        that happening to the shoreline case. The baseline is an input and the prepared
-        volume is an output of the same design.
+        `world.npz` is the file the plateau and terraces cut into, so if `terrain`
+        fingerprinted it, a run that prepared its ground would invalidate the plan that
+        decided on the preparation. The baseline is an input and the prepared volume is an
+        output of the same design.
 
     """
     with tempfile.TemporaryDirectory(prefix="ethoslm-unify-ground-") as tmp:
@@ -663,11 +658,10 @@ def t_scale_control_single_negotiation():
 def t_recovery_tries_ground_and_types_before_promising_less():
     """A district short of its promise is grown, then re-typed, and only then reduced.
 
-        The review's fourth finding: the allocation action "does not search alternative
-        region geometry, lot types, site extent or ground works", so the one answer to a
-        district that could not hold its promise was to promise less -- and a district that
-        laid its promised one house could become zero-target open ground, taking the
-        residential demand with it.
+        An allocation that searches no alternative region geometry, lot types, site extent
+        or ground works has one answer to a district that cannot hold its promise: promise
+        less -- and a district that laid its promised one house could become zero-target
+        open ground, taking the residential demand with it.
 
     """
     site = {"origin": [0, 0], "size": 400}
@@ -706,10 +700,9 @@ def t_recovery_tries_ground_and_types_before_promising_less():
 def t_growth_is_bound_to_the_rectangle_first_laid_out():
     """Three growths of half-again do not make a district two and a quarter times over.
 
-        The same arithmetic the review found the scale negotiation getting wrong, in the
-        other direction: a bound re-applied to its own output is a growth rate. Found by
-        running the held-out village, whose shore districts went 2,581 -> 3,870 -> 5,805
-        columns inside a bound of "half as much again".
+        The same arithmetic as the scale negotiation's, in the other direction: a bound
+        re-applied to its own output is a growth rate, and "half as much again" three times
+        over is more than double.
 
     """
     site = {"origin": [0, 0], "size": 400}
@@ -930,10 +923,9 @@ def t_identity_has_a_route_to_close():
     spec = {"defining_parts": []}
     got, _ = intent.coverage(rec, spec, reading=reading)
     assert _req(got, rid)["status"] == "unresolved", _req(got, rid)
-    # **The closure round: a positive verdict closes an identity only when it cites the
-    # claims it rests on and looked at built output.** The old fixture -- a bare
-    # `recognisable: true` off a preview reading -- is the review's false-pass route,
-    # and a negative verdict is consumed however thin its evidence.
+    # **A positive verdict closes an identity only when it cites the claims it rests on
+    # and looked at built output.** A bare `recognisable: true` off a preview reading is
+    # a false-pass route; a negative verdict is consumed however thin its evidence.
     verdict = {"candidate": "c", "looked_at": ["out/x/world_built.npz"],
                "verdicts": [{"about": "identity", "name": "Ringed City",
                              "recognisable": True, "why": "the rings read as the city",

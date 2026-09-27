@@ -1,4 +1,4 @@
-"Build the settlement's circulation, before any structure stands on it.\n\n    ETHOSLM_SETTLEMENT=<name> bash scripts/mcrun.sh scripts/circulate_run.py [material]\n\nReads the plan's structure footprints, routes a walkable network between them, builds it\n-- cut, fill, stairs, retaining, rails where there is a drop -- reserves one threshold\nper structure, and then lints what it built on its own terms:\n\nNothing later can be judged until this passes, which is the point of running it first."
+"Build the settlement's circulation, before any structure stands on it.\n\n    ETHOSLM_SETTLEMENT=<name> bash scripts/mcrun.sh src/ethoslm/pipeline/_commands/circulate_run.py [material]\n\nReads the plan's structure footprints, routes a walkable network between them, builds it\n-- cut, fill, stairs, retaining, rails where there is a drop -- reserves one threshold\nper structure, and then lints what it built on its own terms:\n\nNothing later can be judged until this passes, which is the point of running it first."
 import json
 import os
 import sys
@@ -18,7 +18,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..",
 
 
 def _type_declares_passage(name: str) -> bool:
-    """Does the committed type called `name` say a network may cross it? A5."""
+    """Does the committed type called `name` say a network may cross it?"""
     p = os.path.join(ROOT, "types", f"{name}.py")
     try:
         return bool(pipeline.load_type(p)["passage"]) if os.path.exists(p) else False
@@ -32,7 +32,7 @@ s = settlement.site_info()
 X, Z = s["origin"]
 S = s["size"]
 plan = json.load(open(os.path.join(settlement.STATE, "plan.json")))
-# A4/A5: the plan is a tree and a place has four kinds of part in it. `plan_parts`
+# The plan is a tree and a place has four kinds of part in it. `plan_parts`
 # flattens it (an old flat plan reads as a list of plots, so every standing round routes
 # the same way), and `parts_to_routing` says what each kind means to a network: a plot
 # and an area are sites, an edge is an obstacle, and a point whose type declares
@@ -65,7 +65,7 @@ print(f"ground vs heightmap: {int((hm - heights).max())} blocks of vegetation at
 
 t0 = time.perf_counter()
 # Water is expensive to cross and a wall may not be crossed at all -- except at a gate,
-# which `passable` carries through everything else. A5.
+# which `passable` carries through everything else.
 _avoid = np.where(wet, 40.0, 0.0)
 # ...and, on a designed place, the band at the foot of every terrace
 from ethoslm.pipeline.stages_plan import type_declarations as _type_declarations  # noqa: E402
@@ -75,8 +75,8 @@ for (_wx, _wz) in _routing["obstacles"]:
     _i, _j = _wx - site.x, _wz - site.z
     if 0 <= _i < _avoid.shape[0] and 0 <= _j < _avoid.shape[1]:
         _avoid[_i, _j] = np.inf
-# A4: **the arterials go down first.** They were routed at the place level, before any
-# district was planned, and every district was drawn against them; laying them now and
+# **The arterials go down first.** They are routed at the place level, before any
+# district is planned, and every district is drawn against them; laying them now and
 # handing them to the router as ground it prefers is what makes the lanes join the road
 # rather than run beside it.
 _art_cells = circulate.arterial_cells(plan.get("arterials") or {}, heights, site.x, site.z)

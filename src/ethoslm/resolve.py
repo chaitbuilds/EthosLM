@@ -101,8 +101,8 @@ def resolution_of(spec: dict, place: dict, site: dict,
             "routes": [], "access": [],
             "surface": str(d.get("surface") or "built"),
             "lots": int(d.get("structures") or 0),
-            # the expression round: what this region was sized to and from; the design
-            # round: the arrangement the parent and the child negotiated to get there
+            # what this region was sized to and from, and the arrangement the parent and
+            # the child negotiated to get there
             **{k: d[k] for k in ("target", "land_use", "lot_min", "arrangement")
                if k in d},
             # what the district was told to face, where the design decided; a region
@@ -191,11 +191,9 @@ def resolution_of(spec: dict, place: dict, site: dict,
 def plan_structures(plan: dict | None) -> int:
     """Every building in the plan, wherever in the tree it stands.
 
-        **One accounting rule.** The review found the city's resolution reporting 583
-        structures against an assembled plan of 634: the count was the sum of the districts'
-        compiled lots, and the palace's 51 plots are descendants of a compound rather than
-        of a district, so they were in the plan and in no total. A building is a building
-        whichever parent laid it.
+        **One accounting rule.** A sum of the districts' compiled lots misses every plot
+        that descends from a compound rather than a district -- a palace's halls are in the
+        plan and in no total. A building is a building whichever parent laid it.
 
     """
     from . import pipeline as _pipeline
@@ -207,12 +205,11 @@ def with_realized(resolution: dict, realized: dict, plan: dict | None = None,
                   subject: str | None = None) -> tuple:
     """`(resolution, findings)` -- the record, over what the compiler actually laid.
 
-        **The promise and the realization in one record, so they can be compared.** The
-        review's third finding, and the sentence it turns on: "Do not promise one capacity
-        and independently discover a different one during compilation." Until now `lots` was
-        the allocator's promise and the number of buildings in the plan was a fact nobody
-        wrote next to it; the two lived in different files produced by different rules, and
-        the city's run discovered the difference as a validator refusal 36 districts in.
+        **The promise and the realization in one record, so they can be compared.** Do not
+        promise one capacity and independently discover a different one during
+        compilation. `lots` is the allocator's promise; the number of buildings in the plan
+        is written next to it here, so the difference is read off one record rather than
+        discovered late as a validator refusal.
 
         A district short of its promise is a `layout` finding blocking feasibility -- the
         allocator made the promise and the allocator is who can move it. A district that
@@ -244,23 +241,21 @@ def with_realized(resolution: dict, realized: dict, plan: dict | None = None,
                     "seen_by": "resolve.with_realized", "fixed": False})
         regions.append(r)
     out["regions"] = regions
-    # **Three numbers, and they are three different facts.** `with_realized` used to
-    # overwrite `structures_promised` with the realized total, so the obligation the
-    # programme carried and the count the ground gave became one field and the
-    # difference between them could not be read afterwards. The review's arithmetic: the
-    # city reported 583 against an assembled plan of 634. promised what the programme
-    # obliged this place to hold. Never revised here; only `repair`, at the scale owner
-    # and inside a registered bound, moves it, and it records that it did. allocated
-    # what the allocator budgeted across the districts. Revisable by the layout owner,
-    # and the number a shortfall finding is about. realized what is actually in the plan
-    # -- **every** building, including the descendants of a compound, by one rule
+    # **Three numbers, and they are three different facts.** Overwriting
+    # `structures_promised` with the realized total would make the obligation the
+    # programme carried and the count the ground gave one field, and the difference
+    # between them could not be read afterwards. promised what the programme obliged
+    # this place to hold. Never revised here; only `repair`, at the scale owner and
+    # inside a registered bound, moves it, and it records that it did. allocated what
+    # the allocator budgeted across the districts. Revisable by the layout owner, and
+    # the number a shortfall finding is about. realized what is actually in the plan --
+    # **every** building, including the descendants of a compound, by one rule
     # (`plan_structures`).
     was = resolution.get("bounds") or {}
-    # **The count the sentence made is of the thing it named.** The closure round: a
-    # village of sixteen cottages with a hall on the square realized "17" because every
-    # plot was a structure, and the explicit count was refused for the hall. `subject`
-    # is the count's own word (`cottages`), resolved by the one selector the checker
-    # uses.
+    # **The count the sentence made is of the thing it named.** A village of sixteen
+    # cottages with a hall on the square holds sixteen, not seventeen: counting every
+    # plot as a structure would refuse the explicit count for the hall. `subject` is the
+    # count's own word (`cottages`), resolved by the one selector the checker uses.
     realized_all = plan_structures(plan) if plan is not None else laid
     realized_subject = None
     if subject and plan is not None:
@@ -339,22 +334,22 @@ def capacity_findings(spec: dict, place: dict, resolution: dict,
 def unclaimed_ground(spec: dict, place: dict, site: dict, short: list) -> list:
     """A design short of its band, standing beside ground it never claimed.
 
-        **The measurement that gives recovery a spatial move.** A capacity shortfall was a
-        `scale` finding and nothing else, so the only available answer was "want fewer
-        houses" -- the review's fourth finding, in one sentence: recovery "does not search
-        alternative region geometry, lot types, site extent or ground works". Whether the
-        districts could simply be bigger is a question about the *site*, it is answerable
-        from the rectangles that are already on the record, and it belongs to `layout`.
+        **The measurement that gives recovery a spatial move.** A capacity shortfall that
+        is a `scale` finding and nothing else leaves only one answer, "want fewer houses",
+        and recovery never searches alternative region geometry, lot types, site extent or
+        ground works. Whether the districts could simply be bigger is a question about the
+        *site*, it is answerable from the rectangles that are already on the record, and
+        it belongs to `layout`.
 
         Emitted only when the place is actually short: a design that holds what it promised
         and leaves ground over has chosen to, and that is not a defect.
 
     """
     from .pipeline import stages_plan
-    # **Short, and not merely off.** The closure round's proof: an explicit count of 16
-    # with 18 promised is a capacity finding, and this read every capacity finding as a
-    # shortfall, grew both districts into their free ground and raised their asks to 28
-    # -- the repair for a place with too many houses was more ground for more houses.
+    # **Short, and not merely off.** An explicit count of 16 with 18 promised is a
+    # capacity finding too; read as a shortfall, it would grow the districts into their
+    # free ground and raise their asks -- more ground for more houses, as the repair for
+    # a place with too many.
     short = [f for f in short or []
              if int((f.get("evidence") or {}).get("promised") or 0)
              < int(((f.get("evidence") or {}).get("asked") or
@@ -405,14 +400,14 @@ def findings_for(spec: dict, place: dict, site: dict, intent: dict,
     """
     resolution = resolution_of(spec, place, site, intent, decls=decls,
                                parts_record=parts_record, plan=plan)
-    # **Before the districts compile, the plan is not a plan.** The closure round's
-    # retained failure: coverage was handed the place level's two leaves as if they were
-    # the assembled tree, measured `gathered around` on a hall and a square, found one
-    # cottage where sixteen were asked, found no type declaring a dwelling in use -- and
-    # the repair pass acted on all of it, growing districts and re-asking allocations
-    # against findings that described nothing. What is decidable before assembly is what
-    # the spec declares, what the site is, what the allocator promised and what the
-    # library can build; every measurement of leaves waits for the leaves.
+    # **Before the districts compile, the plan is not a plan.** Handed the place level's
+    # few leaves as if they were the assembled tree, coverage measures `gathered around`
+    # on a hall and a square, finds one cottage where sixteen were asked and no type
+    # declaring a dwelling in use -- and the repair pass would act on all of it, growing
+    # districts and re-asking allocations against findings that describe nothing. What
+    # is decidable before assembly is what the spec declares, what the site is, what the
+    # allocator promised and what the library can build; every measurement of leaves
+    # waits for the leaves.
     checked, found = intent_mod.coverage(intent, spec, plan=plan,
                                          parts_record=parts_record,
                                          resolution=resolution, site=site,

@@ -113,14 +113,14 @@ Do not produce a generic timber-framed cottage with a 45-degree gable roof.
 # pass placed against what the settlement said it was made of, instead of counting
 # families against a number out of a craft book.
 
-# A voice used to be a literal in this file, which is why the place spec could choose a
-# palette and never make one. It is `voices/<name>.json` now, validated on load by
-# `ethoslm.voices`, and this is the reading view every pass written before A2 still asks
-# its questions through: `VOICES[name]["palette"]` is the six roles and `["blurb"]`,
-# `["construction"]`, `["roofs"]`, `["ground"]` and `["signature"]` are the notes.
-# `["roof"]` is new and is the silhouette as `roof()`'s own parameters. It is a live
-# view of the directory rather than a snapshot, because a voice the spec step *authors*
-# has to be visible to the planner in the same run that wrote it.
+# A voice is `voices/<name>.json`, validated on load by `ethoslm.voices`, and not a
+# literal in this file, so the place spec can make a palette and not only choose one.
+# This is the reading view most passes ask their questions through:
+# `VOICES[name]["palette"]` is the six roles and `["blurb"]`, `["construction"]`,
+# `["roofs"]`, `["ground"]` and `["signature"]` are the notes. `["roof"]` is the
+# silhouette as `roof()`'s own parameters. It is a live view of the directory rather
+# than a snapshot, because a voice the spec step *authors* has to be visible to the
+# planner in the same run that wrote it.
 
 class _VoiceTable(Mapping):
     """Every voice under `voices/`, re-read when the directory changes."""
@@ -155,7 +155,7 @@ class _VoiceTable(Mapping):
 
 
 def _view(voice: dict) -> dict:
-    """One validated voice, in the shape every pass before A2 reads."""
+    """One validated voice, in the reading-view shape `VOICES` serves."""
     out = {"name": voice["name"], "palette": dict(voice["roles"]),
            "roles": dict(voice["roles"]), "roof": dict(voice["roof"]),
            "roof_civic": (dict(voice["roof_civic"]) if voice.get("roof_civic") else None),
@@ -195,7 +195,7 @@ def silhouette_distance(a: str, b: str) -> int:
 
 def partner_voice(name: str) -> str:
     """The voice on disk whose silhouette is least like this one's -- **derived from
-        the directory, never named**. v2, C0.
+        the directory, never named**.
 
         Among the voices that declare a silhouette, the one at the greatest
         `silhouette_distance` from `name`, ties by name; a partner with an explicit
@@ -334,14 +334,14 @@ def fittings_for(kind: str) -> str:
 
 def _colour_note(material: str) -> str:
     """` (mid warm grey)` for a material the colour table knows, and nothing for one it
-        does not. v2, A7.
+        does not.
 
-        The card has always named the materials and never said what colour they are, so
-        every pass that reads it -- a builder, a type's author, the judge's brief -- has had
-        to know Minecraft's block list by heart. `block_colour` has had the answer all
-        along. A family with no reading is named **without** a colour rather than with a
-        guessed one, which is the rule the family list already follows: a wrong colour is
-        worse than none, and magenta is what "nobody has met this block" looks like.
+        A card that names the materials and not their colour makes every pass that reads
+        it -- a builder, a type's author, the judge's brief -- know Minecraft's block list
+        by heart; `block_colour` has the answer. A family with no reading is named
+        **without** a colour rather than with a guessed one, which is the rule the family
+        list already follows: a wrong colour is worse than none, and magenta is what
+        "nobody has met this block" looks like.
 
     """
     from .preview import UNKNOWN, block_colour

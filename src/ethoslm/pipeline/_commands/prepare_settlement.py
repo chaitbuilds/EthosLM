@@ -1,4 +1,4 @@
-'Pre-generate a settlement site and write the terrain briefing every pass reads.\n\n    bash scripts/mcrun.sh scripts/prepare_settlement.py [X Z SIZE]'
+'Pre-generate a settlement site and write the terrain briefing every pass reads.\n\n    bash scripts/mcrun.sh src/ethoslm/pipeline/_commands/prepare_settlement.py [X Z SIZE]'
 import sys, os, json
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "src"))
 from ethoslm import settlement, world

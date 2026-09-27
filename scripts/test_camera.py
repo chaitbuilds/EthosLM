@@ -354,7 +354,7 @@ def _standing_shots():
 
 @case
 def c_a7_the_two_whole_place_frames_are_placeable_on_round_11():
-    """A7, on the last town this project built.
+    """The two whole-place frames are placeable, on a built town.
 
         "Not black" is `render.check_frames` over the rendered PNGs and it needs Chunky, so
         what is asserted here is the half that can be: both cameras stand in open air, both

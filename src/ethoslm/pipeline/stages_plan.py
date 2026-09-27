@@ -14,56 +14,52 @@ from .. import spec as spec_mod
 
 PART_GEOMETRY = ("label", "kind", "x0", "z0", "x1", "z1",
                  "path", "width", "at", "facing", "size", "passage",
-                 # demo-polish 2b: a point standing on an edge carries the edge's type,
-                 # height and floor (`edge`), and an edge carries the points standing on
-                 # it (`gates`). Written by `stages_build.annotate_gates`; read by the
+                 # a point standing on an edge carries the edge's type, height and
+                 # floor (`edge`), and an edge carries the points standing on it
+                 # (`gates`). Written by `stages_build.annotate_gates`; read by the
                  # gate types and the wall types.
                  "edge", "gates",
                  # An edge's terrace level, from the layout, so the wall stands on the
                  # terrace edge at one level, and the face the spec's words chose for it
                  "level", "face",
                  # **The spatial decision, carried to the only place it is realized.**
-                 # The neighbourhood delivery round, and the audit's first cause. This
-                 # tuple is the whole of what a leaf hands `site()` -- through
+                 # This tuple is the whole of what a leaf hands `site()` -- through
                  # `instantiated_source`, through `settle_ground`'s `declare`, and
-                 # through the per-part rebuild -- and until now it carried the lot's
-                 # rectangle and not what the plan had decided to do with it: *
-                 # `attached` names the flanks the next house stands against.
-                 # `Builder._insets` has dropped the pad's inset on an attached side
-                 # since v2 C2 and `district_compile` has written the field since;
-                 # production never carried it, so `_insets` saw four free sides,
-                 # `lower_ring_north_1_b3_0_01`'s planned 6x13 attached lot handed
-                 # `build()` a 4x11 pad, and the row house that stood on it was four
-                 # columns wide with its party walls four columns short of its
-                 # neighbours'. A street of terraces that reads from the air as detached
-                 # houses on lawns is this line. * `front` is the side of the plot its
-                 # street is on, decided by the compiler from the block's own grain.
-                 # Without it a type has to infer its frontage from the reserved
-                 # doorstep, which is a different question with the same answer only
-                 # most of the time. * `wall_alt` is the second wall material the
-                 # compiler spread over the whole street rather than the per-part hash
-                 # `TypeBuilder` falls back to when the leaf does not say (`buildlib`
-                 # 5350). * `floor` is the level the plan designed this plot's ground at
-                 # -- the district terrace `placeplan.district_ground` chose and
-                 # `stage_terraces` cut to. The block design round, and the audit's
-                 # first cause: without it `Builder._decide_rect` took the floor from
-                 # whatever doorstep the circulation pass had reserved, and
-                 # `_within_reach` let a lane three blocks below the terrace pull the
-                 # house down to it. A doorstep may move a floor by a step; a lane may
-                 # not sink a house. Adding a name here does not make a type read it:
-                 # every consumer is `part.get(...)` with the old behaviour as its
-                 # default. * `site` / `court_site` are the quarter design round's
-                 # compiled spatial solution -- a plot's pad, floor, facing, door and
-                 # landing; a court's paving, owned margin, passage, landing and floor
-                 # (`district_compile.site_solve`). `Builder.declare`, `_site_part` and
-                 # `_site_area` build exactly that where a leaf carries one, and the old
-                 # path where it does not.
+                 # through the per-part rebuild -- so a decision the plan made about a
+                 # lot reaches the builder only if it is named here.
+                 # * `attached` names the flanks the next house stands against.
+                 #   `Builder._insets` drops the pad's inset on an attached side; without
+                 #   the field it sees four free sides, the pad comes back inset all
+                 #   round, and a row house stands narrower than its lot with its party
+                 #   walls short of its neighbours' -- a street of terraces that reads
+                 #   from the air as detached houses on lawns.
+                 # * `front` is the side of the plot its street is on, decided by the
+                 #   compiler from the block's own grain. Without it a type has to infer
+                 #   its frontage from the reserved doorstep, which is a different
+                 #   question with the same answer only most of the time.
+                 # * `wall_alt` is the second wall material the compiler spread over the
+                 #   whole street rather than the per-part hash `TypeBuilder` falls back
+                 #   to when the leaf does not say.
+                 # * `floor` is the level the plan designed this plot's ground at -- the
+                 #   district terrace `placeplan.district_ground` chose and
+                 #   `stage_terraces` cut to. Without it `Builder._decide_rect` takes the
+                 #   floor from whatever doorstep the circulation pass reserved, and
+                 #   `_within_reach` lets a lane three blocks below the terrace pull the
+                 #   house down to it. A doorstep may move a floor by a step; a lane may
+                 #   not sink a house.
+                 # * `site` / `court_site` are the compiled spatial solution -- a plot's
+                 #   pad, floor, facing, door and landing; a court's paving, owned
+                 #   margin, passage, landing and floor (`district_compile.site_solve`).
+                 #   `Builder.declare`, `_site_part` and `_site_area` build exactly that
+                 #   where a leaf carries one, and the old path where it does not.
+                 # Adding a name here does not make a type read it: every consumer is
+                 # `part.get(...)` with the old behaviour as its default.
                  "attached", "front", "wall_alt", "floor", "site", "court_site",
-                 # the design synthesis round: a ring wall cut into per-region runs
-                 # carries the whole ring (its path, its designed floors, its gates), so
-                 # each run levels its walk and places its towers from the ring and not
-                 # from the ground it reads -- which, beside a built neighbour, is that
-                 # neighbour's wall (`types/wall.py`, the curved engine)
+                 # a ring wall cut into per-region runs carries the whole ring (its path,
+                 # its designed floors, its gates), so each run levels its walk and
+                 # places its towers from the ring and not from the ground it reads --
+                 # which, beside a built neighbour, is that neighbour's wall
+                 # (`types/wall.py`, the curved engine)
                  "ring_path", "ring_floors", "ring_gates")
 
 
@@ -76,8 +72,8 @@ PART_GROUP_KINDS = ("district", "quarter")
 def plan_parts(plan: dict) -> list:
     """Every leaf of the plan tree, in order, each carrying the groups it is inside.
 
-        An old plan -- `{"structures": [...]}`, every round up to 11 -- is read as one
-        flat list of plot leaves, so nothing that ever ran stops running. A new plan is
+        An old plan -- `{"structures": [...]}` -- is read as one flat list of plot
+        leaves, so nothing that ever ran stops running. A new plan is
         `{"parts": [...]}` where a node is either a group with `children` or a leaf with a
         kind and its geometry, and `in` on each leaf is the names of its ancestors, outermost
         first: that is the only new fact a tree carries and it is what a wave, a lint scope
@@ -92,13 +88,11 @@ def plan_parts(plan: dict) -> list:
     def walk(nodes, ancestry, answers):
         for n in nodes:
             kind = n.get("kind", "plot")
-            # **The defining part a leaf answers, inherited.** The review's third
-            # finding, and it is why capability reconciliation found nothing in
-            # production: `placeplan.assemble` writes `defines` on the *quarter*, this
-            # flattener carried only the ancestor names, and `capability._types_used`
-            # reads leaf `defines` -- so the forty houses of a district were compared
-            # with nothing at all and only the handful of leaves that carry `defines`
-            # themselves were ever checked. A leaf answers the nearest defining part
+            # **The defining part that a leaf answers, inherited.** `placeplan.assemble`
+            # writes `defines` on the *quarter* and `capability._types_used` reads leaf
+            # `defines`, so carrying only the ancestor names would leave the houses of a
+            # district compared with nothing at all and only the leaves that carry
+            # `defines` themselves checked. A leaf answers the nearest defining part
             # above it; where it names its own, its own wins.
             mine = n.get("defines") or n.get("compound") or answers
             if kind in PART_GROUP_KINDS or n.get("children"):
@@ -116,8 +110,8 @@ def plan_parts(plan: dict) -> list:
 def plan_plots(plan: dict) -> list:
     """The plot leaves of a plan, in plot-registry shape: label and rectangle.
 
-        The same list an old plan's `structures` gives, which is the compatibility A4 is
-        held to: every stage downstream reads plots and none of them has to know whether
+        The same list an old plan's `structures` gives, which is the compatibility the
+        tree plan is held to: every stage downstream reads plots and none of them has to know whether
         the plan that produced them was a tree.
 
     """
@@ -186,7 +180,7 @@ def part_rects(part: dict) -> list:
 
 
 def plan_ground(parts: list, vol=None) -> dict:
-    """Per leaf: the relief and the water over the ground it is drawn on. A2.
+    """Per leaf: the relief and the water over the ground it is drawn on.
 
         `plot_ground`'s measurement over an arbitrary rectangle rather than over a round's
         own registry, so a plan can be classified before anything has been reserved. None
@@ -258,17 +252,17 @@ def plan_failures(parts: list, decls: dict, ground: dict | None = None,
                  f"{form}; a place is built in one family of form, plus the "
                  f"{' and '.join(UNIVERSAL_FORMS)} every place has",
                  allowed=[form, *UNIVERSAL_FORMS])
-        # A2: ...and what it is **for**, which the form does not say. The leaf carries
+        # ...and what it is **for**, which the form does not say. The leaf carries
         # its district's role -- `placeplan.district_plots` and `placeplan.assemble`
         # stamp it from the defining part the district was drawn for -- so this is the
         # one place the two declarations are put side by side.
         admits = (tuple(p["admits"]) if p.get("admits") is not None
                   else (COMPOUND_ROLES if p.get("compound") else ()))
-        # **A character-declared landmark is the district's own deliberate choice.** The
-        # closure round's held-out hamlet: a smithy declared as the homes district's
-        # landmark was refused because a workshop is an urban type in a rural district.
-        # The role rule keeps a compiler from filling a farm quarter with shops; it does
-        # not overrule a landmark the character's author named by type.
+        # **A character-declared landmark is the district's own deliberate choice.** A
+        # smithy declared as a homes district's landmark would otherwise be refused
+        # because a workshop is an urban type in a rural district. The role rule keeps a
+        # compiler from filling a farm quarter with shops; it does not overrule a
+        # landmark the character's author named by type.
         landmark = str(p.get("name") or "").startswith("landmark_")
         if not landmark and not role_ok(decl.get("role"), p.get("role"), compound=bool(p.get("compound")),
                        admits=admits):
@@ -347,8 +341,8 @@ def plan_failures(parts: list, decls: dict, ground: dict | None = None,
                           for q in (a, b))
             if crosses and "edge" in kinds:
                 continue
-            # v2, C2: ...and two **attached** leaves on a shared frontage, party wall to
-            # party wall: the one other touch a place is made of.
+            # ...and two **attached** leaves on a shared frontage, party wall to party
+            # wall: the one other touch a place is made of.
             if party_wall(a, b, decls):
                 continue
             m = max(clear[i], clear[j])
@@ -367,7 +361,7 @@ def plan_failures(parts: list, decls: dict, ground: dict | None = None,
 
 
 def party_wall(a: dict, b: dict, decls: dict) -> bool:
-    """Do these two leaves stand party wall to party wall? v2, C2.
+    """Do these two leaves stand party wall to party wall?
 
         Both plots of types that declare `ATTACHED`, both fronting the same side, and
         flank against flank -- edge-adjacent across the axis their front runs along, with
@@ -399,7 +393,7 @@ def _rects_overlap(a: list, b: list) -> bool:
 
 
 def needs_table(decls: dict) -> str:
-    """Every type's `NEEDS`, as the table the planner's brief carries. A2.
+    """Every type's `NEEDS`, as the table the planner's brief carries.
 
         The planner cannot draw a plot big enough for a townhouse without being told what a
         townhouse needs, and the plot is not the pad: what it has to draw is
@@ -483,9 +477,9 @@ def part_registry_row(part: dict, passage: bool = False) -> dict:
     # -- and a field that is present on some rows and absent on others is a field a
     # reader has to guess at.
     row["kind"] = part.get("kind", "plot")
-    # **The enclosure a court claims travels with it into the registry.** The block
-    # design round. `usable` reads the registry and `parts.json`, and neither carried a
-    # field the compiler wrote on a leaf. The claim is the plan's;
+    # **The enclosure a court claims travels with it into the registry.** `usable` reads
+    # the registry and `parts.json`, and neither carries a field the compiler wrote on a
+    # leaf unless it is copied here. The claim is the plan's;
     # `usable.court_enclosed` reads the assembled blocks and says whether it is true of
     # the world, which is the other half.
     if part.get("enclosure"):
@@ -513,10 +507,9 @@ TYPE_FORBIDDEN = _type_forbidden()
 
 #: What a type file declares at the top level. A type is a **form** and the palette is
 #: the settlement's, so a type declares which family of form it belongs to and says
-#: nothing at all about materials. Every one of the seven types written before A1
-#: answered `STYLE` with a voice's *blurb* rather than its name -- seven for seven, open
-#: thread 11 -- which is a contract that needed an example rather than a sentence.
-#: `FORM` is four words and it is one of them.
+#: nothing at all about materials. A free-text style slot gets answered with a voice's
+#: *blurb* rather than a name, which is a contract that needs a closed set rather than a
+#: sentence: `FORM` is one of the words in `FORMS`.
 TYPE_DECLARATIONS = ("FORM", "PARAMS")
 
 #: The families of form a type may belong to. Two are regional -- what the building
@@ -559,9 +552,9 @@ UNIVERSAL_ROLES = ("civic",)
 def read_role(ns: dict, where: str = "a type") -> str | None:
     """`ROLE` off a type's namespace, checked. None where the file does not declare one.
 
-        Optional here for `NEEDS`' reason: a type written before A2 says nothing and is
-        therefore admissible anywhere, which is exactly what the plan did before A2 existed.
-        `test_types.py` is what holds every committed file to declaring it.
+        Optional here for `NEEDS`' reason: a type that says nothing is admissible
+        anywhere, so a type file that predates the declaration keeps building exactly as
+        it did.
 
     """
     got = ns.get("ROLE")
@@ -578,9 +571,9 @@ def read_role(ns: dict, where: str = "a type") -> str | None:
 #: The roles a **compound** of the default composition admits over its own: a walled
 #: great thing has a wall and a gate whatever it is for. `placeplan.COMPOUND_ROLES` is
 #: the same tuple; it lives there for the brief and here for the refusal, and both are
-#: `spec.COMPOSITION_DEFAULT`'s. v2, C0: a compound's leaves carry what their family
-#: admits (`admits`, stamped by `placeplan.compound_parts`), and a leaf that carries
-#: none -- a plan from before -- admits this.
+#: `spec.COMPOSITION_DEFAULT`'s. A compound's leaves carry what their family admits
+#: (`admits`, stamped by `placeplan.compound_parts`), and a leaf that carries none -- an
+#: older plan -- admits this.
 COMPOUND_ROLES = tuple(spec_mod.COMPOSITION_DEFAULT["admits"])
 
 
@@ -690,7 +683,7 @@ def read_needs(ns: dict, where: str = "a type") -> dict:
 
 
 def needs_footprint_failure(part: dict, needs: dict) -> str | None:
-    """Why this part's pad is outside the type's declared footprint, or None. A1."""
+    """Why this part's pad is outside the type's declared footprint, or None."""
     from ..buildlib import Builder
     kind = part.get("kind", "plot")
     w, d = Builder.pad_extent(part)
@@ -761,14 +754,13 @@ def ground_class(relief: int, water_pct: float) -> str:
     return "dry"
 
 
-#: `{(path, size, mtime_ns): declaration}` -- a type file read once per process. **The
-#: realization round, found by profiling the compiler.** `_compile_once` asks
-#: `placeplan.fabric` and `district_target` what a lot of this density costs, and each
-#: of those walks every committed type; one compile of an 84x35 district executed 768
-#: type files and spent 2.7 of its 2.9 seconds inside `compile()`. The district
-#: compiler's search runs that up to 28 times, so one small district cost 96 seconds --
-#: and the reason planning could not afford to ask the *actual* construction logic how
-#: many houses a rectangle holds was almost entirely this. Keyed on the file's identity
+#: `{(path, size, mtime_ns): declaration}` -- a type file read once per process.
+#: `_compile_once` asks `placeplan.fabric` and `district_target` what a lot of this
+#: density costs, and each of those walks every committed type, so without the cache one
+#: compile of a small district executes hundreds of type files and spends nearly all its
+#: time inside `compile()`, and the district compiler's search multiplies that. This is
+#: what lets planning afford to ask the *actual* construction logic how many houses a
+#: rectangle holds. Keyed on the file's identity
 #: and not its name, so a type edited mid-run is read again: the same rule
 #: `deps.content_print` uses, for the same reason.
 _TYPE_CACHE: dict = {}
@@ -803,53 +795,51 @@ def load_type(path: str) -> dict:
             f"build(b, part, seed, **params); this one is missing "
             f"{', '.join(missing + ([] if callable(ns.get('build')) else ['build']))}")
     got = {"path": path, "src": src, "form": read_form(ns, where=path),
-            # A2: what it is for, beside what it is built in. See `read_role`.
+            # what it is for, beside what it is built in. See `read_role`.
             "role": read_role(ns, where=path),
             "params": dict(ns["PARAMS"]), "lines": len(src.splitlines()),
-            # A3: which kind of part this type builds, and whether a network may cross
-            # it. Optional, and a plot where it is not said, because every type written
-            # before A3 is a building on a plot and none of them says so.
+            # which kind of part this type builds, and whether a network may cross it.
+            # Optional, and a plot where it is not said, because a type that does not
+            # say is a building on a plot.
             "kind": ns.get("KIND", "plot"), "passage": bool(ns.get("PASSAGE", False)),
-            # the architecture round: a type may say which **family** of part it builds.
-            # Optional, because the family has always been read off the committed name
-            # and every file on disk predates this; where a file says it, its own word
-            # wins (`capability.family_of`).
+            # a type may say which **family** of part it builds. Optional, because the
+            # family is otherwise read off the committed name; where a file says it,
+            # its own word wins (`capability.family_of`).
             "family": ns.get("FAMILY"),
-            # the integration round: a type may say which **named tradition** it is
-            # built in -- `japanese`, `german` -- which `FORM`'s four coarse families
-            # cannot express. Optional and unset on every committed file, which is
-            # exactly why a request for a Japanese village leaves its tradition
-            # requirement `unresolved` instead of passing on a form family.
+            # a type may say which **named tradition** it is built in -- `japanese`,
+            # `german` -- which `FORM`'s coarse families cannot express. Optional, and a
+            # request for a tradition no type declares leaves its tradition requirement
+            # `unresolved` instead of passing on a form family.
             "tradition": ns.get("TRADITION"),
-            # the realization round: **what this type is for**, which is not what it is
-            # built in (`FORM`), what work it is for (`ROLE`) or what kind of part it is
-            # (`FAMILY`). The review: "An allowed plot type and a coarse role do not
-            # establish that a dwelling's function has been fulfilled." A role of
-            # `rural` is satisfied by a hall, a temple and a barn; a sentence asking for
-            # houses people live in is not. Optional, and a type that declares none
-            # fulfils no function -- which is the honest answer and the one that keeps
-            # the obligation visible rather than letting the nearest label close it.
+            # **what this type is for**, which is not what it is built in (`FORM`),
+            # what work it is for (`ROLE`) or what kind of part it is (`FAMILY`). An
+            # allowed plot type and a coarse role do not establish that a dwelling's
+            # function has been fulfilled: a role of `rural` is satisfied by a hall, a
+            # temple and a barn; a sentence asking for houses people live in is not.
+            # Optional, and a type that declares none fulfils no function -- which is
+            # the honest answer and the one that keeps the obligation visible rather
+            # than letting the nearest label close it.
             "function": ns.get("FUNCTION"),
-            # v2, C2: a plot type whose flanks are party walls says so, and may then
-            # stand touching the next such leaf on a shared frontage.
+            # a plot type whose flanks are party walls says so, and may then stand
+            # touching the next such leaf on a shared frontage.
             "attached": bool(ns.get("ATTACHED", False)),
             # a layout draws an octagon only for a type that does
             "diagonal": bool(ns.get("DIAGONAL_RUNS", False)),
-            # What it needs from the ground. Optional here for the same reason. Every
-            # file under `types/` declares it and `test_types.py` is what says so.
+            # What it needs from the ground. Optional here for the same reason; every
+            # file under `types/` declares it.
             "needs": read_needs(ns, where=path),
             "declares_needs": ns.get("NEEDS") is not None,
             # **What this type actually fills, which is not always its rectangle.** The
-            # design round: the great wall lays piers, a parapet corbel and a switchback
-            # stair outside its declared band, so planning, ground, routing and the
-            # checks each had their own guess at how much room it takes. A type that
+            # great wall lays piers, a parapet corbel and a switchback stair outside its
+            # declared band, so without this planning, ground, routing and the checks
+            # would each guess at how much room it takes. A type that
             # knows publishes `occupied(part, **params)` and everything reads that one
             # answer; a type that does not is its footprint plus its declared clearance.
             # See `types/great_wall.occupied` and `ground.occupied_envelope`.
             "occupied": ns.get("occupied") if callable(ns.get("occupied")) else None,
-            # the design resolution round: **the house a pad holds**, decided before a
-            # block is laid -- rooms, court, storeys, or the pad it would need. Read by
-            # `ethoslm.formplan` for admission and by the type's own `build()`.
+            # **the house a pad holds**, decided before a block is laid -- rooms, court,
+            # storeys, or the pad it would need. Read by `ethoslm.formplan` for
+            # admission and by the type's own `build()`.
             "form_plan": ns.get("form_plan") if callable(ns.get("form_plan")) else None}
     if key is not None:
         _TYPE_CACHE[key] = got
@@ -905,7 +895,7 @@ SWEEP_MAX = 4
 
 
 def param_combinations(spec: dict, most: int = SWEEP_MAX) -> list:
-    """Every combination of a type's own `PARAMS` a checker stands it at. B1.
+    """Every combination of a type's own `PARAMS` a checker stands it at.
 
         Every value of a choice, and every value of an int range no wider than `most` --
         which is every `storeys`, every `dormers` and every `width` this project has. A
@@ -1021,12 +1011,11 @@ def _retrieval_provider():
 
 
 def _research_handoff(rnd, sentence: str, out_dir: str) -> dict | None:
-    """**The review's missing job.** `stage_reading` completed an empty reading whenever no
-        provider was configured, and the claims job -- the only agent job in the reading --
-        ran *after* sources existed. So a request that names a place got `provider: none`,
-        no sources, no claims, and an identity obligation with nothing behind it, and there
-        was no state in which a terminal agent could supply what was missing. A terminal
-        agent is a supported runtime; this is the state it answers in.
+    """**The research job, handed to a terminal agent.** With no retrieval provider
+        configured, a request that names a place would otherwise get `provider: none`, no
+        sources, no claims, and an identity obligation with nothing behind it -- the claims
+        job runs only *after* sources exist. A terminal agent is a supported runtime; this
+        is the state in which it supplies the sources.
 
     """
     from .. import contracts, evidence as evid
@@ -1039,9 +1028,9 @@ def _research_handoff(rnd, sentence: str, out_dir: str) -> dict | None:
         return None
     what = evid.classify(sentence)
     # **the question this answer will belong to.** A research answer is keyed to its
-    # sentence for the same reason a gathering is: the review reproduced a run that
-    # changed its sentence and kept the previous one's research, and a terminal answer
-    # is exactly as transferable as a retrieved one, which is to say not at all.
+    # sentence for the same reason a gathering is: a run that changes its sentence must
+    # not keep the previous one's research, and a terminal answer is exactly as
+    # transferable as a retrieved one, which is to say not at all.
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "asked.json"), "w") as fh:
         json.dump({"sentence": sentence,
@@ -1117,7 +1106,7 @@ def _adopt_research(sentence: str, out_dir: str) -> dict | None:
 
 
 def stage_reading(rnd, be, results: dict) -> dict:
-    """What this request is about, before anything is planned. The architecture round.
+    """What this request is about, before anything is planned.
 
         Two records come out of it, and they are different things on purpose:
 
@@ -1147,13 +1136,12 @@ def stage_reading(rnd, be, results: dict) -> dict:
                 "provider": rec["provider"]}
     os.makedirs(rnd.state, exist_ok=True)
     it = intent_mod.read(rnd.sentence)
-    # **One producer for `intent.json`.** The review's fifth finding, reproduced by the
-    # closure runner: this stage stamped `intent.json` as its output, `stage_interpret`
-    # rewrote the same file, and the two took turns calling each other stale on every
+    # **One producer for `intent.json`.** `stage_interpret` also writes it, and two
+    # stages stamping the same file take turns calling each other stale on every
     # unchanged replay. The rules' own reading is kept beside the record as
     # `intent.rules.json` -- it is what the cross-check quotes -- and `intent.json` is
     # written here only where no interpretation of this sentence exists yet, so a round
-    # with no interpreter keeps the rules' reading exactly as it always did.
+    # with no interpreter keeps the rules' reading.
     json.dump(it, open(rnd.rel("intent.rules.json"), "w"), indent=1)
     interp = contracts.load(rnd, "interpretation")
     if interp is None or interp.get("sentence") != rnd.sentence \
@@ -1357,9 +1345,8 @@ def explicit_count_of(rnd) -> dict | None:
 
 #: How much of a place's square the fabric, its land and its lanes actually occupy. The
 #: rest is the arterial's band, the margins and the ground between districts that no
-#: district owns. Registered from the expression round's farm (a 192 square holding
-#: 26,600 columns of district against 36,864) and used only to turn a demand in columns
-#: into a side; the layout refuses or accepts on its own arithmetic afterwards.
+#: district owns. Measured on a 192-square farm (26,600 columns of district against
+#: 36,864) and used only to turn a demand in columns into a side; the layout refuses or accepts on its own arithmetic afterwards.
 FOOTPRINT_PACKING = 0.72
 
 
@@ -1367,12 +1354,11 @@ def _footprint_from_demand(rnd, spec: dict) -> dict | None:
     """**A place is as big as what it has to hold.** Raise `needs.footprint` where the
         resolved demand needs more ground than the count alone implies.
 
-        The design round's first contract, at the one place it had not reached: the
-        footprint. `spec.footprint_for` derives it from the count and the kind, so sixteen
+        `spec.footprint_for` derives the footprint from the count and the kind, so sixteen
         cottages are a 192-column village whether each stands on a 12x10 lot or on the 24x24
         one a **required second storey** forces -- four times the ground, on a square that
-        never moved. The expression round could not notice, because nothing asked the type
-        what the request needed of it before the place was sized.
+        never moved. The count cannot see that, because it never asks the type what the
+        request needs of it.
 
         So the demand is resolved here, before the site is searched, and every part's
         `land_need` is summed over `FOOTPRINT_PACKING`. The footprint only ever **grows**,
@@ -1454,12 +1440,11 @@ def stage_place_spec(rnd, be, results: dict) -> dict:
             doc = spec_mod.merge_hand_back(json.load(open(first_p)), doc, fields)
             doc["hand_back"] = {"fields_taken": fields, "from_attempt": n,
                                 "rest_from": os.path.relpath(first_p, _pipeline.ROOT)}
-        # **The count the interpretation read, handed to the spec.** The closure round's
-        # retained first failure: `read_spec` derived the band from `count_in` alone and
-        # sized "sixteen low cottages" at fifty-two, because `sixteen` is not in the
-        # regex's table and nothing consulted `intent.json`, where the reader had
-        # written n=16 exact. An explicit quantity is the sentence's and it survives
-        # from here on.
+        # **The count the interpretation read, handed to the spec.** Without it
+        # `read_spec` derives the band from `count_in` alone, a regex whose number-word
+        # table need not hold `sixteen`, and "sixteen low cottages" is sized by the
+        # kind's default rather than the n=16 the reader wrote in `intent.json`. An
+        # explicit quantity is the sentence's and it survives from here on.
         count = explicit_count_of(rnd)
         try:
             s = spec_mod.read_spec({k: v for k, v in doc.items() if k != "hand_back"},
@@ -1514,15 +1499,14 @@ def stage_place_spec(rnd, be, results: dict) -> dict:
                 wrote.append(os.path.relpath(_voices.path_for(name), _pipeline.ROOT))
                 print(f"   authored voice {name} -> {wrote[-1]}", flush=True)
             wrote = wrote[0] if len(wrote) == 1 else wrote
-        # **A negotiation survives the stage that would re-derive it away.** Found by
-        # replaying the held-out village: this stage rewrites the checked spec from
-        # `place.json` every run, so the band a repair had moved -- and the record of
-        # the bound it moved inside -- were gone by the time the plan stage read the
-        # spec back, the spec fingerprint went back to what it had been, the plan was
-        # called stale, and the whole place was laid out again. An unchanged replay was
-        # never warm and the same repair was made every time. `spec.read_spec` already
-        # restores a negotiated band from `negotiated`; what was missing is that nothing
-        # carried `negotiated` forward. It is carried only where the *model's* answer is
+        # **A negotiation survives the stage that would re-derive it away.** This stage
+        # rewrites the checked spec from `place.json` every run, so without this the band
+        # a repair had moved -- and the record of the bound it moved inside -- would be
+        # gone by the time the plan stage read the spec back, the spec fingerprint would
+        # go back to what it had been, the plan would be called stale, and the whole
+        # place would be laid out again: an unchanged replay would never be warm.
+        # `spec.read_spec` restores a negotiated band from `negotiated`; this carries
+        # `negotiated` forward. It is carried only where the *model's* answer is
         # unchanged, so a genuinely new spec starts clean.
         checked = rnd.rel("place.checked.json")
         if os.path.exists(checked):
@@ -1535,24 +1519,22 @@ def stage_place_spec(rnd, be, results: dict) -> dict:
                       f"forward; the band reads {s['size_band']} and not the "
                       f"kind's own", flush=True)
             # **And a character its author revised survives the same way.** The same
-            # defect as the negotiation above, one field along: `stage_preview`'s
+            # problem as the negotiation above, one field along: `stage_preview`'s
             # revision and `apply_character` both write the new character into the
             # *checked* spec, and this stage rewrites the checked spec from the model's
             # raw answer every run -- so a revision that had been applied, compiled and
-            # inspected was erased by the next invocation, the districts were laid out
-            # again from the character the model first wrote, and the run reported the
-            # place the revision had replaced. Found by running the shore village
-            # through its second inspection. Carried only where the *model's* answer for
-            # that part is unchanged, so a genuinely new spec starts clean.
+            # inspected would be erased by the next invocation, and the districts laid
+            # out again from the character the model first wrote. Carried only where the
+            # *model's* answer for that part is unchanged, so a genuinely new spec
+            # starts clean.
             raw_parts = {q.get("name"): q for q in (doc.get("defining_parts") or [])}
-            # **...and a new answer is not a revision to be overruled.** The fabric
-            # reset round: this compared the answer with the *checked* character only,
-            # so an answer that genuinely changed a part's character read as "the
-            # checked one was revised" and the old character was carried back over the
-            # new answer. What distinguishes the two is the answer the checked spec was
-            # made from: recorded now (`answered_characters`), and for a checked spec
-            # written before that, an answer that names the part in its own `revisions`
-            # says so itself.
+            # **...and a new answer is not a revision to be overruled.** Compared with
+            # the *checked* character only, an answer that genuinely changed a part's
+            # character would read as "the checked one was revised" and the old
+            # character would be carried back over the new answer. What distinguishes
+            # the two is the answer the checked spec was made from: recorded as
+            # `answered_characters`, and for a checked spec written without it, an
+            # answer that names the part in its own `revisions` says so itself.
             answered = was.get("answered_characters")
             revised_by_answer = {str(r.get("part")) for r in (doc.get("revisions") or [])
                                  if isinstance(r, dict)}
@@ -1664,7 +1646,7 @@ def _reading_note(rnd) -> str:
     """What the reading stage found out, and what the sentence requires outright.
 
         Appended to the spec brief rather than written into it, so a round with no reading
-        stage -- every round before this one -- composes exactly the brief it always did.
+        stage composes exactly the brief it always did.
 
         The requirement table is here for one reason: a spec that omits something the
         sentence says outright is refused downstream by `intent.coverage` **whatever the
@@ -2104,14 +2086,13 @@ def stage_site_search(rnd, be, results: dict) -> dict:
         # done" was that the file exists. The site is still a fixture once chosen -- a
         # round whose spec is unchanged never re-searches -- but a site chosen for a
         # different place is stale, and the run says so rather than planning a city on a
-        # village's square. A round with no stamp at all (every round before this one,
-        # and every shipped fixture) is reused exactly as it was.
+        # village's square. A round with no stamp at all (an older round, or a shipped
+        # fixture) is reused exactly as it was.
         fresh, why = deps.check(rnd, "site_search")
-        # **A fixture is an import, and a search that chose nothing is not a site.** The
-        # closure round's second retained failure: the first run's search failed on a
-        # wrongly-sized footprint and wrote its record; the spec was corrected; and this
-        # branch read "no stamp" as "a shipped fixture" and handed the failed record
-        # back as the chosen site. `deps.legacy` is the question.
+        # **A fixture is an import, and a search that chose nothing is not a site.** A
+        # search that failed still writes its record, and reading "no stamp" as "a
+        # shipped fixture" would hand that failed record back as the chosen site after
+        # the spec is corrected. `deps.legacy` is the question.
         legacy = deps.legacy(rnd, "site_search")
         if got.get("chosen") and (fresh or legacy):
             return {"skipped": ("already searched -- the site is an imported fixture"
@@ -2266,11 +2247,10 @@ def compound_cut(rnd, spec, site, terra, n: int, x0: int, z0: int, m: dict) -> t
 
 
 def terrace_for(rnd, spec: dict, site: dict) -> dict | None:
-    """**...in the order the sentence's own words ask for**, the design round. A place
-        whose rings carry elevation words -- a hill town's `lower` and `upper` -- means them
-        literally, and the expression round put the dense *lower* ring on the terrace four
-        blocks above the sparse *upper* one because the words were read as ring ranks.
-        `placeplan.terrace_ranks` reads them and `concentric_layout` re-orders the levels on
+    """**...in the order the sentence's own words ask for.** A place whose rings carry
+        elevation words -- a hill town's `lower` and `upper` -- means them literally; read
+        as ring ranks instead, the words put the dense *lower* ring on a terrace above the
+        sparse *upper* one. `placeplan.terrace_ranks` reads them and `concentric_layout` re-orders the levels on
         the plan; the **podium** is cut from the record this function writes, before the
         plan exists, so the ranks are passed here too or the cut is made in the old order.
 
@@ -2380,7 +2360,7 @@ def _flattest_window(rnd, X: int, Z: int, S: int, n: int):
 
 def settle_designed(vol, pieces: list, *, relief=None) -> tuple:
     """Designed ground -- a podium, a ring's terraces, the level run and the ramp
-        outside a gate -- declared and settled through the one ground contract. v2, B1.
+        outside a gate -- declared and settled through the one ground contract.
 
         `pieces` is `[(label, rect, level, what), ...]`, corners inclusive; each is a
         **platform** of the `designed` class, declared in that order, and the resolution
@@ -2415,7 +2395,7 @@ def _dry_plateau(rnd, spec, site, voice, terra, n, x0, z0, m, grew=None) -> dict
         because the alternative is planning a palace compound on a hillside the live run
         will have levelled. What it must not do is touch the world: this writes to
         `<state>/<base_volume>` and keeps the volume as it was beside it, so the cut is
-        reversible in a way ground work in the world never is (open thread 18).
+        reversible in a way ground work in the world never is.
 
     """
     from ..buildlib import Builder
@@ -2432,13 +2412,13 @@ def _dry_plateau(rnd, spec, site, voice, terra, n, x0, z0, m, grew=None) -> dict
     vol = offline.load_volume(before)
     b = Builder(offline.OfflineSite(vol))
     b._vol = vol
-    # **The podium is a declaration of the ground contract** (v2, B1): designed ground
+    # **The podium is a declaration of the ground contract**: designed ground
     # at the level the search or the terrace arithmetic chose, settled and its seams
     # derived before the cut is made. One piece; the same resolver as a city's pads.
     rect = (x0, z0, x0 + n - 1, z0 + n - 1)
     settled, srec = settle_designed(vol, [(terra["part"], rect, int(m["y"]), "podium")])
     # The bound is the **place's**, not the registered 128: a quarter of the side of the
-    # site (`Builder.plateau_max`). Found by running it.
+    # site (`Builder.plateau_max`).
     rec = b.plateau(rect, int(settled.level_of(terra["part"])),
                     mat=pipeline_voice(voice), label=terra["part"],
                     bound=Builder.plateau_max(int(site["size"])))
@@ -2580,9 +2560,9 @@ def stage_plateau(rnd, be, results: dict) -> dict:
     """**After the site briefing and before the plan**, and both halves of that matter.
     After, because the voice this ground is faced in is chosen against the site's own
     surface census and there is no census until `stage_site` has read one -- a plateau
-    in somebody else's stone is the ground work the type layer spent three rounds
-    learning not to do. Before the plan, because the grids a planner reads have to
-    describe the ground **as it stands**: a planner told the middle of its site is a
+    in somebody else's stone is exactly the ground work a place must not do. Before
+    the plan, because the grids a planner reads have to describe the ground **as it
+    stands**: a planner told the middle of its site is a
     hillside, which has since been levelled, plans round a hill that is not there.
     So the briefing this stage invalidates, it writes again."""
     from ..buildlib import Builder
@@ -2590,19 +2570,17 @@ def stage_plateau(rnd, be, results: dict) -> dict:
     if os.path.exists(p):
         got = json.load(open(p))
         # **Already cut is a fact about the world, and stale is a fact about the
-        # design.** The review's fourth finding reached this stage: the test was the
-        # existence of the JSON file, so a candidate whose spec, site or terrain had
-        # moved under it went on standing on ground that had been levelled for the
-        # design before it -- and said nothing. Ground work genuinely is not idempotent,
-        # so this still does not cut again; what it does now is *say* that the cut it is
-        # reusing was made for another candidate, and route that to the owner who can
-        # decide, rather than reporting a clean skip.
+        # design.** Testing only whether the JSON file exists would leave a candidate
+        # whose spec, site or terrain had moved under it standing on ground levelled
+        # for the design before it -- and saying nothing. Ground work genuinely is not
+        # idempotent, so this does not cut again; it *says* that the cut it is reusing
+        # was made for another candidate, and routes that to the owner who can decide,
+        # rather than reporting a clean skip.
         from .. import deps as deps_mod
         fresh, why = deps_mod.check(rnd, "plateau")
         # **Never stamped is not stale.** A plateau cut before this stage stamped
-        # anything -- every round in the record, and this stage until the line below --
-        # has no stamp at all, and reading that as "made for a different candidate"
-        # would stop every one of them. `recorded` is the question that distinguishes
+        # anything has no stamp at all, and reading that as "made for a different
+        # candidate" would stop every one of them. `recorded` is the question that distinguishes
         # "this cut says nothing about what it was made from" from "it says, and what it
         # says has moved".
         if fresh or not deps_mod.recorded(rnd, "plateau") \
@@ -2633,10 +2611,10 @@ def stage_plateau(rnd, be, results: dict) -> dict:
         return {"skipped": "the site search marked no part for terraforming: the "
                            "ground it chose is flat enough at the footprint"}
     # **Only a part at the centre, or one that asks for a level square, is levelled
-    # for.** The closure round's held-out hamlet: a shoreline place with no centre part
-    # had its first district marked as the "core" and a 48x48 square cut for it at the
-    # site's edge -- levelled ground nobody asked for, overlapping the shore band. A
-    # district stands on the ground as found.
+    # for.** Otherwise a shoreline place with no centre part has its first district
+    # marked as the "core" and a square cut for it at the site's edge -- levelled
+    # ground nobody asked for, overlapping the shore band. A district stands on the
+    # ground as found.
     if spec:
         part = next((q for q in spec.get("defining_parts") or []
                      if q.get("name") == terra.get("part")), None)
@@ -2692,11 +2670,11 @@ def stage_plateau(rnd, be, results: dict) -> dict:
                     mat=pipeline_voice(voice), label=terra["part"],
                     bound=Builder.plateau_max(int(site["size"])))
     placed = be.commit(b) if rec.get("ok") else {"placed": 0}
-    # **Ground is published where it is cut.** v2, A1: a commit no longer writes
-    # through, and this cut is read back out of the *server* by the re-briefing below --
+    # **Ground is published where it is cut.** A commit does not write through, and
+    # this cut is read back out of the *server* by the re-briefing below --
     # `prepare_settlement.py` in its own process -- so a plateau left in the volume
-    # would be a plan made against the hillside it was levelled out of. A1 moves the
-    # per-part round trips, not the ground passes: there is one plateau.
+    # would be a plan made against the hillside it was levelled out of. Deferred writes
+    # save the per-part round trips, not the ground passes: there is one plateau.
     if be.live:
         be.publish()
     out = {"part": terra["part"], "voice": voice, "plateau": rec,
@@ -2792,15 +2770,13 @@ def preflight_terraces(vol, layout: dict, reach: int = 2,
 
 def stage_ground(rnd, be, results: dict) -> dict:
     """**The ground this design asks for -- proposed from the design, applied from the
-        baseline.** The design round's second contract, and the stage `stage_plateau` was
-        doing the job of before there was a design to do it from.
+        baseline.**
 
         `stage_plateau` cuts **before** the plan, sized by the site search's demand (a
         default of 48) and faced in whatever voice the spec carried at the time, and nothing
-        afterwards re-sizes or re-paves it. The expression round's held-out village failed
-        its read on exactly that: a stone chapel standing on twelve cottage footprints of
-        black paving, with `shrink_anchor` tried and rolled back because the re-solve lost
-        nine houses. The cut was not the design's; it was the search's.
+        afterwards re-sizes or re-paves it. That is how a stone chapel ends up standing on
+        a dozen cottage footprints of black paving, where shrinking the anchor after the
+        fact costs the re-solve its houses. That cut is the search's, not the design's.
 
         So this runs **after** the plan, when the anchor the layout actually drew exists:
 
@@ -2864,9 +2840,9 @@ def stage_ground(rnd, be, results: dict) -> dict:
     p = rnd.rel("ground_proposal.json")
     prev = json.load(open(p)) if os.path.exists(p) else None
     fresh, why = deps_mod.check(rnd, "ground", plan=plan)
-    # **The rule the ground is prepared under is part of what was prepared.** The
-    # quarter design round changed `feasible`'s rule (enclosed pits are filled) and
-    # nothing that keys this stage saw it: the print is the proposal's pieces, and the
+    # **The rule the ground is prepared under is part of what was prepared.** A change
+    # to `feasible`'s rule (say, whether enclosed pits are filled) is invisible to
+    # everything that keys this stage: the print is the proposal's pieces, and the
     # terraces the rule governs are laid downstream. A proposal made under another rule
     # is not this ground; under a scope that re-prepares the scope's region.
     from .. import feasible as _feas
@@ -2877,11 +2853,11 @@ def stage_ground(rnd, be, results: dict) -> dict:
                         "slot_passes": int(getattr(_feas, "SLOT_PASSES", 0)),
                         "solid_under": int(__import__("ethoslm.buildlib", fromlist=["x"]).Builder.TERRACE_SOLID_UNDER),
                         "reach": int(__import__("ethoslm.placeplan", fromlist=["x"]).DISTRICT_TERRACE_REACH)}
-    # ...**and the district levels the terraces will lay are part of this ground** (the
-    # design resolution round): a parent relevel moved the market piece from 72 to 70,
-    # this stage found its print unchanged and skipped, the terraces stage found its
-    # record fresh and skipped, and the piece's shops were sited at 70 on ground still
-    # cut to 72 under a market left at 72. The levels are keyed here, so a changed level
+    # ...**and the district levels the terraces will lay are part of this ground**: when
+    # a parent relevel moves a piece by a block or two, this stage's print and the
+    # terraces stage's record are otherwise unchanged, both skip, and the piece's
+    # buildings are sited at the new level on ground still cut to the old one. The
+    # levels are keyed here, so a changed level
     # re-prepares the region and the terraces are laid again.
     proposal["rule"]["district_levels"] = sorted(
         [str(d.get("name")), int(d["level"])]
@@ -2902,15 +2878,15 @@ def stage_ground(rnd, be, results: dict) -> dict:
                 "conflicts": verdict.get("conflicts"), "written": p}
     prepared = ground_mod.apply(proposal, offline.load_volume(base_p))
     moved = bool(prev and prev.get("print") != proposal.get("print"))
-    # **A local revision re-prepares its own region and nothing else.** The quarter
-    # design round, and the audit's third cause: applying from the immutable baseline is
-    # right, and replacing the *whole* working volume with it threw away every terrace
-    # and lane outside the scope, which the terraces and circulation stages then
-    # declined to lay again because they were outside it. Under a scope the region
-    # inside its outer bound is made from the baseline and this proposal -- a complete
-    # small rebuild -- and everything outside is the working ground as it stood. Where a
-    # piece this proposal changed reaches outside the scope, the revision is not local
-    # and the whole volume is re-prepared, recorded as a widening.
+    # **A local revision re-prepares its own region and nothing else.** Applying from
+    # the immutable baseline is right, but replacing the *whole* working volume with it
+    # would throw away every terrace and lane outside the scope, which the terraces and
+    # circulation stages then decline to lay again because they are outside it. Under a
+    # scope the region inside its outer bound is made from the baseline and this
+    # proposal -- a complete small rebuild -- and everything outside is the working
+    # ground as it stood. Where a piece this proposal changed reaches outside the scope,
+    # the revision is not local and the whole volume is re-prepared, recorded as a
+    # widening.
     from .. import local as _local
     scope = _local.scope_of(rnd)
     region = None
@@ -2944,20 +2920,16 @@ def stage_ground(rnd, be, results: dict) -> dict:
     # **What was laid on this ground goes with it.** The terraces are cut into the
     # prepared ground and the lanes are routed over it: a lane stance is a y as well as
     # an x and a z, and ground remade under a network of them leaves every stance in the
-    # air or under the turf. Found by running the farm: a voice revision re-proposed the
-    # ground, the apply went back to the baseline as it must, and the construction check
-    # came back with 2,663 of 5,243 lane cells whose recorded stance no longer matched
-    # the ground -- 1,060 of them with the surface block simply gone. Both records are
-    # set aside by name so the stages that own them make them again on the ground that
+    # air or under the turf -- a voice revision re-proposes the ground and the apply goes
+    # back to the baseline, as it must. Both records are set aside by name so the stages that own them make them again on the ground that
     # now exists. ...**and the snapshot the lanes are routed from.** `stage_circulation`
     # keeps `world.before-lanes.npz` -- the ground as it stood before the first lane --
     # and routes from it every time, so a replan's lanes replace the previous lanes
     # instead of joining them. That snapshot is of the ground this stage has just
-    # replaced, and saving it back over the base discards the new cut: an independent
-    # reader found the farm's square still paved in the voice its revision had
-    # abandoned, 1,175 apron columns of it, with `ground_proposal.json` truthfully
-    # reporting 11,693 drystone blocks laid from the baseline that never reached the
-    # world. Ground that moved invalidates the snapshot of it.
+    # replaced, and saving it back over the base discards the new cut: a square stays
+    # paved in the voice its revision abandoned while `ground_proposal.json` truthfully
+    # reports blocks laid from the baseline that never reached the world. Ground that
+    # moved invalidates the snapshot of it.
     dropped = []
     # under a local, unwidened revision the lanes outside the scope are the boundary
     # condition: circulation re-routes the scope and keeps the rest of the network. The
@@ -2980,7 +2952,7 @@ def stage_ground(rnd, be, results: dict) -> dict:
                             f"the baseline")
     laid = (proposal.get("applied") or {}).get("laid") or []
     # a refused podium is the design's centre standing on unprepared ground: a stop, not
-    # a line in a record (the city attempt round)
+    # a line in a record
     lost = [r for r in (proposal.get("applied") or {}).get("refused") or []
             if r.get("rect") and any(q.get("label") == r.get("piece")
                                      and q.get("what") == "podium"
@@ -3050,14 +3022,13 @@ def _open_ground(d: dict) -> bool:
 
 def _seam_pieces(place_plan: dict, rings: list, ring_pieces: dict) -> list:
     """**The ring's remnant between stepped districts belongs to the ground beside it.**
-        The design resolution round.
 
         A ring strip is laid at the ring's level with its districts cut out as holes, so a
-        column between two districts -- the strip left between the market piece at 72 and
-        the lane piece at 64, the band between a district and the ring's inner edge -- kept
-        the ring's 72 while everything round it stood at 64: a ridge one column wide and eight
-        high along 55 columns (fr reader site_c). Nothing owned that column but the ring, and the
-        ring's level is not a design for it. Such a remnant is declared here as a piece of its
+        column between two districts -- the strip left between two pieces stepped off the
+        ring, the band between a district and the ring's inner edge -- keeps the ring's
+        level while everything round it stands lower: a ridge one column wide and several
+        high. Nothing owns that column but the ring, and the ring's level is not a design
+        for it. Such a remnant is declared here as a piece of its
         own at the **lower** neighbour's level, so the higher district's edge is the one
         retaining face between the two and the remnant is ground a lane can cross.
 
@@ -3197,12 +3168,11 @@ def _seam_pieces(place_plan: dict, rings: list, ring_pieces: dict) -> list:
                             "why": (f"between {n} ({lev[n]}) and its strip's {side} edge"
                                     + (f" (the inner ring at {in_lev})"
                                        if toward_inner and in_lev is not None else ""))})
-    # **...and the corners where a seam meets a band** (the design resolution round):
-    # the seam between two pieces ran only the pieces' own depth, and the bands along
-    # them started at their own edges, so the column where the seam met the band row was
-    # nobody's and stood at the ring's level -- a granite column six high at each end of
-    # the seam (the independent reader's site_a, x=-5710 at z=701 and z=762). A seam is
-    # carried across the bands of the pieces either side of it.
+    # **...and the corners where a seam meets a band**: a seam between two pieces that
+    # runs only the pieces' own depth, with the bands along them starting at their own
+    # edges, leaves the column where the seam meets the band row nobody's, standing at
+    # the ring's level -- a stone column several blocks high at each end of the seam. A
+    # seam is carried across the bands of the pieces either side of it.
     for q in out:
         if not q["label"].count("/") == 2 or "/" not in q["label"][5:] or \
                 q["between"][1].startswith("the strip"):
@@ -3241,11 +3211,11 @@ def stage_terraces(rnd, be, results: dict) -> dict:
     p = rnd.rel("terraces.json")
     if os.path.exists(p):
         got = json.load(open(p))
-        # **The same terraces for a re-laid plan are the same ground.** The closure
-        # round's transfer case: the preview's repair laid the plan out again, `plan`
-        # was invalidated and `ground` with it, and the parts stage refused to build on
-        # ground "cut for a different candidate" whose rings, levels and annuli had not
-        # moved by a column. Ground work is not idempotent, so nothing is cut again;
+        # **The same terraces for a re-laid plan are the same ground.** When a repair
+        # lays the plan out again, `plan` is invalidated and `ground` with it, and
+        # without this the parts stage would refuse to build on ground "cut for a
+        # different candidate" whose rings, levels and annuli had not moved by a column.
+        # Ground work is not idempotent, so nothing is cut again;
         # what is asked is whether the cut on disk is the cut this plan designs, and
         # where it is the ground is stamped for this plan.
         from .. import deps as deps_mod
@@ -3255,9 +3225,9 @@ def stage_terraces(rnd, be, results: dict) -> dict:
             def _levels(rows):
                 return sorted((str(r.get("name") or r.get("ring")), r.get("level"))
                               for r in rows or [])
-            # ...and the districts' own terraces, the spatial design round: a re-laid
-            # plan whose ring levels are unmoved and whose *district* levels are not is
-            # a different piece of ground, and calling it the same is how a candidate
+            # ...and the districts' own terraces: a re-laid plan whose ring levels are
+            # unmoved and whose *district* levels are not is a different piece of
+            # ground, and calling it the same is how a candidate
             # comes to be built on the ground of the one before it.
             def _dlevels(rows):
                 return sorted((str(r.get("district") or r.get("name")), r.get("level"))
@@ -3326,27 +3296,23 @@ def stage_terraces(rnd, be, results: dict) -> dict:
         if not os.path.exists(before):
             import shutil
             shutil.copyfile(vp, before)
-    # **The bound the count was derived under is the bound the earthwork keeps.** The
-    # neighbourhood delivery round, and the audit's third cause:
+    # **The bound the count was derived under is the bound the earthwork keeps.**
     # `placeplan.district_ground` excludes a column needing a cut or fill beyond
-    # `DISTRICT_TERRACE_REACH`, every count and cover clause in the place divides by
-    # what is left, and this stage then handed `terrace_annulus` whole rectangles with
-    # no per-column bound at all -- so housing was excluded from a hillside because that
-    # hillside should not be cut, and construction cut it anyway. Measured on this city
-    # before the bound: 1,443,433 blocks of cut on the lower ring alone. `base` is the
-    # ground **as it stands when this stage begins**, read once and never again, and
-    # both halves of that matter: * *once*, so the decision about which column may be
-    # moved is not taken against ground an earlier piece of this same stage has already
-    # terraced -- which is the "district certifying its ground by looking at the answer"
-    # defect the spatial design round closed one layer up, and two bounded moves of
-    # eight off one drifting baseline is a move of sixteen; * *as it stands*, and not
-    # the observed baseline before the plateau. The first version of this read
-    # `world.before-plateau.npz`, and the gate caught it: the plateau lays the podium
-    # and feathers 15,264 columns outward from it before this stage runs, so on the
-    # upper ring's strips the decision measured a column against ground eight blocks
-    # lower than the builder would find, said "inside the bound", and then cut **16**.
-    # On 9,892 columns. Designed ground an earlier stage laid is ground, and the bound
-    # is about what this call moves.
+    # `DISTRICT_TERRACE_REACH`, and every count and cover clause in the place divides by
+    # what is left; handing `terrace_annulus` whole rectangles with no per-column bound
+    # would exclude housing from a hillside because it should not be cut, and then cut
+    # it anyway. `base` is the ground **as it stands when this stage begins**, read once
+    # and never again, and both halves of that matter:
+    # * *once*, so the decision about which column may be moved is not taken against
+    #   ground an earlier piece of this same stage has already terraced -- a district
+    #   must not certify its ground by looking at the answer, and two bounded moves of
+    #   eight off one drifting baseline is a move of sixteen;
+    # * *as it stands*, and not the observed baseline before the plateau
+    #   (`world.before-plateau.npz`): the plateau lays the podium and feathers ground
+    #   outward from it before this stage runs, so measuring against the older ground
+    #   would judge a column against a surface lower than the builder will find, call it
+    #   inside the bound, and then cut twice the reach. Designed ground an earlier stage
+    #   laid is ground, and the bound is about what this call moves.
     from ..placeplan import DISTRICT_TERRACE_REACH
     reach_blocks = int(rnd.flags.get("terrace_reach") or DISTRICT_TERRACE_REACH)
     base_vol = offline.load_volume(vp) if dry and os.path.exists(vp) else None
@@ -3377,10 +3343,10 @@ def stage_terraces(rnd, be, results: dict) -> dict:
                                 f"{list(_scope['rect'])} + {_scope['margin']}: the "
                                 f"ground here is the seed's and is a boundary "
                                 f"condition, not a decision of this candidate")}]
-        # **...and a piece that reaches outside it is laid only inside it.** The quarter
-        # design round: a ring's strip is hundreds of columns long, and laying the whole
-        # of one because it touches the scope re-levelled ground -- and the lanes on it
-        # -- far outside the region this revision re-prepared. Clipped to the scope's
+        # **...and a piece that reaches outside it is laid only inside it.** A ring's
+        # strip is hundreds of columns long, and laying the whole of one because it
+        # touches the scope would re-level ground -- and the lanes on it -- far outside
+        # the region this revision re-prepared. Clipped to the scope's
         # outer bound, faced only on the sides that are still the piece's own edges.
         if _scope is not None:
             ox0, oz0, ox1, oz1 = _scope["outer"]
@@ -3424,12 +3390,11 @@ def stage_terraces(rnd, be, results: dict) -> dict:
         if dry:
             cut = dict(b._pending)
             # ...**and nothing it writes leaves the scope.** A terrace feathers its
-            # edges outward, and the calm quarter's district terrace feathered nineteen
-            # columns north across the ring street under the wall, outside the region
-            # this revision re-prepared, and erased the delivered lanes there -- the
-            # gate's among them (`E008`, the gate's threshold built over). Under a scope
-            # the writes are held to its outer bound, and the number held back is
-            # recorded.
+            # edges outward, and a district terrace can feather across the ring street
+            # under the wall, outside the region this revision re-prepared, and erase
+            # the delivered lanes there -- a gate's among them (`E008`, the gate's
+            # threshold built over). Under a scope the writes are held to its outer
+            # bound, and the number held back is recorded.
             if _scope is not None and cut:
                 ox0, oz0, ox1, oz1 = _scope["outer"]
                 kept_out = {k: v for k, v in cut.items()
@@ -3442,12 +3407,12 @@ def stage_terraces(rnd, be, results: dict) -> dict:
         else:
             rec["placed"] = (be.commit(b) if rec.get("ok") else {"placed": 0}).get("placed")
             if be.live:
-                be.publish()             # A1: ground is published where it is cut
+                be.publish()             # ground is published where it is cut
             be.rebind()
         return [rec]
 
     all_sides = set(Builder.TERRACE_SIDES)
-    # **Every ring's terrace is a declaration of the ground contract** (v2, B1): the
+    # **Every ring's terrace is a declaration of the ground contract**: the
     # annulus as four strips, each a platform of designed ground at the ring's level,
     # declared outermost first and settled once -- every column owned by one ring, the
     # step between two rings a retaining face by the drop -- before a block is laid.
@@ -3476,26 +3441,26 @@ def stage_terraces(rnd, be, results: dict) -> dict:
         ring_pieces[k] = {"outer": outer, "inner": inner, "level": int(r["level"]),
                           "pieces": [(f"{r['name']}/{i}", rect, sides)
                                      for i, (rect, sides) in enumerate(pieces)]}
-    # **A ring is one band of ground and it is not one level.** The spatial design
-    # round. `placeplan.district_ground` chooses each district's own terrace within
-    # `DISTRICT_TERRACE_STEPS` of its ring's, because on this site the ring's single
-    # level is what makes most of the ring unbuildable: measured on the retained
-    # section's observed baseline, `lower_ring_north_3` can carry a building on 25.8% of
-    # its rectangle at the lower ring's y=67 and on 92.7% at its own median bed of 63.
-    # The two orders are deliberately opposite, and the reason is worth the line: * a
-    # district is **declared first** in the ground contract, so the resolution gives it
-    # its own columns and the ring gets the remainder -- the gaps between the districts,
-    # the band under the wall -- and the step between them comes out of `ground._seams`
-    # as the retaining face it is; * a district is **laid last**, because
-    # `Builder.terrace_annulus` levels the whole rectangle it is given and a ring's
-    # strips cover the districts inside them. Laid first, a district would be buried by
-    # its own ring an instant later. Only a district whose level actually differs from
-    # its ring's is laid again; a ring that does not have to step does not step, and
-    # pays nothing for the option. ...read off `plan.place.json`, which is where the
-    # layout's districts live. `rnd.plan()` is the built tree: its districts are nodes
-    # under a root district and there is no top-level `districts` list at all, so
-    # reading them from it found none and laid no district terrace on a city where 33 of
-    # 34 districts had chosen a level.
+    # **A ring is one band of ground and it is not one level.**
+    # `placeplan.district_ground` chooses each district's own terrace within
+    # `DISTRICT_TERRACE_STEPS` of its ring's, because on sloping ground the ring's single
+    # level can make most of the ring unbuildable: a district may found a building on a
+    # quarter of its rectangle at its ring's level and on nearly all of it at its own
+    # median bed. The two orders are deliberately opposite, and the reason is worth the
+    # line:
+    # * a district is **declared first** in the ground contract, so the resolution gives
+    #   it its own columns and the ring gets the remainder -- the gaps between the
+    #   districts, the band under the wall -- and the step between them comes out of
+    #   `ground._seams` as the retaining face it is;
+    # * a district is **laid last**, because `Builder.terrace_annulus` levels the whole
+    #   rectangle it is given and a ring's strips cover the districts inside them. Laid
+    #   first, a district would be buried by its own ring an instant later.
+    # Only a district whose level actually differs from its ring's is laid again; a ring
+    # that does not have to step does not step, and pays nothing for the option.
+    # ...read off `plan.place.json`, which is where the layout's districts live.
+    # `rnd.plan()` is the built tree: its districts are nodes under a root district and
+    # there is no top-level `districts` list at all, so reading them from it would find
+    # none and lay no district terrace.
     _pp = rnd.rel("plan.place.json")
     place_plan = json.load(open(_pp)) if os.path.exists(_pp) else {}
     dis_pieces, open_holes = [], []
@@ -3508,10 +3473,10 @@ def stage_terraces(rnd, be, results: dict) -> dict:
             continue
         rect = (min(int(d["x0"]), int(d["x1"])), min(int(d["z0"]), int(d["z1"])),
                 max(int(d["x0"]), int(d["x1"])), max(int(d["z0"]), int(d["z1"])))
-        # **...at whatever level it was drawn at** (the city attempt round): the hole
-        # was made only for a piece stepping off its ring, so landscape kept as found at
-        # the ring's own level was terraced with the ring's strip -- 60% of a hill piece
-        # moved by more than two blocks under a record that said "kept as found"
+        # **...at whatever level it was drawn at**: a hole made only for a piece
+        # stepping off its ring would leave landscape kept as found at the ring's own
+        # level to be terraced with the ring's strip -- a hill piece moved wholesale
+        # under a record that says "kept as found"
         if _open_ground(d) and (((d.get("sector") or {}).get("module") or {})
                                 .get("ground") == "as_found"
                                 or int(d["level"]) != int(ring.get("level") or d["level"])):
@@ -3521,10 +3486,10 @@ def stage_terraces(rnd, be, results: dict) -> dict:
         if int(d["level"]) == int(ring.get("level") or d["level"]):
             continue
         if _open_ground(d):
-            # **open ground is ground as found** (the design resolution round): a piece
-            # the negotiation left open -- the hill west of the gate street -- was
-            # terraced to its level anyway, cutting 8,118 columns of hillside flat for a
-            # district asked for nothing. It stays a hole in its ring's strip and is not
+            # **open ground is ground as found**: a piece the negotiation left open --
+            # say a hill beside the gate street -- would otherwise be terraced to its
+            # level, cutting hillside flat for a district asked for nothing. It stays a
+            # hole in its ring's strip and is not
             # laid: the hill is the landscape the design kept, not a plateau nobody
             # uses.
             open_holes.append({"ring": str(d.get("defines")), "rect": rect,
@@ -3623,10 +3588,9 @@ def stage_terraces(rnd, be, results: dict) -> dict:
     # not bury them. Faced on all four sides, because a district standing off its ring's
     # level meets that ring's ground on every side of itself.
     district_records = []
-    # **A district's terrace does not bury the road beside it.** The fabric reset round:
-    # a hillside piece stepped eight blocks off its ring and feathered its east face
-    # across the gate street, lifting the ground in the gate's own passage above the
-    # lane laid there (`E007` at the gate). The routed arterial is the road's, and the
+    # **A district's terrace does not bury the road beside it.** A hillside piece
+    # stepped well off its ring can feather its face across a gate street, lifting the
+    # ground in the gate's own passage above the lane laid there (`E007` at the gate). The routed arterial is the road's, and the
     # road is graded by its own record; a district terrace fills and feathers round it.
     _road_cells = {(int(c[0]), int(c[1]))
                    for c in ((_load_place(rnd) or {}).get("arterials") or {}).get("cells")
@@ -3691,11 +3655,11 @@ def stage_terraces(rnd, be, results: dict) -> dict:
         print(f"   seams: {len(seam_records)} strip remnant(s) between stepped districts "
               f"laid at their lower neighbour's level, "
               f"{sum(r['placed'] for r in seam_records):,} blocks", flush=True)
-    # **The routed road inside the scope is graded to its own record.** The fabric reset
-    # round: with the district terraces kept off the road (above), a road routed between
-    # two terraces -- the gate street between the hillside piece and the market piece --
-    # was left on the ground as found, the hill's toe, and its lanes climbed it from the
-    # gate's floor to eleven blocks above it. The arterial record carries the level each
+    # **The routed road inside the scope is graded to its own record.** With the
+    # district terraces kept off the road (above), a road routed between two terraces --
+    # say a gate street between a hillside piece and a market piece -- would be left on
+    # the ground as found, and its lanes would climb the hill's toe from the gate's
+    # floor. The arterial record carries the level each
     # column was solved to; inside the scope those columns are laid at it, row by row,
     # as designed ground that is not developable (no reach bound). Outside the scope the
     # road is the retained one.
@@ -3784,17 +3748,14 @@ def stage_terraces(rnd, be, results: dict) -> dict:
                 last = n_piece == len(ap["pieces"]) - 1
                 sides = set(lateral) | ({far_side} if last else set())
                 # **A ramp is not developable ground and does not take the mask's
-                # bound.** The neighbourhood delivery round, and it is the one exception
-                # to the policy above, measured before it was made: an approach exists
-                # so that a gate can be reached, and `feasible.terrain` at the
-                # approach's own level refuses almost all of it -- 0 of the 135 columns
-                # of the level run in front of the palace gate, and 0 of the 18 columns
-                # of six of its seven ramp pieces. Bounded like a district, the palace
-                # gate loses seven of its sixteen pieces and becomes unreachable, and
-                # `routes_are_walked` fails for nothing. The whole of every approach in
-                # this city is 6,435 blocks, 0.09% of what this stage lays; its bound is
-                # its own 9x15 geometry (`placeplan.gate_approach_pieces`), which is why
-                # it needs no other.
+                # bound.** It is the one exception to the policy above: an approach
+                # exists so that a gate can be reached, and `feasible.terrain` at the
+                # approach's own level refuses almost all of it. Bounded like a
+                # district, a gate loses most of its approach pieces and becomes
+                # unreachable, and `routes_are_walked` fails for nothing. Approaches
+                # are a tiny fraction of what this stage lays; each one's bound is its
+                # own small geometry (`placeplan.gate_approach_pieces`), which is why it
+                # needs no other.
                 recs += lay(tuple(piece["rect"]), sides,
                             int(settled.level_of(f"{ap['gate']}_approach/{n_piece}")),
                             f"{ap['gate']}_approach", reach=False)
@@ -3812,10 +3773,10 @@ def stage_terraces(rnd, be, results: dict) -> dict:
                 json.dump(out, open(p, "w"), indent=1)
                 return out
     # **Where a retained gate meets the scope's new ground, the scope lays the step.**
-    # The fabric reset round, found by building it: the gate and its passage lie just
-    # outside the local scope and keep the floor they were built at; the scope's ring
-    # terrace was laid again at the ring's own level, five blocks higher, and the lane
-    # through the gate met a face at the scope's edge (`E007` in the passage). The
+    # A gate and its passage just outside the local scope keep the floor they were
+    # built at; when the scope's ring terrace is laid again at the ring's own level,
+    # higher than that floor, the lane through the gate meets a face at the scope's edge
+    # (`E007` in the passage). The
     # retained side is not this candidate's to move, so the transition is laid inside
     # the scope: a ramp of one block a `GATE_RAMP_RUN` columns along the gate's axis,
     # `GATE_APPROACH_HALF` either side of it, from the retained floor to the terrace --
@@ -3921,11 +3882,10 @@ def stage_terraces(rnd, be, results: dict) -> dict:
         out["site_rewritten"] = {"path": sp, "relief": s2["stats"]["relief"],
                                  "was": was["stats"]["relief"]}
     json.dump(out, open(p, "w"), indent=1)
-    # **The prepared ground is this design's, and is stamped as such.** The review's
-    # sixth finding, second half: preparation and planning were separate decisions and
-    # the terraces made the plan's own terrain dependency stale -- the plan asked for
-    # the ground work and the ground work invalidated the plan. `terrain` is now the
-    # baseline, which no stage writes, and the worked volume is an *output* stamped
+    # **The prepared ground is this design's, and is stamped as such.** If the terraces
+    # rewrote the plan's own terrain dependency, the plan would ask for the ground work
+    # and the ground work would invalidate the plan. So `terrain` is the baseline, which
+    # no stage writes, and the worked volume is an *output* stamped
     # against the plan it was cut for, so `stage_parts` can ask whether the ground it is
     # about to build on was prepared for this candidate.
     from .. import deps as deps_mod
@@ -3984,16 +3944,17 @@ def pipeline_voice(voice):
 def stage_site(rnd, be, results: dict) -> dict:
     """Live only; refuses to overwrite.
 
-        `scripts/prepare_settlement.py`, as a stage. The site file is a fixture in exactly
-        the sense the base volume is -- every grid the planner reads and every relief number
-        quoted afterwards comes out of it -- so a round that re-made it between stages would
-        be a round whose plan was made against a different map from the one on disk.
+        `pipeline/_commands/prepare_settlement.py`, as a stage. The site file is a fixture
+        in exactly the sense the base volume is -- every grid the planner reads and every
+        relief number quoted afterwards comes out of it -- so a round that re-made it
+        between stages would be a round whose plan was made against a different map from
+        the one on disk.
     """
     p = rnd.rel("site.json")
     site = rnd.site or rnd.chosen_site()
     if os.path.exists(p):
         s = json.load(open(p))
-        # the briefing is of the chosen site or it is set aside (the closure round)
+        # the briefing is of the chosen site or it is set aside
         if site and (list(s.get("origin") or []) != list(site["origin"])
                      or int(s.get("size") or 0) != int(site["size"])):
             os.replace(p, rnd.rel("site.stale.json"))
@@ -4065,7 +4026,8 @@ def stage_site(rnd, be, results: dict) -> dict:
 
 
 def stage_plan(rnd, be, results: dict) -> dict:
-    """The plan. One call per level where the round has a place spec; A5,"""
+    """The plan. One call per level where the round has a place spec; one flat call
+    where it does not."""
     spec = rnd.place_spec()
     if spec is None:
         return stage_plan_flat(rnd, be, results)
@@ -4184,11 +4146,10 @@ def _arrange_districts(rnd, spec: dict, place: dict, site: dict, decls: dict,
                     os.remove(f)
         if os.path.exists(dp):
             continue
-        # **Landscape the parent keeps as found is not laid** (the parent composition
-        # round, the independent reader's q1). An open piece was still compiled as open
-        # land -- groves and gardens on its verges -- and a grove is sited on one level:
-        # the hill west of the gate street, which the brief keeps as found, was cut into
-        # a pit 30 deep with faces 8-26 high for an avenue of trees. Where the parent
+        # **Landscape the parent keeps as found is not laid.** Compiled as open land, a
+        # piece gets groves and gardens on its verges, and a grove is sited on one
+        # level, so a hill the brief keeps as found would be cut into a deep pit with
+        # high faces for an avenue of trees. Where the parent
         # has decided a piece is landscape kept as found (`sector.module.ground`), its
         # plan is empty and says why: nothing is sited on it and its ground is not
         # worked.
@@ -4218,17 +4179,15 @@ def _arrange_districts(rnd, spec: dict, place: dict, site: dict, decls: dict,
                   flush=True)
             continue
         # **A rectangle whose feasible ground cannot hold a quarter is open ground with
-        # an owner.** The spatial design round, and it is the rule two lines of this
-        # pass already apply to a thin count, asked of the ground instead. The test is
-        # the district's **own band over its own developable ground**
-        # (`placeplan.count_band`), not a rectangle search and not a share somebody
-        # chose: a first attempt asked `placeregion.tile` for a rectangle `TILE_MIN` on
-        # a side inside the feasible mask and refused `upper_ring_north`, whose feasible
-        # ground is 74% of its rectangle and whose largest all-true rectangle is 94 x
-        # **22** -- a strip 49 deep cannot hold a 24-square whatever its cover, so the
-        # test was about the district's shape and not about whether anybody could live
-        # in it. The band answers the question that is actually being asked: how many
-        # houses of this fabric will this ground hold. Under one, it holds no quarter.
+        # an owner.** It is the rule two lines of this pass already apply to a thin
+        # count, asked of the ground instead. The test is the district's **own band over
+        # its own developable ground** (`placeplan.count_band`), not a rectangle search
+        # and not a share somebody chose: asking `placeregion.tile` for a rectangle
+        # `TILE_MIN` on a side inside the feasible mask refuses a district whose feasible
+        # ground is most of its rectangle but lies in strips too shallow for the square,
+        # which tests the district's shape and not whether anybody could live in it. The
+        # band answers the question that is actually being asked: how many houses of this
+        # fabric will this ground hold. Under one, it holds no quarter.
         thin_ground = None
         rec_g = d.get("ground") or {}
         if rec_g.get("measured") and int(d.get("structures") or 0) > 0 \
@@ -4271,21 +4230,19 @@ def _arrange_districts(rnd, spec: dict, place: dict, site: dict, decls: dict,
         # **What the allocator asked for, once.** Arranging against the count the last
         # arrangement *adopted* is not idempotent and it descends: the compiler sizes
         # its lots from the ask, so asking for the four houses a rectangle gave makes
-        # four bigger houses and the next pass measures three. Found by running the loop
-        # fixture -- the band walked 81, 58, 53, 52 over four repair passes, each one a
-        # true measurement of a district that had been asked for less than the time
-        # before. The proposal is the layout's and is remembered; what moves is the
+        # four bigger houses and the next pass measures three -- each pass a true
+        # measurement of a district asked for less than the time before. The proposal
+        # is the layout's and is remembered; what moves is the
         # promise.
         if d.get("proposed_structures") is None:
             d["proposed_structures"] = int(d.get("structures") or 0)
         # **A change of fabric re-asks the allocation.** The allocator's ask is a number
         # about a rectangle *built a particular way*: halve the lot and the same ground
         # holds more houses, and holding the old ask fixed means the district covers
-        # less of itself and its own validator refuses it. Found by running the shore
-        # village's revision -- the inspection asked for "more, smaller houses", the
-        # character delivered smaller lots, the count stayed at three, the cover fell to
-        # 14% against a floor of 38% and the revision was rolled back for doing exactly
-        # what it was asked to do. So where the character has moved since the
+        # less of itself and its own validator refuses it: a revision asking for "more,
+        # smaller houses" would deliver smaller lots at the same count, fall below its
+        # cover floor, and be rolled back for doing exactly what it was asked to do. So
+        # where the character has moved since the
         # arrangement on record, the proposal is asked of the construction logic again
         # -- `arrange.capacity`, the same compiler -- and the district may hold what its
         # new fabric actually fits. The allocator's own ask is the floor, so a revision
@@ -4300,37 +4257,33 @@ def _arrange_districts(rnd, spec: dict, place: dict, site: dict, decls: dict,
                 print(f"   arranged {d['name']}: the character changed and this "
                       f"rectangle now fits {held}; the allocation is re-asked from "
                       f"{asked}", flush=True)
-                # **The proposal is never rewritten.** The closure round: a re-ask is a
-                # recorded decision beside the allocator's original ask, so regenerating
-                # from the record reproduces the same arrangement and the original is
-                # still readable.
+                # **The proposal is never rewritten.** A re-ask is a recorded decision
+                # beside the allocator's original ask, so regenerating from the record
+                # reproduces the same arrangement and the original is still readable.
                 d["reasked"] = {"from": asked, "to": int(held),
                                 "why": "the character changed and the rectangle fits more"}
                 asked = int(held)
-        # **The ask is bounded by what this district's own ground can hold.** The
-        # spatial design round, and it is two numbers about one question disagreeing
-        # again. The layout proposes a district's count by dividing its ring's ground by
-        # `spec.columns_per_plot` -- the **lot** and only the lot, which is deliberate
-        # (`open_share` and `courtyard_share` are levers the compiler moves to reach its
-        # count, so feeding them back is a circle). `placeplan.count_band` divides the
-        # district's **developable** ground by what one house of its fabric actually
-        # costs, street included. The two agreed well enough while developable was the
-        # whole rectangle; once it became the ground a building can be founded on they
-        # do not. Measured on `lower_ring_south_1`: 12,696 columns of rectangle, 4,872
-        # of it able to carry a building, the layout proposing **55** houses and the
-        # band answering lo 19 / mid 26 / hi 34. The compiler duly laid 55 lots of 4,950
-        # columns on 4,872 columns of developable ground and its own validator refused
-        # the district for covering more than all of it. So the ask is capped at the
-        # band's ceiling. The **request** is untouched -- `proposed_structures` still
+        # **The ask is bounded by what this district's own ground can hold.** Two
+        # numbers answer one question here. The layout proposes a district's count by
+        # dividing its ring's ground by `spec.columns_per_plot` -- the **lot** and only
+        # the lot, which is deliberate (`open_share` and `courtyard_share` are levers the
+        # compiler moves to reach its count, so feeding them back is a circle).
+        # `placeplan.count_band` divides the district's **developable** ground -- the
+        # ground a building can be founded on -- by what one house of its fabric actually
+        # costs, street included. Where only part of a rectangle is developable the two
+        # disagree, and the layout's count can ask for more lots than the developable
+        # ground holds, which the compiler would lay and its own validator would then
+        # refuse for covering more than all of it. So the ask is capped at the band's
+        # ceiling. The **request** is untouched -- `proposed_structures` still
         # records what the layout asked for and `short` still counts the difference,
         # which is the capacity finding the scale owner owns -- and what moves is the
         # promise, which is this pass's whole rule.
         capped = None
         # **A district that owes its ring's section is asked for what the section
-        # holds** (the city attempt round). Its ring's width was set so that every strip
-        # holds a whole section -- the principal street's frontage and a lane of houses
-        # facing each other behind it -- and a count taken from the density word's cover
-        # over the developable ground asked a strip that holds sixty lots for fourteen.
+        # holds.** Its ring's width was set so that every strip holds a whole section --
+        # the principal street's frontage and a lane of houses facing each other behind
+        # it -- and a count taken from the density word's cover over the developable
+        # ground can ask a strip that holds sixty lots for fourteen.
         # The programme follows the section: the composer's own capacity on this ground
         # (`arrange.capacity`), where it is more than the ask; the density band is not a
         # ceiling on a word that has none.
@@ -4374,11 +4327,11 @@ def _arrange_districts(rnd, spec: dict, place: dict, site: dict, decls: dict,
         with contextlib.suppress(Exception):
             floor = int(placeplan.district_target(d, part, place,
                                                   decls)["min_plot_columns"])
-        # **a piece the strip left open is held to no cover** (the parent composition
-        # round): the lake end of the north strip, open by the sector decision and asked
-        # for nothing, was "filled" to its density's cover floor with one courtyard
-        # house standing alone on reclaimed lake. Open ground with an owner is
-        # landscape; the floor is the fabric's, and this piece carries none.
+        # **a piece the strip left open is held to no cover**: a piece open by the
+        # sector decision and asked for nothing would otherwise be "filled" to its
+        # density's cover floor -- one courtyard house standing alone on reclaimed
+        # lake. Open ground with an owner is landscape; the floor is the fabric's, and
+        # this piece carries none.
         if (d.get("sector") or {}).get("open") and not int(asked or 0):
             floor = 0
         extra = ({"intent": contracts_mod.load(rnd, "intent")}
@@ -4483,12 +4436,12 @@ def district_asks(rnd, spec: dict, site: dict, place: dict, types, voice) -> dic
                 _local.meets(_scope, (d["x0"], d["z0"], d["x1"], d["z1"])):
             _kept_districts.append(str(d["name"]))
             continue
-        # v2, C1: **a district with a character is compiled, and no model is asked.**
-        # The file the compiler writes is the one a model used to write, at the same
+        # **A district with a character is compiled, and no model is asked.** The
+        # compiler writes the same file a district planner model would, at the same
         # seam, held to the same validator below; the record says what it laid.
         part = placeplan._district_part(spec, d)
-        # ...and v2, C5: where the compiler's answer was refused and the character's
-        # author has written a new one, it is taken here, before anything is compiled.
+        # ...and where the compiler's answer was refused and the character's author has
+        # written a new one, it is taken here, before anything is compiled.
         if apply_character(rnd, spec, part):
             for f in (dp, rnd.rel(f"district_{d['name']}_compiled.json")):
                 if os.path.exists(f):
@@ -4582,7 +4535,7 @@ and the voice stand. This is asked **once**: a second refusal stops the run.
 
 
 def apply_character(rnd, spec: dict, part: dict) -> bool:
-    """Take a character the author wrote after a refusal onto the spec on disk. v2, C5.
+    """Take a character the author wrote after a refusal onto the spec on disk.
 
         True where one was applied, so the caller drops what was compiled from the old
         one. Refused by name into the record where it does not read.
@@ -4634,7 +4587,7 @@ def apply_character(rnd, spec: dict, part: dict) -> bool:
 
 def character_hand_back(rnd, spec: dict, d: dict, part: dict, fails: list,
                         n: int) -> dict:
-    """Hand one compiled district's refusal back to the character's author. v2, C5."""
+    """Hand one compiled district's refusal back to the character's author."""
     x0, x1 = min(d["x0"], d["x1"]), max(d["x0"], d["x1"])
     z0, z1 = min(d["z0"], d["z1"]), max(d["z0"], d["z1"])
     rec_p = rnd.rel(f"district_{d['name']}_compiled.json")
@@ -4742,12 +4695,12 @@ def _occupied(place: dict, mine: str) -> list:
 def _grow_into_free_ground(place: dict, d: dict, site: dict) -> list | None:
     """A larger rectangle for `d` inside the site, touching nothing else. None if none.
 
-        **The spatial alternative the recovery did not have.** The review's fourth finding:
-        the allocation action "does not search alternative region geometry, lot types, site
-        extent or ground works", so a district that could not hold its promise had exactly
-        one answer -- promise less -- and a district promised one house could become zero
-        and take the residential demand with it. A promise that a rectangle cannot keep is
-        as much a question about the rectangle as about the promise.
+        **A spatial alternative for the recovery.** An allocation action that searches no
+        alternative region geometry, lot types, site extent or ground works leaves a
+        district that cannot hold its promise exactly one answer -- promise less -- and a
+        district promised one house can become zero and take the residential demand with
+        it. A promise that a rectangle cannot keep is as much a question about the
+        rectangle as about the promise.
 
         Grown one side at a time, each as far as the nearest other region or the site edge,
         within `DISTRICT_GROWTH_MAX` of its own area. A ring sector is **not** grown: its
@@ -4765,10 +4718,8 @@ def _grow_into_free_ground(place: dict, d: dict, site: dict) -> list | None:
     x0, z0, x1, z1 = int(d["x0"]), int(d["z0"]), int(d["x1"]), int(d["z1"])
     area0 = (x1 - x0 + 1) * (z1 - z0 + 1)
     # **Bounded against the rectangle this district was first laid out as**, not against
-    # the one the last growth produced. The same arithmetic the review found the scale
-    # negotiation getting wrong -- a limit re-applied to its own output is a decay rate
-    # rather than a limit -- and it is the same arithmetic in the opposite direction:
-    # run three times, a half-again bound grows a district to two and a quarter times
+    # the one the last growth produced. A limit re-applied to its own output is a decay
+    # rate rather than a limit -- here in the growing direction: run three times, a half-again bound grows a district to two and a quarter times
     # its size, which is a different district.
     was = d.get("extent_from") or [x0, z0, x1, z1]
     origin = (int(was[2]) - int(was[0]) + 1) * (int(was[3]) - int(was[1]) + 1)
@@ -4855,8 +4806,8 @@ def _district_capacity_repair(rnd, spec: dict, place: dict, d: dict, laid: int,
     from .. import placeplan
     kinds = {f.get("check") for f in dfails}
     # **An exact district over the density's ceiling is the layout's, not the
-    # character's.** The closure round: the count is the sentence's and stands; the
-    # rectangle is what can move. Grow it into free ground; where none is free, refuse
+    # character's.** The count is the sentence's and stands; the rectangle is what can
+    # move. Grow it into free ground; where none is free, refuse
     # by name rather than asking a model for different adjectives.
     if "cover_over" in kinds and d.get("exact"):
         if site:
@@ -4882,12 +4833,11 @@ def _district_capacity_repair(rnd, spec: dict, place: dict, d: dict, laid: int,
     promised = int(d.get("structures") or 0)
     least = placeplan.DISTRICT_MIN_STRUCTURES
     #: **A region the ground fits fewer than a district's worth of houses in is not a
-    #: district.** `placesolve` and `placeshore` have had this rule for their own thin
-    #: sectors since v2; the ring layout did not, and the city's 30x189 strip is what
-    #: that costs: promised one house, laid one house, and then held to a *district's*
-    #: plot cover -- 693 of 5,670 columns against a floor of 1,149 -- which one house in
-    #: a strip thirty columns across cannot reach at any density and no adjective can
-    #: change. The strip is not short of houses; it is not a district. It becomes open
+    #: district.** `placesolve` and `placeshore` apply this rule to their own thin
+    #: sectors, and the ring layout needs it too: a narrow strip promised one house, laid
+    #: one house, and then held to a *district's* plot cover cannot reach that cover at
+    #: any density, and no adjective can change it. The strip is not short of houses; it
+    #: is not a district. It becomes open
     #: ground with an owner: still part of its ring, still counted by the ring's
     #: coverage clause, asked for nothing and held to nothing it cannot meet.
     thin = (laid == promised and 0 < promised < least
@@ -4944,10 +4894,10 @@ def _district_capacity_repair(rnd, spec: dict, place: dict, d: dict, laid: int,
                             f"unchanged and so is what the record approved"),
                     "failures": [f.get("check") for f in dfails]}
     to = 0 if (thin or laid < least) else laid
-    # **And a conversion that takes the place below what was accepted is refused.** The
-    # review: "A district that lays its promised one house but fails cover can become
-    # zero-target open ground, removing the residential cover demand. This can be a
-    # legitimate design revision only if the broader programme still holds."
+    # **And a conversion that takes the place below what was accepted is refused.** A
+    # district that lays its promised one house but fails cover can become zero-target
+    # open ground, removing the residential cover demand; that is a legitimate design
+    # revision only if the broader programme still holds.
     if to < promised:
         from .. import repair as repair_mod
         rest = sum(int(o.get("structures") or 0) for o in place.get("districts") or []
@@ -5010,11 +4960,10 @@ def _apply_reallocation(rnd, place: dict, got: dict) -> None:
     got = {**got, "candidate": _deps_c.candidate_id(rnd)}
     rec["applied"].append(got)
     json.dump(rec, open(rnd.rel(REALLOCATION_RECORD), "w"), indent=1)
-    # **Stamped again, not invalidated.** Found by running it: invalidating `plan` made
-    # the next entry of this stage call the place level stale, move it aside and solve
-    # it again from the spec -- which threw the re-allocation away and produced the same
-    # promise, which failed the same way, three times in a row until the bound stopped
-    # it. Nothing this artifact depends on has moved; the artifact was *deliberately
+    # **Stamped again, not invalidated.** Invalidating `plan` would make the next entry
+    # of this stage call the place level stale, move it aside and solve it again from
+    # the spec -- throwing the re-allocation away and producing the same promise, which
+    # fails the same way until the bound stops it. Nothing this artifact depends on has moved; the artifact was *deliberately
     # edited* by its owner, and the stamp has to say so, or the freshness rule that
     # exists to protect a repair is what undoes it.
     with contextlib.suppress(ValueError):
@@ -5044,12 +4993,10 @@ def _resolve_record(rnd, spec: dict, place: dict, site: dict,
     # `agreements` makes the record follow the place and turns a type the capability
     # rules would refuse into a finding instead of a silence.
     if caps is not None:
-        # **With the assembled tree where there is one.** The review's third finding was
-        # exactly this argument: `agreements` grew a `plan` parameter, the regression
-        # exercised it, and its only production caller went on passing three arguments
-        # -- so the fabric a district was compiled out of and the halls inside a
-        # compound were never reconciled with anything. A helper the production path
-        # does not call with the thing it needs is a helper that has not been connected.
+        # **With the assembled tree where there is one.** Without `plan`, `agreements`
+        # never reconciles the fabric a district was compiled out of or the halls inside
+        # a compound with anything. A helper the production path does not call with the
+        # thing it needs is a helper that has not been connected.
         caps, cap_rows = cap_mod.agreements(caps, place, _decls_for(rnd, spec),
                                             plan=plan)
         contracts.save(rnd, "capabilities", caps)
@@ -5135,9 +5082,8 @@ PLAN_REPAIR_TOTAL = 6
 def _mark_retained(rnd, found: dict | None, place: dict | None) -> list:
     """**Findings about retained context are debt, not this candidate's feasibility.**
 
-    The fabric reset round. Under a local scope the districts outside it keep the plans
-    they were compiled with (`local.retire_plans`) -- the crowded ring this revision must
-    not move among them. When the revision changes a ring-wide programme, those kept
+    Under a local scope the districts outside it keep the plans they were compiled with
+    (`local.retire_plans`) -- including any crowded ring the revision must not move. When the revision changes a ring-wide programme, those kept
     plans no longer match the new promises: the place level promises the revised count,
     and a capability check finds the ring's old grid types in districts nobody re-laid.
     They are true findings about the city, and they are not findings this local
@@ -5210,14 +5156,12 @@ def _plan_repair(rnd, be, spec: dict, place: dict, found: dict) -> dict | None:
         return None
     p = rnd.rel(PLAN_REPAIR_RECORD)
     was = json.load(open(p)) if os.path.exists(p) else {"passes": []}
-    # **The budget belongs to the candidate, under a cap that belongs to the run.**
-    # Found by running the held-out village: a pass spent on a candidate a crash had
-    # left behind counted against the candidate that replaced it, so the design that was
-    # actually in hand got one repair instead of two and the round stopped with a
-    # finding its own owner had an action for. A budget that cannot say which design it
-    # was spent on is a number a rollback restores to the wrong place -- which is the
-    # round's "repair budgets belong to a candidate identity". The run-wide cap is what
-    # still bounds the loop, because every repair makes a new candidate.
+    # **The budget belongs to the candidate, under a cap that belongs to the run.** A
+    # pass spent on a candidate a crash left behind must not count against the
+    # candidate that replaced it, or the design actually in hand gets fewer repairs and
+    # stops with a finding its own owner had an action for. A budget that cannot say
+    # which design it was spent on is a number a rollback restores to the wrong place.
+    # The run-wide cap is what still bounds the loop, because every repair makes a new candidate.
     from .. import deps as deps_mod
     now = deps_mod.candidate_id(rnd)
     #: The lineage in hand. A deliberate revision by the principal opens a new one
@@ -5248,11 +5192,11 @@ def _plan_repair(rnd, be, spec: dict, place: dict, found: dict) -> dict | None:
     if not got.get("changed_plan"):
         return None
     from .. import deps as deps_mod
-    # **The place that measured the capacity is the place that is kept.** Found by
-    # running it: a scale repair moved the band's floor down to the capacity the shore
-    # band gave, the place was then solved *again from the smaller target*, the band's
-    # depth negotiation had less to carry, the new place held fewer houses still -- and
-    # the same finding came back one size smaller, three passes running. A repair that
+    # **The place that measured the capacity is the place that is kept.** If a scale
+    # repair moves the band's floor down to the capacity a shore band gave and the place
+    # is then solved *again from the smaller target*, the band's depth negotiation has
+    # less to carry, the new place holds fewer houses still -- and the same finding
+    # comes back one size smaller, pass after pass. A repair that
     # re-derives the thing it was repairing from the repaired value is a descent and not
     # a fix. What the repair changes is the programme's inferred target; the geometry
     # that measured it is evidence, and evidence is not re-derived. So the place level
@@ -5300,10 +5244,10 @@ def site_capability_facts(rnd, spec: dict, site: dict | None) -> dict:
 
 
 #: What blocks a plan being reported planned. A finding that says it blocks feasibility
-#: blocks feasibility whatever its severity: the review found the city reporting
-#: `planned` with two `blocks: feasibility` district shortfalls open, on the grounds
-#: that both were warnings. Severity is how loudly a finding is said and `blocks` is
-#: what it stops; reading the first as the second is how a warning became a pass.
+#: blocks feasibility whatever its severity, so an open `blocks: feasibility` district
+#: shortfall filed as a warning still keeps a plan from reading `planned`. Severity is
+#: how loudly a finding is said and `blocks` is what it stops; reading the first as the
+#: second is how a warning becomes a pass.
 def blocking(found: dict | None, state: str = "feasibility") -> list:
     """The open findings that block `state`. Empty is what a clean plan looks like."""
     return [f for f in (found or {}).get("findings") or []
@@ -5311,7 +5255,7 @@ def blocking(found: dict | None, state: str = "feasibility") -> list:
 
 
 def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
-    """Plan the place, then plan each district. A5."""
+    """Plan the place, then plan each district."""
     from .. import contracts as contracts_mod, pipeline, placeplan, spec as spec_mod
     site = pipeline.settlement_site(rnd)
     if not site:
@@ -5319,18 +5263,18 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
                          "error": "no site.json: a place is planned against ground and "
                                   "no site has been prepared"}}
     types = rnd.flags.get("types")
-    # v2, C3: **the library grows when the spec asks for a form it lacks.** A defining
-    # part no committed type builds is a type authored blind, checked and adopted here,
-    # before the place is planned -- a run's worth of them and no more.
+    # **The library grows when the spec asks for a form it lacks.** A defining part no
+    # committed type builds is a type authored blind, checked and adopted here, before
+    # the place is planned -- a run's worth of them and no more.
     from .. import arrange as arrange_mod, capability, contracts, growth
     # **What the library can build of this programme, written down before it is used.**
     # The record is the one `growth` opens its gaps from and the one the findings read
     # their uncovered capabilities from, so "no type builds this" is one answer with one
     # reason rather than two rules that can disagree. **With the site's own facts and
-    # this place's own boundaries.** The review's first finding: matching was called
-    # with `names` alone, so `fits` answered "will this type stand here" with the
-    # ground, the relief and the roundness of the boundary all missing -- three of the
-    # constraints the matcher exists to apply. They are facts about the *pair*, not
+    # this place's own boundaries.** Matching with `names` alone would have `fits`
+    # answer "will this type stand here" with the ground, the relief and the roundness
+    # of the boundary all missing -- three of the constraints the matcher exists to
+    # apply. They are facts about the *pair*, not
     # about the type, and a caller that does not pass them is asking a question with
     # half its terms absent.
     facts = site_capability_facts(rnd, spec, site)
@@ -5359,10 +5303,10 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     # --- level 1: the place ------------------------------------------------
     pb = rnd.rel("place_plan_prompt.md")
     pp = rnd.rel("plan.place.json")
-    # **The place level is solved, not asked for.** v2, B2: every defining part is
-    # placed by its relation -- `placesolve.solve_place`, the ring arithmetic where the
-    # spec declares rings and the relation solver everywhere else -- written to the same
-    # file the planner used to write, and then held to the same validator as the proof.
+    # **The place level is solved, not asked for.** Every defining part is placed by
+    # its relation -- `placesolve.solve_place`, the ring arithmetic where the spec
+    # declares rings and the relation solver everywhere else -- written to the same file
+    # a place planner would write, and then held to the same validator as the proof.
     # There is no brief and no hand-back: nobody to hand it back to, and the model never
     # writes a coordinate at any level. A place the solver cannot lay out stops here, by
     # name.
@@ -5371,8 +5315,8 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     # The same rule the site search and the preview now obey: a plan whose spec, site,
     # terrain, types or record schema has changed under it is stale, and re-entering
     # this stage on a plan drawn for a different programme is how a repair silently
-    # fails to land. A round with no stamp -- every round before this one, and every
-    # shipped fixture -- is reused exactly as it was.
+    # fails to land. A round with no stamp -- an older round, or a shipped fixture --
+    # is reused exactly as it was.
     from .. import deps as deps_mod
     if os.path.exists(pp):
         if not deps_mod.legacy(rnd, "plan"):
@@ -5380,12 +5324,11 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
             if not fresh:
                 print(f"   plan: {why}; the place is laid out again", flush=True)
                 os.replace(pp, rnd.rel("plan.place.stale.json"))
-                # **...and under a local scope, only the scope's part of it.** The
-                # fabric reset round: a revised programme made the plan stale, and this
-                # deleted every district and compound plan and the city's lanes -- so
-                # the crowded ring this revision must keep was compiled again from
-                # scratch and came back different, and the circulation had no network
-                # outside the scope to merge into. Outside the scope a district's plan
+                # **...and under a local scope, only the scope's part of it.** When a
+                # revised programme makes the plan stale, deleting every district and
+                # compound plan and the city's lanes would compile a ring this revision
+                # must keep again from scratch, different, and leave the circulation no
+                # network outside the scope to merge into. Outside the scope a district's plan
                 # and the lanes are the boundary condition, exactly as a stale road
                 # leaves them (`_arterial_invalidate`); what the scope meets is laid
                 # again.
@@ -5427,19 +5370,18 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
         from .. import placesolve
         os.makedirs(rnd.state, exist_ok=True)
         # **The capability record is the authority on which type each part is built as,
-        # and this is where it reaches the thing that decides.** The review's first
-        # finding, in one argument: `caps` was written on the line above, `solve_place`
-        # took a `caps` parameter, and the call did not pass it -- so matching chose a
-        # type, the solver chose another, and `agreements` reconciled the record to
+        # and this is where it reaches the thing that decides.** `caps` is written on
+        # the line above and passed to `solve_place`; without it matching would choose a
+        # type, the solver another, and `agreements` would reconcile the record to
         # whatever the layout had done afterwards. A reconciliation is not a decision.
-        # **The requirements reach composition.** The closure round: the relation solver
-        # lays an `around` relation's districts on three sides of its object and an
-        # explicit count exactly, because it is handed the intent record and not a lossy
-        # spec of it. **A round may pin a layout choice its own comparison depends on.**
-        # The composition round registers a section around a named gate; the side the
-        # gates stand on is measured from the ground under them and can flip on a few
-        # columns of ring width, which would move the registered section's subject out
-        # from under it. `flags.axis_side` is that pin, and the layout records both the
+        # **The requirements reach composition.** The relation solver lays an `around`
+        # relation's districts on three sides of its object and an explicit count
+        # exactly, because it is handed the intent record and not a lossy spec of it.
+        # **A round may pin a layout choice its own comparison depends on.** A section
+        # registered around a named gate depends on the side the gates stand on, which
+        # is measured from the ground under them and can flip on a few columns of ring
+        # width, moving the registered section's subject out from under it.
+        # `flags.axis_side` is that pin, and the layout records both the
         # answer it was given and the one it measured.
         _alloc = {**(rnd.flags.get("allocation") or {}),
                   **({"axis_side": rnd.flags["axis_side"]}
@@ -5476,18 +5418,18 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     vol = _plan_volume(rnd, be)
     ground = pipeline.plan_ground(
         [{**p, "name": p.get("name")} for p in (place.get("parts") or [])], vol)
-    # A4: **the roads between the districts, before the districts.** No model call --
-    # the nodes are the gates and the district centres the place level has just drawn,
-    # and the routing is the one the lanes get. It is written into the place plan, so
-    # every district brief below can be told where its own road already runs. **The ring
-    # strips are cut where their ground asks, before any road is routed to them.** The
-    # quarter design round's parent negotiation: see `_negotiate_sectors`.
+    # **The roads between the districts, before the districts.** No model call -- the
+    # nodes are the gates and the district centres the place level has just drawn, and
+    # the routing is the one the lanes get. It is written into the place plan, so every
+    # district brief below can be told where its own road already runs. **The ring
+    # strips are cut where their ground asks, before any road is routed to them.** See
+    # `_negotiate_sectors`.
     if _negotiate_sectors(rnd, place, decls, _baseline_volume(rnd, vol)):
         json.dump(place, open(pp, "w"), indent=1)
     place["arterials"] = _stage_arterials(rnd, place, decls, vol)
     # **The ground each district will actually be prepared on, before its count is
-    # derived from it.** The spatial design round's first connected decision, and it is
-    # here rather than inside `concentric_layout` for one reason: the roads have just
+    # derived from it.** It is here rather than inside `concentric_layout` for one
+    # reason: the roads have just
     # been routed, so the reachability clause has real route cells to answer with, and
     # `_arrange_districts` below -- which is what turns ground into a count -- has not
     # run yet. Every count, cover and arrangement in this place is derived from
@@ -5496,13 +5438,12 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     _stage_district_ground(rnd, place, _baseline_volume(rnd, vol))
     _grade_roads_to_districts(rnd, place)
     json.dump(place, open(pp, "w"), indent=1)
-    # **What each district actually holds, from the logic that will build it.** The
-    # realization round's second boundary. Until this, the place level promised each
-    # district a count from `spec.structures_for` -- ground divided by what a house of
-    # that density costs, capped by a grid estimate -- and the compiler then laid
-    # whatever the rectangle really held. The two disagreed, the validator refused the
-    # district for the difference, and the run asked a model for better adjectives. Now
-    # the promise *is* the arrangement: `arrange` runs the district compiler, tries the
+    # **What each district actually holds, from the logic that will build it.** A count
+    # promised from `spec.structures_for` -- ground divided by what a house of that
+    # density costs, capped by a grid estimate -- disagrees with whatever the compiler
+    # then lays on the real rectangle, and the validator would refuse the district for
+    # the difference and send a model after better adjectives. So the promise *is* the
+    # arrangement: `arrange` runs the district compiler, tries the
     # ground and the fabric before it moves any number, and the file it adopted is the
     # file that gets built. The count the place carries afterwards is what the ground
     # gave, and whatever the place is short of its request surfaces as a capacity
@@ -5534,21 +5475,21 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
                                      "compound", "scale", "plateau", "overlap", "leaf"]
                   + (["arithmetic"] if arithmetic else []))
 
-    # **The resolved design, and what is still wrong with it.** The architecture round:
-    # the place level says where everything is, and until now nothing said which
-    # *requirement* each region answers or which stage could move it. `resolution.json`
-    # is that link and `findings.json` is what it turns up -- capacity short of the
+    # **The resolved design, and what is still wrong with it.** The place level says
+    # where everything is but not which *requirement* each region answers or which stage
+    # could move it. `resolution.json` is that link and `findings.json` is what it turns
+    # up -- capacity short of the
     # band, a requirement the spec dropped, a capability nothing on disk covers -- each
     # routed to the layer that can repair it. Written here, before the districts are
     # compiled, because a wall the sentence asked for and the spec omitted should be
     # found before four hundred buildings and not after them.
     caps, found = _resolve_record(rnd, spec, place, site, caps)
-    # **Feasibility is repaired here, before four hundred buildings are compiled.** The
-    # review's fourth finding: the only repair pass in the system ran inside
-    # `stage_preview`, which needs a complete plan and a reading, so a place-level
-    # feasibility failure could not reach it at all -- the city stopped, and the pass
-    # that might have acted on it was three stages downstream behind a prerequisite it
-    # had just failed to produce. A finding about the plan is answered at the plan.
+    # **Feasibility is repaired here, before four hundred buildings are compiled.** A
+    # repair pass inside `stage_preview` alone, which needs a complete plan and a
+    # reading, could never see a place-level feasibility failure: the run would stop
+    # three stages upstream of the pass that might have acted on it, behind a
+    # prerequisite it had just failed to produce. A finding about the plan is answered
+    # at the plan.
     got = _plan_repair(rnd, be, spec, place, found)
     if got is not None:
         return got
@@ -5573,10 +5514,10 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
             cpart = next((d for d in spec_mod.compounds(spec)
                           if placeplan._answers(c, d)), None)
             _ct, cdecl = placeplan.compound_types(types, spec, cpart or {})
-            # **The capability record's approved types reach the composer.** The closure
-            # round: the palace was laid out of temple and plaza where the record had
-            # approved hall and square, and the reconciliation refused the place for a
-            # disagreement between two choosers.
+            # **The capability record's approved types reach the composer.** Otherwise a
+            # palace can be laid out of temple and plaza where the record approved hall
+            # and square, and the reconciliation refuses the place for a disagreement
+            # between two choosers.
             laid, why = placeplan.compound_axial(c, cpart, place, cdecl or decls,
                                                  spec=spec, seed=1, caps=caps)
             if laid is not None:
@@ -5654,10 +5595,10 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
                 d.get(k) is not None for k in ("x0", "z0", "x1", "z1")) and not \
                 _local.meets(_scope_v, (d["x0"], d["z0"], d["x1"], d["z1"])):
             _kept_v.append(str(d["name"]))
-            # ...**and it is still part of the place.** The quarter design round: this
-            # `continue` skipped the assembly too, so a local plan pass assembled only
-            # the districts it re-decided -- 46 plots of a city of 400 -- and every
-            # stage after it built and read a city missing everything it had kept.
+            # ...**and it is still part of the place.** Skipping the assembly too would
+            # have a local plan pass assemble only the districts it re-decided, and
+            # every stage after it would build and read a city missing everything it had
+            # kept.
             if os.path.exists(dp):
                 districts[d["name"]] = json.load(open(dp))
             continue
@@ -5677,12 +5618,11 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
         # owner rather than a refusal of the district. Decided **here** and not at the
         # arrangement, because the two places compute `district_target` against
         # different arterials -- a repair re-routes the road between them and
-        # `developable_columns` reads it -- so a floor measured there was 948 where the
-        # refusal here was 1099. One number, taken where the refusal is made. ...and a
-        # district over its ceiling that holds the least a district may hold
+        # `developable_columns` reads it -- so a floor measured there need not be the
+        # floor the refusal here uses. One number, taken where the refusal is made.
+        # ...and a district over its ceiling that holds the least a district may hold
         # (`DISTRICT_MIN_STRUCTURES`) at the smallest lot its types admit cannot be
-        # asked for fewer: the overshoot is the layout's finding (the closure round's
-        # city).
+        # asked for fewer: the overshoot is the layout's finding.
         least_n = placeplan.DISTRICT_MIN_STRUCTURES
         laid_over = sum(1 for q in plots if q.get("kind", "plot") == "plot")
         if dfails and all(f.get("check") == "cover_over" for f in dfails) \
@@ -5704,17 +5644,14 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
                   f"its density's ceiling; carried as a layout finding rather than "
                   f"refused", flush=True)
             dfails = []
-        # **A requirement the request made outranks a count nobody asked for.** The
-        # spatial design round. `reservation_failures` refuses a district that could not
-        # hold a reservation the demand requires, and its own message says what would
-        # make it fit: *"the reservation and the housing are competing for the same
-        # ground and the count is the other side of that trade"*. Nothing acted on that.
-        # On `middle_ring_west_south` -- 7,560 columns of rectangle, 1,608 it can
-        # develop once the ground is read -- three inferred houses and the middle ring's
-        # required market cannot both stand, and the run stopped twice on a district
-        # nobody had asked for three houses in. The count here is the layout's
-        # inference; the market is `function/market`, which the sources put in the
-        # request. So the inference gives way: the district is laid again at the largest
+        # **A requirement the request made outranks a count nobody asked for.**
+        # `reservation_failures` refuses a district that could not hold a reservation
+        # the demand requires, and its own message says what would make it fit: *"the
+        # reservation and the housing are competing for the same ground and the count is
+        # the other side of that trade"*. On a district with little developable ground,
+        # a few inferred houses and a required market may not both stand. The count
+        # here is the layout's inference; a reservation such as `function/market` is
+        # the request's. So the inference gives way: the district is laid again at the largest
         # count that still holds every required reservation, and the difference is
         # short.
         if dfails and all(f.get("check") == "reservation" for f in dfails) \
@@ -5805,15 +5742,12 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
                 plots = []
                 dfails = []
         # **Short only of the ground between its houses, on ground it does not have.**
-        # The spatial design round, and the same argument one clause up. `ground_cover`
-        # asks a district to fill the rest of its rectangle with gardens, groves and
-        # yards; once `developable_columns` is the ground a building can be founded on,
-        # a district on a hillside is short of that for the same reason it is short of
-        # houses -- there is less ground -- and no character its author could write
-        # would find it. Measured on `middle_ring_south_west`: 11,400 columns of
-        # rectangle, 1,772 it can develop, 1,016 of plots and areas drawn against a
-        # floor of 1,063. Short by 47 columns, and the run stopped on it twice. Carried
-        # as the layout owner's finding where the district's own band over its own
+        # The same argument one clause up. `ground_cover` asks a district to fill the
+        # rest of its rectangle with gardens, groves and yards; since
+        # `developable_columns` is the ground a building can be founded on, a district
+        # on a hillside is short of that for the same reason it is short of houses --
+        # there is less ground -- and no character its author could write would find
+        # it. Carried as the layout owner's finding where the district's own band over its own
         # developable ground says it is full, and refused where it is not: a district
         # with room it has not used is still being told to use it.
         if dfails and all(f.get("check") in ("ground_cover", "farmland_cover", "cover")
@@ -5873,9 +5807,9 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
             # action, and what came back is what the ground gives: the shortfall is a
             # finding from here on and not a second refusal
             spent = d["name"] in _reask_record(rnd)
-            # **An exact count is never asked to be denser than it is.** The closure
-            # round's transfer case: five houses on a ring sector of five thousand
-            # columns cannot cover a dense district's ground, and asking the character's
+            # **An exact count is never asked to be denser than it is.** Five houses on
+            # a ring sector of five thousand columns cannot cover a dense district's
+            # ground, and asking the character's
             # author for different adjectives is asking the wrong layer. The count is
             # the sentence's; the rectangle the ring gave it is the layout's; the
             # shortfall is carried as the layout owner's finding and the density clause
@@ -5893,10 +5827,10 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
                             f"for. The plots are not clustered; this fabric does not "
                             f"fill this ground")}
                 json.dump(place, open(rnd.rel("plan.place.json"), "w"), indent=1)
-                # **An annotation is not a replacement.** The closure round: writing
-                # `cover_limited` onto the place file after its stamp made the plan
-                # "replaced", invalidated the ground with it, and the parts stage then
-                # refused to build on terraces cut for this very design.
+                # **An annotation is not a replacement.** Writing `cover_limited` onto
+                # the place file after its stamp would mark the plan "replaced",
+                # invalidate the ground with it, and have the parts stage refuse to
+                # build on terraces cut for this very design; so it is re-stamped.
                 with contextlib.suppress(ValueError):
                     deps_mod.stamp(rnd, "plan", outputs=["plan.place.json"],
                                    note="annotated with a district's cover limit")
@@ -5954,17 +5888,16 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
                               ["district", "count", "cover", "ground_cover",
                                "farmland_cover", "type", "role", "footprint",
                                "ground", "overlap"])
-            # v2, C1 and C5: a **compiled** district is not the district planner's to
-            # hand back -- no model drew it -- but the **character** it was compiled
-            # from is a model's, and that is who is answerable for a fabric the
-            # validator refuses. So the refusal goes back to the character's author,
+            # A **compiled** district is not the district planner's to hand back -- no
+            # model drew it -- but the **character** it was compiled from is a model's,
+            # and that is who is answerable for a fabric the validator refuses. So the refusal goes back to the character's author,
             # once, with what the compiler laid and what it was short of; refused twice,
             # the run stops by name. **The layout owner gets the finding before the
             # character's author does.** A compiled district short of its own cover is
             # first of all a question about the promise the allocator made, and only
             # after that a question about the fabric it was to be filled with. Asking a
             # model for a denser character in a 30-column strip is asking the wrong
-            # layer, and it is what this run did twice before stopping.
+            # layer.
             laid = sum(1 for q in plots if q.get("kind", "plot") == "plot")
             realloc = _district_capacity_repair(rnd, spec, place, d, laid, dfails,
                                                 site=site, decls=decls)
@@ -6011,13 +5944,12 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
                                           f"twice: " + "; ".join(
                                               f"{f.get('part')}: {f['why']}"
                                               for f in dfails[:6])}}
-            # A2: **the role-filtered table, not the whole one.** The hand-back re-
-            # states every type's needs so the planner can act on the failure, and
-            # composing it from the place-level `decls` handed a rural district the
-            # sizes of a keep, a wall and a minka -- types the role check would refuse
-            # the moment it named one. A rule the planner cannot read is a hand-back
-            # spent for nothing, and this is the second time in two rounds that the
-            # brief and the refusal have had to be made to agree.
+            # **The role-filtered table, not the whole one.** The hand-back re-states
+            # every type's needs so the planner can act on the failure, and composing it
+            # from the place-level `decls` would hand a rural district the sizes of a
+            # keep, a wall and a minka -- types the role check would refuse the moment
+            # it named one. A rule the planner cannot read is a hand-back spent for
+            # nothing; the brief and the refusal have to agree.
             _, mine = placeplan.types_card(types, spec.get("form"), role)
             _hand_back_level(rnd, db, dp, f"district {d['name']}", n, dfails,
                              mine or decls)
@@ -6046,18 +5978,18 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
         ground=pipeline.plan_ground(parts, _plan_volume(rnd, be)),
         network=None if _scope_v is not None else rnd.network(), form=spec.get("form"))
     if whole:
-        # The levels each passed and the assembly does not, which is the seam A5 exists
-        # to expose: two districts drawn far enough apart at the place level whose plots
+        # The levels each passed and the assembly does not, which is the seam planning
+        # level by level leaves open: two districts drawn far enough apart at the place level whose plots
         # meet at their shared edge. Reported and stopped rather than built.
         return {"plan": {"status": "error", "stop": True, "level": "assembled",
                          "failures": whole,
                          "error": "every level passed and the assembled plan does not: "
                                   + "; ".join(f"{f['part']}: {f['why']}"
                                               for f in whole[:6])}}
-    # **The resolution is written again, over the plan that exists.** The review's third
-    # finding: `resolution.json` summarised a place level whose districts had not been
-    # compiled -- lot counts were promises, boundaries were null, and the checks that
-    # read it were reading intentions. Now the record is made once before the districts
+    # **The resolution is written again, over the plan that exists.** Made only before
+    # the districts compile, `resolution.json` would summarise a place level whose lot
+    # counts are promises and whose boundaries are null, and the checks that read it
+    # would be reading intentions. So the record is made once before the districts
     # compile, where it is what catches an omitted wall cheaply, and **again here** over
     # the assembled tree, where `lots` is what the ground gave and a frontage check has
     # actual doors to look at.
@@ -6069,13 +6001,12 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     again = _plan_repair(rnd, be, spec, place, found2)
     if again is not None:
         return again
-    # **A plan with an open feasibility finding is not a planned plan.** The review's
-    # fifth finding: `_plan_repair` returns None both when it has fixed everything and
-    # when its budget is spent or no supported action changes anything, and the caller
-    # wrote the registry and reported `planned` either way. The city's two district
-    # shortfalls sat in `findings.json` as `blocks: feasibility` while the round called
-    # itself planned, because both were `severity: warning` -- but severity is how
-    # loudly a finding is said and `blocks` is what it stops. Exhaustion is an outcome
+    # **A plan with an open feasibility finding is not a planned plan.** `_plan_repair`
+    # returns None both when it has fixed everything and when its budget is spent or no
+    # supported action changes anything, so None alone cannot mean `planned`: an open
+    # `blocks: feasibility` finding still blocks even at `severity: warning`, because
+    # severity is how loudly a finding is said and `blocks` is what it stops.
+    # Exhaustion is an outcome
     # and it is this one: the plan stands, the record says what is unsolved and who owns
     # it, and nothing downstream builds it.
     _mark_retained(rnd, found2, place)
@@ -6109,9 +6040,9 @@ def _realized_lots(plan: dict, districts) -> dict:
         realization were being computed by two different rules that never met.
 
         A leaf's `in` names the **quarter** it is in -- `homes_shore_4_row_0` -- and a
-        district is a level above that. Found by running it: taking the innermost name
-        attributed every lot to a quarter, every district read as zero, and the reconciler
-        raised a shortfall against every region in the place. A count that is wrong in the
+        district is a level above that. Taking the innermost name would attribute every
+        lot to a quarter, every district would read as zero, and the reconciler would
+        raise a shortfall against every region in the place. A count that is wrong in the
         direction of "nothing was built" is worse than no count, because it looks exactly
         like the defect it exists to find.
 
@@ -6176,16 +6107,14 @@ def place_voice(rnd, spec: dict | None, site: dict | None) -> str:
 def _choose_voice(spec: dict, site: dict, check_types: bool = True) -> str:
     """The voice, chosen against the ground. Deterministic, and no model call.
 
-        `check_types` false skips the refusal below: the library's growth (v2, C3) needs
-        the voice for a brief before the missing type exists.
+        `check_types` false skips the refusal below: the library's growth needs the voice
+        for a brief before the missing type exists.
 
-        **Every voice covers every defining part now**, which is A1 in one function. This
-        used to ask, of each of seven voices, whether the committed types declaring *that
-        voice* could stand up the place's walls, gates and squares -- and the answer was
-        usually no, because a wall existed in one voice only and writing a second wall meant
-        writing the same wall again. A type is a form, the palette is handed to it, so what
-        is left to ask is whether the committed types of this place's **form family** cover
-        its defining parts, and then which palette reads against this ground.
+        **Every voice covers every defining part.** A type is a form and the palette is
+        handed to it, so the question is not whether the types of one voice can stand up
+        the place's walls, gates and squares -- that would mean writing the same wall again
+        for every voice -- but whether the committed types of this place's **form family**
+        cover its defining parts, and then which palette reads against this ground.
 
     """
     from .. import placeread, styles
@@ -6206,8 +6135,7 @@ def _choose_voice(spec: dict, site: dict, check_types: bool = True) -> str:
     every = sorted(styles.VOICES)
     if not every:
         raise ValueError("there are no voices under voices/")
-    # **A ceremonial palette is a candidate and never a default.** The craft round, E2:
-    # a voice may declare itself the palette of a place's richest quarter, and this is
+    # **A ceremonial palette is a candidate and never a default.** A voice may declare itself the palette of a place's richest quarter, and this is
     # the choice made when nothing said -- a whole place in white stone under a gilded
     # roof has no centre. A spec call naming one for a ring is answered above, where a
     # named voice is returned whatever it says about itself.
@@ -6243,11 +6171,10 @@ def _write_registry(rnd, plan, parts, *, levels=None, voice=None) -> dict:
 
 
 def stage_plan_flat(rnd, be, results: dict) -> dict:
-    """The planner, asked for a tree of parts. A4.
+    """The planner, asked for a tree of parts, and the plot registry written from it.
 
-        That last step is new and it is what A4 makes possible. `plots.json` has always been
-        written by `reserve()` when a pass commits, because a plot was ground a builder
-        claimed. Here every part of the place is in the plan before anything is built, so
+        Elsewhere `plots.json` is written by `reserve()` when a pass commits, because a plot
+        is ground a builder claimed. Here every part of the place is in the plan before anything is built, so
         the plan *is* the registry -- and the lint, the walk model and the cards can be
         scoped to a wall or a square exactly as they are to a house.
 
@@ -6360,15 +6287,13 @@ def type_declarations(parts: list) -> dict:
 def _baseline_volume(rnd, fallback=None):
     """**The ground as it was observed**, not the ground this design has already cut.
 
-        The spatial design round, and it is the rule `ground.propose`/`ground.apply` state on
-        their own first line -- *"the prepared ground is always made from the baseline"* --
-        applied to the measurement that decides what the ground can carry. `_plan_volume` is
-        the backend's working world, and on any pass after the first that world is the
-        terraced one: measured against it every district comes back **100% feasible**,
-        because the terraces have already put every column at its level. `middle_ring_north_west`
-        read 2,655 of 11,400 columns against the baseline and 11,400 of 11,400 against the
-        world its own terrace had cut, which is a district certifying its ground by looking
-        at the answer.
+        It is the rule `ground.propose`/`ground.apply` state on their own first line --
+        *"the prepared ground is always made from the baseline"* -- applied to the
+        measurement that decides what the ground can carry. `_plan_volume` is the backend's
+        working world, and on any pass after the first that world is the terraced one:
+        measured against it every district comes back **100% feasible**, because the
+        terraces have already put every column at its level, which is a district
+        certifying its ground by looking at the answer.
 
         Falls back to the working volume where no baseline has been kept -- a first plan,
         before any ground stage has run, is measuring the baseline either way -- and the
@@ -6392,14 +6317,13 @@ _SECTOR_DERIVED = ("ground", "level", "structures", "proposed_structures", "coun
 
 
 def _terrain_landscape(p: dict) -> dict:
-    """**A piece the ground refuses is landscape kept as found** (the city attempt
-    round). A piece that founds under `SECTOR_OPEN_SHARE` of itself at every level its
-    ring may take -- a hill standing forty blocks over its ring's terrace, a lake -- was
-    compiled as the ring's open ground: groves and gardens each sited on one level, so
-    the hill was quarried into faces and fins for an avenue of trees. The parent
-    composition round's `landscape` decision is taken here instead, at plan time and by
-    the same rule that opened the piece: nothing is sited on it and its ground is not
-    worked. The houses it was asked for stay on the record as the strip's shortfall."""
+    """**A piece the ground refuses is landscape kept as found.** A piece that founds
+    under `SECTOR_OPEN_SHARE` of itself at every level its ring may take -- a hill
+    standing forty blocks over its ring's terrace, a lake -- compiled as the ring's open
+    ground would get groves and gardens each sited on one level, and the hill would be
+    quarried into faces and fins for an avenue of trees. The `landscape` decision is
+    taken here instead, at plan time and by the same rule that opened the piece: nothing
+    is sited on it and its ground is not worked. The houses it was asked for stay on the record as the strip's shortfall."""
     return {"role": "landscape", "ground": "as_found",
             "why": (f"it founds {float(p.get('share') or 0):.0%} of itself at its best "
                     f"level within its ring's reach: a hill or water inside the ring, "
@@ -6416,10 +6340,9 @@ def _sector_pieces(alt: dict, ds: list, access, label: str) -> list:
     total = sum(int(d.get("proposed_structures") or d.get("structures") or 0)
                 for d in ds)
     counts = [0] * len(pieces)
-    # **a piece cut to hold whole modules is asked for what its modules hold** (the
-    # parent composition round), and the rest of the strip's count is spread over the
-    # other pieces as before: a share of a count by feasible columns says nothing about
-    # whether the rows it implies fit
+    # **a piece cut to hold whole modules is asked for what its modules hold**, and the
+    # rest of the strip's count is spread over the other pieces as before: a share of a
+    # count by feasible columns says nothing about whether the rows it implies fit
     for i, p in enumerate(pieces):
         if p.get("programme") is not None and not p["open"]:
             counts[i] = int(p["programme"])
@@ -6468,9 +6391,9 @@ def _sector_pieces(alt: dict, ds: list, access, label: str) -> list:
             x0, z0, x1, z1 = pieces[i]["rect"]
             return (max(x0 - ax, 0, ax - x1) + max(z0 - az, 0, az - z1)
                     if access else 0)
-        # **...on a piece that can found them** (the fabric reset round): the nearest
-        # piece to the gate was sometimes the hill the strip was cut to get away from,
-        # and a market on it has nowhere to stand; a piece that founds most of itself is
+        # **...on a piece that can found them**: the nearest piece to the gate can be
+        # the hill the strip was cut to get away from, and a market on it has nowhere to
+        # stand; a piece that founds most of itself is
         # preferred, and the nearest of those takes them
         cand = [i for i in idx if not pieces[i]["open"]] or idx
         good = [i for i in cand
@@ -6596,7 +6519,7 @@ def _screen_by_compile(rnd, spec: dict, place: dict, ds: list, got: dict, access
     are not routed yet, so each is compiled with the strip's current arterial columns
     removed -- recorded, because a road will take some of that ground back.
 
-    **Admissibility before preference** (the fabric reset round). Where the compiler
+    **Admissibility before preference.** Where the compiler
     composed a piece from its streets, its record carries `composition` -- the proposal
     family, whether every required relationship held (`admissible`), and a preference
     among admissible designs. An arrangement is admissible only if every piece asked to
@@ -6617,11 +6540,10 @@ def _screen_by_compile(rnd, spec: dict, place: dict, ds: list, got: dict, access
     def _in_strip(x, z):
         return any(r[0] <= x <= r[2] and r[1] <= z <= r[3] for r in strip_rects)
     art = dict(place.get("arterials") or {})
-    # **A strip composed from its streets is screened with its streets.** The fabric
-    # reset round: the street composer finds the principal streets and lane mouths from
-    # the routed road, so removing the strip's arterial columns removed the very streets
-    # the pieces are composed on (every lane "reached no street", no market touched
-    # one). The road is kept for such a strip and the record says so; a grid strip is
+    # **A strip composed from its streets is screened with its streets.** The street
+    # composer finds the principal streets and lane mouths from the routed road, so
+    # removing the strip's arterial columns would remove the very streets the pieces are
+    # composed on (every lane would "reach no street", no market would touch one). The road is kept for such a strip and the record says so; a grid strip is
     # screened as it always was.
     keep_roads = any(_street_layout(rnd.place_spec() or {}, d) for d in ds)
     if keep_roads and not art.get("cells") and os.path.exists(rnd.rel("arterials.json")):
@@ -6678,16 +6600,15 @@ def _screen_by_compile(rnd, spec: dict, place: dict, ds: list, got: dict, access
             carries = (not (d0.get("sector") or {}).get("open")
                        and int(d0.get("structures") or 0) > 0)
             comp = _composed(best_d)
-            # **ground that cannot hold a quarter is open ground, not a failed quarter**
-            # (the fabric reset round): a piece none of whose street compositions holds
-            # its relationships, and that carries none of the ring's landmarks, is the
-            # ring's open land -- a hillside or a lake edge -- and is adopted as that,
-            # with the houses it was asked for on the record as the strip's shortfall,
-            # rather than failing the strip whose other pieces make the quarter **...and
-            # only ground that cannot hold one** (the parent composition round). This
-            # also opened well-founded pieces whose composition failed, so a failed
-            # inhabited piece became open land and the strip stayed admissible with its
-            # programme quietly smaller. A piece that founds most of itself
+            # **ground that cannot hold a quarter is open ground, not a failed quarter**:
+            # a piece none of whose street compositions holds its relationships, and
+            # that carries none of the ring's landmarks, is the ring's open land -- a
+            # hillside or a lake edge -- and is adopted as that, with the houses it was
+            # asked for on the record as the strip's shortfall, rather than failing the
+            # strip whose other pieces make the quarter **...and only ground that cannot
+            # hold one**. Opening well-founded pieces whose composition failed would turn
+            # a failed inhabited piece into open land and leave the strip admissible with
+            # its programme quietly smaller. A piece that founds most of itself
             # (`SECTOR_NEGOTIATE_SHARE`), or that was cut to hold a module of the
             # fabric, stays inhabited: its failure makes the arrangement inadmissible
             # and goes to the owner of the proposal, not to the landscape.
@@ -6809,10 +6730,10 @@ def _screen_piece(rnd, spec, trial_place, d, form, ring_level, vol, routes, type
     two rows deep cannot compose one, and only the layout can give it a deeper block."""
     from .. import arrange as arrange_mod, placeplan as pp_mod, spec as spec_mod
     try:
-        # **screened at the level it will be laid at** (the parent composition round): a
-        # piece's negotiated level is the laid level (`_stage_district_ground`), so an
-        # arrangement whose levels were chosen for its modules is compiled at those
-        # levels, not at whatever level its own feasible columns would pick
+        # **screened at the level it will be laid at**: a piece's negotiated level is
+        # the laid level (`_stage_district_ground`), so an arrangement whose levels were
+        # chosen for its modules is compiled at those levels, not at whatever level its
+        # own feasible columns would pick
         lvl_neg = (d.get("sector") or {}).get("level")
         g = (pp_mod.district_ground(d, vol, ring_level=int(lvl_neg), routes=routes,
                                     steps=0)
@@ -7006,12 +6927,12 @@ def _sector_retire(rnd, names, plans: bool = True) -> list:
 
 def _negotiate_sectors(rnd, place: dict, decls: dict, vol) -> bool:
     """**A ring strip whose equal cut strands its programme is cut where its ground
-        breaks**, before the roads are routed to its districts. The quarter design round.
+        breaks**, before the roads are routed to its districts.
 
-        The child has always been able to say its rectangle fails -- `cover_limited`,
-        `short`, `capped_by_ground` -- and nothing could hear it: `arrange._grown` refuses a
-        ring sector because the ring arithmetic owns it, and a cover shortfall is a fidelity
-        finding no layout repair reads. This is the ring arithmetic's owner answering. For
+        A child can say its rectangle fails -- `cover_limited`, `short`,
+        `capped_by_ground` -- but `arrange._grown` refuses a ring sector because the ring
+        arithmetic owns it, and a cover shortfall is a fidelity finding no layout repair
+        reads. This is the ring arithmetic's owner answering. For
         each strip of a ring whose least piece founds under `SECTOR_NEGOTIATE_SHARE` of itself
         (`placeplan.negotiate_strip`), the arrangements it measures are recorded and the best
         is adopted where it founds more than the cut as drawn:
@@ -7026,8 +6947,7 @@ def _negotiate_sectors(rnd, place: dict, decls: dict, vol) -> bool:
 
         **Taken once, then it is a decision** (`sectors.json`), for `terrace_levels.json`'s
         reason: a later pass re-reads it rather than re-negotiating ground it has since
-        designed. **...a decision with an input identity** (the fabric reset round): each
-        strip's row records what it was decided from (`_sector_identity`). A decision whose
+        designed. **...a decision with an input identity**: each strip's row records what it was decided from (`_sector_identity`). A decision whose
         identity still holds is reapplied; one whose ring part, source rectangles, ring level
         or compiler/type inputs moved is **stale**: its `.laid` markers and the plans it
         caused are withdrawn (`_sector_retire`), a decision already applied to the place is
@@ -7235,8 +7155,8 @@ def _negotiate_sectors(rnd, place: dict, decls: dict, vol) -> bool:
             with contextlib.suppress(Exception):
                 block = int(dc.character_of(part, ds[0]).get("block") or block)
             depth_min = pp_mod.SECTOR_PIECE_BLOCKS * block + 2 * pp_mod.PLOT_LANE
-            # **a street-composed ring offers its streets' fronts** (the design
-            # resolution round): a frontage piece two dwelling lots deep, the lot being
+            # **a street-composed ring offers its streets' fronts**: a frontage piece two
+            # dwelling lots deep, the lot being
             # what the dwelling's form plan needs, not the character's number
             front_depth = None
             forms_ = None
@@ -7245,9 +7165,8 @@ def _negotiate_sectors(rnd, place: dict, decls: dict, vol) -> bool:
                 if str(ch_.get("layout") or "") == "street":
                     from .. import formplan as _fp, parentdemand as _pd
                     lead = next(iter((ds[0].get("demand") or {}).get("types") or []), None)
-                    # what the neighbourhood's forms need of the cut (the parent
-                    # composition round): the section and modules of its street
-                    # arrangements, asked of the same form plans the compiler asks
+                    # what the neighbourhood's forms need of the cut: the section and
+                    # modules of its street arrangements, asked of the same form plans the compiler asks
                     forms_ = _pd.forms(ch_, lead)
                     dw = dict((ch_.get("forms") or {}).get("dwelling") or {})
                     if ch_.get("court_least") and "court" not in dw:
@@ -7377,13 +7296,12 @@ ROAD_GRADE_REACH = 16
 
 
 def _grade_roads_to_districts(rnd, place: dict) -> dict | None:
-    """**A street is at the level of the quarter it serves** (the design resolution
-        round, the independent reader's r3).
+    """**A street is at the level of the quarter it serves.**
 
         The arterials are routed and graded before the districts choose their levels, on the
-        ring's own terrace, so the ring street ran at 69-70 past a lane piece laid at 64 and
-        then 68: the piece's shops opened onto a trench under a street they could not step
-        onto. Once the levels are decided, every road cell inside a street-composed district
+        ring's own terrace, so a ring street can run blocks above a lane piece laid lower:
+        the piece's shops open onto a trench under a street they cannot step onto. Once the
+        levels are decided, every road cell inside a street-composed district
         (or its first column round it) takes that district's level, and the road between two
         such districts is relaxed into a ramp of at most one block a column, within
         `ROAD_GRADE_REACH` of them. Under a local scope only cells inside it move; the record
@@ -7482,14 +7400,12 @@ def _stage_district_ground(rnd, place: dict, vol) -> dict:
     routes = [(int(c[0]), int(c[1]))
               for c in ((place.get("arterials") or {}).get("cells") or [])]
     # **A ring's level comes from its own ground before its districts are asked to step
-    # off it.** The spatial design round's second pass at the same question.
-    # `placeplan.terrace_levels` gives every ring `site_median + rank * TERRACE_STEP`,
-    # and the site's median is one number for a square 864 columns on a side. On this
-    # site it makes the middle ring's level 79 where its own annulus lies around 71, and
-    # the agrarian belt's 75 where its own lies around 67 -- so **23 of 34 districts
-    # chose to step two full terrace steps off their ring**, which is not 23 design
-    # decisions, it is one arithmetic error paid for 23 times over in retaining walls.
-    # So: measure each district at the level it would choose, take each ring's own level
+    # off it.** `placeplan.terrace_levels` gives every ring
+    # `site_median + rank * TERRACE_STEP`, and the site's median is one number for the
+    # whole square. On a sloping site a ring's own annulus can lie well below that
+    # level, so **most districts choose to step full terrace steps off their ring**,
+    # which is not many design decisions but one arithmetic error paid for many times
+    # over in retaining walls. So: measure each district at the level it would choose, take each ring's own level
     # from the median of its districts' choices weighted by their ground, and re-order
     # that set of levels by the rings' **elevation words** exactly as `order_terrace`
     # does -- the ring the sentence calls `upper` still stands on the higher terrace,
@@ -7565,12 +7481,12 @@ def _stage_district_ground(rnd, place: dict, vol) -> dict:
             continue
         ring = rings.get(str(d.get("defines"))) or {}
         lvl = ring.get("level")
-        # **a negotiated piece keeps the level it was negotiated and screened at** (the
-        # design resolution round): the sector decision compiled each piece at its own
-        # level and adopted the arrangement on what that compile realized; choosing the
-        # level again here, on feasible columns alone, laid the market piece two blocks
-        # lower than it was screened at, where its market no longer stood, and the piece
-        # became open ground. One decision, taken once.
+        # **a negotiated piece keeps the level it was negotiated and screened at**: the
+        # sector decision compiled each piece at its own level and adopted the
+        # arrangement on what that compile realized; choosing the level again here, on
+        # feasible columns alone, could lay a piece lower than it was screened at, where
+        # its market no longer stands, and the piece would become open ground. One
+        # decision, taken once.
         s_lvl = (d.get("sector") or {}).get("level")
         try:
             if s_lvl is not None and not (d.get("sector") or {}).get("open"):
@@ -7611,7 +7527,7 @@ def _stage_district_ground(rnd, place: dict, vol) -> dict:
 
 
 def _stage_arterials(rnd, place: dict, decls: dict, vol) -> dict | None:
-    """Route the arterials once and keep them. A4.
+    """Route the arterials once and keep them.
 
         Kept, for `stage_plateau`'s reason: a road re-routed after a district has been
         planned against it is a different road, and the districts joined the first one.
@@ -7621,21 +7537,18 @@ def _stage_arterials(rnd, place: dict, decls: dict, vol) -> dict | None:
     # road re-routed after a district has been planned against it is a different road --
     # and before the place level passes there are no districts, so keeping the first
     # attempt's road through a hand-back keeps a road drawn round walls that have since
-    # moved. One failure, wholly ours, on the round's second and last attempt. So the
-    # cache is keyed by the geometry it was routed from. An unchanged place plan gets
+    # moved. So the cache is keyed by the geometry it was routed from. An unchanged place plan gets
     # the identical road; a changed one gets a new one; and once the districts are
     # planned nothing changes the place plan again.
     import hashlib
     from .. import placeplan
     # **The rings' own levels are a decision already taken** (`terrace_levels.json`,
-    # written by `_stage_district_ground` and re-read there on every pass). The fabric
-    # reset round, found by revising one ring's programme: the revised spec laid the
-    # place out again by arithmetic, this stage then routed the road on the arithmetic
-    # ring levels -- a block off the kept ones -- and every plan in the city, the
-    # crowded ring this revision must keep among them, was dropped as "the road beside
-    # it moved"; the next pass read the kept levels, routed the old road back and
-    # dropped them all again. The road is routed on the levels the ground will be cut
-    # to.
+    # written by `_stage_district_ground` and re-read there on every pass). When a
+    # revised spec lays the place out again by arithmetic, routing the road on the
+    # arithmetic ring levels -- a block off the kept ones -- would drop every plan in the
+    # city as "the road beside it moved", and the next pass would read the kept levels,
+    # route the old road back and drop them all again. The road is routed on the levels
+    # the ground will be cut to.
     _tl = rnd.rel("terrace_levels.json")
     if os.path.exists(_tl):
         with contextlib.suppress(Exception):
@@ -7650,27 +7563,26 @@ def _stage_arterials(rnd, place: dict, decls: dict, vol) -> dict | None:
                                               (_lay.get("rings") or [])
                                               if r.get("level") is not None])
     designed = placeplan.designed_terrace(place)
-    # **Keyed on the geometry the road is routed from, and nothing else.** The closure
-    # round, found by replaying the proof: the key hashed every field of every district,
-    # the arrangement then wrote the adopted count, the pool and the re-ask onto the
-    # districts, and the next invocation called the place "changed", routed a new road
-    # through a district compiled against the old one, and refused that district for a
-    # plot standing on the arterial. A road is routed from where things stand.
+    # **Keyed on the geometry the road is routed from, and nothing else.** The
+    # arrangement writes the adopted count, the pool and the re-ask onto the districts
+    # after the road is routed; a key over every field of every district would then
+    # call the place "changed" on the next invocation, route a new road through a
+    # district compiled against the old one, and refuse that district for a plot
+    # standing on the arterial. A road is routed from where things stand.
     geometry = {
         "parts": [{k: v for k, v in (q or {}).items()
                    if k in ("name", "kind", "type", "x0", "z0", "x1", "z1", "path", "at",
                             "level", "defines", "half", "rect")}
                   for q in (place.get("parts") or [])],
-        # **A district's own terrace level is not one of them, and leaving it in made
-        # this stage un-re-enterable.** The block design round, found by trying to re-
-        # plan one district of a seeded city. `_stage_district_ground` runs *after* this
+        # **A district's own terrace level is not one of them, and leaving it in would
+        # make this stage un-re-enterable.** `_stage_district_ground` runs *after* this
         # call and writes `level` onto every district of `plan.place.json`. So a cold
-        # run keys the road on districts with no level, the file then grows 34 of them,
-        # and the next invocation -- a replan of one block, a revision, an improve cycle
-        # -- computes a different key, calls the place "changed", re-routes the road and
-        # **deletes all 88 district and compound plan files**. Nothing had moved. That
-        # is the whole of why a spatial edit costs a city-wide cycle, and it is a self-
-        # invalidation and not a dependency: the road is graded on `designed_heights`,
+        # run keys the road on districts with no level, the file then grows levels, and
+        # the next invocation -- a replan of one block, a revision, an improve cycle --
+        # would compute a different key, call the place "changed", re-route the road
+        # and **delete every district and compound plan file** although nothing had
+        # moved: a spatial edit would cost a city-wide cycle. It is a self-invalidation
+        # and not a dependency: the road is graded on `designed_heights`,
         # which reads the layout's rings, the compound podium and the gates, and never a
         # district's own level. The fields kept here are the ones the routing actually
         # reads.
@@ -7698,13 +7610,11 @@ def _stage_arterials(rnd, place: dict, decls: dict, vol) -> dict | None:
             return got
         os.replace(p, rnd.rel(f"arterials.{got.get('of_plan', 'unkeyed')}.json"))
         # ...and the districts compiled against the old road go with it: a district laid
-        # beside a road that has moved is laid beside nothing -- **and only those.** The
-        # quarter design round. Which plans the new road invalidates is now a
-        # comparison, made after the new road is routed (`_arterial_invalidate`): a
+        # beside a road that has moved is laid beside nothing -- **and only those.**
+        # Which plans the new road invalidates is a comparison, made after the new road is routed (`_arterial_invalidate`): a
         # district whose rectangle and whose road -- every arterial column on or beside
         # it, its level and its stair face -- are unchanged keeps its plan; anything
-        # else is laid again. (The compounds' reason, kept from before:
-        # `compound_failures` asks that a gate stand within `GATE_NEAR` of where the
+        # else is laid again. (The compounds' reason: `compound_failures` asks that a gate stand within `GATE_NEAR` of where the
         # road arrives, so a compound whose road has moved is laid again from the new
         # one.)
         was = got
@@ -7759,8 +7669,8 @@ def _arterial_road_near(rec: dict, name: str) -> list:
 
 
 def _arterial_invalidate(rnd, was: dict, now: dict) -> dict:
-    """**Which plans a re-routed road invalidates**, by comparison. The quarter design
-        round's dependency closure for a layout change.
+    """**Which plans a re-routed road invalidates**, by comparison: the dependency
+        closure for a layout change.
 
         A plan file is kept when its district (or compound) is still in the place under the
         same name, its rectangle is the one it was compiled on, and the road beside it is
@@ -7824,17 +7734,16 @@ def _arterial_invalidate(rnd, was: dict, now: dict) -> dict:
 def _drop_assembled(rnd) -> None:
     """Retire the assembled plan and the lanes routed for it.
 
-        The closure round, found by replaying the proof: a district was laid again and the
-        assembled tree was then validated against `network.json` -- the lanes routed to the
-        plots of the arrangement before it -- and refused for doorsteps the circulation pass
-        had reserved for houses that no longer stood there. A plan and its lanes belong to
-        the districts they were assembled from.
+        When a district is laid again, an assembled tree validated against the old
+        `network.json` -- the lanes routed to the plots of the arrangement before it -- is
+        refused for doorsteps the circulation pass reserved for houses that no longer stand
+        there. A plan and its lanes belong to the districts they were assembled from.
 
-        **Under a local scope the lanes stay**, the quarter design round: only districts
-        inside the scope are ever re-laid there, `_dry_circulation` re-routes every site the
-        scope meets and merges the result into the lanes outside it, and deleting
-        `network.json` here left that merge nothing to keep -- the city outside a local
-        revision lost its roads and thresholds to a re-arranged district inside it.
+        **Under a local scope the lanes stay**: only districts inside the scope are ever
+        re-laid there, `_dry_circulation` re-routes every site the scope meets and merges
+        the result into the lanes outside it, and deleting `network.json` here would leave
+        that merge nothing to keep -- the city outside a local revision would lose its
+        roads and thresholds to a re-arranged district inside it.
 
     """
     for f in _assembled_files(rnd):
@@ -7846,9 +7755,9 @@ def _assembled_files(rnd) -> tuple:
     """What a re-laid district retires: the assembled plan, and -- except under a local
     scope, where they are the boundary condition the scope's circulation merges into --
     the lanes. One answer for every path that re-lays a district (`_drop_assembled`,
-    a reallocation, a plan-level repair); three copies of the list had drifted, and the
-    two that still deleted the lanes left a local pass with a network of its own 24
-    doorsteps and none of the 95 the kept city stands on."""
+    a reallocation, a plan-level repair), because copies of the list drift, and a copy
+    that deletes the lanes leaves a local pass with a network of its own doorsteps and
+    none of the ones the kept city stands on."""
     from .. import local as _local
     keep_lanes = _local.scope_of(rnd) is not None
     return ("plan.json", "plots.json") + (() if keep_lanes else
@@ -7870,7 +7779,7 @@ def _plan_volume(rnd, be):
 
 
 def validate(rnd, be, parts: list) -> dict:
-    """Check a plan against its types' `NEEDS`, and hand a failing one back once. A2.
+    """Check a plan against its types' `NEEDS`, and hand a failing one back once.
 
         Every failure is written to `plan_failures.json` and appended to the planner's own
         brief, and the plan it failed on is kept beside it as `plan.rejected.<n>.json`, so

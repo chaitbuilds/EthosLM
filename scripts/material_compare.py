@@ -4,19 +4,18 @@
     $PY scripts/material_compare.py --context farm=out/expr-farm --controls-only
     $PY scripts/material_compare.py --context farm=out/closure-farm --reconstruct
 
-**What this answers and what the expression round's version could not.** That run
-judged `leave_off` and the review called the result inconclusive rather than negative,
-for two reasons, and both are fixed here before anything is compared again:
+**What this answers that a naive comparison cannot.** A `leave_off` verdict read off
+generic cameras and flat shading is inconclusive rather than negative, for two reasons,
+and both are handled here before anything is compared:
 
-  the cameras       `choose_group` picked a group by footprint adjacency and drew a
-                    padded crop of it, so the farm's close views landed on a hillside
-                    and a roof corner: terrain in front of the elevation is the first
-                    solid the projection hits. Subjects are now derived from the built
-                    record -- a named house's street face off its emitted footprint and
-                    the plan's `front`, the same face again at eye height, the row it
-                    stands in, a court from above, a wall's outer face -- and the crop
-                    stops **at the facade plane**, so nothing in front of the subject
-                    can occlude it.
+  the cameras       a group picked by footprint adjacency and drawn as a padded crop
+                    puts the close views on a hillside and a roof corner: terrain in
+                    front of the elevation is the first solid the projection hits.
+                    Subjects are derived from the built record -- a named house's
+                    street face off its emitted footprint and the plan's `front`, the
+                    same face again at eye height, the row it stands in, a court from
+                    above, a wall's outer face -- and the crop stops **at the facade
+                    plane**, so nothing in front of the subject can occlude it.
   the display       flat shading gives cobblestone and andesite one colour nine units
                     apart, which is the substitution the farm's recipe makes on its
                     walls. Close views are drawn with `preview.elevation(texture=True)`
@@ -353,10 +352,10 @@ def one_part(sdoc: dict, name: str) -> dict:
 def nearest_by_colour(block: str) -> str | None:
     """The material family the **flat** display draws most nearly the same as `block`.
 
-        This is how the fine control is chosen rather than guessed: the old display's own
+        This is how the fine control is chosen rather than guessed: the flat display's own
         colour table names the pair it cannot separate. On the farm's cobblestone it
-        returns andesite, which is exactly the substitution the expression round's recipe
-        makes on its walls and exactly the one its pictures could not show.
+        returns andesite, which is exactly the substitution the farm's recipe makes on its
+        walls and exactly the one flat-shaded pictures cannot show.
 
     """
     from ethoslm import prims

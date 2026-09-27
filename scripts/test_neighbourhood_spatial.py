@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""The neighbourhood round's spatial programme and arrangement work, on real ground.
+"""A neighbourhood's spatial programme and arrangement work, on real ground.
 
-Cheap production counterexamples for the three things the round's brief says the
-composition round's spatial layer cannot do. Every case runs the actual entry points --
-`district_compile.use_mix`, `district_compile.compile_district`, `arrange.arrangements`,
-`arrange.alternatives`, `placeplan.region_columns` -- on the **retained section's own
-districts** (`out/comp-city`), which are immutable input here: read, never written. No
-world is built and no interpretation is re-run.
+Cheap production checks of what the spatial layer has to do for a district. Every case
+runs the actual entry points -- `district_compile.use_mix`,
+`district_compile.compile_district`, `arrange.arrangements`, `arrange.alternatives`,
+`placeplan.region_columns` -- on the **retained section's own districts**
+(`out/comp-city`), which are immutable input here: read, never written. No world is
+built and no interpretation is re-run.
 
     P1  the quarter's programme is inferred from its own design -- the requirements its
         demand resolved and the words of its own description -- and not from a constant.
@@ -20,11 +20,11 @@ world is built and no interpretation is re-run.
         to is measured off what was laid with its derivation beside it.
 
     P4  the pad figure is labelled as the estimate it is, and where construction has
-        reported rectangles for a district's leaves the alternative reads **those** --
-        which the composition round's `alternatives` computed and then discarded.
+        reported rectangles for a district's leaves the alternative reads **those**
+        rather than computing them and discarding them.
 
     P6  a perimeter block puts building on the cross streets and encloses its court on
-        four sides -- neither of which any arrangement in this compiler could do.
+        four sides.
 
 Two to six minutes: the fixtures are retained plans and the compiler is asked about
 single rectangles.
@@ -346,13 +346,13 @@ def t_p4_every_proposal_is_ranked_on_its_own_geometry():
                                parts_record=parts_record, most=4)
     live = [a for a in got if a.get("lots")]
     assert live, [a["action"] for a in got]
-    # **the counterexample, and how far this fixture pair can carry it.** The join was
-    # by name, so the question is whether one candidate's leaf names ever land on
-    # another's leaves. The retained `comp-city` build was laid by an older naming
-    # (`c0_0_0`, `v0_0`) and today's compiler lays `b2_0_06`, so on *this* pair the
-    # overlap happens to be small -- which is luck and not a property, because both
-    # namings are positional and neither says anything about the geometry. The overlap
-    # is measured and reported rather than asserted; what is asserted is the rule.
+    # **what a join by name would get wrong, and how far this fixture pair shows it.**
+    # Joined by name, one candidate's leaf names could land on another's leaves. The
+    # retained `comp-city` build names its leaves `c0_0_0`, `v0_0` and the current
+    # compiler `b2_0_06`, so on *this* pair the overlap happens to be small -- which is
+    # luck and not a property, because both namings are positional and neither says
+    # anything about the geometry. The overlap is measured and reported rather than
+    # asserted; what is asserted is the rule.
     names = {p["name"] for p in leaves_of(_got)}
     reused = sorted(n for n in names
                     if placeplan.emitted_for(rows, CROWDED, n) is not None)

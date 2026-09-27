@@ -1,12 +1,9 @@
 """What a built section actually demonstrates, measured off its own artifacts.
 
-`scripts/check_design.py:516` compared `len(section.json["demonstrated"])` with the
-length of the round file's list. Nothing in the repository wrote that file: it was hand-
-authored by the agent running the round, and the same report conceded in prose that the
-contrasting ring fabrics "cannot be seen in it at all". A gate that counts asserted
-relationships is not a gate; the review's own conclusion was that a numerical gate
-cannot overrule a material negative reading, and the deeper point is that this number
-was never a measurement in the first place.
+A gate that counts asserted relationships is not a gate. A hand-written list of what a
+section "demonstrates" can claim a contrast that cannot be seen in the build at all; a
+numerical gate cannot overrule a material negative reading, and a count of claims was
+never a measurement in the first place.
 
 So the record is derived here, from the artifacts production wrote:
 
@@ -22,8 +19,8 @@ not a synonym for the first: a measurement this build did not take holds nothing
 numbers are reported whatever the verdict, because the numbers are the evidence and the
 verdict is a reading of them.
 
-The contrast test is the one worth stating plainly, since it is the relationship the last
-round claimed and did not have. It is decided on **built** geometry -- what stood, how
+The contrast test is the one worth stating plainly, since it is the relationship most
+easily claimed without being there. It is decided on **built** geometry -- what stood, how
 big it is, how close it stands to its neighbour, and how much of each side's ground it
 covers -- and never on a type name, a character word or a lot allocation. Two fabrics
 whose difference is real are different in at least two of those three ways.
@@ -705,10 +702,10 @@ def _walls_note(edges: dict) -> str:
 
 
 def _anchor(rows: list, usable: dict, plan: dict | None, streets=None) -> dict:
-    # **A block's court is not the quarter's anchor.** The quarter design round: courts
-    # are laid as `plaza` tiles, so every composed court counted as an anchor subject
-    # and the relationship passed or failed on paving that belongs to a block of houses.
-    # A court is the part a block's ranges claim to enclose (`enclosure`/`court_site`).
+    # **A block's court is not the quarter's anchor.** Courts are laid as `plaza` tiles,
+    # so without this every composed court would count as an anchor subject and the
+    # relationship would pass or fail on paving that belongs to a block of houses. A
+    # court is what a block's ranges claim to enclose (`enclosure`/`court_site`).
     courts = set()
     with contextlib.suppress(Exception):
         from . import pipeline
@@ -722,16 +719,15 @@ def _anchor(rows: list, usable: dict, plan: dict | None, streets=None) -> dict:
                 "how": "the section built no market, square or plaza: the programme's "
                        "anchor is not in it",
                 "measured": {"anchors": 0}, "from": ["parts.json"]}
-    # **...and a market is integrated by its neighbours, not by its stalls.** The
-    # quarter design round, and the audit's "a market's reachable equipment does not
-    # establish frontage, approaches or its place among homes": this verdict was the
-    # equipment predicate alone, and the delivered market passed with its nearest
-    # standing building eighteen columns away. Asked now of the built world as well:
-    # which standing buildings of the section stand within `ANCHOR_NEIGHBOUR_REACH` of
-    # the anchor's own rectangle (a street and a lot's clearance), and on how many of
-    # its four sides. Belonging is at least `ANCHOR_NEIGHBOURS` of them on at least
-    # `ANCHOR_SIDES` sides -- an anchor with a building across its street and one along
-    # its frontage -- reported with the gaps, and required beside the equipment.
+    # **...and a market is integrated by its neighbours, not by its stalls.** A market's
+    # reachable equipment does not establish frontage, approaches or its place among
+    # homes: on the equipment predicate alone a market passes with no building near it.
+    # So this is asked of the built world as well: which standing buildings of the
+    # section stand within `ANCHOR_NEIGHBOUR_REACH` of the anchor's own rectangle (a
+    # street and a lot's clearance), and on how many of its four sides. Belonging is at
+    # least `ANCHOR_NEIGHBOURS` of them on at least `ANCHOR_SIDES` sides -- an anchor
+    # with a building across its street and one along its frontage -- reported with the
+    # gaps, and required beside the equipment.
     buildings = [(str(r.get("part")), _building_rect(r)) for r in rows
                  if r.get("stood") and r.get("kind", "plot") == "plot"
                  and _building_rect(r)]
@@ -850,11 +846,9 @@ def _in_section(d: dict, sec) -> bool:
     """Does this district's rectangle meet the section being measured?
 
         **A section is a section, and a court owed three rings away is not failed here.**
-        The neighbourhood delivery round, and the audit's own words: "the new court
-        denominator includes all 18 court-owing districts of the city in a section record:
-        `_districts` collects the whole plan and `_courts` gets no section boundary. This
-        should not force a whole-city build. Required missing courts inside the evaluated
-        neighbourhood must remain owed."
+        Counting every court-owing district of the city against a section record would
+        force a whole-city build to pass it, while a required court missing inside the
+        evaluated neighbourhood must still remain owed.
 
         So the denominator is the court-owing districts the section's rectangle actually
         reaches, and a district outside it is listed as out of scope rather than counted and
@@ -1053,9 +1047,8 @@ def _courts(rows: list, usable: dict, districts: list, sec=None, open_ground=Non
     # not answer affirmatively is owed. So the bar is: at least one court was asked, and
     # every court that was asked holds. One affirmative answer out of eight standing
     # courts is not "the courts are courts", which is what a `len(ok) > 0` test would
-    # have called it -- **and every subject has to have been asked**, which is the
-    # clause the review found missing and the reason a `failed` can now come out of a
-    # set in which nothing said no.
+    # have called it -- **and every subject has to have been asked**, which is why a
+    # `failed` can come out of a set in which nothing said no.
     status = ("failed" if subjects > len(asked_rows) or owed
               else "demonstrated" if asked_rows else "unmeasured")
     areas = sorted({g["court_columns"] for g in ok if g["court_columns"]})
@@ -1100,11 +1093,8 @@ WALK_MARGIN = 12
 def _walk_section(state: str, sec, thresholds: list) -> dict | None:
     """**The route, walked on the final assembled blocks.**
 
-        The neighbourhood delivery round, and the audit's first evidence limit: "`section._route`
-        reads a planned network check and finds gate/anchor threshold names. It does not
-        trace the registered route through final blocks. The problem is what the route
-        verdict measures."
-
+        Finding the gate and anchor threshold names in a planned network check is not the
+        same as tracing the registered route through the final blocks.
         `circulate.walk_check` re-derives reachability over the **planned lane graph** under
         the movement rules, which is the right check at planning time and answers a different
         question afterwards: it cannot see a pad laid over a lane, a wall closed across a

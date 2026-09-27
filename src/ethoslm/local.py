@@ -1,16 +1,10 @@
 """**The local unit of production: one block, with the city round it held still.**
 
-The block design round, and the audit's "why the previous prompt did not close this":
-
-    The "small block" also reduced the wrong part of the cycle. `rounds/nd-block.json`
-    seeds the city plan, prepared ground and roads, and runs cropped construction and
-    inspection. It is useful for type debugging. It does not make spatial planning and
-    revision local. `improve.py:_rebuild` still runs ground, terraces and circulation
-    before construction.
-
-Measured on this project's own block, cold, before this module existed: ground 9 s,
-**terraces 120 s**, **circulation 358 s**, parts 160 s, finish 2 s, lint 57 s, section 2
-s.
+Cropping construction and inspection to a block (`rounds/nd-block.json` seeds the city
+plan, prepared ground and roads, and builds and reads only its section) is useful for
+type debugging, but it reduces the wrong part of the cycle: it does not make spatial
+planning and revision local, and cold, **terraces** and **circulation** over the whole
+city cost more than building and reading the block does.
 
 So a round may declare a **scope**: a rectangle, and a margin round it.
 
@@ -24,9 +18,9 @@ That is a smaller *complete* rebuild and not an incremental scheduler: every sta
 its own ordinary code over a smaller world, and the dependency that genuinely crosses the
 boundary -- the arterial road, the ring wall, the gate, the ground the block is entered
 across -- is inside the margin by construction. Where a change needs more than its
-declared scope the stage says so and the scope has to be widened explicitly, which is the
-audit's "expose dependencies that genuinely require a larger scope; reject undeclared
-changes before building".
+declared scope the stage says so and the scope has to be widened explicitly: a
+dependency that genuinely requires a larger scope is exposed, and an undeclared change is
+rejected before building.
 
 Nothing here decides anything about a place. It answers three questions -- what is my
 scope, is this inside it, and put that piece of the world back as it was -- and the

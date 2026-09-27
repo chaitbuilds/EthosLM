@@ -1,4 +1,4 @@
-"""The expression round's capability cases: forms and functions that are **measured**.
+"""Expression capability cases: forms and functions that are **measured**.
 
     $PY scripts/test_expression_capabilities.py
 
@@ -18,7 +18,8 @@ a type declared:
      whose brief carries the feature contract, and a run past its cap refuses by name;
   f. the adoption gate refuses a clean type that does not declare the gap's function.
 
-they skip without them.
+Cases that need a retained run's fixtures (`out/site_*/plots.json`) or a type's ENVELOPE
+table skip without them.
 """
 import json
 import os

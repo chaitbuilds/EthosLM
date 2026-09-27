@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The design round's spatial escape routes, E2 and E3, through the real consumers.
+"""Two spatial escape routes, E2 and E3, through the real consumers.
 
 Small inputs, each with a positive control, and every one of them run through the
 production entry points -- `placeplan.concentric_layout`, `arrange.arrangements`,
@@ -15,8 +15,8 @@ measurement it is checking.
         preserves population and access; emitted solids fit the approved occupation,
         including the great wall's projection.
 
-Seconds, not minutes: the fixtures are the retained expression-round plans and the
-compiler is asked about single rectangles.
+Seconds, not minutes: the fixtures are retained plans under `out/` and the compiler is
+asked about single rectangles.
 """
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ _LOADED: dict = {}
 
 
 def rings_fixture():
-    """The expression round's hill town: spec, site, plateau, types, intent.
+    """A retained hill town: spec, site, plateau, types, intent.
 
         Retained state, read and never written. `out/expr-rings` is immutable input.
 
@@ -103,8 +103,8 @@ def _compile_ring(place, spec, decls, name="lower_ring"):
 
 @case
 def t_e2a_relabelling_ground_open_cannot_satisfy_the_density_requirement():
-    """The expression round measured a `dense` ring at 27.5% over the part of it that
-    happened to receive lots. Naming the rest `open` is an allocation decision."""
+    """A `dense` ring measured only over the part of it that happened to receive lots
+    flatters it. Naming the rest `open` is an allocation decision and moves nothing."""
     spec, site, plateau, decls, _intent = rings_fixture()
     place, fails = placeplan.concentric_layout(spec, site, plateau, decls, "x")
     assert not fails, fails
@@ -236,7 +236,7 @@ def t_e2c_allocated_area_alone_cannot_prove_built_massing():
 
 @case
 def t_e2d_a_density_finding_reaches_a_bounded_arrangement_action():
-    """The dense-word finding the expression round could not act on."""
+    """A finding against the `dense` word reaches a bounded arrangement action."""
     spec, site, plateau, decls, _intent = rings_fixture()
     place, fails = placeplan.concentric_layout(spec, site, plateau, decls, "x")
     assert not fails, fails
@@ -313,9 +313,9 @@ def t_e3a_an_anchor_or_voice_revision_regenerates_the_ground_from_the_baseline()
     assert sum(int(d["structures"]) for d in place["districts"]) == 24
     assert not [c for c in ground.evaluate(p1, place)["conflicts"]
                 if c["what"] == "protected"], ground.evaluate(p1, place)
-    # ...and the case that named this failure: the held-out village's chapel stood on
-    # `_plateau_size`'s default of 48 columns, paved in the voice the plan had when the
-    # ground stage ran. The proposal is the chapel's own.
+    # ...and a retained village whose chapel would otherwise stand on `_plateau_size`'s
+    # default of 48 columns, paved in the voice the plan had when the ground stage ran.
+    # The proposal is the chapel's own.
     said_held = ""
     held = os.path.join(ROOT, "out", "expr-held")
     if os.path.exists(os.path.join(held, "plan.place.json")):

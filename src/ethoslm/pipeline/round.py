@@ -138,16 +138,16 @@ class Round:
     def plots(self) -> list:
         """The plot leaves, in plot-registry shape. See `plan_plots`.
 
-                A4: the plan is a tree, and this is the one call that flattens it, so every
-                stage that used to read `plan["structures"]` keeps working whichever shape the
-                plan on disk is.
+                The plan is a tree, and this is the one call that flattens it, so every
+                stage that wants a flat list of plots works whichever shape the plan on
+                disk is.
 
         """
         return _pipeline.plan_plots(self.plan())
 
     # ------------------
     def place_spec(self) -> dict | None:
-        """`place.json` as the schema validator reads it, or None. A1."""
+        """`place.json` as the schema validator reads it, or None."""
         from .. import spec as spec_mod
         c = self.rel("place.checked.json")
         p = self.rel("place.json")
@@ -158,12 +158,12 @@ class Round:
         return spec_mod.read_spec(json.load(open(p)), self.sentence or None)
 
     def site_search(self) -> dict | None:
-        """What `scripts/find_site.py` decided and why. A3."""
+        """What `scripts/find_site.py` decided and why."""
         p = self.rel("site_search.json")
         return json.load(open(p)) if os.path.exists(p) else None
 
     def chosen_site(self) -> dict | None:
-        """`{"origin": [x, z], "size": n}` from the search, or None. A3.
+        """`{"origin": [x, z], "size": n}` from the search, or None.
 
                 The one place a round with no site in its config gets one, and it is
                 deliberately the *search's* own answer: `site.json` is written from this by
@@ -257,7 +257,7 @@ class LiveBackend:
         self.site = None
         self.X = self.Z = self.S = None
         self._vol = None
-        # A1: what has been committed into the volume and not yet written into the
+        # What has been committed into the volume and not yet written into the
         # world. One publish owes the server this and nothing else.
         self.blocks: dict = {}
         # `settlement.site_info()` falls back to it -- and every stage after the search
@@ -306,10 +306,10 @@ class LiveBackend:
             self._vol = observe.Volume.from_world_slice(
                 self.editor.worldSlice, self.X - self.pad, self.Z - self.pad,
                 self.S + 2 * self.pad, self.S + 2 * self.pad, y0, y1)
-            # A1. `refresh()` means "read the ground again" -- a pass that ran in its
-            # own process has moved it -- and it never meant "forget what we built".
-            # While every commit went over the wire the two were the same thing; now
-            # that they are not, this line is what keeps them the same.
+            # `refresh()` means "read the ground again" -- a pass that ran in its own
+            # process has moved it -- and never "forget what we built". Commits live in
+            # `blocks` until `publish()`, not in the world, so a fresh read has to lay
+            # them over again or it would drop them.
             if self.blocks:
                 self._vol = self._vol.overlay(self.blocks)
         return self._vol
@@ -322,9 +322,9 @@ class LiveBackend:
 
     def commit(self, builder):
         """Take a part's writes into this backend's own volume. **Nothing is sent to
-                the server here.** v2, A1.
+                the server here.**
 
-                So a live round now builds its parts against the volume, like a dry run, and
+                So a live round builds its parts against the volume, like a dry run, and
                 the world is written once. `blocks` is what is owed the world, in the order it
                 was laid, and a part's own record still says how many blocks it placed.
 
@@ -366,7 +366,7 @@ class LiveBackend:
                 "seconds": round(time.perf_counter() - t0, 1)}
 
     def run_pass(self, name: str) -> dict:
-        """One committed pass, through the proven live path -- scripts/settlement_run.py:"""
+        """One committed pass, through the proven live path, `settlement_run.py`."""
         import subprocess
         p = subprocess.run(
             [os.path.join(ROOT, ".venv", "bin", "python"),
@@ -405,12 +405,11 @@ def stage_report(rnd: Round, be, results: dict) -> dict:
     p = _report_path(rnd)
     prev = json.load(open(p)) if os.path.exists(p) else {}
     merged = dict(prev.get("results") or {})
-    # **A merge that keeps every answer keeps the withdrawn ones too.** The review's
-    # fourth finding, at the report: this merged the new results over the old and
-    # nothing retired what the new run had superseded, so the held-out village's report
-    # carried an old *pending preview* and a new *stopped plan* at the same time -- two
+    # **A merge that keeps every answer keeps the withdrawn ones too.** Merging the new
+    # results over the old retires nothing the new run superseded, so a report could
+    # carry an old *pending preview* and a new *stopped plan* at the same time -- two
     # statements about two different candidates, in one document, with no way for a
-    # reader to tell which was current. Two rules, and both are about what this
+    # reader to tell which is current. Two rules, and both are about what this
     # invocation has actually re-decided. A stage that ran again replaces its own entry
     # (the plain merge below). A stage *downstream* of the earliest one that ran has not
     # been re-decided and its answer is about the candidate before this pass, so it is
@@ -468,28 +467,26 @@ PLACE = ("reading", "interpret", "place_spec", "site_search", "site", "plateau",
          "section", "inspect", "improve",
          "render", "cards", "qualify", "place_check", "judge", "readout")
 
-#: The same place, offline, with the world in a volume. Two differences from `PLACE` and
-#: both are forced: - `cache` runs **before** `plateau`, because offline a plateau is a
-#: cut applied to the volume the run is scored against and there is no volume until the
-#: ground has been read; - `render`, `cards` and `judge` are absent. Chunky needs the
-#: world on disk and a dry run has not written one; the frames are the live run's and A4
-#: is what bounds them when it gets there. ...and `cache` runs **before** `site` as well
-#: (v2, C5): offline the site briefing is measured off the cached volume, so the ground
-#: has to be in hand before it is read. ...and `preview` runs **after** `circulation`
-#: (v2, C4, found by looking at one): a building drawn before the lanes are routed has
-#: no way in, so `site()` refuses it and the preview's five buildings are five empty
-#: pads. The stage re-routes the lanes itself where its revision changes the plan.
+#: The same place, offline, with the world in a volume. The differences from `PLACE` are
+#: all forced: - `cache` runs **before** `plateau`, because offline a plateau is a cut
+#: applied to the volume the run is scored against and there is no volume until the
+#: ground has been read; - `cache` runs **before** `site` as well: offline the site
+#: briefing is measured off the cached volume, so the ground has to be in hand before it
+#: is read; - `preview` runs **after** `circulation`: a building drawn before the lanes
+#: are routed has no way in, so `site()` refuses it and the preview's buildings are empty
+#: pads. The stage re-routes the lanes itself where its revision changes the plan;
+#: - `render`, `cards` and `judge` are absent. Chunky needs the world on disk and a dry
+#: run has not written one; the frames are the live run's.
 PLACE_DRY = ("reading", "interpret", "place_spec", "site_search", "cache", "site", "plateau", "plan",
              "ground", "terraces", "circulation", "preview", "parts", "finish", "lint", "material",
              "section", "inspect", "improve", "qualify", "place_check", "readout")
 
 
-#: The design synthesis round: a **designed place**. After the reading, the meaning and
-#: the spec, the model designs the whole place's organisation (`design`), the proposals
-#: are compiled and compared on their sites and one is adopted (`design_compare`), the
-#: adopted design is resolved for construction (`design_resolve`), and the regions the
-#: round names are built, bounded and resumable (`regions`), then looked at
-#: (`region_views`). `flags.design` selects it; see `pipeline/stages_design.py`.
+#: A **designed place**. After the reading, the meaning and the spec, the model designs
+#: the whole place's organisation (`design`), the proposals are compiled and compared on
+#: their sites and one is adopted (`design_compare`), the adopted design is resolved for
+#: construction (`design_resolve`), and the regions the round names are built, bounded
+#: and resumable (`regions`), then looked at (`region_views`). `flags.design` selects it; see `pipeline/stages_design.py`.
 #: `design_references` comes first: the visual evidence a named place's identity needs,
 #: found (or reused) and read into a reference brief before anything is designed.
 DESIGN_DRY = ("reading", "interpret", "place_spec", "design_references", "design",

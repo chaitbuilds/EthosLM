@@ -1,8 +1,8 @@
 """**The design compiler**: a `citydesign` record resolved into walls, streets, blocks,
 lots, compounds, designed ground and construction regions.
 
-The design synthesis round. The model designs organisation (`ethoslm.citydesign`); this
-resolves it, deterministically and without reading prose:
+The model designs organisation (`ethoslm.citydesign`); this resolves it,
+deterministically and without reading prose:
 
 1. **Boundary and rings.** One `boundary.Outline` at the extent's radius; each ring is
    the outline scaled to its `outer` fraction, so walls, owned land and ring roads are

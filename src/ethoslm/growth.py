@@ -1,9 +1,9 @@
-"""The library grows when the spec asks for a form it lacks. v2, C3.
+"""The library grows when the spec asks for a form it lacks.
 
 The library grows by refusal: it says what it cannot yet build, and that is the next
-type. Until this, the refusal stopped the run -- `stage_plan_levels` said "no committed
-type of this place's form builds a tower" and a person wrote one. Now the plan stage
-**detects the gap** before it plans (`type_gaps`: a defining part of one of the four
+type. Rather than stopping the run on the refusal ("no committed type of this place's
+form builds a tower") and waiting for a person to write one, the plan stage **detects
+the gap** before it plans (`type_gaps`: a defining part of one of the four
 leaf kinds with no committed type of its kind named for its family, in the place's
 form), and **stages a blinded authoring** for it through the machinery every type has
 been authored by -- the same brief (`stages_build.type_brief`: the API,
@@ -37,16 +37,14 @@ LEAF_KINDS = ("plot", "edge", "point", "area")
 
 
 def type_gaps(spec: dict, names=None, intent: dict | None = None) -> list:
-    """The defining parts no committed **capability** answers, in spec order, and --
-        the expression round -- the **functions** the request asks for that no type of the
-        place's form declares (`function_gaps`).
+    """The defining parts no committed **capability** answers, in spec order, and the
+        **functions** the request asks for that no type of the place's form declares
+        (`function_gaps`).
 
-        Was: a type of the right kind whose *filename* began with the family, among the
-        types of the place's form. The architecture audit's finding is that a filename is
-        not a capability -- the same rule admitted a type of the wrong form at
-        `stage()` below -- so the question is now asked of what the type declares about
-        itself: its kind, its form, its role, its envelope and its attachment. See
-        `ethoslm.capability.fits`.
+        A type of the right kind whose *filename* begins with the family is not a
+        capability -- that rule admits a type of the wrong form -- so the question is
+        asked of what the type declares about itself: its kind, its form, its role, its
+        envelope and its attachment. See `ethoslm.capability.fits`.
 
         `names` is the round's own list of types where it has one; `intent` the checked
         intent record, where the caller has one (without it only defining-part gaps open).
@@ -97,9 +95,9 @@ def function_gaps(spec: dict, intent: dict | None, names=None) -> list:
             continue
         if r.get("status") in ("unsupported", "satisfied"):
             continue
-        # (coordinator, the expression round's farm run) a soft reading of what the
-        # whole place is for -- `function/farming` of a "farming village" -- is not a
-        # capability gap: only a hard function of a buildable thing opens one
+        # a soft reading of what the whole place is for -- `function/farming` of a
+        # "farming village" -- is not a capability gap: only a hard function of a
+        # buildable thing opens one
         w = r.get("wants") or {}
         if not r.get("hard") or str(w.get("what") or "").lower() in (
                 "village", "town", "city", "hamlet", "place", "settlement", "ring",

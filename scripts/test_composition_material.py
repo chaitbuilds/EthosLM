@@ -1,24 +1,23 @@
-"""The composition round's material cases: exact block state, and declared figures.
+"""Material cases: exact block state, and declared figures.
 
     $PY scripts/test_composition_material.py            # these cases
     $PY scripts/test_composition_material.py --only c   # one of them
 
 **This file extends `scripts/test_design_material.py`; it does not supersede it.** That
-file (and, through it, the expression round's) covers ownership at the write,
-protection, shape preservation, the reconciliation rules, the per-context matched rate
-and the textured display's positive control, and it still runs unchanged.
+file covers ownership at the write, protection, shape preservation, the reconciliation
+rules, the per-context matched rate and the textured display's positive control, and it
+still runs unchanged.
 
-  exact state    freshness was decided on the bare block **name** in both places that
-                 decide it (`surfaces.reconcile` and `material.apply`), so a cell whose
-                 stair had been re-faced, whose slab had moved to the top half or whose
-                 log had changed axis since the record was made still read `fresh` --
-                 and `material.substitute` then re-emitted the *record's* suffix over
-                 it and turned the block back round. Now `surfaces.same_state` decides,
-                 and the substituted block takes its state from the block that stands.
-  figures        the record said who owned a cell and what role it had, and nothing
-                 said the cell was part of a pattern somebody drew, so the design
-                 round's pass replaced both market floors' chequers, the palace courts'
-                 laid paving and the great wall's string course with noise.
+  exact state    freshness decided on the bare block **name** (in `surfaces.reconcile`
+                 and `material.apply`) reads a cell as `fresh` even when its stair has
+                 been re-faced, its slab moved to the top half or its log changed axis
+                 since the record was made -- and `material.substitute` then re-emits
+                 the *record's* suffix over it and turns the block back round. So
+                 `surfaces.same_state` decides, and the substituted block takes its
+                 state from the block that stands.
+  figures        who owns a cell and what role it has do not say the cell is part of a
+                 pattern somebody drew, so a material pass would replace a floor's
+                 chequers, laid paving or a wall's string course with noise.
                  `Primitives.figure` declares it at the write, `surfaces.FLAGS["figure"]`
                  carries it, and `material.plan` refuses it -- in the random arm too, so
                  the control stays matched.

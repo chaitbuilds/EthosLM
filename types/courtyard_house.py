@@ -75,10 +75,9 @@ NEEDS = {
 }
 
 #: **The lots this type needs, measured** by `envelope.table('courtyard_house',
-#: n_flanks=k) for k in 0, 1, 2 (the instrument `scripts/type_needs.py --envelope` runs,
-#: which measures k=0 only; driver kept at out/fr-work-types/envelope_flanks.py)`: each
-#: row is the least lot on which the parameters stand with the features named, at one
-#: seed (`lot_min`) and at seeds [1, 2, 3] (`lot_pref`). Read by
+#: n_flanks=k)` for k in 0, 1, 2 (`scripts/type_needs.py --envelope` measures k=0
+#: only): each row is the least lot on which the parameters stand with the features
+#: named, at one seed (`lot_min`) and at seeds [1, 2, 3] (`lot_pref`). Read by
 #: `ethoslm.envelope.lot_for` before a lot is drawn; the outcome construction measures
 #: afterwards remains authoritative.
 ENVELOPE = [

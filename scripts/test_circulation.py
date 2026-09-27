@@ -325,12 +325,12 @@ flat = finish.plan_finish({(x, 22): 70 for x in range(4, 44)}, np.full((n, n), 7
 check("seam: flat ground beside a flat lane is left entirely alone",
       not flat, f"{len(flat)} columns moved on the level")
 
-# ---------------------------------------------- A5. a wall, a gate, and one way in The
-# thing a walled district is: an edge the network may not cross, a point that is the one
-# place it may, and plots inside it that a person can still get to on foot. Until A5 the
-# router knew one kind of part -- a building footprint to join up -- so a wall was
-# either a plot (and the lanes went round it, which is a wall with no district in it) or
-# nothing at all (and the lanes went straight through it).
+# ------------------------------------------------------ a wall, a gate, and one way in
+# The thing a walled district is: an edge the network may not cross, a point that is the
+# one place it may, and plots inside it that a person can still get to on foot. A router
+# that knows only one kind of part -- a building footprint to join up -- treats a wall
+# either as a plot (and the lanes go round it, which is a wall with no district in it) or
+# as nothing at all (and the lanes go straight through it).
 print("\n# A5: circulation through a gate")
 
 WALL = [[10, 10], [40, 10], [40, 40], [10, 40], [10, 10]]     # a closed loop
@@ -362,9 +362,9 @@ check("a5: the tree flattens to six leaves inside one district",
 routing = circulate.parts_to_routing(parts, passage={"gate_tower"})
 wall_cells = routing["obstacles"] | routing["passable"]
 check("a5: the wall is an obstacle and the gate is the hole in it",
-      # the expression round: the passage spans the wall's obstacle band, clearance
-      # included (3 + 2 * EDGE_CLEARANCE cells), so a gate is still the hole in a wall
-      # whose base is wider than its line
+      # the passage spans the wall's obstacle band, clearance included
+      # (3 + 2 * EDGE_CLEARANCE cells), so a gate is still the hole in a wall whose base
+      # is wider than its line
       len(routing["sites"]) == 5
       and len(routing["passable"]) == 3 + 2 * circulate.EDGE_CLEARANCE
       and (25, 10) in routing["passable"] and (24, 10) in routing["obstacles"],
@@ -411,7 +411,7 @@ check("a5: with no gate the same wall is a sealed district, and it shows",
 # the arterials
 
 # A place of two districts inside one wall with one gate, and nothing else drawn but the
-# defining parts. This is the smallest thing that can exhibit the defect A4 exists for:
+# defining parts. This is the smallest thing that can exhibit what arterials are for:
 # with no road planned first, what joins one district to the other is whatever the lane
 # router happens to lay between two sets of plots it sees at the same instant, and the
 # gate has no road leading to it until everything else exists.

@@ -112,12 +112,11 @@ def lane_stances(nav: observe.Nav, network) -> list:
 def reachable_from(graph: dict, entries) -> set:
     """Every node of `graph` reachable from `entries`. A walk from nowhere reaches nothing.
 
-        **The primitive the access proof was missing.** The review's account of the city
-        sample: `_doors_from_the_lane` reported zero unreachable doors while the same run
-        reported a disconnected component of 5,922 stances, because the walk was seeded from
-        *every* lane stance -- so each island seeded itself and proved that it reaches
-        itself. Connected access is reachability from the entries a place actually has, and
-        a seed set that is the whole graph cannot express that.
+        **The primitive an access proof needs.** A walk seeded from *every* lane stance
+        proves nothing: each island seeds itself and proves that it reaches itself, so a
+        door check can report zero unreachable doors beside a large disconnected component.
+        Connected access is reachability from the entries a place actually has, and a seed
+        set that is the whole graph cannot express that.
 
     """
     seen, stack = set(), [e for e in entries if e in graph]
@@ -352,7 +351,7 @@ class Context:
                 badlands site that is usually a natural overhang or a cave, not an interior.
 
                 This is the **ground** question -- which part is answerable for this column --
-                and it is what E009, E010, S002 and W008 ask. Which part a *room* belongs to is
+                and it is what E009, E010, S002 and W008 ask. Which part owns a *room* is
                 `room_owner`, and it is a different question with a third dimension in it.
 
         """
@@ -364,21 +363,17 @@ class Context:
     def room_owner(self, room: dict) -> str | None:
         """Whose interior this room is, or None -- in which case it is landscape.
 
-                1. **Was it made or found?** `made >= MADE`, unchanged since the hierarchy round.
+                1. **Was it made or found?** `made >= MADE`.
                 2. **Is the part it stands on a thing with an inside?** See `INTERIOR_KINDS`.
                 3. **Is the room in the building, or under it?** A part records `y0`, the level
                    the library sited it at, and a type may not write below `part["floor_y"]` --
-                   preflight's E013 refuses it by name and has since the hierarchy round. So a room lying
-                   **entirely below** `y0` cannot be anything the part built: it is a cave under
-                   the plot, and it is the mechanism of open thread 6 at a city's scale. Ba Sing
-                   Se charged one minka a 5,802-cell cavern at y=1 under its plot, `made` 0.27
-                   against a threshold of 0.25 and not one cell of it walkable, plus a
-                   952-cell one at y=17 under another. Those two rooms alone are 6,754 of the
-                   21,875 floor cells the city was read over, and the minka -- the type the
-                   round blamed -- reads 27.0% with them and **100.0%** without.
+                   preflight's E013 refuses it by name. So a room lying **entirely below** `y0`
+                   cannot be anything the part built: it is a cave under the plot. A cavern
+                   just over the `made` threshold and not walkable at all can outweigh the
+                   building's own floor and read a fully walkable house as mostly unwalkable.
 
                 A row with no `y0` is a part built before this was recorded, and gets test 3
-                waived rather than guessed at, which is why no earlier round's number moves.
+                waived rather than guessed at, so an older build's reading does not move.
                 The rooms it lets through are still checked by tests 1 and 2.
 
         """
@@ -417,7 +412,7 @@ class Context:
             by_plot[p["label"]] = (min(p["x0"], p["x1"]), min(p["z0"], p["z1"]),
                                    max(p["x0"], p["x1"]), max(p["z0"], p["z1"]))
         # a door "belongs" to a plot if it stands on it or in the ring just outside it
-        # -- on what the row **covers** since A3, so a wall whose bounding box contains
+        # -- on what the row **covers**, so a wall whose bounding box contains
         # the district does not adopt every door in it. `leaves` counts door *blocks*
         # and `seeds` counts doorways you can stand in: a doorway obstructed at head
         # height has the first and not the second, and that is a building you cannot
@@ -459,7 +454,7 @@ class Context:
             # `observe.floor_stances` is the one definition of what a room's floor is
             # and every measure of walkability in this project reads it -- this call,
             # `pipeline.diagnose_entry`, `pipeline.measure_program`,
-            # `Builder.check_walkable` and `scripts/walk_fraction.py`. See its
+            # `Builder.check_walkable` and `ethoslm.walk_fraction`. See its
             # docstring.
             st = set(map(tuple, r["floor"])) - set(seeds.get(lab, ()))
             if not st:
@@ -597,7 +592,7 @@ def e005_unconnected(ctx: Context):
 @check("E006", ERROR, "element built inside another plot",
        "Buildings do not connect to each other properly", PLACE)
 def e006_plot_intersection(ctx: Context):
-    """Overlap of what the parts **cover**, which for an edge is its swept line. A3."""
+    """Overlap of what the parts **cover**, which for an edge is its swept line."""
     for i, a in enumerate(ctx.plots):
         for b in ctx.plots[i + 1:]:
             # ...except a gate in its wall. A part whose type declares `PASSAGE` is the
@@ -1458,15 +1453,15 @@ MATERIAL_ARGS = {
 }
 
 
-#: Where a **silhouette** goes. Voice contract, B2, on E014's principle: judged by
-#: position, so it is precise and has no false alarms. `roof()` takes `style` and
-#: `pitch` by position or by name and `profile`, `ends`, `eave` and `tiers` by name;
-#: `building()` takes its roof as one spec, a style name or a dict of the same keys.
-#: `style` is deliberately **not** here: gable, hip, shed and flat are what a roof *is*
-#: over a given mass -- a lean-to is a shed by construction -- and the voice's `ends`
-#: and `profile`, handed to `roof()` by `TypeBuilder`, override a style's own ends and
-#: slope wherever the voice has them. What a type may not write down is the slope, the
-#: ends, the eave and the tiers, which are the four things a voice's `roof` names.
+#: Where a **silhouette** goes. On E014's principle: judged by position, so it is
+#: precise and has no false alarms. `roof()` takes `style` and `pitch` by position or by
+#: name and `profile`, `ends`, `eave` and `tiers` by name; `building()` takes its roof
+#: as one spec, a style name or a dict of the same keys. `style` is deliberately **not**
+#: here: gable, hip, shed and flat are what a roof *is* over a given mass -- a lean-to
+#: is a shed by construction -- and the voice's `ends` and `profile`, handed to `roof()`
+#: by `TypeBuilder`, override a style's own ends and slope wherever the voice has them.
+#: What a type may not write down is the slope, the ends, the eave and the tiers, which
+#: are the four things a voice's `roof` names.
 SILHOUETTE_KEYS = ("pitch", "profile", "ends", "eave", "tiers")
 SILHOUETTE_ARGS = {"roof": ({8: "pitch"}, set(SILHOUETTE_KEYS)),
                    "building": ({6: "roof"}, {"roof"})}
@@ -1507,7 +1502,7 @@ def palette_literal(text: str) -> str | None:
         `water`, `lantern`, `torch`, `barrel`, `bookshelf`, `terracotta`. Those are not
         palette -- they are what a room is furnished and cleared with, they read the same in
         every voice, and a check that flagged them would be a check about vocabulary rather
-        than about the palette. What A1 is undoing is a type welded to a *voice*, and a
+        than about the palette. What E014 prevents is a type welded to a *voice*, and a
         voice is six material families.
 
     """
@@ -1616,10 +1611,10 @@ def preflight(source: str, *, allow_try: bool = False, forbid=None,
                 f"'door'|'fence'|'trapdoor')",
                 detail={"line": a.lineno, "literal": a.value, "family": fam,
                         "call": name}))
-    # **E015 -- a type does not name a silhouette.** Voice contract, B2, and E014's
-    # mechanism a second time: a fact about the source, judged before it runs. The
-    # roof's slope, ends, eave and tiers are the voice's, handed to `roof()` and
-    # `building()` by `TypeBuilder` from `part['roof']`.
+    # **E015 -- a type does not name a silhouette.** E014's mechanism a second time: a
+    # fact about the source, judged before it runs. The roof's slope, ends, eave and
+    # tiers are the voice's, handed to `roof()` and `building()` by `TypeBuilder` from
+    # `part['roof']`.
     for node in (ast.walk(tree) if (tree is not None and palette) else ()):
         if not isinstance(node, ast.Call):
             continue

@@ -849,16 +849,13 @@ def court_accessible(world: "World", name: str, row: dict, prov: dict) -> dict:
     rects = _claimed_rects(row, COURTS)
     fy = _floor_of(world, name, row)
     #: **A shared court is the open part itself, not a rect a building claims.** The
-    #: neighbourhood delivery round, and the audit's fourth cause measured on its own
-    #: answer: the compiler now composes a court that a block's four ranges enclose and
-    #: lays it as a `yard`, and both of the crowded ring's stood on the built section --
-    #: and this predicate answered `inapplicable` for each of them, because a yard
-    #: declares no `courtyard` rectangle. It is not claiming a court; it **is** one. So
-    #: where the part's own type is one of the library's open-ground court types, its
+    #: compiler lays a court that a block's four ranges enclose as a `yard`, and a yard
+    #: declares no `courtyard` rectangle -- it is not claiming a court; it **is** one.
+    #: So where the part's own type is one of the library's open-ground court types, its
     #: own rectangle is the court and the same three questions are asked of it: paved,
     #: open to the sky, and reachable -- from the street rather than from inside a
     #: building, because a shared court is entered from outside. A courtyard *house*
-    #: still answers about the rect it claims, exactly as before.
+    #: still answers about the rect it claims.
     own_court = not rects and str(row.get("type")) in SHARED_COURT_TYPES
     if own_court:
         r = _part_rect(world, name, row)
@@ -1077,18 +1074,13 @@ def _touches(bbox, rect, reach: int = ROOM_REACH) -> bool:
 def court_enclosed(world: "World", name: str, row: dict, prov: dict) -> dict:
     """**A block's court has buildings standing round it, on the assembled blocks.**
 
-        The block design round, and the audit's fourth cause read back on its own answer:
-
-            `usable.court_accessible` asks whether a court is paved, open to the sky and
-            reachable; `range_relation`, the one predicate that asks whether buildings
-            stand round it, is not asked of these types at all.
-
-        It could not be. `range_relation` is about a **part's own** ranges round its own
-        yard -- a courtyard house -- and a block's court is enclosed by *other parts*
-        entirely: the front range, the back range and the two end ranges of its block. The
-        delivered section therefore had two paved tiles standing in open cobble, both
-        answering every predicate that was asked of them, with `courts_enclosed: 0` in the
-        compiler's own record and nothing on the built world contradicting the prose.
+        `usable.court_accessible` asks whether a court is paved, open to the sky and
+        reachable; `range_relation`, the one predicate that asks whether buildings stand
+        round it, cannot be asked of these types. `range_relation` is about a **part's
+        own** ranges round its own yard -- a courtyard house -- and a block's court is
+        enclosed by *other parts* entirely: the front range, the back range and the two
+        end ranges of its block. Without this check a paved tile standing in open cobble
+        answers every predicate asked of it, whatever the compiler's own record says.
 
         This is the question, asked of the blocks. For each of the court's four sides, every
         column is walked outward up to the reach the compiler claimed and asked whether some
@@ -1170,9 +1162,9 @@ def court_enclosed(world: "World", name: str, row: dict, prov: dict) -> dict:
     def stands(cx: int, cz: int) -> bool:
         """Is **one of this court's named ranges** standing here at wall height?
 
-        The quarter design round, and the audit's fourth cause: "nearby mass is not
-        enclosure by the named group". Mass of any other part -- the next block's
-        houses, a market hall, a wall -- is counted apart and does not make a face."""
+        Nearby mass is not enclosure by the named group: mass of any other part -- the
+        next block's houses, a market hall, a wall -- is counted apart and does not make
+        a face."""
         who = world.ctx.plot_at(cx, cz)
         if not who or str(who) == name:
             return False

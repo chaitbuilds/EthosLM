@@ -1,11 +1,11 @@
 """Look at the assembled built world, and measure what a reader would point at.
 
-The closure round. Two things were missing between "the parts stood" and "the place is
-the place": a picture of the **built** world a judge could look at -- the preview draws
-the plan and five type cards, and the review said plainly that a plan map and isolated
-building images cannot establish composition or access -- and a **measurement** of the
-composition that a reading's findings can be verified against, so that "the village is
-in two pieces" is a number before and after a revision and not a sentence twice.
+Two things sit between "the parts stood" and "the place is the place": a picture of the
+**built** world a judge can look at -- the preview draws the plan and five type cards,
+and a plan map and isolated building images cannot establish composition or access --
+and a **measurement** of the composition that a reading's findings can be verified
+against, so that "the village is in two pieces" is a number before and after a revision
+and not a sentence twice.
 
     measure(plan, site)      deterministic composition measures off the plan's leaves
     draw_built(...)          the cheapest renderer that shows the built geometry: the
@@ -373,14 +373,12 @@ def stage_inspect(rnd, be, results: dict) -> dict:
 def stage_section(rnd, be, results: dict) -> dict:
     """Write what the registered section actually demonstrates, measured.
 
-        The composition round, and it exists because the design round's `section.json` was
-        **hand-authored**: nothing in the repository wrote it, and the acceptance gate that
-        read it compared the length of its `demonstrated` list with the length of the round
-        file's `must_demonstrate` list. Five of five passed while the round's own report said
-        the contrasting fabrics could not be seen. A claim a stage did not measure is not
-        evidence, so the record is derived here, from this build's own artifacts, every time
-        the section is rebuilt -- which is also why this stage is in the improve stage's
-        rebuild list and not only in the main order.
+        A hand-authored `section.json` is a claim, not evidence: an acceptance gate that
+        compares the length of its `demonstrated` list with the round file's
+        `must_demonstrate` list passes whatever the build shows. A claim a stage did not
+        measure is not evidence, so the record is derived here, from this build's own
+        artifacts, every time the section is rebuilt -- which is also why this stage is in
+        the improve stage's rebuild list and not only in the main order.
 
         A round with no `flags.section` skips: there is no registered section to measure.
 
@@ -480,7 +478,7 @@ def section_measures(rnd) -> dict:
     if foots:
         out["section.median_footprint"] = round(sum(foots) / len(foots), 1)
     out["section.structures"] = structures
-    # the fabric reset round's street measures: what a finding about the market's edges
+    # the section's street measures: what a finding about the market's edges
     # or the courts of the houses cites, and what its ledger row is closed on
     with __import__("contextlib").suppress(Exception):
         for k, v in section_mod.fabric_measures(rnd.state, reg.get("rect")).items():
@@ -490,14 +488,9 @@ def section_measures(rnd) -> dict:
 def stage_material(rnd, be, results: dict) -> dict:
     """The material pass, applied to a finished volume beside the built one.
 
-        Off unless the round asks (`flags.material`). The composition round's bounded visual
-        experiment judged the restrained recipe now on disk `enable_it, bounded`, on the two
-        voices this city builds in: the positive control moves the textured frame 155 of 255
-        on `wall` and 129 on `footing` where the flat display moves 0 and 6; the contextual
-        arm makes 4,785 substitutions against the design round's 25,211, coheres at 0.172
-        against a random arm's 0.027, lands on its condition 1.00 against 0.154, and leaves
-        the courts and the market floors **byte-identical** because the types that draw them
-        now declare their figures and the pass refuses a declared figure.
+        Off unless the round asks (`flags.material`). The recipe is restrained: it leaves
+        the courts and the market floors **byte-identical** because the types that draw
+        them declare their figures and the pass refuses a declared figure.
 
         What this writes is `world_finished.npz`. `world_built.npz` stays the structural
         record every check is taken against -- the construction check, the predicates, the

@@ -7,10 +7,9 @@ ROLE = "defensive"
 #: **What family of part this builds**, said outright rather than left to be read off
 #: the filename. `capability._named_for` reads a family off the committed name, and
 #: `great_wall` neither is `wall` nor starts with `wall_` -- so the capability record
-#: matched a place's wall to `wall.py` while the ring layout, which needs a boundary
-#: that can draw a diagonal run, built this one. The record and the layout disagreed
-#: about what the place was made of, which is the integration round's third finding in
-#: one line. A type that is a wall says so.
+#: would match a place's wall to `wall.py` while the ring layout, which needs a boundary
+#: that can draw a diagonal run, builds this one, and the record and the layout would
+#: disagree about what the place is made of. A type that is a wall says so.
 FAMILY = "wall"
 #: Its frame is a unit direction and a unit normal, and on a diagonal the direction is
 #: (1,1) and the normal (-1,1), so the same arithmetic lays the body, the parapet and
@@ -23,9 +22,9 @@ PARAMS = {
     # The body's width is the part's own `width` (the swept line siting hands this
     # type); this parameter is held to one value so the sweep across every parameter
     # stays a size that can be run, and so a stored plan that passes it still checks.
-    # **The mass is the part's**, the craft round (E4): a place declares what its wall
-    # is -- a screen, a curtain, a rampart, a levee -- and `width` on the part is what
-    # that word means in columns.
+    # **The mass is the part's**: a place declares what its wall is -- a screen, a
+    # curtain, a rampart, a levee -- and `width` on the part is what that word means in
+    # columns.
     "width": ("int", 3, 3),
     "parapet": ("choice", ["crenellated", "plain"]),
     # The face: `framed` is the grid of frame posts and bands this wall has always
@@ -35,28 +34,28 @@ PARAMS = {
     # course at `STRING_EVERY`, buttress piers at `PIER_EVERY` and a batter that steps
     # the face in as it rises, and the ways up at the corners and the gates only, where
     # a framed or banded face carries one every `STAIR_EVERY` columns and reads from the
-    # air as timber cross-bracing. **`unbroken` is gone from the choices and is still
-    # accepted**, the craft round (E4): it meant the plain face on both sides with
-    # sparse stairs, and masonry is what an unbroken wall gets now, so the word says
-    # nothing masonry does not. A stored plan that passes it builds masonry. First is
-    # the default, so every stored program builds the bytes it built.
+    # air as timber cross-bracing. **`unbroken` is not among the choices and is still
+    # accepted**: it means the plain face on both sides with sparse stairs, and masonry
+    # is what an unbroken wall gets, so the word says nothing masonry does not. A stored
+    # plan that passes it builds masonry. First is the default, so every stored program
+    # builds the bytes it built.
     "face": ("choice", ["framed", "banded", "plain", "masonry"]),
 }
 NEEDS = {
-    # The band scripts/type_needs.py measured. **The width reaches a rampart's**, the
-    # craft round (E4): the sweep only ever tried 1, 2 and 3, so three was all that was
-    # ever certified and a city's outer wall was forty-eight high and three thick -- a
-    # screen. `clearance` is the author's: the stair blocks reach six lanes past the
-    # inner face where the wall is too thin to carry them inside itself.
+    # The band scripts/type_needs.py measured. **The width reaches a rampart's**: a sweep
+    # that tries only widths 1 to 3 certifies nothing thicker, and a wall forty-eight
+    # high and three thick is a screen. `clearance` is the author's: the stair blocks
+    # reach six lanes past the inner face where the wall is too thin to carry them
+    # inside itself.
     "footprint": (1, 4, 12, 128),
     "frontage": "any",
     "ground": "any",
     "clearance": 8,
 }
 
-#: **A crown wide enough to be a road**, the craft round (E4). Below this the wall is a
-#: parapet and a ledge; at it and above, the walk is a road between two parapets -- one
-#: on each edge -- which is what a person on top of a great wall is walking along.
+#: **A crown wide enough to be a road**. Below this the wall is a parapet and a ledge;
+#: at it and above, the walk is a road between two parapets -- one on each edge --
+#: which is what a person on top of a great wall is walking along.
 CROWN_ROAD_MIN = 5
 
 #: **A mural stair stands in the wall's own thickness** where the wall has this much to
@@ -65,10 +64,10 @@ CROWN_ROAD_MIN = 5
 #: block against the inner face, as it has always been.
 STAIR_INSIDE_SPARE = 2
 
-#: The dressed face (`masonry`), the craft round (E4). Forty-eight blocks of one flat
-#: plane reads as a render and the grid before it read as lattice; between them is
-#: masonry. A plinth of `PLINTH_H` courses at the foot in the footing family, a string
-#: course of trim every `STRING_EVERY`, a buttress pier of the wall family every
+#: The dressed face (`masonry`). Forty-eight blocks of one flat plane reads as a render
+#: and the framed grid reads as lattice; between them is masonry. A plinth of
+#: `PLINTH_H` courses at the foot in the footing family, a string course of trim every
+#: `STRING_EVERY`, a buttress pier of the wall family every
 #: `PIER_EVERY` columns standing one course proud at the crown, and a batter that steps
 #: the outer lanes in by one every `BATTER_EVERY` courses of height.
 PLINTH_H = 3
@@ -89,16 +88,14 @@ PARAPET_COURSES = 2
 def occupied(part=None, **params):
     """**What this wall actually fills**, beyond the band the layout drew for it.
 
-        The expression review's second finding, in one line: "The great wall's piers and
-        batter extend beyond its nominal width. Increasing road clearance avoids one
-        collision but does not establish a common occupied envelope for planning, terrain,
-        circulation, ownership and checking." This is that envelope, published by the type
-        that knows it, so planning, ground, routing, emission and the checks read one
-        number instead of four guesses.
+        The wall's piers and corbels extend beyond its nominal width, and more road
+        clearance avoids one collision without giving planning, terrain, circulation,
+        ownership and checking a common occupied envelope. This is that envelope,
+        published by the type that knows it, so planning, ground, routing, emission and
+        the checks read one number instead of four guesses.
 
-        Measured (worker B, the design round) by building this type on flat ground at widths
-        2, 3, 4, 5, 6 and 8 and heights 24, 36 and 48 and comparing the emitted columns with
-        the swept band:
+        Measured by building this type on flat ground at widths 2, 3, 4, 5, 6 and 8 and
+        heights 24, 36 and 48 and comparing the emitted columns with the swept band:
 
             width 2, H 24/36/48   2 / 3 / 4 columns past one face, 1 past the other
             width 3, H 24/36/48   1 past the outer face, 2 / 3 / 4 past the inner
@@ -119,8 +116,8 @@ def occupied(part=None, **params):
             cannot wait for the siting.
 
         The **batter** (`BATTER_EVERY`) steps the outer lanes *in* as the wall rises, so it
-        never projects; it is named here because the review named it and because "the batter
-        projects" is the wrong half of the true statement.
+        never projects; it is named here because "the batter projects" is the wrong half of
+        the true statement.
 
             {"band": the width the layout drew,
              "outer": columns of solid beyond the outer face, certain,
@@ -137,8 +134,8 @@ def occupied(part=None, **params):
     _lo, hi = PARAMS["height"][1], PARAMS["height"][2]
     H = int(params.get("height") or hi)
     if _curved_path(part):
-        # **a curved wall's envelope** (the design synthesis round): its towers project
-        # past the outer face and its stair turrets stand against the inner one
+        # **a curved wall's envelope**: its towers project past the outer face and its
+        # stair turrets stand against the inner one
         half = (width - 1) // 2
         t_r = max(4.5, half + 3.5)
         outer = int(math.ceil(1.5 + half * 0.5 + t_r - half))
@@ -240,9 +237,9 @@ def _rec(F, teff, par, face, t, o, seg, corner, post, corb, lane=0, shoulder=Fal
 def _batter_lanes(width, H, batter):
     """How many of the outer lanes step in as the wall rises, and by how much.
 
-        The craft round, E4: a battered wall is a trapezoid, wide at the foot and narrow at
-        the crown, and in a lattice that is the outer lanes stopping short. Never more than
-        takes the crown below two columns, and never on a wall too low to show it.
+        A battered wall is a trapezoid, wide at the foot and narrow at the crown, and in a
+        lattice that is the outer lanes stopping short. Never more than takes the crown
+        below two columns, and never on a wall too low to show it.
 
     """
     if not batter or width < 3 or H < 2 * BATTER_EVERY:
@@ -346,9 +343,9 @@ def _flights_for(H, nfl):
 
 def _stair_offsets(fr, nfl, inside):
     """The perpendicular offsets the `nfl` lanes of a switchback occupy, bottom flight
-    first. **Inside the wall's own thickness where the mass allows it** (the craft
-    round, E4): a great wall carries its ways up in its body, and only a thin one hangs
-    a block of stairs on its inner face."""
+    first. **Inside the wall's own thickness where the mass allows it**: a great wall
+    carries its ways up in its body, and only a thin one hangs a block of stairs on its
+    inner face."""
     n = fr["nx"] * 0 + 1                            # direction of `inner` from `outer`
     step = n if fr["inner"] > fr["outer"] else -n
     if inside:
@@ -1428,17 +1425,15 @@ def build(b, part, seed, **params):
     face = params.get("face") or part.get("face") or "framed"
     if face not in ("framed", "banded", "plain", "masonry", "unbroken"):
         face = "framed"
-    # **A plain face carries sparse stairs.** The ground look's third finding: the inner
-    # rings' walls took the default `every`, which at a house's scale reads as red
-    # diagonal bracing painted on the wall rather than as a way up. A face with no
-    # articulation on it has nothing for a switchback every 26 columns to belong to, so
-    # the ways down stand at the corners and beside the gates, where a person actually
-    # climbs.
+    # **A plain face carries sparse stairs.** With the default `every`, stairs at a
+    # house's scale read as red diagonal bracing painted on the wall rather than as a
+    # way up. A face with no articulation on it has nothing for a switchback every 26
+    # columns to belong to, so the ways down stand at the corners and beside the gates,
+    # where a person actually climbs.
     stairs = "sparse" if face in ("unbroken", "plain", "masonry") else "every"
     if face == "unbroken":
-        # **An unbroken wall is dressed masonry on both faces**, the craft round (E4):
-        # `plain` is forty-eight blocks of one flat plane and reads as a render, which
-        # is what every look since the first has said of it.
+        # **An unbroken wall is dressed masonry on both faces**: `plain` is forty-eight
+        # blocks of one flat plane and reads as a render.
         face = "masonry"
     rng = random.Random(seed)
     v = part["voice"]
@@ -1461,9 +1456,8 @@ def build(b, part, seed, **params):
     mer_phase = rng.randrange(2)
     band = rng.choice([7, 8, 9])
     if _curved(part):
-        # **A round wall is one field**, the design synthesis round: see the curved
-        # engine above. The square-ring code below is kept, byte for byte, for a path of
-        # axial runs only.
+        # **A round wall is one field**: see the curved engine above. The square-ring
+        # code below serves a path of axial runs only.
         width = max(1, int(part.get("width") or 3))
         half = (width - 1) // 2
         return _cw_build(b, part, seed, H, {
@@ -1541,20 +1535,17 @@ def build(b, part, seed, **params):
                         b.place_block(x, y, z, TRIM)
                         y += band
             elif face == "masonry":
-                # **dressed stonework**, the craft round (E4): a plinth at the foot in
+                # **dressed stonework**: a plinth at the foot in
                 # the footing family, a string course of trim every `STRING_EVERY`, and
                 # a buttress pier of the wall family standing proud of the face at
                 # `PIER_EVERY`. The batter is in the cell's own top, above.
                 b.place_cuboid(x, F + 1, z, x, min(F + PLINTH_H, te - 2), z, FOOT)
-                # **The string course is a figure and the plinth is not.** Composition
-                # round. The design round's pass put vertical stains up this face that
-                # cut straight through the purpur course (`out/des-
-                # material/comparison.json`, criterion 5) -- a horizontal line drawn
-                # every `STRING_EVERY` courses is the one thing on a monumental wall
-                # that must stay unbroken, because it is what says the wall is dressed
-                # rather than heaped. The plinth below it is deliberately left editable:
-                # an irregular damp base course on the foot of a wall is weathering and
-                # the same round's diagnostic arm showed it reading as weathering. So:
+                # **The string course is a figure and the plinth is not.** A weathering
+                # pass may streak this face, but a horizontal line drawn every
+                # `STRING_EVERY` courses is the one thing on a monumental wall that must
+                # stay unbroken, because it is what says the wall is dressed rather than
+                # heaped. The plinth below it is deliberately left editable: an irregular
+                # damp base course on the foot of a wall reads as weathering. So:
                 # protect the line, let the mass age.
                 with b.figure("wall_string_course"):
                     y = F + PLINTH_H + STRING_EVERY

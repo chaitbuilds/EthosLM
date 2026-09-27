@@ -163,12 +163,11 @@ have, use a different type or make the plot bigger -- do not shrink the plot and
 
 
 def types_card(names=None) -> str:
-    """The types a plan may name, with their kind and their `PARAMS`. A4.
+    """The types a plan may name, with their kind and their `PARAMS`.
 
         Read off the committed files rather than restated here, because a second copy of a
         type's parameters is a second chance for a plan to ask for one that does not exist.
-        A type's kind is what its `KIND` says, and a plot where it does not say -- which is
-        every type written before A3.
+        A type's kind is what its `KIND` says, and a plot where it does not say.
 
     """
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -189,7 +188,7 @@ def types_card(names=None) -> str:
             f"{k}: " + (f"{v[1]}..{v[2]}" if v[0] == "int" else "|".join(map(str, v[1])))
             for k, v in sorted(decl["params"].items())) or "none"
         out.append(f"| `{name}` | {kind} | {decl['form']} | {params} |")
-    # A2: and what each one needs from the ground, read off the same files.
+    # ...and what each one needs from the ground, read off the same files.
     return "\n".join(out) + NEEDS_CARD.format(table=_pipeline.needs_table(decls))
 
 
@@ -734,10 +733,10 @@ if __name__ == "__main__":
         if os.environ.get("ETHOSLM_SPACES"):
             planner = planner.replace("## What matters", SPACES + "\n## What matters")
         if os.environ.get("ETHOSLM_TREE"):
-            # A4: the plan is a tree of parts and every part is a type instance. The
-            # flat `structures` schema and the paragraph asking the planner to choose a
-            # form and a roof are both replaced -- form is the type's now, and which
-            # type a part is *is* the choice this paragraph was asking for.
+            # The plan is a tree of parts and every part is a type instance. The flat
+            # `structures` schema and the paragraph asking the planner to choose a form
+            # and a roof are both replaced -- form is the type's, and which type a part
+            # is *is* the choice that paragraph asks for.
             i = planner.index('  "structures": [')
             want = [n for n in os.environ.get("ETHOSLM_TYPES", "").split(",") if n]
             planner = (planner[:i] + TREE_SCHEMA + types_card(want or None)

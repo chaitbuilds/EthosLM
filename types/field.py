@@ -172,8 +172,8 @@ def _open_runs(x0, z0, x1, z1, cells, rng):
 def _gap_cells(x0, z0, x1, z1, gates, half):
     gap = set()
     for (gx, gz) in gates:
-        # the gate cell itself, corner or not: the closure round found the reserved
-        # doorway on a field's corner and a border post standing on it
+        # the gate cell itself, corner or not: a reserved doorway can fall on a field's
+        # corner, and a border post must not stand on it
         gap.add((gx, gz))
         side = _side_of(x0, z0, x1, z1, gx, gz)
         if side in ("north", "south"):
