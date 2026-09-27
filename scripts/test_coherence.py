@@ -12,8 +12,8 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from ethoslm import (groundread, observe, offline, pipeline, placeplan,
-                   regions as _regions, spec, styles, voices)
+from ethoslm import (groundread, observe, pipeline, placeplan,
+                   regions as _regions, spec, voices)
 
 loader = importlib.util.spec_from_file_location("site_search_coherence", ROOT / "scripts/find_site.py")
 fs = importlib.util.module_from_spec(loader)

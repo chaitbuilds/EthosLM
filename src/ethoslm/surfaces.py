@@ -325,7 +325,6 @@ def reconcile(doc: dict, built, *, note: str = "") -> tuple:
     if not n:
         return dict(doc or {}, parts=parts, reconciled=rep), rep
     X = np.array(xs, np.int64); Y = np.array(ys, np.int64); Z = np.array(zs, np.int64)
-    P = np.array(pidx, np.int64)
     #: the later part wins: walk in build order and keep the last writer per cell
     last: dict = {}
     for k in range(n):

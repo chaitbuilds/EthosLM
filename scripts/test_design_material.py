@@ -16,7 +16,6 @@ with its positive control.
 Small and fast: one probed cottage and a few six-block volumes, under a minute, no
 server and no cached world.
 """
-import collections
 import os
 import sys
 

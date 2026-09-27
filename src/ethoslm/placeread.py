@@ -79,7 +79,7 @@ def requirement_read(spec: dict, plan: dict, parts_record: dict,
         nobody can read.
 
     """
-    from . import contracts, intent as intent_mod
+    from . import intent as intent_mod
     rec = intent_rec or intent_mod.read(spec.get("sentence") or "")
     if not rec.get("requirements"):
         return [], []

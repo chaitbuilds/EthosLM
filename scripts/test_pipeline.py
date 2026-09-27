@@ -1183,11 +1183,18 @@ def c_check_py_carries_the_library_path_it_needs_to_run():
     src = pipeline.CHECK_PY.format(root=ROOT, key="k")
     assert "LD_LIBRARY_PATH" in src, "check.py still re-execs with no library path"
     assert "env.sh" in src, "the path is copied rather than read from scripts/env.sh"
-    # ...and env.sh actually exports one, so what it asks for exists
+    # ...and env.sh actually exports one, so what it asks for exists. Only a host that
+    # names native-library paths (NixOS, through `.env`) has any to export; elsewhere the
+    # wheels load on their own and there is nothing further to check.
     import subprocess
+    env_sh = os.path.join(ROOT, "scripts", "env.sh")
+    named = subprocess.run(["bash", "-c", 'source "$1"; printf %s "${NIX_GLIBC:-}'
+                            '${NIX_GCCLIB:-}${NIX_ZLIB:-}${ETHOSLM_LIBRARY_PATH:-}"',
+                            "_", env_sh], capture_output=True, text=True).stdout.strip()
+    if not named:
+        return "check.py reads env.sh; this host names no native-library paths"
     p = subprocess.run(["bash", "-c",
-                        'source "$1"; printf %s "$LD_LIBRARY_PATH"', "_",
-                        os.path.join(ROOT, "scripts", "env.sh")],
+                        'source "$1"; printf %s "$LD_LIBRARY_PATH"', "_", env_sh],
                        capture_output=True, text=True)
     assert p.returncode == 0 and p.stdout.strip(), (p.returncode, p.stderr[-200:])
     assert "libstdc" in p.stdout or "gcc" in p.stdout, p.stdout
@@ -1360,7 +1367,6 @@ def c_a_type_is_an_ordinary_program_to_everything_downstream():
 @case
 def c_a_type_round_stages_one_builder_call_and_writes_the_composed_program():
     """The stage, end to end: one request, one answer, one composed program on disk."""
-    from ethoslm import observe
     with tempfile.TemporaryDirectory() as d:
         pipeline.BUILD_SCRATCH = os.path.join(d, "out", "build_scratch")
         plots = [{"label": lab, "x0": 2 + 22 * i, "z0": 2, "x1": 20 + 22 * i,
@@ -1717,7 +1723,6 @@ def t_a2_a_failing_plan_goes_back_to_the_planner_once_and_then_stops():
         that are too small has answered the question.
 
     """
-    from ethoslm import place
 
     class _Be:
         live = False

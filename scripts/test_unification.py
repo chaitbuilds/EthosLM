@@ -33,7 +33,6 @@ from __future__ import annotations
 
 import contextlib
 import copy
-import io
 import json
 import os
 import sys
@@ -44,7 +43,7 @@ from unittest import mock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from ethoslm import (capability, contracts, deps, growth, intent,  # noqa: E402
-                   pipeline, placeplan, placeshore, placesolve, repair, resolve)
+                   pipeline, placeplan, placesolve, repair, resolve)
 from ethoslm.pipeline import round as driver, stages_media, stages_plan  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))

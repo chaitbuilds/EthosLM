@@ -2,16 +2,12 @@
 from __future__ import annotations
 
 import contextlib
-import functools
 import json
 import os
 import time
-from dataclasses import dataclass, field
 
 from .. import pipeline as _pipeline
-from .. import card as card_mod
-from .. import measure as measure_mod
-from .. import offline, settlement, verdicts
+from .. import offline, settlement
 from ..measure import record
 from .round import Round
 
@@ -1057,7 +1053,7 @@ def _town_context(rnd, be):
 
 
 def _build_town_context(rnd, be):
-    from .. import lint, offline, settlement
+    from .. import lint, offline
     from ..circulate import Network
     vol = offline.load_volume(rnd.rel("world_built.npz"))
     # A1: with `y0` per part, so E002, E003 and E011 are asked about the buildings and

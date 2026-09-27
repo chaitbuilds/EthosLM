@@ -2,17 +2,14 @@
 from __future__ import annotations
 
 import contextlib
-import functools
 import json
 import os
 import re
 import time
-from dataclasses import dataclass, field
 
 from .. import pipeline as _pipeline
-from .. import card as card_mod
 from .. import measure as measure_mod
-from .. import offline, settlement, verdicts
+from .. import offline, settlement
 from ..measure import record
 from .round import Round
 
@@ -82,7 +79,7 @@ def _dry_circulation(rnd: Round, be) -> dict:
 
     """
     import numpy as np
-    from .. import circulate, lint, observe, prims, settlement
+    from .. import circulate, lint, observe, prims
     from ..buildlib import Builder
     plan = rnd.plan()
     parts = _pipeline.plan_parts(plan)
@@ -1900,7 +1897,7 @@ def _type_candidate(rnd: Round, be, c: dict, cid: str, sub: str, builds: str,
         replay all see an ordinary program and none of them needs to know what a type is.
 
     """
-    from .. import lint, stages
+    from .. import lint
     os.makedirs(builds, exist_ok=True)
     spec = dict(c["type"])
     src_path = os.path.join(builds, "build_0.py")
@@ -3126,7 +3123,7 @@ def _wave_worker(args: tuple) -> dict:
     the wave's own lint read on it, and the blocks, the rows, the paths and the lint
     handed back for the driver to merge in wave order. **The unit `par_map`
     distributes.**"""
-    from .. import ground as _ground, lint, pipeline
+    from .. import ground as _ground, lint
     (rnd, wave, group, snapshot, palettes, plots, base_path, scope_margin, default,
      ground_path) = args
     vol = offline.load_volume(snapshot)
@@ -3205,7 +3202,7 @@ def stage_parts(rnd, be, results: dict) -> dict:
         this function's own source as much as about the run.
 
     """
-    from .. import lint, pipeline, stages
+    from .. import lint, pipeline
     from . import stages_measure
     from .stages_plan import ground_for_this_design
     parts = rnd.parts()

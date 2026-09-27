@@ -1044,7 +1044,6 @@ def s002_camouflage(ctx: Context):
     if not ctx.placed:
         return
     from .buildlib import _families
-    import numpy as np
     counts = {}
     for block, n in ctx.placed.items():
         fam = _families({block: 1})

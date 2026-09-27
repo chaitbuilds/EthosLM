@@ -24,7 +24,6 @@ another. Arms on disk are why this project knows library >> no library, and that
 the only reason it knows it."""
 from __future__ import annotations
 
-import importlib.util
 import json
 import os
 import time

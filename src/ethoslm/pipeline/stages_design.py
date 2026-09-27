@@ -25,7 +25,6 @@ extent is the design's; resource limits govern execution batches, never the ambi
 """
 from __future__ import annotations
 
-import contextlib
 import hashlib
 import json
 import math
@@ -1274,7 +1273,7 @@ def build_region(rnd, rec, ras, leaves, rid: str, inp: dict) -> dict:
     on the columns it owns, then its leaves through `instantiate_part`. Saved as a sparse
     diff over the ground as found; `region.json` records what it was made from."""
     from .. import cityresolve as C, designground as DG, pipeline
-    from .stages_build import annotate_gates, instantiate_part
+    from .stages_build import annotate_gates
     t0 = time.perf_counter()
     X0, Z0, W = rec["frame"]
     i, j = (int(v) for v in rid.split("_"))
@@ -1301,7 +1300,6 @@ def build_region(rnd, rec, ras, leaves, rid: str, inp: dict) -> dict:
     hi = int(max(found.max(), target.max())) + 80
     vol = base_volume(rnd, bx0, bz0, w, h, lo, hi)
     base_codes = vol.codes.copy()
-    base_pal_n = len(vol.palette)
     ctx = 0
     for p in _neighbour_diffs(rnd, rid, (bx0, bz0, bx1, bz1)):
         ctx += apply_diff(vol, p)
@@ -1615,7 +1613,6 @@ def place_cameras(rnd, vol) -> list:
     resolution: two overviews from outside the boundary, a low oblique across it, and
     eye-level views in a street near the middle and at the edge of its central open
     ground. Nothing here knows what the place is."""
-    import math as m
     rec = _jload(rnd.rel("city.json"))
     cx, cz = rec["centre"]
     R = rec["radius"]

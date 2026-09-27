@@ -47,7 +47,7 @@ import re
 from . import pipeline, placeplan, placeregion, spec as spec_mod, styles
 from .placeplan import (_FACING, _SIDES, _answers, _edge_cells, _gate_at, _gate_type,
                         _largest_remainder, _octagon_path, _square_path, _top_params,
-                        _wall_for, _wall_inset, _wall_types, compound_ground,
+                        _wall_inset, _wall_types, compound_ground,
                         wall_face_for, wall_round_for, wall_stairs_for,
                         COMPOUND_MIN, COMPOUND_PLATEAU_SHARE, DISTRICT_FILL, LANE_GAP,
                         RING_COVERAGE, RING_EDGE_INSET, SECTOR_MAX)
@@ -743,7 +743,6 @@ def _side_in_band(decl: dict | None, kind: str, side: int) -> int:
     """`side` clamped into the drawn band this type admits (a plot's band is its pad
     plus the inset on both sides), and off its except list where it is a plot."""
     from . import district_compile as dc
-    from .buildlib import Builder
     if not decl:
         return max(3, int(side))
     a, b, c, d = (decl.get("needs") or {}).get("footprint", (3, 3, 3, 3))
@@ -2292,7 +2291,6 @@ class Solver:
     def _compact(self, rows: list, counts: list, core_box: tuple, g: int) -> None:
         """Shrink each gathered (or adjoining quarter) row's rectangle to its count's
         need, hugging the core box; the remainder of the strip goes to `left_over`."""
-        from . import district_compile as dc
         cx0, cz0, cx1, cz1 = core_box
         ax, az = (cx0 + cx1) / 2.0, (cz0 + cz1) / 2.0
         subj = {n for r in self.relations if r["relation"] == "around"

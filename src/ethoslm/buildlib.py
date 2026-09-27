@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import hashlib
 import math
-import zlib
 
 from gdpc import Block
 from gdpc.interface import placeBlocks
@@ -1955,7 +1954,6 @@ class Builder(Primitives):
                 avoid.
 
         """
-        from . import observe
         from .prims import material as _material
         x, z, y0, y1 = int(x), int(z), int(y0), int(y1)
         d = _FACE_DIR.get(facing)

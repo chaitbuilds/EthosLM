@@ -278,7 +278,6 @@ def _cw_build(b, part, seed, H, cfg):
     it -- which agrees between runs only if the ground under the whole ring is settled
     before its first run is built. `part["ring_gates"]` ([[x, z], ...]) keeps towers
     off every gate of the ring, not only this run's."""
-    rnd = random.Random(seed * 7907 + 101)
     own_segs = part["segments"]
     if not own_segs:
         return None

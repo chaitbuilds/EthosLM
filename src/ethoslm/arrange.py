@@ -292,7 +292,7 @@ def arrangements(part: dict, decls: dict, *, spec: dict | None = None,
         spec's allocation and not the district record.
 
     """
-    from . import district_compile as dc, placeplan, spec as spec_mod
+    from . import district_compile as dc, placeplan
     role = part.get("role") or placeplan.DENSITY_ROLE.get(part.get("density") or "medium")
     houses = dc.house_types(decls, role, (spec or {}).get("form"),
                             approved=list(pool or part.get("fabric_types") or []) or None)

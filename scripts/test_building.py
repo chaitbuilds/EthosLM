@@ -36,7 +36,6 @@ from ethoslm.slopefixture import make  # noqa: E402
 from ethoslm.circulate import Network, Threshold  # noqa: E402
 from ethoslm.frontage import Frontage  # noqa: E402
 from ethoslm.observe import Volume  # noqa: E402
-from ethoslm.prims import MATERIALS  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -594,8 +593,6 @@ class LiveSite(offline.OfflineSite):
     """
 
     def height(self, wx: int, wz: int) -> int:
-        x = min(max(int(wx) - self.x, 0), self.sx - 1)
-        z = min(max(int(wz) - self.z, 0), self.sz - 1)
         top = self.vol.y0
         for y in range(self.vol.y0 + self.vol.shape[1] - 1, self.vol.y0 - 1, -1):
             if self.vol.name(int(wx), y, int(wz)) not in ("air", "cave_air", "void_air"):

@@ -13,7 +13,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from ethoslm import construction as C, material as M, prims, surfaces as S  # noqa: E402
+from ethoslm import construction as C, material as M, surfaces as S  # noqa: E402
 from ethoslm.observe import Volume  # noqa: E402
 
 CASES = []

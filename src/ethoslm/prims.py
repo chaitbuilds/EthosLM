@@ -4,7 +4,6 @@ Everything here exists to remove a specific observed failure. Nothing here makes
 design decision for the model — pitch, style, material and massing are all its choice."""
 from __future__ import annotations
 
-import contextlib
 import functools
 import math
 
@@ -547,9 +546,6 @@ class Primitives:
              block: str) -> None:
         """3D Bresenham. One block per step, no gaps, no doubling."""
         dx, dy, dz = abs(x1 - x0), abs(y1 - y0), abs(z1 - z0)
-        sx = 1 if x1 > x0 else -1
-        sy = 1 if y1 > y0 else -1
-        sz = 1 if z1 > z0 else -1
         n = max(dx, dy, dz)
         if n == 0:
             self.place_block(x0, y0, z0, block)

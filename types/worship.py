@@ -11,7 +11,6 @@ altar, the benches and the bell on the built blocks rather than taking `FUNCTION
 trust. The lot it needs is small on purpose: a chapel of a hamlet is a room, not a nave.
 """
 
-import random
 
 KIND = "plot"
 FORM = "european_vernacular"
@@ -276,7 +275,6 @@ def _door_cell(res, part, fy):
 
 
 def build(b, part, seed, **params):
-    rng = random.Random(int(seed) * 7919 + 0xC4A)
     voice = b.voice
     label = part["label"]
     fy = int(part["floor_y"])
@@ -333,7 +331,6 @@ def build(b, part, seed, **params):
             altar_cells = [(far_col, z) for z in range(rz0, rz1 + 1)]
             face = "west" if far_east else "east"          # benches look this way
             aisle = {(x, (rz0 + rz1) // 2) for x in range(rx0, rx1 + 1)}
-            rows = range(rx0 + (3 if not far_east else 0), rx1 + 1)
             bench_cells = [(x, z) for x in range(rx0, rx1 + 1) for z in range(rz0, rz1 + 1)
                            if (x, z) not in aisle and x not in (far_col, inner)
                            and (x - rx0) % 2 == (1 if far_east else 0)]

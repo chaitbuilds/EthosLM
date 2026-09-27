@@ -1105,7 +1105,6 @@ def add_gravity(ed, rows: list, log=print) -> list:
 
     """
     from gdpc.vector_tools import Rect
-    from ethoslm import world
     for r in rows[:SHORTLIST]:
         m = r["measures"]
         if m.get("gravity_pct") is not None:

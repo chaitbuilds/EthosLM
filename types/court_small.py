@@ -502,7 +502,7 @@ def build(b, part, seed, **params):
 
     # ---- what the rooms are for ------------------------------------------
     stand = fy + 1
-    din, dout = d["in"], d["out"]
+    _din, dout = d["in"], d["out"]
     hall_t0, hall_t1 = 1, W - 2
     hall_f0, hall_f1 = fb0 + 1, D - 2
     room_hall = "hall" if (hall_t1 - hall_t0) >= 4 else "house"

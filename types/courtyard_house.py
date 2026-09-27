@@ -1385,7 +1385,6 @@ def build(b, part, seed, **params):
         for c in _cells(screen_rect):
             keep.add(c)
     yard_cells = set(_cells((yx0, yz0, yx1, yz1)))
-    court_free = yard_cells - keep
     court_entry = corridor[-1] if corridor else next(iter(yard_cells))
     if (yx1 - yx0 + 1) >= 5 and (yz1 - yz0 + 1) >= 5:
         corner = [(yx0 + 1, yz0 + 1), (yx1 - 1, yz0 + 1), (yx0 + 1, yz1 - 1), (yx1 - 1, yz1 - 1)]

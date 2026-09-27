@@ -711,7 +711,6 @@ class Room(object):
 
     def facing_in(self, x, z):
         ix0, iz0, ix1, iz1 = self.i
-        d = {"south": x - ix0, "north": x - ix0, "east": 0, "west": 0}
         best = None
         bestd = 99
         for (name, dist) in (("east", x - ix0), ("west", ix1 - x),
@@ -830,8 +829,6 @@ def build(b, part, seed, **params):
 
     pad, F, label, dx, dz, facing_in = _read_part(part, b)
     px0, pz0, px1, pz1 = pad
-    W = px1 - px0 + 1
-    D = pz1 - pz0 + 1
     stand_y = F + 1
     # the town reserved the doorstep and which way you walk in off the lane; the door
     # goes in the face opposite that, and nowhere else

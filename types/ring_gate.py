@@ -286,7 +286,7 @@ def build(b, part, seed, **params):
     at = part.get("at") or [(x0 + x1) // 2, (z0 + z1) // 2]
     along_x = facing in ("east", "west")
     G = Frame(b, along_x)
-    put, box, get = G.put, G.box, G.get
+    put, box, _get = G.put, G.box, G.get
 
     if along_x:
         u0, u1, v0, v1 = x0, x1, z0, z1

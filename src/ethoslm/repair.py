@@ -412,7 +412,7 @@ def _resector(rnd, spec: dict, place: dict) -> dict | None:
     """Lay the place level out again with the intent's relations, or None where the
     solver cannot be asked (no site, no intent, another policy). Returns a repair
     result: refused `changed: false` where the geometry came back the same."""
-    from . import contracts, placeplan, placesolve
+    from . import placeplan, placesolve
     from .pipeline import stages_plan
     intent = contracts.load(rnd, "intent")
     site = _round_site(rnd)

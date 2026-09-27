@@ -53,7 +53,7 @@ import numpy as np  # noqa: E402
 
 from ethoslm import (circulate, district_compile as dc, feasible, lint,  # noqa: E402
                    offline, pipeline, placeplan, stages, usable)
-from ethoslm.buildlib import (Builder, SiteRefused, WALK_IN,  # noqa: E402
+from ethoslm.buildlib import (SiteRefused, WALK_IN,  # noqa: E402
                             site_pad_rect)
 from ethoslm.observe import Volume  # noqa: E402
 
@@ -280,7 +280,7 @@ def _network(leaves):
     from ethoslm.circulate import Network, Threshold
     cells, ths = {}, []
     for leaf in leaves:
-        x0, z0, x1, z1 = leaf["x0"], leaf["z0"], leaf["x1"], leaf["z1"]
+        x0, z0, x1, _z1 = leaf["x0"], leaf["z0"], leaf["x1"], leaf["z1"]
         mx = (x0 + x1) // 2
         lz = z0 - 1
         for x in range(x0 - 2, x1 + 3):

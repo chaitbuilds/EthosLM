@@ -2,16 +2,13 @@
 from __future__ import annotations
 
 import contextlib
-import functools
 import json
 import os
 import time
-from dataclasses import dataclass, field
 
 from .. import pipeline as _pipeline
 from .. import card as card_mod
-from .. import measure as measure_mod
-from .. import offline, settlement, verdicts
+from .. import offline, verdicts
 from ..measure import record
 from .round import Round
 
@@ -409,7 +406,7 @@ def stage_write(rnd: Round, be, results: dict) -> dict:
         decides neither; it writes what it is given and says how much.
 
     """
-    from .. import offline, stages, world as world_mod
+    from .. import offline, world as world_mod
     from ..buildlib import Builder
     if not be.live:
         return {"skipped": "stage_write writes blocks; run it on a live backend, "
@@ -1606,7 +1603,6 @@ def _apply_revision(rnd: Round, be, spec: dict, doc: dict) -> dict:
     voice it names replaces the place's, and the plan is laid out again from them --
     the districts recompiled, the place level and the compounds standing."""
     from .. import spec as spec_mod, styles
-    from . import stages_plan
     applied: dict = {"characters": {}, "voice": None, "refused": []}
     # **A revision that cannot be planned is not applied.** The plan on disk is what the
     # build stands on, and the first cut of this stage deleted it before laying the
@@ -1754,7 +1750,6 @@ def _repair_pass(rnd: Round, be, spec: dict, rec: dict, site) -> dict:
 
     """
     from .. import contracts, repair as repair_mod
-    from . import stages_plan
     findings = contracts.load(rnd, "findings")
     if findings is None or not findings["findings"]:
         return {"changed": False, "says": "no finding was open on the plan",
@@ -1836,7 +1831,6 @@ def _earlier_findings(rec: dict, tag: str) -> list:
 def _verify_improvement(rnd: Round, rec: dict, tag: str) -> dict:
     """Did the second reading close the findings the revision was for, and did the
     measures it named move the right way? Written onto `rec["applied"]["improvement"]`."""
-    from . import inspect as inspect_mod
     imp = rec["applied"].setdefault("improvement", {})
     cited = list(rec["applied"].get("caused_by") or [])
     closed = set((rec.get("readings") or {}).get(tag, {}).get("closed") or [])

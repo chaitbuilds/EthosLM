@@ -134,7 +134,7 @@ def occupied(part=None, **params):
     """
     part = part or {}
     width = int(part.get("width") or params.get("width") or 3)
-    lo, hi = PARAMS["height"][1], PARAMS["height"][2]
+    _lo, hi = PARAMS["height"][1], PARAMS["height"][2]
     H = int(params.get("height") or hi)
     if _curved_path(part):
         # **a curved wall's envelope** (the design synthesis round): its towers project
@@ -714,7 +714,6 @@ def _cw_build(b, part, seed, H, cfg):
     it -- which agrees between runs only if the ground under the whole ring is settled
     before its first run is built. `part["ring_gates"]` ([[x, z], ...]) keeps towers
     off every gate of the ring, not only this run's."""
-    rnd = random.Random(seed * 7907 + 101)
     own_segs = part["segments"]
     if not own_segs:
         return None

@@ -24,7 +24,6 @@ generated production program and a few records.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 import traceback

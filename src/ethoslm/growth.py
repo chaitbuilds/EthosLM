@@ -25,7 +25,7 @@ import json
 import os
 import shutil
 
-from . import pipeline as _pipeline, spec as spec_mod, styles
+from . import pipeline as _pipeline, styles
 
 #: How many types one run may author before it stops and says so. A place that lacks
 #: three forms is a place the library is not ready for; two is a run's worth.

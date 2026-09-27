@@ -541,13 +541,13 @@ def t_p6_a_perimeter_block_builds_its_corners_and_encloses_its_court():
     # district's and a perimeter block is an arrangement. Asked at a few counts, and the
     # first that cuts a block which actually closed is the one measured -- with the
     # number reported.
-    ask, per, got, rect = None, None, None, None
+    ask, _per, got, rect = None, None, None, None
     for n in (40, 60, 90):
         for a in pers:
             r2, g2 = probe(n, a["arrangement"])
             if (g2["record"].get("perimeter_shut") or 0) >= 1 \
                     and g2["certificate"]["verdict"] == "ok":
-                ask, per, got, rect = n, a, g2, r2
+                ask, _per, got, rect = n, a, g2, r2
                 break
         if got is not None:
             break

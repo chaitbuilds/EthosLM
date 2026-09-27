@@ -14,7 +14,6 @@ import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "src"))
 
-import numpy as np  # noqa: E402
 from gdpc.vector_tools import Rect  # noqa: E402
 
 from ethoslm import finish, lint, observe, registry, settlement, world  # noqa: E402

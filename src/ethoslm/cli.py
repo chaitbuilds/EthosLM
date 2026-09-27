@@ -327,7 +327,7 @@ def deliver(a) -> int:
             f"no GDMC-HTTP server answers at {a.host} ({type(e).__name__}). Delivery "
             f"writes through a running Minecraft server serving {save} with the "
             f"GDMC-HTTP mod; start one on that save (never on a save another server has "
-            f"open), then run this again. See README, 'Delivering a place'.")
+            f"open), then run this again. See README, 'Quick start', step 4.")
     if not a.yes:
         n = len(os.listdir(rnd.rel("regions")))
         say(f"This writes {n} built region(s) of {a.name} into {save} through {a.host}.",

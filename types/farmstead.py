@@ -2,7 +2,6 @@
 standing inside a walled yard that holds a store, a byre or a stack, with a
 gate in the wall on the side the lane arrives from."""
 
-import math
 import random
 
 KIND = "plot"

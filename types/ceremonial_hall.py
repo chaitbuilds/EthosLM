@@ -842,7 +842,6 @@ def _knee_rail(b, G, pl, use, F):
         else:
             open_v = {mid}
     laid = 0
-    sides = []
     walled = {"front": W1[1] == cv0, "back": W1[3] == cv1,
               "u0": W1[0] == cu0, "u1": W1[2] == cu1}
     if use == "gate":

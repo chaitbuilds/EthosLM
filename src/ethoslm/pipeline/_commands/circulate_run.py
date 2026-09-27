@@ -70,7 +70,7 @@ _avoid = np.where(wet, 40.0, 0.0)
 # ...and, on a designed place, the band at the foot of every terrace
 from ethoslm.pipeline.stages_plan import type_declarations as _type_declarations  # noqa: E402
 _avoid = np.maximum(_avoid, circulate.designed_ground_costs(
-    {**plan, "parts": parts}, _type_declarations(parts), heights.shape, site.x, site.z))
+    {**plan, "parts": _parts}, _type_declarations(_parts), heights.shape, site.x, site.z))
 for (_wx, _wz) in _routing["obstacles"]:
     _i, _j = _wx - site.x, _wz - site.z
     if 0 <= _i < _avoid.shape[0] and 0 <= _j < _avoid.shape[1]:

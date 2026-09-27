@@ -1,17 +1,13 @@
 """Round configuration, execution backends and stage orchestration."""
 from __future__ import annotations
 
-import contextlib
-import functools
 import json
 import os
 import time
 from dataclasses import dataclass, field
 
 from .. import pipeline as _pipeline
-from .. import card as card_mod
-from .. import measure as measure_mod
-from .. import offline, settlement, verdicts
+from .. import offline, settlement
 from ..measure import record
 
 
@@ -437,7 +433,6 @@ def stage_report(rnd: Round, be, results: dict) -> dict:
                                 f"invocation did not report it")
             merged.pop(state, None)
     merged.update(results)
-    from .. import deps as _deps_r
     doc = {"round": rnd.name, "config": rnd.path, "intent": rnd.intent,
            "voice": rnd.voice, "flags": rnd.flags, "base_volume": rnd.base_volume,
            "preregistered": prev.get("preregistered") or rnd.preregistered,

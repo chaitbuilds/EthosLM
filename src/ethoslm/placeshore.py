@@ -32,7 +32,6 @@ What the shoreline policy actually adds:
 """
 from __future__ import annotations
 
-import math
 
 from . import pipeline, placeregion as regions, placeplan, placesolve, spec as spec_mod
 

@@ -906,12 +906,11 @@ def gate_change_is_scoped(g: Gate) -> None:
             bool(ranked) or not certs, f"{len(ranked)} ranked row(s)")
     try:
         from ethoslm import arrange
-        joins = "parts_record=None" in (arrange.alternatives.__doc__ or "") or True
         import inspect
         src = inspect.getsource(arrange.alternatives)
         own = ("parts_record=None" in src and "region_columns" in src)
     except Exception as e:                           # noqa: BLE001 -- reported
-        own, joins = False, False
+        own, _joins = False, False
         g.check("the comparison could be read", False, f"{type(e).__name__}: {e}")
     g.check("no previous build's emitted footprints are joined to a hypothetical "
             "arrangement by leaf name", bool(own),

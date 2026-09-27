@@ -1581,7 +1581,7 @@ def _pack_rows(city: City, blk: dict) -> None:
     dwell, front_form = _row_forms(grain, p)
     lane_dir = p.get("lane_dir", "east_west")
     rng = _rng("rows", blk["id"], _lineage(city))
-    x0, z0, x1, z1 = blk["x0"], blk["z0"], blk["x1"], blk["z1"]
+    _x0, _z0, _x1, _z1 = blk["x0"], blk["z0"], blk["x1"], blk["z1"]
     k = blk["ring"]
     bid = blk["id"]
     row_seq = []
@@ -2949,7 +2949,6 @@ def _regions(city: City) -> None:
     # wall leaves: each ring wall cut into runs by region, each carrying its whole ring
     # (path, per-segment floors on the designed ground, gates), so runs built apart
     # level their walk, space their towers and meet at their seams identically
-    from .buildlib import Builder
     from . import designground as DG
     for w in city.walls:
         w["floors"] = DG.wall_floors(w["path"], w["width"], city.target, city.X0,
@@ -3055,7 +3054,7 @@ def _compress(pts: list) -> list:
         return list(pts)
     out = [pts[0]]
     for i in range(1, len(pts) - 1):
-        a, b, c = out[-1], pts[i], pts[i + 1]
+        _a, b, c = out[-1], pts[i], pts[i + 1]
         d1 = (b[0] - pts[i - 1][0], b[1] - pts[i - 1][1])
         d2 = (c[0] - b[0], c[1] - b[1])
         if d1 != d2:

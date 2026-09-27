@@ -99,7 +99,7 @@ def _temp_round(name: str, files=None):
 # ------------------------------------------------------------------ the gates
 
 def gate_preserved_meaning(g: Gate, proof: str, probes: bool) -> None:
-    from ethoslm import contracts, interpret, intent as intent_mod
+    from ethoslm import interpret, intent as intent_mod
     st = _state(proof)
     it = _load(os.path.join(st, "intent.json"))
     spec = _load(os.path.join(st, "place.checked.json")) or _load(os.path.join(st, "place.json"))

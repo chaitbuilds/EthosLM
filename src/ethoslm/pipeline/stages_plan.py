@@ -2,20 +2,14 @@
 from __future__ import annotations
 
 import contextlib
-import functools
 import json
 import re
 import os
 import time
-from dataclasses import dataclass, field
 
 from .. import pipeline as _pipeline
-from .. import card as card_mod
-from .. import measure as measure_mod
-from .. import offline, settlement, verdicts
+from .. import offline
 from .. import spec as spec_mod
-from ..measure import record
-from .round import Round
 
 
 PART_GEOMETRY = ("label", "kind", "x0", "z0", "x1", "z1",
@@ -2010,7 +2004,6 @@ parts.
 
 def spec_brief(sentence: str, out_path: str) -> str:
     from .. import groundread, spec as spec_mod, styles
-    from ..prims import MATERIALS
     # **Every voice with the colour of the three materials a person sees of it**, the
     # craft round (E2): a call choosing a palette per ring is choosing by colour, and a
     # blurb alone asks it to know Minecraft's block list by heart. `ceremonial` is said
@@ -2544,7 +2537,6 @@ def site_brief_from_volume(vol, X: int, Z: int, S: int) -> dict:
         of the site rotated a quarter turn.
 
     """
-    import numpy as np
     from .. import observe
     h, _wet = observe.ground_heights(vol)
     i, j = X - vol.x0, Z - vol.z0
@@ -3848,7 +3840,7 @@ def stage_terraces(rnd, be, results: dict) -> dict:
             if k >= 40:
                 continue
             ex, ez = gx - ox * (k - 1), gz - oz * (k - 1)     # last retained column
-            ix, iz = gx - ox * k, gz - oz * k                 # first scope column
+            _ix, _iz = gx - ox * k, gz - oz * k                 # first scope column
             if not (0 <= ex - vol_s.x0 < h_s.shape[0] and 0 <= ez - vol_s.z0 < h_s.shape[1]):
                 continue
             floor = int(h_s[ex - vol_s.x0, ez - vol_s.z0])
@@ -4643,7 +4635,6 @@ def apply_character(rnd, spec: dict, part: dict) -> bool:
 def character_hand_back(rnd, spec: dict, d: dict, part: dict, fails: list,
                         n: int) -> dict:
     """Hand one compiled district's refusal back to the character's author. v2, C5."""
-    from .. import placeplan
     x0, x1 = min(d["x0"], d["x1"]), max(d["x0"], d["x1"])
     z0, z1 = min(d["z0"], d["z1"]), max(d["z0"], d["z1"])
     rec_p = rnd.rel(f"district_{d['name']}_compiled.json")
@@ -6854,7 +6845,7 @@ def _screen_piece(rnd, spec, trial_place, d, form, ring_level, vol, routes, type
                                   site=pipeline_site(rnd),
                                   seed=int(rnd.flags.get("seed") or 1),
                                   proposed=ask, cover_floor=floor)
-    except Exception as e:                   # noqa: BLE001 -- a piece that cannot be
+    except Exception:                   # noqa: BLE001 -- a piece that cannot be
         return None                          # compiled is not an alternative
     rec = res.get("record") or {}
     n = 0 if res.get("thin") else int(res.get("realized") or 0)
@@ -6909,7 +6900,6 @@ def _market_belongs(plan: dict) -> list:
 
 #: The least dwellings a street-composed piece holds before it is a quarter
 #: (`streetplan.DWELLINGS_LEAST`), read here so the screen and the composer agree.
-from ..streetplan import DWELLINGS_LEAST as _SP_DWELLINGS_LEAST  # noqa: E402
 
 #: What a laid required landmark and an adopted court composition are worth against a
 #: house when arrangements are screened by compile: the market and the court are what

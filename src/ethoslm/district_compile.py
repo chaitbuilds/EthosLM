@@ -3031,7 +3031,6 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     # owed and unheld rather than silently absent.** Recorded for the layout owner, who
     # is the one that can deepen a block or a district; `demand_short` below is the
     # channel a shortfall belongs in.
-    court_unheld = court_owed and not court_deep
     for b in rest[n_open:]:
         kind_of.setdefault(b, "row")
 
@@ -3313,7 +3312,6 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         """
         moved = 0
         refused = []
-        ch_use = ch_local if ch_local is not None else ch
         for q, item in enumerate(row):
             p = item[2]
             tname = item[3] if len(item) > 3 else p.get("type")

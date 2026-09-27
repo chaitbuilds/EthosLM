@@ -1,17 +1,14 @@
 """Blinded build requests, checker jobs and response collection."""
 from __future__ import annotations
 
-import contextlib
 import functools
 import json
 import os
 import time
-from dataclasses import dataclass, field
 
 from .. import pipeline as _pipeline
-from .. import card as card_mod
 from .. import measure as measure_mod
-from .. import offline, parallel, settlement, verdicts
+from .. import offline, parallel
 from ..measure import record
 from .round import Round
 
@@ -1069,7 +1066,6 @@ def check_type(rnd: Round, be, prog: str, labels: list, seeds: list,
 
         Returns the findings text and a row per instance, worst first.
     """
-    import traceback
     t0 = time.perf_counter()
     try:
         decl = _pipeline.load_type(prog)

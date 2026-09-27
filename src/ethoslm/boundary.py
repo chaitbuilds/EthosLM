@@ -120,7 +120,6 @@ class Outline:
 
     def offset(self, d: float) -> "Outline":
         """The outline moved `d` blocks outward (negative inward), along its normal."""
-        th = np.linspace(0.0, 2 * math.pi, POLAR_N, endpoint=False)
         r = self.radii
         dr = np.gradient(np.concatenate([r[-2:], r, r[:2]]))[2:-2] / (2 * math.pi / POLAR_N)
         # radial distance that moves the curve by d along its normal

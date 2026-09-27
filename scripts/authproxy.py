@@ -14,7 +14,6 @@ import select
 import socket
 import socketserver
 import sys
-import threading
 
 UP = os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY") or ""
 m = re.match(r"https?://(?:([^:@]+):([^@]*)@)?([^:/]+):(\d+)", UP)
