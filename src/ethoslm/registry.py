@@ -23,7 +23,7 @@ def load(path: str = DATA) -> dict:
     """{block_id: {property: [legal values]}} for every block in the game."""
     if not os.path.exists(path):
         raise FileNotFoundError(
-            f"{path} missing -- run scripts/dump_block_registry.py to regenerate it")
+            f"{path} missing -- it ships with the repository; restore it from git")
     return json.load(open(path))
 
 
