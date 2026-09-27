@@ -36,7 +36,7 @@ import time
 from .pipeline.round import ROOT
 
 #: The stages a sentence-to-place run drives, in order (`pipeline.round.DESIGN_DRY`).
-STAGES = ("reading", "interpret", "place_spec", "design_references", "design",
+STAGES = ("reading", "interpret", "place_spec", "planning", "design_references", "design",
           "design_compare", "design_resolve", "regions", "region_views")
 
 #: Python modules a run needs, and what for. `cv2` only textures the views.
@@ -262,9 +262,22 @@ def state_of(name: str) -> dict:
     return {"state": "incomplete", "next": f"scripts/ethoslm resume {name}"}
 
 
+def _planning(name: str) -> dict:
+    try:
+        with open(os.path.join(_state(name), "planning.json")) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
 def report(name: str) -> int:
     s = state_of(name)
     say("", f"{name}: {s['state'].upper()}")
+    pl = _planning(name)
+    if pl:
+        say(f"  planning: {pl.get('strategy')} -- {pl.get('why')}")
+        for u in pl.get("unsupported") or []:
+            say(f"  unsupported: {u['part']}: {u['why']}")
     if s.get("stage"):
         say(f"  at stage: {s['stage']}")
     for j in s.get("jobs") or []:
@@ -279,6 +292,17 @@ def report(name: str) -> int:
         say(f"  why: {s['why']}")
     if s.get("regions"):
         say(f"  regions: {json.dumps(s['regions'])}")
+    try:
+        with open(os.path.join(_state(name), "composition.built.json")) as f:
+            cb = json.load(f)
+        say(f"  composition: {cb['built']}/{len(cb['buildings'])} buildings built "
+            f"({json.dumps(cb['uses_built'])}); spaces "
+            + ", ".join(f"{sp['id']} {sp['built']}/{sp['tiles']}" for sp in cb["spaces"]))
+        for bid, what in (cb.get("not_delivered") or {}).items():
+            say(f"  not delivered: {bid} was asked for {', '.join(what)} and the blocks do "
+                f"not show it (revise its lot or its choice)")
+    except (OSError, ValueError, KeyError):
+        pass
     for v in s.get("views") or []:
         say(f"  view: {v}")
     say(f"  next: {s['next']}")

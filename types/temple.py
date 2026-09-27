@@ -26,6 +26,8 @@ FORM = "east_asian"
 #: `FORM` is the tradition it is built in and this is a different question: a farmhouse
 #: and a shop-house are both east Asian.
 ROLE = "civic"
+#: What it is used for (`citydesign.USES`): a hall of worship.
+FUNCTION = "worship"
 
 PARAMS = {
     "storeys": ("int", 1, 3),

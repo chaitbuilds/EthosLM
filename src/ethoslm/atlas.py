@@ -349,9 +349,16 @@ def site_measures(co: dict, cx: float, cz: float, radius: float,
 ROUGH = 4
 
 
+#: The broad fall a relief word prefers, as fall (p95 - p5) per block of the circle's
+#: diameter: `flat` the least there is, `rolling` hill country a place climbs, `steep` a
+#: mountainside. A preference in the ranking, not a filter: roughness (cliffs within a
+#: cell) still counts against every candidate.
+RELIEF_PREFER = {"flat": (0.0, 0.0), "rolling": (0.08, 0.3), "steep": (0.3, 0.6)}
+
+
 def scan_sites(radius: float, *, co: dict | None = None, stride: int = 128,
                water=(0.01, 0.2), top: int = 8, excluded=None, biomes=None,
-               least: float = 0.5) -> list:
+               least: float = 0.5, relief: str | None = None) -> list:
     """Candidate centres for a place of `radius`, best first: the circle entirely on
     read ground, clear of every reserved site, water inside the band, ranked by broad
     fall and roughness together (`fall + 400 * rough`, both measured, both reported).
@@ -360,6 +367,9 @@ def scan_sites(radius: float, *, co: dict | None = None, stride: int = 128,
     circle with less than `least` of its cells in them is not a candidate, and among
     those that are, more of the list ranks higher. An atlas with no biome layer cannot
     answer and the list is ignored (the caller says so).
+
+    `relief` is the setting's word (`RELIEF_PREFER`): hill country ranks a candidate by
+    how far its broad fall is from the word's band rather than by flatness.
 
     The ranking is arithmetic about ground, not a decision: the design job reads the
     candidates with their maps and chooses."""
@@ -386,7 +396,17 @@ def scan_sites(radius: float, *, co: dict | None = None, stride: int = 128,
                 if share < least:
                     continue
                 m["setting_share"] = share
-            m["score"] = round(m["fall"] + 400 * m["rough"]
+            fall = m["fall"]
+            band = RELIEF_PREFER.get(relief or "")
+            if band and band[1] > 0:
+                # hill country: ground whose broad fall is in the word's band ranks
+                # before any that is not, by its roughness; outside it, by the distance
+                # to it
+                lo, hi = band[0] * 2 * radius, band[1] * 2 * radius
+                off = max(0.0, lo - m["fall"], m["fall"] - hi)
+                fall = (100.0 + 4.0 * off) if off else 0.0
+                m["relief_fit"] = round(m["fall"] / (2 * radius), 3)
+            m["score"] = round(fall + 400 * m["rough"]
                                + (40 * (1.0 - share) if share is not None else 0.0), 1)
             out.append(m)
     out.sort(key=lambda r: r["score"])

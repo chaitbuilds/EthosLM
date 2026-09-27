@@ -170,6 +170,7 @@ def compile_design(design: dict, centre, *, ground=None, forms=None,
     _roads(city)
     _landmarks(city)
     _monument(city)
+    _compose(city)
     _grain_streets(city)
     _landmark_access(city)
     _squares(city)
@@ -181,6 +182,8 @@ def compile_design(design: dict, centre, *, ground=None, forms=None,
     _ground(city)
     _regions(city)
     _metrics(city)
+    if getattr(city, "comp", None) is not None:
+        city.composition = composition_report(city)
     return city
 
 
@@ -937,6 +940,571 @@ def _monument(city: City) -> None:
         _area_leaves(city, band, "plaza", name=f"{mon.get('name', 'monument')}_axis",
                      ring=k, params={"paving": "banded", "edge": "kerb"}, role="court",
                      only_use=COURT, skip_use=(HALL,), claimed=True)
+
+
+# ---------------------------------------------------------------- 6b. composition
+
+#: how far (blocks) in front of a composed building its door may be from a path or a
+#: walked space; the columns between are its forecourt
+DOOR_REACH = 4
+#: how far (blocks) a door may look across its forecourt and a lane to the space it
+#: addresses, for the composition report
+ADDRESS_REACH = 9
+#: open-ground kinds that must stand level (a paved or worked floor), and the ground a
+#: green, a field or an orchard may keep as found within `GROUND_FIT`
+_LEVEL_SPACES = ("square", "market", "plaza", "yard", "pool")
+
+
+def _composed_mask(city: City) -> np.ndarray:
+    """Land of grain `composed`: whole rings and the wards of rings that say so."""
+    m = np.zeros(city.use.shape, bool)
+    for k, r in enumerate(city.design["rings"]):
+        if r.get("role") == "monument":
+            continue
+        for grain, _p, wm, _wd in _ward_mask(city, k):
+            if grain == "composed":
+                m |= wm
+    return m
+
+
+def _local_rect(city: City, at, size) -> tuple:
+    """A rect `size` [w, d] centred at the local offset `at` [dx, dz] from the centre."""
+    w, d = int(size[0]), int(size[1])
+    x0 = int(round(city.cx + float(at[0]) - (w - 1) / 2.0))
+    z0 = int(round(city.cz + float(at[1]) - (d - 1) / 2.0))
+    return (x0, z0, x0 + w - 1, z0 + d - 1)
+
+
+def _rect_mask(city: City, rect) -> tuple:
+    x0, z0, x1, z1 = rect
+    return (slice(max(0, x0 - city.X0), max(0, x1 - city.X0 + 1)),
+            slice(max(0, z0 - city.Z0), max(0, z1 - city.Z0 + 1)))
+
+
+def _path_cells(city: City, pts: list, width: int) -> np.ndarray:
+    """Columns within half `width` of the polyline through `pts` (world x, z)."""
+    m = np.zeros(city.use.shape, bool)
+    half = width / 2.0
+    for (ax, az), (bx, bz) in zip(pts, pts[1:]):
+        x0, x1 = int(math.floor(min(ax, bx) - half - 1)), int(math.ceil(max(ax, bx) + half + 1))
+        z0, z1 = int(math.floor(min(az, bz) - half - 1)), int(math.ceil(max(az, bz) + half + 1))
+        x0, z0 = max(x0, city.X0), max(z0, city.Z0)
+        x1, z1 = min(x1, city.X0 + city.W - 1), min(z1, city.Z0 + city.W - 1)
+        if x1 < x0 or z1 < z0:
+            continue
+        xs = np.arange(x0, x1 + 1, dtype=np.float64)[:, None] + 0.5
+        zs = np.arange(z0, z1 + 1, dtype=np.float64)[None, :] + 0.5
+        vx, vz = bx - ax, bz - az
+        L2 = vx * vx + vz * vz
+        t = np.clip(((xs - ax) * vx + (zs - az) * vz) / L2, 0.0, 1.0) if L2 > 0 else 0.0
+        d = np.hypot(xs - (ax + t * vx), zs - (az + t * vz))
+        m[x0 - city.X0:x1 - city.X0 + 1, z0 - city.Z0:z1 - city.Z0 + 1] |= d <= half
+    return m
+
+
+def _space_fit(city: City, rect, kind: str):
+    """`graded` (bool) where the ground under `rect` carries `kind` as found or graded,
+    or the reason it cannot: the use's own row of `GROUND_FIT`, never another use."""
+    sl = _rect_mask(city, rect)
+    found = np.asarray(city.ground[0])[sl].astype(np.int32)
+    if found.size == 0:
+        return "it is outside the frame"
+    k = int(city.ring[(sl[0].start + sl[0].stop) // 2, (sl[1].start + sl[1].stop) // 2])
+    g = _ward_ground(city, k, (rect[0] + rect[2]) / 2, (rect[1] + rect[3]) / 2) \
+        if k >= 0 else {}
+    if g.get("policy") in ("terrace", "podium"):
+        return False
+    ii, jj = np.meshgrid(np.arange(found.shape[0]), np.arange(found.shape[1]),
+                         indexing="ij")
+    A = np.stack([ii.ravel(), jj.ravel(), np.ones(ii.size)], 1).astype(np.float64)
+    coef, *_ = np.linalg.lstsq(A, found.ravel().astype(np.float64), rcond=None)
+    resid = found.ravel() - A @ coef
+    grade = float(np.hypot(coef[0], coef[1]))
+    rel = int(np.percentile(resid, 90) - np.percentile(resid, 10))
+    if grade > GRADE_MOST.get(kind, 0.35):
+        rel = max(rel, int(np.percentile(found, 90) - np.percentile(found, 10)))
+    w_max, flat, graded = GROUND_FIT.get(kind, (0.02, 3, 8))
+    wet = float(city.wet[sl].mean())
+    if wet > w_max:
+        return f"{wet:.0%} of it is water as found (a {kind} takes at most {w_max:.0%})"
+    if kind in _LEVEL_SPACES:
+        return True if rel <= graded + 4 else (
+            f"its ground moves {rel} blocks (grade {grade:.2f}); a {kind} is levelled and "
+            f"is laid on at most {graded + 4}")
+    if rel <= flat:
+        return False
+    if rel <= graded:
+        return True
+    return (f"its ground moves {rel} blocks about its slope (grade {grade:.2f}); a {kind} "
+            f"is laid on at most {graded}")
+
+
+def _compose(city: City) -> None:
+    """The design's `composition` laid on composed land: paths, then outdoor rooms,
+    then buildings, each where the design put it, at its own size, with its own form
+    and parameters -- and every door carried to a path or a walked space. Nothing is
+    packed and nothing is moved: what does not fit, stands on something else or has no
+    way in is a finding naming the element and the field that decides it."""
+    comp = city.design.get("composition")
+    city.comp = None
+    if not comp:
+        return
+    land = _composed_mask(city)
+    city.comp = {"land": land, "paths": {}, "spaces": {}, "buildings": {},
+                 "path_mask": np.zeros(land.shape, bool)}
+    lineage = _lineage(city)
+
+    def world(pt):
+        return (city.cx + 0.5 + float(pt[0]), city.cz + 0.5 + float(pt[1]))
+
+    # 1. paths: the circulation the design drew
+    for i, p in enumerate(comp.get("paths") or []):
+        m = _path_cells(city, [world(q) for q in p["points"]], int(p["width"]))
+        m &= city.ring >= 0
+        wet = m & city.wet
+        if wet.any():
+            city.find("blocking", f"composition.paths[{i}].points",
+                      f"path {p['id']} crosses {int(wet.sum())} columns of water as found; "
+                      f"route it round the water (no bridge form is composed)",
+                      element=p["id"])
+        m &= ~wet
+        ok = m & np.isin(city.use, (LAND, ROAD, LANE, COURT))
+        blocked = m & ~ok & (city.use != GATE)
+        if blocked.any():
+            what = sorted({USE_NAMES[int(u)] for u in city.use[blocked]})
+            city.find("design", f"composition.paths[{i}].points",
+                      f"path {p['id']} meets {', '.join(what)} over {int(blocked.sum())} "
+                      f"columns and stops there", element=p["id"])
+        rank = CD.PATH_RANKS[p["rank"]]
+        lay = ok & (city.use == LAND)
+        city.use[lay] = ROAD if rank >= 2 else LANE
+        city.rank[ok] = np.maximum(city.rank[ok], rank)
+        city.comp["path_mask"] |= ok
+        city.comp["paths"][p["id"]] = ok
+    # 2. outdoor rooms
+    city.level_spaces = []
+    for i, s in enumerate(comp.get("spaces") or []):
+        rect = _local_rect(city, s["at"], s["size"])
+        sl = _rect_mask(city, rect)
+        where = f"composition.spaces[{i}]"
+        if not (city.inside(rect[0], rect[1]) and city.inside(rect[2], rect[3])):
+            city.find("blocking", f"{where}.at", f"space {s['id']} reaches outside the "
+                      f"place's frame", element=s["id"], rect=list(rect))
+            continue
+        on = land[sl] | city.comp["path_mask"][sl]
+        if on.mean() < 0.9:
+            city.find("blocking", f"{where}.at", f"space {s['id']} ({s['kind']}) stands "
+                      f"{1 - on.mean():.0%} outside the composed land", element=s["id"],
+                      rect=list(rect))
+            continue
+        mine = (city.use[sl] == LAND) & land[sl]
+        taken = np.isin(city.use[sl], (LOT, HALL, OPEN, WATER)) & ~city.comp["path_mask"][sl]
+        if taken.any():
+            city.find("blocking", f"{where}.at", f"space {s['id']} overlaps another space "
+                      f"or a building over {int(taken.sum())} columns", element=s["id"],
+                      rect=list(rect))
+            continue
+        kind = s["kind"]
+        fit = _space_fit(city, rect, kind if kind != "orchard" else "orchard")
+        if isinstance(fit, str):
+            city.find("blocking", f"{where}.at", f"space {s['id']} ({kind}): {fit}; move "
+                      f"it to gentler ground or make it smaller", element=s["id"],
+                      rect=list(rect))
+            continue
+        code = {"square": COURT, "market": COURT, "plaza": COURT, "pool": WATER}.get(kind,
+                                                                                    OPEN)
+        city.use[sl][mine] = code
+        form = CD.SPACE_KINDS[kind]
+        params = dict(s.get("params") or {})
+        if kind == "orchard":
+            params.setdefault("planting", "rows")
+        own = np.zeros(land.shape, bool)
+        own[sl] = mine
+        city.comp["spaces"][s["id"]] = {"mask": own, "kind": kind, "rect": rect}
+        if fit is True or kind in _LEVEL_SPACES:
+            city.level_spaces.append((own, kind))
+        base = {"role": "composed", "voice": _voice(city, int(city.ring[
+            (sl[0].start + sl[0].stop) // 2, (sl[1].start + sl[1].stop) // 2])),
+                "space": s["id"], "use": kind, "composed": True}
+        k_ring = int(city.ring[(sl[0].start + sl[0].stop) // 2,
+                               (sl[1].start + sl[1].stop) // 2])
+        if kind == "pool":
+            x0, z0, x1, z1 = rect
+            x1, z1 = min(x1, x0 + AREA_MAX - 1), min(z1, z0 + AREA_MAX - 1)
+            city.leaves.append({"kind": "area", "name": f"c_{s['id']}", "type": "pool",
+                                "seed": _rng("seed", "c", s["id"]).randint(0, 99),
+                                "params": params, "x0": x0, "z0": z0, "x1": x1, "z1": z1,
+                                "ring": k_ring, **base})
+            continue
+        tiles = _even_tiles(city, sl, mine, split=None if kind in _LEVEL_SPACES
+                            else _terrace_split(city, sl, mine))
+        if not tiles:
+            city.find("blocking", f"{where}.size", f"space {s['id']} has no piece of at "
+                      f"least 5x5 clear of its paths", element=s["id"])
+        for n, t in enumerate(tiles):
+            city.leaves.append({"kind": "area", "name": f"c_{s['id']}_{n}", "type": form,
+                                "seed": _rng("seed", "c", s["id"], n).randint(0, 99),
+                                "params": dict(params), "x0": t[0], "z0": t[1],
+                                "x1": t[2], "z1": t[3], "ring": k_ring, **base})
+    # 3. buildings
+    for i, b in enumerate(comp.get("buildings") or []):
+        where = f"composition.buildings[{i}]"
+        nd = _needs_of(b["form"]) or {}
+        fp = nd.get("footprint") or (5, 5, 16, 16)
+        size = b.get("size") or [min(fp[2], fp[0] + 4) + 2, min(fp[3], fp[1] + 4) + 2]
+        rect = _local_rect(city, b["at"], size)
+        sl = _rect_mask(city, rect)
+        if not (city.inside(rect[0], rect[1]) and city.inside(rect[2], rect[3])):
+            city.find("blocking", f"{where}.at", f"{b['id']} reaches outside the frame",
+                      element=b["id"])
+            continue
+        sub = city.use[sl]
+        if not land[sl].all():
+            city.find("blocking", f"{where}.at", f"{b['id']} stands "
+                      f"{1 - land[sl].mean():.0%} outside the composed land",
+                      element=b["id"], rect=list(rect))
+            continue
+        clash = sub != LAND
+        if clash.any():
+            what = sorted({USE_NAMES[int(u)] for u in sub[clash]})
+            names = [e for e, m in list(city.comp["paths"].items()) +
+                     [(k, v["mask"]) for k, v in city.comp["spaces"].items()] if m[sl].any()]
+            names += [lb for lb, r in ((k, v["rect"]) for k, v in
+                                       city.comp["buildings"].items())
+                      if not (r[2] < rect[0] or r[0] > rect[2] or r[3] < rect[1]
+                              or r[1] > rect[3])]
+            city.find("blocking", f"{where}.at", f"{b['id']}'s lot {size[0]}x{size[1]} "
+                      f"stands on {', '.join(what)} ({', '.join(names) or 'the fabric'}) "
+                      f"over {int(clash.sum())} columns", element=b["id"], rect=list(rect))
+            continue
+        if city.wet[sl].any():
+            city.find("blocking", f"{where}.at", f"{b['id']} stands on water as found",
+                      element=b["id"], rect=list(rect))
+            continue
+        # held to the form's measured pads at the pad it will be built on: the lot inset
+        # by the one column every lot of this compiler is (`_plot_leaf`, `_site`)
+        from .buildlib import site_pad_rect
+        from .pipeline import needs_footprint_failure
+        trial = {"kind": "plot", "x0": rect[0], "z0": rect[1], "x1": rect[2], "z1": rect[3],
+                 "site": {"pad": list(site_pad_rect(*rect, [], 1)), "floor": 0}}
+        why = needs_footprint_failure(trial, nd) if nd else None
+        if why:
+            city.find("blocking", f"{where}.size", f"{b['id']} ({b['form']}): {why}",
+                      element=b["id"], asked=list(size), pad_band=list(fp))
+            continue
+        front = _facing(city, rect, b.get("faces"))
+        rng = _rng("composed", b["id"], lineage)
+        drawn = _dwelling_params(city, "composed", {}, b["form"], rng)
+        params = {**{k: v for k, v in drawn.items() if k not in b["params"]},
+                  **b["params"]}
+        _claim(city, rect)
+        k_ring = int(city.ring[(sl[0].start + sl[0].stop) // 2,
+                               (sl[1].start + sl[1].stop) // 2])
+        _plot_leaf(city, rect, b["form"], front, params, name=f"c_{b['id']}",
+                   ring=k_ring, attached=[], role="composed", block=f"c_{b['id']}",
+                   extra={"use": b["use"], "group": b.get("group"), "faces": b.get("faces"),
+                          "element": b["id"], "composed": True,
+                          "chosen": sorted(b["params"])})
+        if b.get("voice"):
+            city.leaves[-1]["voice"] = b["voice"]     # the building's own palette
+        city.comp["buildings"][b["id"]] = {"rect": rect, "front": front,
+                                           "leaf": city.leaves[-1]["name"]}
+    # 4. every door to a path or a walked space
+    walked = np.zeros(land.shape, bool)
+    for sid, sp in city.comp["spaces"].items():
+        if sp["kind"] in CD.SPACE_WALKED:
+            walked |= sp["mask"]
+    city.comp["walked"] = walked
+    city.comp["ways"] = city.comp["path_mask"].copy()
+    for i, b in enumerate(comp.get("buildings") or []):
+        got = city.comp["buildings"].get(b["id"])
+        if not got:
+            continue
+        gap = _door_reach(city, got["rect"], got["front"], walked)
+        if gap is None:
+            city.find("blocking", f"composition.buildings[{i}].faces",
+                      f"{b['id']}'s door (its {got['front']} side) meets no path or walked "
+                      f"space within {DOOR_REACH} blocks: draw a path to it, or face it to "
+                      f"one", element=b["id"])
+            continue
+        for (gx, gz) in gap:
+            city.use[gx - city.X0, gz - city.Z0] = COURT
+            city.comp["ways"][gx - city.X0, gz - city.Z0] = True
+        got["forecourt"] = len(gap)
+    # land nobody placed anything on stays as the land is: owned, not packed
+    city.comp["unplaced"] = int((land & (city.use == LAND)).sum())
+
+
+#: the most a terrace of a composed field, garden or orchard falls across itself: an
+#: area form stands at one level, so open ground on a slope is laid as terraces this
+#: high
+TERRACE_FALL = 2
+
+
+def _terrace_split(city: City, sl, mm, least: int = 6) -> tuple:
+    """(pieces along x, pieces along z) that lay a sloping space as level terraces each
+    falling at most `TERRACE_FALL`: the slope of its own ground as found, cut across."""
+    found = np.asarray(city.ground[0])[sl].astype(np.float64)
+    ii, jj = np.nonzero(mm)
+    if len(ii) < 9:
+        return (1, 1)
+    A = np.stack([ii, jj, np.ones(len(ii))], 1).astype(np.float64)
+    coef, *_ = np.linalg.lstsq(A, found[mm], rcond=None)
+    H, Wd = mm.shape
+    nx = max(1, min(H // least, math.ceil(abs(coef[0]) * H / TERRACE_FALL)))
+    nz = max(1, min(Wd // least, math.ceil(abs(coef[1]) * Wd / TERRACE_FALL)))
+    return (nx, nz)
+
+
+def _even_tiles(city: City, sl, mm, most: int = AREA_MAX, least: int = 5,
+                split=None) -> list:
+    """A space's own columns (`mm` over the frame slice `sl`) as the fewest even tiles an
+    area form builds (at most `most` a side), each shrunk off its edges until it lies
+    wholly on the space -- a path across a green parts it, never paves under turf.
+    `split` asks for at least that many pieces along x and z (terraces on a slope)."""
+    x0, z0 = sl[0].start, sl[1].start
+    H, Wd = mm.shape
+    nx, nz = max(1, math.ceil(H / most)), max(1, math.ceil(Wd / most))
+    if split:
+        nx, nz = max(nx, int(split[0])), max(nz, int(split[1]))
+    out = []
+    for a in range(nx):
+        for b in range(nz):
+            i0, i1 = a * H // nx, (a + 1) * H // nx - 1
+            j0, j1 = b * Wd // nz, (b + 1) * Wd // nz - 1
+            piece = mm[i0:i1 + 1, j0:j1 + 1]
+            if not piece.any():
+                continue
+            # the tile's own columns, trimmed to the rows and columns that are the
+            # space's
+            rows = np.nonzero(piece.any(axis=1))[0]
+            cols = np.nonzero(piece.any(axis=0))[0]
+            i0, i1 = i0 + int(rows[0]), i0 + int(rows[-1])
+            j0, j1 = j0 + int(cols[0]), j0 + int(cols[-1])
+            for _ in range(2 * most):
+                sub = mm[i0:i1 + 1, j0:j1 + 1]
+                if sub.size == 0 or sub.all():
+                    break
+                bad = {"i0": (~sub[0, :]).sum(), "i1": (~sub[-1, :]).sum(),
+                       "j0": (~sub[:, 0]).sum(), "j1": (~sub[:, -1]).sum()}
+                e = max(bad, key=bad.get)
+                if e == "i0":
+                    i0 += 1
+                elif e == "i1":
+                    i1 -= 1
+                elif e == "j0":
+                    j0 += 1
+                else:
+                    j1 -= 1
+                if i1 - i0 + 1 < least or j1 - j0 + 1 < least:
+                    break
+            if i1 - i0 + 1 >= least and j1 - j0 + 1 >= least and \
+                    mm[i0:i1 + 1, j0:j1 + 1].all():
+                out.append((x0 + i0 + city.X0, z0 + j0 + city.Z0,
+                            x0 + i1 + city.X0, z0 + j1 + city.Z0))
+    return out
+
+
+def _facing(city: City, rect, faces) -> str:
+    """The side a building's door is on: a cardinal as given, or the side of the lot that
+    looks straight out onto the space or path it names -- the side from whose middle the
+    element is fewest blocks away -- else the side nearest the element's nearest column."""
+    if faces in _FRONT_OUT:
+        return faces
+    m = None
+    if faces is not None and city.comp:
+        m = city.comp["paths"].get(faces)
+        if m is None and faces in city.comp["spaces"]:
+            m = city.comp["spaces"][faces]["mask"]
+    x0, z0, x1, z1 = rect
+    if m is not None and m.any():
+        best = None
+        for side, (ox, oz) in _FRONT_OUT.items():
+            if side in ("north", "south"):
+                mid = (x0 + x1) // 2
+                starts = [(mid + t, z0 - 1 if side == "north" else z1 + 1) for t in (-2, 0, 2)]
+            else:
+                mid = (z0 + z1) // 2
+                starts = [(x0 - 1 if side == "west" else x1 + 1, mid + t) for t in (-2, 0, 2)]
+            for (sx, sz) in starts:
+                for n in range(0, 13):
+                    x, z = sx + ox * n, sz + oz * n
+                    if not city.inside(x, z):
+                        break
+                    if m[x - city.X0, z - city.Z0]:
+                        if best is None or n < best[0]:
+                            best = (n, side)
+                        break
+        if best is not None:
+            return best[1]
+    if m is None or not m.any():
+        # toward the place's centre
+        dx, dz = city.cx - (x0 + x1) / 2, city.cz - (z0 + z1) / 2
+    else:
+        ii, jj = np.nonzero(m)
+        xs, zs = ii + city.X0, jj + city.Z0
+        # distance from the lot's rectangle to each column of the element
+        ddx = np.maximum(0, np.maximum(x0 - xs, xs - x1))
+        ddz = np.maximum(0, np.maximum(z0 - zs, zs - z1))
+        n = int(np.argmin(ddx * ddx + ddz * ddz))
+        tx, tz = xs[n], zs[n]
+        dx = 0 if x0 <= tx <= x1 else (tx - x1 if tx > x1 else tx - x0)
+        dz = 0 if z0 <= tz <= z1 else (tz - z1 if tz > z1 else tz - z0)
+        if dx == 0 and dz == 0:
+            dx, dz = tx - (x0 + x1) / 2, tz - (z0 + z1) / 2
+    if abs(dx) >= abs(dz):
+        return "east" if dx > 0 else "west"
+    return "south" if dz > 0 else "north"
+
+
+def _door_reach(city: City, rect, front: str, walked) -> list | None:
+    """The columns between a lot's front and the nearest path or walked space along the
+    door's line (the front's middle three columns, any of them), or None where none is
+    within `DOOR_REACH`. An empty list: the front already meets one."""
+    x0, z0, x1, z1 = rect
+    ox, oz = _FRONT_OUT[front]
+    if front in ("north", "south"):
+        mid = (x0 + x1) // 2
+        lines = [(mid + t, z0 - 1 if front == "north" else z1 + 1) for t in (0, -1, 1, -2, 2)
+                 if x0 + 1 <= mid + t <= x1 - 1]
+    else:
+        mid = (z0 + z1) // 2
+        lines = [(x0 - 1 if front == "west" else x1 + 1, mid + t) for t in (0, -1, 1, -2, 2)
+                 if z0 + 1 <= mid + t <= z1 - 1]
+    for (sx, sz) in lines:
+        run = []
+        for n in range(DOOR_REACH + 1):
+            x, z = sx + ox * n, sz + oz * n
+            if not city.inside(x, z):
+                break
+            i, j = x - city.X0, z - city.Z0
+            u = city.use[i, j]
+            if u in (ROAD, LANE, COURT, GATE):
+                return run
+            if walked[i, j]:
+                # the doorstep on the green's edge is paved, so the door has a landing
+                return run + [(x, z)]
+            if u != LAND:
+                break
+            run.append((x, z))
+    return None
+
+
+def composition_report(city: City) -> dict:
+    """What the resolved composition does, measured off the rasters and leaves: each
+    building's use, form, lot, facing and what its door reaches; each space's area and
+    the buildings that address it; the programme against the uses laid; whether every
+    door is on one connected network that reaches the boundary. Numbers for the
+    inspection, not a verdict."""
+    from scipy import ndimage
+    comp = city.design.get("composition") or {}
+    walk = np.isin(city.use, (ROAD, LANE, COURT, GATE)) | city.comp.get(
+        "walked", np.zeros(city.use.shape, bool))
+    lab, n = ndimage.label(walk, structure=[[0, 1, 0], [1, 1, 1], [0, 1, 0]])
+    edge = walk & ((city.ring < 0) | (city.ratio >= 0.95))
+    exits = set(np.unique(lab[edge]).tolist()) - {0}
+    leaf_by = {lf["name"]: lf for lf in city.leaves}
+    found = np.asarray(city.ground[0], np.int32)
+    near = {}
+    for pid, pm in city.comp["paths"].items():
+        near[pid] = ndimage.binary_dilation(pm, iterations=DOOR_REACH)
+
+    def looks_onto(land_at, front) -> list:
+        """The spaces a door looks straight out onto: along its facing, across its
+        forecourt, a lane or kept ground, within `ADDRESS_REACH` blocks."""
+        got = []
+        ox, oz = _FRONT_OUT[front]
+        for n in range(ADDRESS_REACH + 1):
+            x, z = land_at[0] + ox * n, land_at[1] + oz * n
+            if not city.inside(x, z):
+                break
+            i, j = x - city.X0, z - city.Z0
+            hit = [sid for sid, sp in city.comp["spaces"].items() if sp["mask"][i, j]]
+            if hit:
+                return hit
+            if city.use[i, j] in (LOT, HALL, WALL, WATER):
+                break
+        return got
+    rows = []
+    comps_of_doors = set()
+    for b in comp.get("buildings") or []:
+        got = city.comp["buildings"].get(b["id"])
+        if not got:
+            rows.append({"id": b["id"], "use": b["use"], "form": b["form"],
+                         "laid": False})
+            continue
+        lf = leaf_by.get(got["leaf"]) or {}
+        st = lf.get("site") or {}
+        land_at = st.get("landing")
+        comp_id = int(lab[land_at[0] - city.X0, land_at[1] - city.Z0]) if land_at else 0
+        if comp_id:
+            comps_of_doors.add(comp_id)
+        addr = sorted(set(k for k, m in near.items() if land_at and
+                          m[land_at[0] - city.X0, land_at[1] - city.Z0])
+                      | set(looks_onto(land_at, got["front"]) if land_at else []))
+        x0, z0, x1, z1 = got["rect"]
+        sl = (slice(x0 - city.X0, x1 - city.X0 + 1), slice(z0 - city.Z0, z1 - city.Z0 + 1))
+        fl = found[sl]
+        pad = lf.get("floor")
+        rows.append({"id": b["id"], "use": b["use"], "form": b["form"],
+                     "params": lf.get("params"), "chosen": lf.get("chosen"),
+                     "group": b.get("group"), "faces": b.get("faces"),
+                     "front": got["front"], "lot": [x1 - x0 + 1, z1 - z0 + 1],
+                     "leaf": got["leaf"], "region": lf.get("region"),
+                     "door": st.get("door"), "landing": land_at, "addresses": addr,
+                     "addresses_asked": (b.get("faces") in addr) if b.get("faces") not in
+                     (None, "north", "south", "east", "west") else None,
+                     "reaches_boundary": comp_id in exits,
+                     "pad": pad, "ground": [int(fl.min()), int(fl.max())],
+                     "cut": int(np.clip(fl - (pad or 0), 0, None).max()) if pad else None,
+                     "fill": int(np.clip((pad or 0) - fl, 0, None).max()) if pad else None,
+                     "laid": True})
+    spaces = []
+    for s in comp.get("spaces") or []:
+        sp = city.comp["spaces"].get(s["id"])
+        if not sp:
+            spaces.append({"id": s["id"], "kind": s["kind"], "laid": False})
+            continue
+        facing = [r["id"] for r in rows if r.get("laid") and s["id"] in r["addresses"]]
+        rim = ndimage.binary_dilation(sp["mask"], iterations=8) & ~sp["mask"]
+        lined = rim & np.isin(city.use, (LOT, HALL))
+        fl = found[sp["mask"]]
+        spaces.append({"id": s["id"], "kind": s["kind"], "columns": int(sp["mask"].sum()),
+                       "addressed_by": facing,
+                       "lined": round(float(lined.sum()) / max(1, int(rim.sum())), 2),
+                       "ground": [int(fl.min()), int(fl.max())] if fl.size else None,
+                       "tiles": sum(1 for lf in city.leaves if lf.get("space") == s["id"]),
+                       "laid": True})
+    uses: dict = {}
+    for r in rows:
+        if r.get("laid"):
+            uses[r["use"]] = uses.get(r["use"], 0) + 1
+    programme = []
+    for p in comp.get("programme") or []:
+        programme.append({"use": p["use"], "what": p.get("what"), "asked": p["count"],
+                          "source": p["source"], "reads": p.get("reads") or []})
+    by_use: dict = {}
+    for p in programme:
+        by_use[p["use"]] = by_use.get(p["use"], 0) + p["asked"]
+    gaps = {u: {"programme": by_use.get(u, 0), "laid": uses.get(u, 0)}
+            for u in sorted(set(by_use) | set(uses)) if by_use.get(u, 0) != uses.get(u, 0)}
+    for u, g in gaps.items():
+        city.find("design", "composition.programme", f"the programme asks for {g['programme']} "
+                  f"{u} building(s) and {g['laid']} are laid", use=u, **g)
+    doors = [r for r in rows if r.get("laid")]
+    return {"buildings": rows, "spaces": spaces, "programme": programme,
+            "uses": uses, "forms": sorted({r["form"] for r in doors}),
+            "groups": [{"id": g["id"], "purpose": g.get("purpose"),
+                        "around": g.get("around"),
+                        "members": [r["id"] for r in doors if r.get("group") == g["id"]]}
+                       for g in comp.get("groups") or []],
+            "access": {"doors": len(doors),
+                       "on_network": sum(1 for r in doors if r.get("landing")),
+                       "reach_boundary": sum(1 for r in doors if r.get("reaches_boundary")),
+                       "networks": len(comps_of_doors)},
+            "unplaced_columns": city.comp.get("unplaced"),
+            "findings": [f for f in city.findings if str(f.get("field", "")).startswith(
+                "composition")]}
 
 
 # ---------------------------------------------------------------- 7. grain streets
@@ -1934,11 +2502,13 @@ def _pack_fields(city: City, blk: dict) -> None:
 #: as found, most relief it is graded to carry). Relief is p90 - p10 of the ground.
 GROUND_FIT = {"field": (0.03, 3, 9), "farmstead": (0.0, 4, 10), "orchard": (0.08, 18, 18),
               "garden": (0.02, 3, 8), "yard": (0.02, 3, 8), "grove": (0.1, 24, 24),
-              "plaza": (0.0, 2, 6), "square": (0.0, 2, 6), "market": (0.0, 2, 6)}
+              "plaza": (0.0, 2, 6), "square": (0.0, 2, 6), "market": (0.0, 2, 6),
+              "green": (0.05, 5, 12)}
 
 
 #: the steepest steady grade a use is laid on as found (blocks per column)
-GRADE_MOST = {"field": 0.35, "orchard": 0.6, "grove": 0.8, "farmstead": 0.15}
+GRADE_MOST = {"field": 0.35, "orchard": 0.6, "grove": 0.8, "farmstead": 0.15,
+              "green": 0.3}
 
 
 def _ground_fit(city: City, rect, kind: str):
@@ -2024,9 +2594,11 @@ def _leftovers(city: City) -> None:
             if cover == "as_found":
                 continue
             kind = cover
-        if grain == "fields":
+        if grain in ("fields", "composed"):
             # the farmland composer has parcelled what fields can hold; what is left of
-            # a farm block is its land as found (hedgerow, meadow, bank), not a field
+            # a farm block is its land as found (hedgerow, meadow, bank), not a field.
+            # Composed land nobody placed anything on is the land as it is, too: the
+            # design decides what stands there, and nothing is packed into the rest
             continue
         fit = _ground_fit(city, rect, kind)
         if fit is None:
@@ -2543,6 +3115,11 @@ def _ground(city: City) -> None:
             gy, gx = np.gradient(sm)
             steep = np.hypot(gx, gy) > 0.45
             drop = st & steep & (city.rank < 3)
+            # a path the composition drew is kept, graded along its run: it is how the
+            # doors on it are reached, and a designed way is not dropped for its slope
+            comp = getattr(city, "comp", None)
+            if comp is not None:
+                drop &= ~comp["ways"]
             city.use[drop] = OPEN
             st &= ~drop
             city.target[st] = np.round(_lipschitz(sm, st, 0.5)[st]).astype(np.int16)
@@ -2603,6 +3180,23 @@ def _ground(city: City) -> None:
             med = int(np.median(found[sl][keep]))
             city.target[sl][keep] = med
             city.treat[sl][keep] = SOFT
+    # a composition's graded spaces: a square, a yard or a pool at one level, the median
+    # of its own ground; a field, a green or an orchard graded to the plane of its own
+    # slope, so it still falls with the hill rather than standing on a terrace. Paved
+    # ones stay street-treated so their paving is laid
+    for own, kind in getattr(city, "level_spaces", []):
+        if not own.any():
+            continue
+        if kind in _LEVEL_SPACES:
+            city.target[own] = int(np.median(found[own]))
+        else:
+            ii, jj = np.nonzero(own)
+            A = np.stack([ii, jj, np.ones(len(ii))], 1).astype(np.float64)
+            coef, *_ = np.linalg.lstsq(A, found[own].astype(np.float64), rcond=None)
+            city.target[own] = np.round(A @ coef).astype(np.int16)
+        paved = own & np.isin(use, (COURT, ROAD, LANE))
+        city.treat[own & ~paved] = SOFT
+        city.treat[paved] = STREET
     # building pads in preserved rings: their own level, the median of the ground under
     for lf in city.leaves:
         if lf["kind"] != "plot":
@@ -3245,6 +3839,8 @@ def save(city: City, out_dir: str) -> dict:
            "gates": city.gates, "monument": getattr(city, "monument", None),
            "blocks": len(city.blocks), "compounds": getattr(city, "compounds", []),
            "regions": city.regions, "metrics": city.metrics, "findings": city.findings}
+    if getattr(city, "composition", None) is not None:
+        rec["composition"] = city.composition
     json.dump(rec, open(os.path.join(out_dir, "city.json"), "w"), indent=1)
     json.dump(plan_tree(city), open(os.path.join(out_dir, "plan.json"), "w"), indent=1)
     return rec
@@ -3275,6 +3871,25 @@ def preview(city: City, path: str, *, scale: int = 1, shade: bool = True) -> str
             img[x0:x1 + 1, z0:z1 + 1] = c
             img[x0, z0:z1 + 1] *= 0.8
             img[x0:x1 + 1, z0] *= 0.8
+    comp = getattr(city, "comp", None)
+    if comp is not None:
+        # composed land nobody placed anything on is the land as it is (pale), and each
+        # outdoor room is coloured by its use, so a green reads apart from a field
+        img[comp["land"] & (use == OPEN)] = (150, 160, 120)
+        room = {"green": (70, 170, 60), "field": (200, 185, 90), "garden": (120, 170, 90),
+                "yard": (165, 130, 90), "grove": (40, 100, 40), "square": (215, 210, 195),
+                "market": (230, 200, 150), "plaza": (215, 210, 195)}
+        for lf in city.leaves:
+            if lf["kind"] == "area" and lf.get("composed") and lf["type"] in room:
+                img[lf["x0"] - city.X0:lf["x1"] - city.X0 + 1,
+                    lf["z0"] - city.Z0:lf["z1"] - city.Z0 + 1] = room[lf["type"]]
+        tint_c = {"dwelling": (160, 110, 80), "work": (120, 90, 150), "civic": (200, 160, 60),
+                  "worship": (220, 220, 240), "store": (150, 140, 110), "trade": (180, 90, 60)}
+        for lf in city.leaves:
+            if lf["kind"] == "plot" and lf.get("composed"):
+                img[lf["x0"] - city.X0:lf["x1"] - city.X0 + 1,
+                    lf["z0"] - city.Z0:lf["z1"] - city.Z0 + 1] = tint_c.get(
+                        lf.get("use"), (160, 110, 80))
     tint = {"courtyard_house": (150, 120, 95), "row_house": (140, 95, 70),
             "shop_house": (175, 90, 60), "court_large": (190, 150, 90),
             "farmstead": (150, 130, 80)}
@@ -3297,8 +3912,46 @@ def preview(city: City, path: str, *, scale: int = 1, shade: bool = True) -> str
         img *= s[..., None]
     img = np.clip(img, 0, 255).astype(np.uint8).transpose(1, 0, 2)
     im = Image.fromarray(img)
+    if comp is not None and scale == 1:
+        # a composition is read element by element: large enough to label
+        scale = max(1, 900 // city.W)
     if scale != 1:
         im = im.resize((im.width * scale, im.height * scale), Image.NEAREST)
+    if comp is not None:
+        _label_composition(city, im, scale)
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     im.save(path)
     return path
+
+
+def _label_composition(city: City, im, scale: int) -> None:
+    """The composition's local grid (offsets from the centre, every 16 blocks) and each
+    building's and space's id, on the plan: the coordinates the design is written in."""
+    from PIL import ImageDraw
+    dr = ImageDraw.Draw(im)
+    for off in range(-(city.W // 32) * 16, city.W // 2 + 1, 16):
+        x = (city.cx + off - city.X0) * scale
+        z = (city.cz + off - city.Z0) * scale
+        dr.line([(x, 0), (x, im.height)], fill=(255, 255, 255) if off == 0 else (0, 0, 0),
+                width=1)
+        dr.line([(0, z), (im.width, z)], fill=(255, 255, 255) if off == 0 else (0, 0, 0),
+                width=1)
+        dr.text((x + 2, 2), f"{off:+d}", fill=(255, 255, 255))
+        dr.text((2, z + 2), f"{off:+d}", fill=(255, 255, 255))
+    by_leaf = {lf["name"]: lf for lf in city.leaves}
+    for bid, b in city.comp["buildings"].items():
+        x0, z0, x1, z1 = b["rect"]
+        dr.rectangle([(x0 - city.X0) * scale, (z0 - city.Z0) * scale,
+                      (x1 - city.X0 + 1) * scale - 1, (z1 - city.Z0 + 1) * scale - 1],
+                     outline=(20, 20, 20))
+        lf = by_leaf.get(b["leaf"]) or {}
+        door = (lf.get("site") or {}).get("door")
+        if door:
+            dx, dz = (door[0] - city.X0) * scale, (door[1] - city.Z0) * scale
+            dr.rectangle([dx, dz, dx + scale - 1, dz + scale - 1], fill=(250, 40, 40))
+        dr.text(((x0 - city.X0) * scale + 2, (z0 - city.Z0) * scale + 2), bid,
+                fill=(255, 255, 230))
+    for sid, sp in city.comp["spaces"].items():
+        x0, z0, x1, z1 = sp["rect"]
+        dr.text((((x0 + x1) // 2 - city.X0) * scale - 3 * len(sid),
+                 ((z0 + z1) // 2 - city.Z0) * scale), sid, fill=(255, 255, 0))

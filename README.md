@@ -6,7 +6,7 @@ Turn one sentence into a place in Minecraft.
 
 You describe a place in plain English. An AI agent designs it on real terrain from your world. EthosLM builds every block and writes the result into your Minecraft save.
 
-It can build anything from a small village to a large walled city.
+It supports small settlements and large walled cities through an experimental, agent-guided workflow. Visual quality still needs review.
 
 ## How it works
 
@@ -63,6 +63,8 @@ The agent picks:
 
 EthosLM then works out the numbers itself. A village gets 12 to 40 buildings. A city gets 120 to 400. A number in the sentence, like "sixteen cottages", overrides this. Because the code does the math, the same sentence always gets the same size.
 
+The spec also selects a planning strategy: repeated fabric for districts with a shared character, individual composition for parts planned building by building, or a mixture of both. This choice follows the spec's organisation, not a city-versus-village size threshold. Both paths use the same spatial compiler and construction pipeline.
+
 ### 5. Find sites
 
 EthosLM scans the terrain map for good spots at a few different sizes. It ranks them by how flat they are, how much water they have and how much land is usable. If the request calls for a setting, like a desert, it only offers sites in matching biomes. Each site comes with a map.
@@ -83,7 +85,7 @@ It writes 2 or 3 different designs for the whole place. Each design covers:
 - how the ground is treated in each ring
 - the palette
 
-The agent places things by compass direction and distance from the centre. It never writes exact coordinates. The code works those out.
+For repeated fabric, the agent sets the organisation and the code lays out the individual lots. In an individual composition, the agent places each building, outdoor space and path with local coordinates, a use and a reason. The compiler checks their fit, access and ground. It probes chosen building parameters on flat pads and reports features that construction cannot deliver on the actual terrain.
 
 The layout patterns are:
 
@@ -273,7 +275,8 @@ Tests that need a server skip on their own. [TESTING.md](TESTING.md) lists the s
 ## Limits
 
 - It is strongest at housing rows, courtyard neighbourhoods, estates, fields and monumental compounds.
-- Small villages currently use rings of lanes with spokes and one house style per zone.
+- Places can use repeated fabric, individual composition or both. Individual composition supports different uses and forms, but does not guarantee visual variety.
+- Composed building lots and outdoor spaces are rectangular, and buildings face cardinal directions. Paths can bend and run diagonally. Dimensions, roofs and extensions can vary within a form; repeating one house form can still look repetitive.
 - A build can pass every check and still look off. Always review the views before you deliver.
 
 ## Licence

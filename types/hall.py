@@ -7,6 +7,9 @@ FORM = "civic"
 #: and a shop-house are both east Asian. which is civic -- is made of halls. nothing the
 #: type builds changes.
 ROLE = "civic"
+#: What it is used for (`citydesign.USES`): the place's business is done here (a moot, a
+#: market hall, a refectory).
+FUNCTION = "civic"
 
 PARAMS = {
     "dormers": ("int", 1, 2),

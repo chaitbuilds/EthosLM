@@ -982,14 +982,15 @@ def surfaces(builder, part: dict) -> dict:
 
 # ------------------------------------------------------------------ probes
 
-def _flat_volume(size: int = 96, y: int = 64):
+def _flat_volume(size: int = 96, y: int = 64, origin=(0, 0)):
     import numpy as np
     from .observe import Volume
     y0, y1 = y - 14, y + 56
     codes = np.zeros((size, y1 - y0 + 1, size), dtype=np.int32)
     codes[:, :y - y0, :] = 3
     codes[:, y - y0, :] = 1
-    return Volume(0, y0, 0, codes, ["air", "grass_block", "dirt", "stone"])
+    return Volume(int(origin[0]), y0, int(origin[1]), codes,
+                  ["air", "grass_block", "dirt", "stone"])
 
 
 class _OnePlot:
@@ -1037,7 +1038,7 @@ def probe_flanks(front: str, attached: int) -> list:
 def probe_build(type_name: str, w: int, d: int, params: dict | None = None, *,
                 seed: int = 1, front: str = "north", size: int = 96,
                 voice: str | None = None, source: str | None = None,
-                attached: int = 0) -> tuple:
+                attached: int = 0, at=None) -> tuple:
     """Build one type on a flat lot of `w`x`d`, no voice. Returns (builder, sited, result).
 
         The lot is the plan's lot; `site()` insets it as it insets every plot, so what the
@@ -1057,10 +1058,15 @@ def probe_build(type_name: str, w: int, d: int, params: dict | None = None, *,
     from .buildlib import Builder
     ns = _type_ns(type_name, source)
     role = ns.get("ROLE")
-    vol = _flat_volume(size)
+    off = (size - max(w, d)) // 2
+    # `at`: the lot's own corner in the world. A type may read its position (a seed's
+    # bits mixed with the lot's corner), so a probe standing for a real lot stands where
+    # that lot does, on flat ground
+    origin = (int(at[0]) - off, int(at[1]) - off) if at is not None else (0, 0)
+    vol = _flat_volume(size, origin=origin)
     b = Builder(offline.OfflineSite(vol))
     b._vol, b.frontage = vol, None
-    x0 = z0 = (size - max(w, d)) // 2
+    x0, z0 = origin[0] + off, origin[1] + off
     lot = {"label": "probe", "x0": x0, "z0": z0, "x1": x0 + int(w) - 1,
            "z1": z0 + int(d) - 1}
     b.registry = _OnePlot(dict(lot))

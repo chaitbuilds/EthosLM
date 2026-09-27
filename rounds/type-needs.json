@@ -13373,6 +13373,383 @@
     "except": [],
     "note": "the maximum is the largest size swept"
    }
+  },
+  "green": {
+   "type": "green",
+   "kind": "area",
+   "combinations": 150,
+   "seeds": [
+    1,
+    2
+   ],
+   "sizes": [
+    {
+     "size": [
+      3,
+      3
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      4,
+      4
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      5,
+      5
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      6,
+      6
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      7,
+      7
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      8,
+      8
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      9,
+      9
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      10,
+      10
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      11,
+      11
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      12,
+      12
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      13,
+      13
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      14,
+      14
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      15,
+      15
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      16,
+      16
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      17,
+      17
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      18,
+      18
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      19,
+      19
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      20,
+      20
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      21,
+      21
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      22,
+      22
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      24,
+      24
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      28,
+      28
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      32,
+      32
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      40,
+      40
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    },
+    {
+     "size": [
+      48,
+      48
+     ],
+     "of": 600,
+     "failed": 0,
+     "grounds": [
+      "flat",
+      "slope"
+     ],
+     "on": [],
+     "first": null
+    }
+   ],
+   "band": {
+    "footprint": [
+     3,
+     3,
+     48,
+     48
+    ],
+    "runs": [
+     [
+      3,
+      48
+     ]
+    ],
+    "except": [],
+    "note": "the maximum is the largest size swept"
+   }
   }
  },
  "seconds": 6167.8,

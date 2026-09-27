@@ -1841,6 +1841,13 @@ that holds them is. Each one is:
     houses share yards behind them, and a `landmark` where one building is the
     district's own -- a hall, a temple, a market. The numbers are approximate and the
     compiler holds the result to the density's count and cover.
+    **A character decides how the place is planned** (`planning.json` records it): a
+    part with one is repeated fabric, lots packed along streets in one form; a group
+    without one is composed building by building, each placed for its own use and
+    what it faces. Give a character where the place really is a rhythm of like lots
+    (a planned terrace, a crowded ward, a city quarter); omit it where the buildings'
+    uses and relationships differ one from the next (a village's homes, workplaces
+    and hall round its green), and name those uses as parts of their own.
   - **`role`** is what the part is *for*, and it decides which types a later call may
     build in it: a `rural` district is farmhouses and fields, an `urban` one is street
     houses and shops, a `civic` one is what a place holds at its middle, a `defensive`

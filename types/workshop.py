@@ -8,6 +8,9 @@ FORM = "european_vernacular"
 #: `FORM` is the tradition it is built in and this is a different question: a farmhouse
 #: and a shop-house are both east Asian.
 ROLE = "urban"
+#: What it is used for (`citydesign.USES`): a trade is worked here: a composition asks
+#: for it by this use.
+FUNCTION = "work"
 
 # a workshop is one working floor: storeys is declared, and there is one value of it
 # this type will build.

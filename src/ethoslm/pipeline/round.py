@@ -489,8 +489,10 @@ PLACE_DRY = ("reading", "interpret", "place_spec", "site_search", "cache", "site
 #: and resumable (`regions`), then looked at (`region_views`). `flags.design` selects it; see `pipeline/stages_design.py`.
 #: `design_references` comes first: the visual evidence a named place's identity needs,
 #: found (or reused) and read into a reference brief before anything is designed.
-DESIGN_DRY = ("reading", "interpret", "place_spec", "design_references", "design",
-              "design_compare", "design_resolve", "regions", "region_views")
+#: `planning` before it: whether the place is repeated fabric, composed building by
+#: building, or both (`ethoslm.planning`), recorded before the design job is written.
+DESIGN_DRY = ("reading", "interpret", "place_spec", "planning", "design_references",
+              "design", "design_compare", "design_resolve", "regions", "region_views")
 
 
 def default_stages(rnd: Round) -> tuple:

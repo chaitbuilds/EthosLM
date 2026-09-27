@@ -100,7 +100,25 @@ GRAINS = {
         "params": {"cover": ("choice", ["grove", "garden", "field", "as_found"]),
                    "trees": ("choice", ["broad", "palm"])},
     },
+    "composed": {
+        "what": "land composed individually by the design's `composition`: each "
+                "building, outdoor room and path placed by the design with its use, "
+                "form and what it faces; land none of them takes is left as found",
+        "params": {},
+    },
 }
+
+#: The outdoor rooms a composition lays, and the area form each is built as. A kind is a
+#: use of open ground; its form is the library's (`types/<form>.py`).
+SPACE_KINDS = {"green": "green", "square": "square", "market": "market", "yard": "yard",
+               "garden": "garden", "field": "field", "orchard": "grove",
+               "grove": "grove", "pool": "pool", "plaza": "plaza"}
+#: spaces people walk across to a door (paved or common ground)
+SPACE_WALKED = ("green", "square", "market", "plaza", "yard")
+#: the uses a composed building can be for; each is a form's declared `FUNCTION`
+USES = ("dwelling", "work", "trade", "civic", "worship", "store", "defensive")
+#: path ranks, and the street raster each is laid as
+PATH_RANKS = {"road": 2, "lane": 1, "path": 1}
 
 #: What a ring's `shade` may ask of its lanes. `lanes`: the houses fronting a lane of
 #: the ring carry slatted beams out over it from their front walls, so a narrow lane is
@@ -207,6 +225,56 @@ streets, blocks, lots, compounds and ground, and returns what it could not honou
  "decisions": {"model": ["..."], "compiler": ["..."]}
 }
 ```
+"""
+
+
+COMPOSITION_DOC = """## The composition (`composition`, for land of grain `composed`)
+
+Composed land is designed building by building. Positions are **local offsets in blocks
+from the place's centre** (`[dx, dz]`: +x east, +z south), read off the site sheet's
+grid; sizes are blocks. Nothing is packed for you: what you do not place stays as the
+land is.
+
+```
+"composition": {
+ "programme": [                    // what the place needs, and why, before any position
+   {"use": "dwelling" | "work" | "trade" | "civic" | "worship" | "store",
+    "what": "households farming the lower fields", "count": 8,
+    "source": "request" | "inferred",   // request: a read of the sentence names it
+    "reads": ["interpretation read ids it answers"], "why": "..."}],
+ "spaces": [                       // outdoor rooms: the ground between the buildings
+   {"id": "green", "kind": "green" | "square" | "market" | "yard" | "garden" | "field"
+                            | "orchard" | "grove" | "pool" | "plaza",
+    "at": [dx, dz], "size": [w, d], "params": {...the form's own...}, "why": "..."}],
+ "groups": [                       // buildings that belong together, and why
+   {"id": "green_row", "purpose": "homes facing the green", "around": "green"}],
+ "buildings": [
+   {"id": "smithy", "use": "work", "form": "workshop", "params": {"trade": "smithy"},
+    "at": [dx, dz], "size": [w, d],   // the lot: the form's pad plus one column each side
+    "faces": "south" | "<space id>" | "<path id>",   // the side its door is on
+    "voice": "a palette for this building alone (omit: the ring's)",
+    "group": "green_row", "why": "by the road in, where carts arrive"}],
+ "paths": [                        // how people move: every door reaches one
+   {"id": "street", "rank": "road" | "lane" | "path", "width": 3,
+    "points": [[dx, dz], [dx, dz], ...],   // straight runs between the points
+    "why": "..."}]
+}
+```
+
+- A building's `use` is its form's declared function (the forms table says each); its
+  `params` are the form's own, each within the form's range -- a choice you do not make
+  is drawn by the form. The lot must hold the form's pad; `faces` names the side its
+  door is on, or the space or path it addresses. A parameter you choose is probed on
+  the lot you give: where the form would leave it out (an outshot, a storey) the design
+  is handed back with a lot that delivers it.
+- Every door reaches a path or a walked space (green, square, market, plaza, yard)
+  within a few blocks of its front, and some path reaches the boundary. A lot never
+  stands on a path, a space, water or another lot; a space may be crossed by a path.
+- Spaces are laid at the level the ground allows their use (a square levelled, a field
+  on a gentle slope); ground too steep or wet for a use is returned, not substituted.
+- Groups and programme are what the inspection reads the place against: that the green
+  is addressed by the buildings you said face it, that the working places stand where
+  their work is, that each programme entry is carried by buildings of that use.
 """
 
 
@@ -320,7 +388,145 @@ def read(doc: dict) -> dict:
             raise DesignError(f"landmarks[{i}].form is one of {LANDMARK_FORMS}")
         lm["bearing"] = boundary.bearing(lm.get("bearing", 0))
     d["landmarks"] = d.get("landmarks") or []
+    composed = any(r.get("grain") == "composed" for r in rings) or any(
+        w.get("grain") == "composed" for r in rings for w in r.get("wards") or [])
+    if d.get("composition") is not None or composed:
+        if not composed:
+            raise DesignError("composition: a composition needs land of grain `composed` "
+                              "(a ring or a ward) to stand on")
+        d["composition"] = read_composition(d.get("composition"))
     return d
+
+
+_CARDINAL = ("north", "south", "east", "west")
+
+
+def _pair(v, where, lo=None, hi=None, integer=False) -> list:
+    if not isinstance(v, (list, tuple)) or len(v) != 2:
+        raise DesignError(f"{where}: two numbers [x, z], not {v!r}")
+    got = [_num(v[0], f"{where}[0]", lo, hi), _num(v[1], f"{where}[1]", lo, hi)]
+    return [int(round(g)) for g in got] if integer else got
+
+
+def check_params(form: str, decl: dict, params: dict, where: str) -> dict:
+    """`params` held to the form's own declared `PARAMS`: every key the form's, every
+    value in its range. Raises `DesignError` naming the key and the range."""
+    decl_p = decl.get("params") or {}
+    out = {}
+    for k, v in (params or {}).items():
+        spec = decl_p.get(k)
+        if spec is None:
+            raise DesignError(f"{where}.params.{k}: `{form}` has no parameter {k!r} "
+                              f"(it has {sorted(decl_p) or 'none'})")
+        if spec[0] == "int":
+            n = int(_num(v, f"{where}.params.{k}"))
+            if not int(spec[1]) <= n <= int(spec[2]):
+                raise DesignError(f"{where}.params.{k}: `{form}` takes {k} "
+                                  f"{spec[1]}..{spec[2]}, not {v!r}")
+            out[k] = n
+        elif spec[0] == "choice":
+            if v not in spec[1]:
+                raise DesignError(f"{where}.params.{k}: `{form}` takes {k} one of "
+                                  f"{list(spec[1])}, not {v!r}")
+            out[k] = v
+        else:
+            out[k] = v
+    return out
+
+
+def read_composition(comp) -> dict:
+    """A composition, checked and normalised: every element named once, every form a
+    library form of the use it is asked for, every parameter the form's own. Geometry
+    (fit, overlap, access, ground) is the compiler's and comes back as findings."""
+    if not isinstance(comp, dict):
+        raise DesignError("composition is an object: programme, spaces, groups, "
+                          "buildings, paths")
+    c = copy.deepcopy(comp)
+    ids: dict = {}
+
+    def claim(i, where):
+        if not isinstance(i, str) or not i:
+            raise DesignError(f"{where}.id is a short name")
+        if i in ids:
+            raise DesignError(f"{where}.id {i!r} is also {ids[i]}")
+        ids[i] = where
+    for i, p in enumerate(c.get("programme") or []):
+        w = f"composition.programme[{i}]"
+        if p.get("use") not in USES:
+            raise DesignError(f"{w}.use is one of {USES}, not {p.get('use')!r}")
+        if p.get("source", "inferred") not in ("request", "inferred"):
+            raise DesignError(f"{w}.source is `request` or `inferred`")
+        p["source"] = p.get("source", "inferred")
+        p["count"] = int(_num(p.get("count", 1), f"{w}.count", 0, 400))
+    for i, s in enumerate(c.get("spaces") or []):
+        w = f"composition.spaces[{i}]"
+        claim(s.get("id"), w)
+        if s.get("kind") not in SPACE_KINDS:
+            raise DesignError(f"{w}.kind is one of {sorted(SPACE_KINDS)}, not "
+                              f"{s.get('kind')!r}")
+        s["at"] = _pair(s.get("at"), f"{w}.at", -2048, 2048)
+        s["size"] = _pair(s.get("size"), f"{w}.size", 3, 256, integer=True)
+        form = SPACE_KINDS[s["kind"]]
+        decl = library_form(form)
+        if decl is None:
+            raise DesignError(f"{w}.kind {s['kind']!r}: its form `{form}` is not in the "
+                              f"library")
+        s["params"] = check_params(form, decl, s.get("params") or {}, w)
+    for i, g in enumerate(c.get("groups") or []):
+        claim(g.get("id"), f"composition.groups[{i}]")
+    for i, p in enumerate(c.get("paths") or []):
+        w = f"composition.paths[{i}]"
+        claim(p.get("id"), w)
+        if p.get("rank", "lane") not in PATH_RANKS:
+            raise DesignError(f"{w}.rank is one of {sorted(PATH_RANKS)}")
+        p["rank"] = p.get("rank", "lane")
+        p["width"] = int(_num(p.get("width", 3 if p["rank"] != "path" else 2),
+                              f"{w}.width", 1, 9))
+        pts = p.get("points") or []
+        if len(pts) < 2:
+            raise DesignError(f"{w}.points: at least two [dx, dz]")
+        p["points"] = [_pair(q, f"{w}.points[{j}]", -2048, 2048) for j, q in
+                       enumerate(pts)]
+    groups = {g["id"] for g in c.get("groups") or []}
+    for i, b in enumerate(c.get("buildings") or []):
+        w = f"composition.buildings[{i}]"
+        claim(b.get("id"), w)
+        decl = library_form(b.get("form"))
+        if decl is None or decl.get("kind") != "plot":
+            raise DesignError(f"{w}.form: {b.get('form')!r} is not a building form in the "
+                              f"library (types/<name>.py)")
+        fn = decl.get("function")
+        if b.get("use") not in USES:
+            raise DesignError(f"{w}.use is one of {USES}, not {b.get('use')!r}")
+        if fn != b["use"]:
+            raise DesignError(f"{w}: `{b['form']}` is a "
+                              f"{fn + ' form' if fn else 'form with no declared use'}, "
+                              f"not a {b['use']} building; choose a form whose function is "
+                              f"{b['use']} (the forms table), or author one")
+        b["params"] = check_params(b["form"], decl, b.get("params") or {}, w)
+        b["at"] = _pair(b.get("at"), f"{w}.at", -2048, 2048)
+        if b.get("size") is not None:
+            b["size"] = _pair(b["size"], f"{w}.size", 3, 128, integer=True)
+        if b.get("group") is not None and b["group"] not in groups:
+            raise DesignError(f"{w}.group {b['group']!r} is not a group")
+        if b.get("voice") is not None:
+            from . import voices
+            if b["voice"] not in voices.names():
+                raise DesignError(f"{w}.voice {b['voice']!r} is not a voice in the library")
+    for i, b in enumerate(c.get("buildings") or []):
+        f = b.get("faces")
+        if f is not None and f not in _CARDINAL and f not in ids:
+            raise DesignError(f"composition.buildings[{i}].faces: a side "
+                              f"({', '.join(_CARDINAL)}) or a space or path id, not {f!r}")
+    for i, g in enumerate(c.get("groups") or []):
+        a = g.get("around")
+        if a is not None and a not in ids:
+            raise DesignError(f"composition.groups[{i}].around {a!r} names nothing")
+    if not (c.get("buildings") or c.get("spaces")):
+        raise DesignError("composition: nothing is placed (no buildings, no spaces)")
+    for k in ("programme", "spaces", "groups", "buildings", "paths"):
+        c[k] = c.get(k) or []
+    return c
 
 
 def _check_forms(grain: str, params: dict, where: str) -> None:

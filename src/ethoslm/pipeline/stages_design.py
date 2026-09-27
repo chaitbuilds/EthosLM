@@ -116,9 +116,12 @@ def site_candidates(rnd, radii=None) -> list:
     out = _p(rnd, "sites")
     os.makedirs(out, exist_ok=True)
     want = [b for b in (_setting(rnd).get("biome") or []) if b != "any"]
+    relief = _setting(rnd).get("relief")
     have_biomes = ensure_biomes(rnd) if want else atlas.has_biomes(_atlas_dir(rnd))
     key = json.dumps({"radii": radii, "atlas": atlas.coverage(_atlas_dir(rnd)),
-                      "biomes": want if have_biomes else None}, sort_keys=True)
+                      "biomes": want if have_biomes else None, "relief": relief,
+                      "prefer": atlas.RELIEF_PREFER.get(relief or "")},
+                     sort_keys=True)
     have = _jload(os.path.join(out, "sites.json"))
     if have and have.get("key") == key:
         return have["sites"]
@@ -129,13 +132,15 @@ def site_candidates(rnd, radii=None) -> list:
         for n, c in enumerate(atlas.scan_sites(R, co=co, stride=int(cfg.get("stride", 64)),
                                                water=tuple(cfg.get("water", (0.0, 0.25))),
                                                excluded=excl, top=3,
-                                               biomes=want if have_biomes else None)):
+                                               biomes=want if have_biomes else None,
+                                               relief=relief)):
             sid = f"r{R}_{n}"
             c["id"] = sid
             c["map"] = site_map(rnd, c, os.path.join(out, f"{sid}.png"))
             sites.append(c)
     json.dump({"key": key, "sites": sites,
-               "setting": {"biome": want, "held": bool(want and have_biomes)}},
+               "setting": {"biome": want, "held": bool(want and have_biomes),
+                           "relief": relief}},
               open(os.path.join(out, "sites.json"), "w"), indent=1)
     return sites
 
@@ -384,9 +389,14 @@ def _spec_note(rnd) -> str:
     parts = [f"kind {s.get('kind')}, form {s.get('form')}, structures band "
              f"{s.get('size_band')} (the spec's programme; the design sets the extent)"]
     for r in rings:
-        parts.append(f"  - part `{r.get('name')}` ({r.get('relation')}): density "
+        parts.append(f"  - part `{r.get('name')}` ({r.get('kind')} {r.get('family')}, "
+                     f"{r.get('relation')}{' of ' + r['of'] if r.get('of') else ''}, "
+                     f"{r.get('structures') or 0} structures): density "
                      f"{r.get('density')}, walled {bool(r.get('walled'))}, voice "
-                     f"{r.get('voice')}; {(r.get('notes') or '')[:260]}")
+                     f"{r.get('voice')}"
+                     + (f", character {json.dumps(r['character'])}" if r.get("character")
+                        else "")
+                     + f"; {(r.get('notes') or '')[:260]}")
     return "\n".join(parts)
 
 
@@ -413,6 +423,10 @@ Every binding read reaches the design. A **hierarchy** read is realised through 
 silhouette, approach and subordination, not only size: state each in the design's
 `hierarchy` list (what dominates what, by which means) so the compiler can measure it
 and the inspection can judge it. A request with no hierarchy read asks for none.
+
+## How this place is planned
+
+{planning}
 
 ## Visual references (look at them before you design)
 
@@ -454,7 +468,7 @@ and across the site, never as a fraction of the side.
 Voice names you may use: {voices}
 
 {schema}
-
+{composition}
 ## Who decides what
 
 - **You decide:** {model}
@@ -620,9 +634,149 @@ def stage_design_references(rnd, be, results: dict) -> dict:
                   "identity-critical views, their evidence and the reference brief")
 
 
+#: what a planning choice's design is made of: retired together when the choice changes
+_PLANNED_OUTPUTS = ("design.proposals.json", "design_prompt.md", "design.adopt.json",
+                    "design_adopt_prompt.md", "design.json", "design.revision.json",
+                    "design_revision_prompt.md", "composition.built.json")
+
+
+def planning_record(rnd) -> dict | None:
+    return _jload(rnd.rel("planning.json"))
+
+
+def stage_planning(rnd, be, results: dict) -> dict:
+    """How this place is planned (`ethoslm.planning`): repeated fabric, individual
+    composition or both, from the spec's parts and what the library can express --
+    recorded with its reasons before the design job is written.
+
+    Kept on resume while its inputs (the spec's planning fields and the library's
+    capability) are unchanged. Where they change, the choice is made again; if it
+    changes, the design made under the old one is retired to `design/history/` so the
+    design job is asked afresh and nothing stale is compiled or built."""
+    from .. import planning
+    spec = rnd.place_spec()
+    if not spec:
+        return {"status": "error", "stop": True,
+                "error": "no place spec: planning reads the spec's parts"}
+    got = planning.choose(spec, ROOT)
+    p = rnd.rel("planning.json")
+    was = _jload(p)
+    if was and was.get("inputs") == got["inputs"]:
+        return {"strategy": was["strategy"], "kept": True, "why": was["why"],
+                "unsupported": was.get("unsupported") or []}
+    retired = []
+    if was and planning.digest(was) != planning.digest(got):
+        stamp = time.strftime("%Y%m%dT%H%M%S")
+        dest = _p(rnd, "history", f"planning-{was['strategy']}-{stamp}")
+        os.makedirs(dest, exist_ok=True)
+        for f in _PLANNED_OUTPUTS:
+            if os.path.exists(rnd.rel(f)):
+                shutil.move(rnd.rel(f), os.path.join(dest, f))
+                retired.append(f)
+        shutil.copyfile(p, os.path.join(dest, "planning.json"))
+        got["replaces"] = {"strategy": was["strategy"], "retired": retired,
+                           "to": os.path.relpath(dest, ROOT)}
+    elif was:
+        got["note"] = "its inputs changed and the choice did not: the design stands"
+    got["t"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    os.makedirs(rnd.state, exist_ok=True)
+    json.dump(got, open(p, "w"), indent=1)
+    print(f"   planning: {got['strategy']} -- {got['why']}", flush=True)
+    for u in got["unsupported"]:
+        print(f"   unsupported: {u['part']}: {u['why']}", flush=True)
+    return {"strategy": got["strategy"], "why": got["why"], "retired": retired,
+            "unsupported": got["unsupported"]}
+
+
+def _strategy(rnd) -> str:
+    """The recorded planning strategy; `fabric` where a round predates the choice (every
+    design before it was fabric)."""
+    return (planning_record(rnd) or {}).get("strategy") or "fabric"
+
+
+def _request_reads(rnd) -> list:
+    """The interpretation's binding reads a programme answers (functions and features)."""
+    doc = _jload(rnd.rel("interpretation.json")) or {}
+    return [r for r in doc.get("reads") or []
+            if r.get("hard") and r.get("kind") in ("function", "feature")]
+
+
+def check_programme(rnd, design: dict) -> list:
+    """Why a composition's programme does not answer the request: a `request` entry
+    citing no read of it, or a binding read of a function or feature no entry cites."""
+    comp = design.get("composition")
+    if not comp:
+        return []
+    reads = {r.get("id"): r for r in _request_reads(rnd)}
+    errs = []
+    cited = set()
+    for i, p in enumerate(comp.get("programme") or []):
+        ids = p.get("reads") or []
+        cited |= set(ids)
+        if p.get("source") == "request" and not ids:
+            errs.append(f"composition.programme[{i}] ({p.get('use')}) says the request "
+                        f"asks for it and cites no read")
+        bad = [r for r in ids if r not in reads and r not in _all_read_ids(rnd)]
+        if bad:
+            errs.append(f"composition.programme[{i}] cites {bad}, not reads of this request")
+    for rid, r in reads.items():
+        if rid not in cited and not _read_carried(r, comp):
+            errs.append(f"the request's `{rid}` ({r.get('says')}) is carried by no programme "
+                        f"entry or space: cite it where the place answers it")
+    return errs
+
+
+def _all_read_ids(rnd) -> set:
+    doc = _jload(rnd.rel("interpretation.json")) or {}
+    return {r.get("id") for r in doc.get("reads") or []}
+
+
+def _read_carried(read: dict, comp: dict) -> bool:
+    """A feature read the composition answers by an element named for it (a space whose
+    id or kind is the feature, e.g. a green)."""
+    want = str((read.get("wants") or {}).get("feature") or "").lower()
+    if not want:
+        return False
+    for s in comp.get("spaces") or []:
+        if want in (s.get("kind"), s.get("id")) or want in str(s.get("id")):
+            return True
+    return False
+
+
+def site_sheet(rnd, site: dict, radius: int, path: str, step: int = 8) -> str:
+    """The ground a composition is written on: heights every `step` blocks as local
+    offsets from the candidate's centre, water marked `~`, as a table -- the grid the
+    composition's `at` and `points` are read against. Written beside the map."""
+    from .. import atlas
+    cx, cz = site["centre"]
+    R = int(radius)
+    n = R // step
+    offs = list(range(-n * step, n * step + 1, step))
+    g, ws, wet = atlas.ground(cx - R, cz - R, 2 * R + 1, 2 * R + 1, _atlas_dir(rnd))
+    rows = ["dz \\ dx " + " ".join(f"{o:>4d}" for o in offs)]
+    for dz in offs:
+        cells = []
+        for dx in offs:
+            i, j = dx + R, dz + R
+            if math.hypot(dx, dz) > R + step / 2:
+                cells.append("    ")
+            elif wet[i, j]:
+                cells.append(f"{'~' + str(int(ws[i, j])):>4}")
+            else:
+                cells.append(f"{int(g[i, j]):>4d}")
+        rows.append(f"{dz:>7d} " + " ".join(cells))
+    text = (f"Site {site.get('id')} centre {site['centre']} radius {R}: ground height every "
+            f"{step} blocks at local offsets [dx, dz] from the centre (+x east, +z south); "
+            f"`~y` is water at surface y.\n\n```\n" + "\n".join(rows) + "\n```\n")
+    open(path, "w").write(text)
+    return text
+
+
 def stage_design(rnd, be, results: dict) -> dict:
-    """The design job, staged; or its answer, read and checked."""
-    from .. import citydesign as CD, voices as V
+    """The design job, staged; or its answer, read and checked. The job is written for
+    the recorded planning strategy: a composed place is given the composition schema
+    and a height sheet of each candidate site, in the offsets it is written in."""
+    from .. import citydesign as CD, planning, voices as V
     os.makedirs(_p(rnd), exist_ok=True)
     ans = rnd.rel("design.proposals.json")
     prompt = rnd.rel("design_prompt.md")
@@ -636,6 +790,11 @@ def stage_design(rnd, be, results: dict) -> dict:
                 errs.append(f"proposals[{i}] ({pr.get('id')}): {e}")
             if not (pr.get("site", {}).get("candidate") or pr.get("site", {}).get("centre")):
                 errs.append(f"proposals[{i}] ({pr.get('id')}): site.candidate is required")
+            why = planning.expects(_strategy(rnd), pr)
+            if why:
+                errs.append(f"proposals[{i}] ({pr.get('id')}): {why}")
+            errs.extend(f"proposals[{i}] ({pr.get('id')}): {e}"
+                        for e in check_programme(rnd, pr))
         if not doc.get("proposals"):
             errs.append("no proposals")
         if errs:
@@ -677,7 +836,36 @@ def stage_design(rnd, be, results: dict) -> dict:
                        for g, v in CD.GRAINS.items())
     ground = "\n".join(f"- `{g}`: {v}" for g, v in CD.GROUND.items())
     from .. import atlas
-    text = DESIGN_PROMPT.format(
+    strategy = _strategy(rnd)
+    rec_p = planning_record(rnd) or {}
+    plan_txt = (f"Strategy **`{strategy}`** (`{os.path.relpath(rnd.rel('planning.json'), ROOT)}`): "
+                f"{rec_p.get('why') or 'no planning record; every design before it was fabric'}.\n\n"
+                + "\n".join(f"- `{r['part']}`: {r['planning']} -- {r['why']}"
+                            for r in rec_p.get("parts") or [])
+                + ("\n\nUnsupported: " + "; ".join(f"`{u['part']}`: {u['why']}" for u in
+                                                   rec_p.get("unsupported") or [])
+                   if rec_p.get("unsupported") else ""))
+    plan_txt += {"composed": "\n\nEvery ring is of grain `composed` (or `open`) and the "
+                             "design carries a `composition`: you place each building, "
+                             "outdoor room and path, each for a use you state in the "
+                             "programme. Decide what the place needs and why before "
+                             "where anything goes; distinguish what the request names "
+                             "from what you infer. Repetition of one ordinary form is "
+                             "fine where it is the households; variety comes from uses "
+                             "and relationships, not from dimensions or colour.",
+                 "mixed": "\n\nThe repeated parts are rings or wards in a fabric grain; "
+                          "the individually planned parts stand in a ring or ward of grain "
+                          "`composed`, described by the design's `composition`.",
+                 "fabric": ""}[strategy]
+    comp_doc = ""
+    if strategy in ("composed", "mixed"):
+        sheets = []
+        for s_ in sites[:6]:
+            sheets.append(site_sheet(rnd, s_, int(s_["radius"]),
+                                     _p(rnd, "sites", f"{s_['id']}.heights.md")))
+        comp_doc = ("\n" + CD.COMPOSITION_DOC + "\n### The ground of each candidate, in "
+                    "the offsets a composition is written in\n\n" + "\n".join(sheets))
+    text = DESIGN_PROMPT.format(planning=plan_txt, composition=comp_doc,
         sentence=rnd.sentence, spec=_spec_note(rnd), claims=_claims(rnd), refs=_refs(rnd),
         meaning=_meaning(rnd), ref_brief=_ref_brief(rnd), baseline=_baseline_note(rnd),
         review=review, sites=site_rows, rough=atlas.ROUGH, forms=_forms_card(),
@@ -794,6 +982,7 @@ def stage_design_compare(rnd, be, results: dict) -> dict:
     for pr in doc["proposals"]:
         t0 = time.perf_counter()
         city, site = compile_on_site(rnd, pr)
+        _realize(rnd, city)
         png = C.preview(city, os.path.join(out, f"{pr['id']}.png"))
         m = city.metrics
         from .. import designground as DG
@@ -817,6 +1006,8 @@ def stage_design_compare(rnd, be, results: dict) -> dict:
                      "finding_counts": m["findings"], "cost": _cost(city),
                      "preview": os.path.relpath(png, ROOT),
                      "seconds": round(time.perf_counter() - t0, 1)})
+        if getattr(city, "composition", None) is not None:
+            rows[-1]["composition"] = _composition_summary(city.composition)
         if _cfg(rnd).get("massing", True) and getattr(city, "monument", None):
             mdir = os.path.join(out, f"{pr['id']}.massing")
             mrec = _jload(os.path.join(mdir, "massing.json"))
@@ -856,6 +1047,24 @@ def stage_design_compare(rnd, be, results: dict) -> dict:
         design["palette"] = {**(design.get("palette") or {}), **adopt["palette"]}
     design["adopted"] = {"from": chosen["id"], "set": adopt.get("set") or {},
                          "why": adopt.get("why")}
+    rec_p = planning_record(rnd)
+    if rec_p:
+        from .. import planning
+        design["planning"] = {"strategy": rec_p["strategy"],
+                              "digest": planning.digest(rec_p)}
+    # **An adoption is re-derived on every resume, and the revisions made since are
+    # kept.** This stage runs whenever the round is resumed; it used to write the bare
+    # adopted proposal over `design.json`, so every revision answered at resolution was
+    # lost on the next resume and its findings came back. The adopted proposal (by
+    # content), its adoption edits and its planning are what the revisions were made on:
+    # while those are unchanged the revisions are replayed onto it, in order.
+    design["adopted"]["proposal"] = CD.digest(chosen)
+    was = _jload(rnd.rel("design.json")) or {}
+    if was.get("revisions") and was.get("adopted") == design["adopted"] and \
+            was.get("planning") == design.get("planning"):
+        for rv in was["revisions"]:
+            design = apply_set(design, rv.get("set") or {})
+        design["revisions"] = list(was["revisions"])
     CD.read(design)
     _write_design(rnd, design, "adopted from the compared proposals")
     return {"compared": [r["id"] for r in rows], "adopted": chosen["id"],
@@ -899,6 +1108,179 @@ def apply_set(design: dict, sets: dict) -> dict:
     return d
 
 
+#: how far a lot is grown, per side, looking for one that delivers what was asked
+REALIZE_GROWTH = 6
+
+
+def _probe_omits(tname, w, d, params, seed, voice, front, at, cache) -> list:
+    """What `tname` built on a flat `w`x`d` lot at `at` facing `front` leaves out of
+    `params` (`construction.outcome`'s `omitted`), cached by every input of the probe."""
+    key = json.dumps([tname, w, d, params, seed, voice, front, at], sort_keys=True)
+    if key not in cache:
+        from .. import construction, pipeline
+        decl = pipeline.load_type(os.path.join(ROOT, "types", f"{tname}.py"))
+        b, sited, res = construction.probe_build(tname, w, d, params, seed=seed,
+                                                 voice=voice, front=front, at=at)
+        out = construction.outcome(b, {**sited, "name": "probe", "kind": "plot",
+                                       "params": params, "build": res}, decl, params)
+        cache[key] = sorted(out.get("omitted") or []) if res.get("ok") else ["stands"]
+    return cache[key]
+
+
+def realization(rnd, city) -> list:
+    """Findings for composed buildings whose form, on the lot the design gave it, would
+    not deliver what the design chose for it: a storey count, an outshot, dormers -- a
+    parameter the form reads and the probe measures as omitted. Each is probed on flat
+    ground at its own corner, seed, voice and front; where a lot within `REALIZE_GROWTH`
+    grown from that corner delivers
+    it, the finding names that lot. A label is not a built difference: the choice either
+    stands in the blocks or the design is told."""
+    from .. import cityresolve as C
+    from ..buildlib import site_pad_rect
+    from .stages_plan import needs_footprint_failure
+    comp = city.design.get("composition") or {}
+    idx = {b["id"]: i for i, b in enumerate(comp.get("buildings") or [])}
+    p = _p(rnd, "probes.json")
+    cache = _jload(p, {}) or {}
+    n0 = len(cache)
+    out = []
+    for lf in city.leaves:
+        if lf.get("kind") != "plot" or not lf.get("composed") or not lf.get("chosen"):
+            continue
+        rect = (int(lf["x0"]), int(lf["z0"]), int(lf["x1"]), int(lf["z1"]))
+        w, d = rect[2] - rect[0] + 1, rect[3] - rect[1] + 1
+        params = dict(lf.get("params") or {})
+        front = lf.get("front") or "south"
+        args = (params, int(lf.get("seed") or 1), lf.get("voice"), front)
+
+        def omits(r):
+            # the probe lot whose pad is this lot's pad: the probe insets by the
+            # library's two where a compiled lot is inset by one, so it is two wider
+            # each way and its corner two out from the pad's (a form may read its own
+            # corner)
+            px0, pz0, px1, pz1 = site_pad_rect(*r, [], 1)
+            return _probe_omits(lf["type"], px1 - px0 + 5, pz1 - pz0 + 5, *args,
+                                [px0 - 2, pz0 - 2], cache)
+        missed = [k for k in omits(rect) if k in lf["chosen"] or k == "stands"]
+        if not missed:
+            continue
+        # grown along its front and back from it, never into the way its door is on
+        nd = C._needs_of(lf["type"])
+        better = None
+        # ...and slid along its front by a block or two: where a form reads its own
+        # corner, the same lot one block over is another lot
+        for k in range(0, REALIZE_GROWTH + 1):
+            for (gw, gd, sl) in sorted({(k, j, t) for j in range(0, k + 1)
+                                        for t in (-2, -1, 0, 1, 2)}
+                                       | {(j, k, t) for j in range(0, k + 1)
+                                          for t in (-2, -1, 0, 1, 2)},
+                                       key=lambda g: ((w + g[0]) * (d + g[1]), abs(g[2]),
+                                                      g)):
+                if k == 0 and sl == 0:
+                    continue
+                if front in ("north", "south"):
+                    r = (rect[0] + sl, rect[1] - (gd if front == "south" else 0),
+                         rect[2] + gw + sl, rect[3] + (gd if front == "north" else 0))
+                else:
+                    r = (rect[0] - (gw if front == "east" else 0), rect[1] + sl,
+                         rect[2] + (gw if front == "west" else 0), rect[3] + gd + sl)
+                if not _clear_for(city, r, rect):
+                    continue                  # onto another element, a way or off the land
+                if nd and needs_footprint_failure(
+                        {"kind": "plot", "x0": r[0], "z0": r[1], "x1": r[2], "z1": r[3],
+                         "site": {"pad": list(site_pad_rect(*r, [], 1)), "floor": 0}}, nd):
+                    continue                  # a lot the form's own sweep refuses
+                if not [m for m in omits(r) if m in missed]:
+                    better = r
+                    break
+            if better:
+                break
+        el = lf.get("element")
+        i = idx.get(el)
+        asked = ", ".join(f"{m} {params.get(m)!r}" for m in missed if m != "stands")
+        # the grown lot as a design writes it: its size and its centre's offset
+        r = better or rect
+        at = [r[0] - city.cx + (r[2] - r[0]) / 2, r[1] - city.cz + (r[3] - r[1]) / 2]
+        better = (r[2] - r[0] + 1, r[3] - r[1] + 1) if better else None
+        out.append({"severity": "blocking",
+                    "field": f"composition.buildings[{i}].size",
+                    "what": (f"{el} ({lf['type']}) is asked for {asked or 'its form'} on a "
+                             f"{w}x{d} lot and the form, probed there, leaves "
+                             f"{', '.join(missed)} out"
+                             + (f"; a lot of {better[0]}x{better[1]}, grown back from its "
+                                f"front or slid along it, delivers it (size {list(better)} at "
+                                f"{at}), or move or re-choose" if better else
+                                f"; no lot up to {w + REALIZE_GROWTH}x{d + REALIZE_GROWTH} "
+                                f"does: choose another value or form")),
+                    "element": el, "lot": [w, d], "missed": missed,
+                    "delivers_at": list(better) if better else None,
+                    "at": at if better else None})
+    if len(cache) != n0:
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        json.dump(cache, open(p, "w"))
+    return out
+
+
+def _realization_digest(design: dict) -> str:
+    """What a composed design's realization findings depend on beyond the compiler: the
+    probe's own code and the forms it builds. Empty for a design with no composition, so
+    a fabric design's resolution key is what it always was."""
+    comp = design.get("composition")
+    if not comp:
+        return ""
+    import inspect
+    h = hashlib.sha256((inspect.getsource(realization) + inspect.getsource(_probe_omits))
+                       .encode())
+    forms = sorted({b.get("form") for b in comp.get("buildings") or [] if b.get("form")})
+    return "." + h.hexdigest()[:8] + _code_digest(forms, [])[:8]
+
+
+def _clear_for(city, r, own) -> bool:
+    """Whether a lot `r` stands only on its own lot `own` and on composed land nobody
+    placed anything on (and keeps its forecourt's column): a suggestion a design can take."""
+    from .. import cityresolve as C
+    x0, z0, x1, z1 = r
+    if not (city.inside(x0, z0) and city.inside(x1, z1)):
+        return False
+    sl = (slice(x0 - city.X0, x1 - city.X0 + 1), slice(z0 - city.Z0, z1 - city.Z0 + 1))
+    xs = np.arange(x0, x1 + 1)[:, None]
+    zs = np.arange(z0, z1 + 1)[None, :]
+    mine = (xs >= own[0]) & (xs <= own[2]) & (zs >= own[1]) & (zs <= own[3])
+    # the composed land left as found is owned open ground once resolved; an outdoor
+    # room is open ground too, and is not free
+    rooms = np.zeros(mine.shape, bool)
+    for sp in city.comp["spaces"].values():
+        rooms |= sp["mask"][sl]
+    free = np.isin(city.use[sl], (C.LAND, C.OPEN)) & city.comp["land"][sl] & ~rooms
+    return bool((mine | free).all())
+
+
+def _realize(rnd, city) -> None:
+    """A composed design's realization findings, added to the city's own."""
+    if getattr(city, "composition", None) is None:
+        return
+    got = realization(rnd, city)
+    if not got:
+        return
+    city.findings.extend(got)
+    city.composition["findings"] = city.composition.get("findings", []) + got
+    city.metrics["findings"] = {sv: sum(1 for f in city.findings if f["severity"] == sv)
+                                for sv in ("blocking", "design", "info")}
+
+
+def _composition_summary(rep: dict) -> dict:
+    """The composition report, as the comparison and the adoption read it."""
+    laid = [b for b in rep["buildings"] if b.get("laid")]
+    return {"uses": rep["uses"], "forms": rep["forms"],
+            "buildings": {"laid": len(laid), "asked": len(rep["buildings"])},
+            "spaces": [{k: sp.get(k) for k in ("id", "kind", "columns", "addressed_by",
+                                                "lined", "laid")} for sp in rep["spaces"]],
+            "access": rep["access"],
+            "faces_kept": sum(1 for b in laid if b.get("addresses_asked") is True),
+            "faces_missed": [b["id"] for b in laid if b.get("addresses_asked") is False],
+            "unplaced_columns": rep.get("unplaced_columns")}
+
+
 def _compare_md(rec: dict) -> str:
     cur = rec["current"]
     lines = [(f"Accepted design ({cur['name']}): {cur['side']} across, {cur['area']:,} "
@@ -929,6 +1311,20 @@ def _compare_md(rec: dict) -> str:
         if dm:
             lines.append(f"- the monument asks an interior radius of {dm.get('needs_r_in')} "
                          f"(the ring gives {dm.get('r_in')}; axis depth {dm.get('depth')})")
+        cp = r.get("composition")
+        if cp:
+            lines.append(f"- composition: {cp['buildings']['laid']}/{cp['buildings']['asked']} "
+                         f"buildings laid, uses {json.dumps(cp['uses'])}, forms "
+                         f"{', '.join(cp['forms'])}; doors on a network "
+                         f"{cp['access']['on_network']}/{cp['access']['doors']}, reaching the "
+                         f"boundary {cp['access']['reach_boundary']}, networks "
+                         f"{cp['access']['networks']}; faces kept {cp['faces_kept']}"
+                         + (f", missed {cp['faces_missed']}" if cp['faces_missed'] else ""))
+            for sp in cp["spaces"]:
+                lines.append(f"  - space {sp['id']} ({sp['kind']}): "
+                             + (f"{sp['columns']} columns, addressed by "
+                                f"{', '.join(sp['addressed_by']) or 'nothing'}, rim lined "
+                                f"{sp['lined']:.0%}" if sp.get("laid") else "not laid"))
         for ring in r["rings"]:
             lines.append(f"- {ring['name']}: width {ring['width']}, level {ring['level']}, "
                          f"built {ring['built_share']:.0%}, streets "
@@ -956,13 +1352,29 @@ def stage_design_resolve(rnd, be, results: dict) -> dict:
                                                    "why": rev.get("why")})
         _write_design(rnd, design, f"revision: {rev.get('why')}")
         os.replace(rev_p, _p(rnd, "history", f"revision.{int(time.time())}.json"))
-    dg = CD.digest(design) + "." + _compiler_digest()
+    stamp = design.get("planning")
+    rec_p = planning_record(rnd)
+    if stamp and rec_p:
+        from .. import planning
+        if stamp.get("digest") != planning.digest(rec_p):
+            return {"status": "error", "stop": True,
+                    "error": (f"the adopted design was made under planning "
+                              f"{stamp.get('strategy')!r} and the place is now planned "
+                              f"{rec_p['strategy']!r}: resume, so the design job is asked "
+                              f"again")}
+    dg = CD.digest(design) + "." + _compiler_digest() + _realization_digest(design)
     cr = _jload(rnd.rel("city.json"))
     if cr and cr.get("resolved_by") == dg and os.path.exists(rnd.rel("plan.json")):
+        # unchanged since it was resolved -- and a resolution that was handed back is
+        # still handed back: its blocking findings stand until the design changes
+        blocking = [f for f in cr.get("findings") or [] if f.get("severity") == "blocking"]
+        if blocking:
+            return _revision_job(rnd, blocking, rev_p)
         return {"skipped": "the adopted design is unchanged since it was resolved",
                 "design_digest": dg, "regions": len(cr.get("regions") or {})}
     t0 = time.perf_counter()
     city, site = compile_on_site(rnd, design)
+    _realize(rnd, city)
     rec = C.save(city, rnd.state)
     rec["resolved_by"] = dg
     json.dump(rec, open(rnd.rel("city.json"), "w"), indent=1)
@@ -1006,17 +1418,21 @@ def stage_design_resolve(rnd, be, results: dict) -> dict:
           f"{city.metrics['dwellings']} dwellings, {len(city.regions)} regions, findings "
           f"{city.metrics['findings']} in {time.perf_counter() - t0:.1f}s", flush=True)
     if blocking:
-        prompt = rnd.rel("design_revision_prompt.md")
-        open(prompt, "w").write(
-            "# The adopted design has findings the compiler cannot resolve\n\n" +
-            "\n".join(f"- `{f['field']}`: {f['what']}" for f in blocking) +
-            "\n\nWrite `" + os.path.relpath(rev_p, ROOT) + "` as "
-            '`{"set": {"dotted.path": value}, "why": "..."}` to revise the named fields.\n')
-        return _needs("design_revision", prompt, rev_p, "blocking design findings",
-                      findings=blocking)
+        return _revision_job(rnd, blocking, rev_p)
     return {"design": design.get("id"), "design_digest": dg, "leaves": len(city.leaves),
             "regions": len(city.regions), "metrics": city.metrics,
             "findings": city.metrics["findings"], "plan": rnd.rel("plan.json")}
+
+
+def _revision_job(rnd, blocking: list, rev_p: str) -> dict:
+    prompt = rnd.rel("design_revision_prompt.md")
+    open(prompt, "w").write(
+        "# The adopted design has findings the compiler cannot resolve\n\n" +
+        "\n".join(f"- `{f['field']}`: {f['what']}" for f in blocking) +
+        "\n\nWrite `" + os.path.relpath(rev_p, ROOT) + "` as "
+        '`{"set": {"dotted.path": value}, "why": "..."}` to revise the named fields.\n')
+    return _needs("design_revision", prompt, rev_p, "blocking design findings",
+                  findings=blocking)
 
 
 # ---------------------------------------------------------------- regions
@@ -1170,9 +1586,59 @@ def stage_regions(rnd, be, results: dict) -> dict:
         out["regions"][rid] = {k: r.get(k) for k in ("built", "failed", "seconds",
                                                      "blocks", "ground")}
         (out["built"] if r.get("ok") else out["failed"]).append(rid)
+    if not stream and rec.get("composition"):
+        out["composition"] = composition_built(rnd, rec)
     json.dump(out, open(rnd.rel("regions.json" if not stream else
                                 f"regions.{stream.replace('/', 'of')}.json"), "w"), indent=1)
     return out
+
+
+def composition_built(rnd, rec: dict) -> dict:
+    """The composition as construction delivered it, read off the regions' own records:
+    every building built as the form and parameters its use asked for, its door where
+    the plan put it, and what it emitted; every outdoor room laid. Written to
+    `composition.built.json`; a label is not a built difference, so only what the
+    records show is reported."""
+    rows = {}
+    for rid in rec.get("regions") or {}:
+        rj = _jload(rnd.rel("regions", rid, "region.json")) or {}
+        for r in rj.get("rows") or []:
+            rows[r.get("part")] = r
+    comp = rec["composition"]
+    out_b = []
+    for b in comp["buildings"]:
+        if not b.get("laid"):
+            out_b.append({"id": b["id"], "use": b["use"], "status": "not laid"})
+            continue
+        r = rows.get(b["leaf"]) or {}
+        d = r.get("delivered") or {}
+        out_b.append({"id": b["id"], "use": b["use"], "form": b["form"],
+                      "params": b.get("params"), "status": r.get("status") or "not built",
+                      "type_built": r.get("type"), "door": r.get("door"),
+                      "door_planned": b.get("door"), "storeys": d.get("storeys"),
+                      "features": d.get("features") or {}, "addresses": b.get("addresses"),
+                      "faces": b.get("faces"), "error": r.get("error"),
+                      # what the design chose that the blocks do not show
+                      "not_delivered": sorted(set(d.get("omitted") or [])
+                                              & set(b.get("chosen") or []))})
+    spaces = []
+    for sp in comp["spaces"]:
+        got = [r for n, r in rows.items() if str(n).startswith(f"c_{sp['id']}_")
+               or n == f"c_{sp['id']}"]
+        spaces.append({"id": sp["id"], "kind": sp["kind"], "tiles": len(got),
+                       "built": sum(1 for r in got if r.get("status") == "built")})
+    built = [b for b in out_b if b.get("status") == "built"]
+    res = {"buildings": out_b, "spaces": spaces,
+           "built": len(built), "laid": sum(1 for b in comp["buildings"] if b.get("laid")),
+           "uses_built": {u: sum(1 for b in built if b["use"] == u)
+                          for u in sorted({b["use"] for b in built})},
+           "forms_built": sorted({b["type_built"] for b in built if b.get("type_built")}),
+           "wrong_form": [b["id"] for b in built if b.get("type_built") != b.get("form")],
+           "not_delivered": {b["id"]: b["not_delivered"] for b in built
+                             if b.get("not_delivered")}}
+    json.dump(res, open(rnd.rel("composition.built.json"), "w"), indent=1)
+    return {k: res[k] for k in ("built", "laid", "uses_built", "forms_built", "wrong_form",
+                                "not_delivered")}
 
 
 #: regions whose built diff is stale (its inputs moved; it is to be rebuilt), set by
@@ -1703,6 +2169,62 @@ def place_cameras(rnd, vol) -> list:
             cams.append({"name": "centre", "at": [x + 0.5, y + 1.7, zz + 0.5],
                          "look": [x + 0.5 + 40 * v[0], gc - 2, zz + 0.5 + 40 * v[1]],
                          "fov": 75, "far": 3 * R + 100, "stands": True})
+    # a composed place is also looked at the way it was composed: each place of work,
+    # gathering and worship from across what its door faces, at eye level, and the way
+    # in from where its road meets the boundary
+    comp = rec.get("composition")
+    if comp:
+        out_of = {"north": (0, -1), "south": (0, 1), "west": (-1, 0), "east": (1, 0)}
+        found = site_ground(rnd, tuple(rec["frame"]))[0]
+
+        def floor_at(x, zz):
+            """The designed ground, else the ground as found: never a canopy or roof."""
+            t = int(target[x - X0, zz - Z0])
+            return t if t > -30000 else int(found[x - X0, zz - Z0])
+        for b in comp.get("buildings") or []:
+            if b.get("use") in ("dwelling",) or not b.get("landing") or not b.get("door"):
+                continue
+            ox, oz = out_of[b["front"]]
+            lx, lz = b["landing"]
+            for k in range(22, 5, -1):
+                x, zz = lx + ox * k, lz + oz * k
+                if not (0 <= x - X0 < use.shape[0] and 0 <= zz - Z0 < use.shape[1]):
+                    continue
+                g = floor_at(x, zz)
+                y = stand(x, zz, g)
+                # on the ground, not in a tree or on a roof, and seeing the door
+                if y is None or y > g + 2 or run(x, zz, y, -ox, -oz, n=k) < k - 2:
+                    continue
+                cams.append({"name": f"at_{b['id']}", "at": [x + 0.5, y + 1.7, zz + 0.5],
+                             "look": [b["door"][0] + 0.5, (b.get("pad") or y) + 3,
+                                      b["door"][1] + 0.5],
+                             "fov": 70, "far": 3 * R + 100, "stands": True})
+                break
+        road = np.argwhere(np.isin(use, (C.ROAD,))) + [X0, Z0]
+        if len(road):
+            d = np.hypot(road[:, 0] - cx, road[:, 1] - cz)
+            ok = road[d <= 0.92 * R]
+            outer = ok[np.hypot(ok[:, 0] - cx, ok[:, 1] - cz) >= 0.5 * R]
+            best = None
+            for (x, zz) in outer[:: max(1, len(outer) // 60)]:
+                x, zz = int(x), int(zz)
+                y = stand(x, zz, floor_at(x, zz))
+                # along the road itself: toward the road a dozen blocks further in
+                ahead = ok[np.abs(np.hypot(ok[:, 0] - x, ok[:, 1] - zz) - 14) < 2]
+                if y is None or not len(ahead):
+                    continue
+                tx, tz = ahead[np.argmin(np.hypot(ahead[:, 0] - cx, ahead[:, 1] - cz))]
+                v = np.array([tx - x, tz - zz], float)
+                v /= (np.hypot(*v) or 1.0)
+                # the one that sees farthest along it: not a view of the next step
+                k = run(x, zz, y, int(round(v[0])), int(round(v[1])))
+                if best is None or k > best[0]:
+                    best = (k, x, zz, y, v)
+            if best:
+                _, x, zz, y, v = best
+                cams.append({"name": "way_in", "at": [x + 0.5, y + 1.7, zz + 0.5],
+                             "look": [x + 0.5 + 40 * v[0], y + 3, zz + 0.5 + 40 * v[1]],
+                             "fov": 72, "far": 3 * R + 100, "stands": True})
     return cams
 
 

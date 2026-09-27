@@ -332,6 +332,7 @@ def _design_stage(name):                                     # noqa: ANN202
 
 STAGES = {
     # The designed place (`pipeline/stages_design.py`).
+    "planning": _design_stage("planning"),
     "design_references": _design_stage("design_references"),
     "design": _design_stage("design"),
     "design_compare": _design_stage("design_compare"),
