@@ -1,5 +1,5 @@
-"""The fabric reset round: a strip cut is a decision with an input identity, rolled back with
-the plans it describes, and screened on admissibility before preference.
+"""A strip cut is a decision with an input identity, rolled back with the plans it
+describes, and screened on admissibility before preference.
 
     $PY scripts/test_sector_revision.py
     $PY scripts/test_sector_revision.py --case t2

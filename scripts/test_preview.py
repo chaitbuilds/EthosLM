@@ -192,12 +192,11 @@ def main():
     else:
         print("skip A6 sheet.")
 
-    # --- the colour table covers every voice on disk, not three cached towns --- The
-    # audit above reads the palettes of three towns built in 2025. The sheet's first
-    # outing stood a wall in `white_render_dark_frame` and drew it magenta: quartz, the
-    # material two committed voices render in, had no entry in the table at all. A
-    # palette audit that only reads what has already been built cannot see the voice
-    # nothing has been built in yet.
+    # --- the colour table covers every voice on disk, not three cached towns ---
+    # The palette check above reads only towns already built, and a check that reads
+    # only what has been built cannot see a voice nothing has been built in yet: a
+    # material only such a voice renders in (quartz, say) has no entry in the table
+    # and draws magenta.
     from ethoslm import prims
     import glob
     magenta = {}

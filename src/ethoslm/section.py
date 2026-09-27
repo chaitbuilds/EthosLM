@@ -55,13 +55,11 @@ CONTRAST_MEASURES = 2
 ANCHOR_TYPES = ("market", "square", "plaza")
 
 #: Types that are a court: enclosed open ground belonging to a building or a group.
-#: **The types a court can be.** `plaza` and `square` joined this list in the
-#: neighbourhood delivery round, and the reason is the round's own composition: a court
-#: a block's four ranges enclose is paved open ground, and the compiler now draws it
-#: from `district_compile.ENCLOSED_COURT_TYPES` -- paved first, because a `yard` fences
-#: its own perimeter and a court the buildings already enclose does not want a second
-#: fence. Leaving them out of this list is how the two crowded-ring courts that stood on
-#: the built section vanished from its court record between one build and the next.
+#: **The types a court can be.** `plaza` and `square` are on this list because a court
+#: a block's four ranges enclose is paved open ground, and the compiler draws it from
+#: `district_compile.ENCLOSED_COURT_TYPES` -- paved first, because a `yard` fences its
+#: own perimeter and a court the buildings already enclose does not want a second
+#: fence. Leave them out and those enclosed courts vanish from the court record.
 COURT_TYPES = ("court_large", "court_small", "courtyard_house", "yard", "garden",
                "plaza", "square")
 
@@ -116,13 +114,13 @@ def _footprint(row: dict) -> list | None:
 def _building_rect(row: dict) -> list | None:
     """**The building, as distinct from everything the part wrote.**
 
-        The neighbourhood delivery round. `emitted.footprint` is the bounding box of every
-        block a part laid, which includes the platform `site()` lays one course wider than
-        the pad all round, the eaves and the doorstep. That is the right rectangle for "how
-        much ground did this part disturb" and the wrong one for "how far apart do these two
-        houses stand": two neighbours whose *platforms* touch measure a gap of zero while
-        their walls are a column apart, and a terrace with a column of daylight between every
-        pair of houses reads as continuous.
+        `emitted.footprint` is the bounding box of every block a part laid, which includes
+        the platform `site()` lays one course wider than the pad all round, the eaves and
+        the doorstep. That is the right rectangle for "how much ground did this part
+        disturb" and the wrong one for "how far apart do these two houses stand": two
+        neighbours whose *platforms* touch measure a gap of zero while their walls are a
+        column apart, and a terrace with a column of daylight between every pair of houses
+        reads as continuous.
 
         `emitted.rects["main"]` is the type's own declaration of the building it built, and
         it is what a neighbour gap is between. Falls back to the emitted extent where a type
@@ -187,11 +185,10 @@ def _districts(state: str, plan: dict | None) -> list:
         rect = r.get("rect")
         if rect and row.get("x0") is None:
             row.update({"x0": rect[0], "z0": rect[1], "x1": rect[2], "z1": rect[3]})
-        # **The density and the form, beside the columns.** The spatial-design round: a
-        # district's *obligations* are read off its character, its arrangement and its
-        # compile record (`demand.court_obligation`), and none of those three was
-        # carried here -- so on the delivered candidate every district answered "no
-        # character" and the section could not name one court-owing subject.
+        # **The density and the form, beside the columns.** A district's *obligations*
+        # are read off its character, its arrangement and its compile record
+        # (`demand.court_obligation`); without those carried here every district answers
+        # "no character" and the section cannot name one court-owing subject.
         # `resolution.json` is the one shape that always has the density word.
         for k in ("scope_columns", "developable_columns", "allocated_columns",
                   "built_columns", "built_from", "density", "role", "character",
@@ -218,12 +215,11 @@ def _districts(state: str, plan: dict | None) -> list:
                 walk(node[key])
     walk((plan or {}).get("parts") or [])
     walk((plan or {}).get("districts") or [])
-    # **...and the character the district was actually compiled with** (the fabric reset
-    # round): where none of the three shapes carries one, the district's own plan file
-    # does. Without it a district that declared no shared court (a street composition of
-    # courtyard houses, `courtyard_share: 0`) read as owing one at its density word's
-    # registered default, and a revision that removed its houses was charged a court it
-    # never adopted.
+    # **...and the character the district was actually compiled with**: where none of
+    # the three shapes carries one, the district's own plan file does. Without it a
+    # district that declared no shared court (a street composition of courtyard houses,
+    # `courtyard_share: 0`) reads as owing one at its density word's registered default,
+    # and a revision that removed its houses is charged a court it never adopted.
     for name, row in got.items():
         if row.get("character") is None:
             pf = _load(state, f"plan.district.{name}.json") or {}
@@ -266,23 +262,20 @@ def _side_measures(side: str, prefix: str, rows: list, districts: list,
                    section: list, enclosure=None) -> dict:
     """What one side of the boundary actually built, in columns.
 
-        **Mass, and the rectangle it stands in, apart.** The neighbourhood round. Two
-        measurements here were the enclosing rectangle under a name that said otherwise, and
-        both of them decide the section's registered contrast test:
+        **Mass, and the rectangle it stands in, apart.** Two measurements here are easy to
+        take off the enclosing rectangle by mistake, and both of them decide the section's
+        registered contrast test:
 
-          * `built_columns` was `sum(_rect_area(footprint))`. The crowded side is row houses,
-            whose mass fills 0.99 of their rectangle; the calm side is courtyard houses, whose
-            rectangles **contain their courts**. So the measure that decides whether two
-            fabrics differ systematically flattered the side with the courts -- and flatters
-            it more now that the courts are a real share of the pad rather than a 2x2 light
-            well. `construction.confirm` writes `emitted.occupied_columns`; that is what
+          * `built_columns` is mass, not `sum(_rect_area(footprint))`. Row houses fill 0.99
+            of their rectangle; courtyard houses' rectangles **contain their courts**, so
+            the rectangle figure systematically flatters the side with the courts.
+            `construction.confirm` writes `emitted.occupied_columns`; that is what
             `built_cover` is over where a row carries it, the rectangle figure stays beside
             it under its own name, and `from` says which;
-          * `court_share` did not measure courts at all. It was the footprint area of every
-            part whose *type* is in `COURT_TYPES` -- courts and the ranges round them
-            together, which is a building footprint and not a court. Both types now publish
-            `emitted.rects.courtyard`, so the court is measured from its own rectangle and
-            the old figure keeps an accurate name (`court_type_columns`).
+          * `court_share` measures courts from their own `emitted.rects.courtyard`. The
+            footprint area of every part whose *type* is in `COURT_TYPES` is courts and the
+            ranges round them together -- a building footprint, not a court -- and is kept
+            under that accurate name (`court_type_columns`).
 
         Where a row carries no `occupied_columns` it is counted in `parts_without_mass` and
         its rectangle is used, rather than being silently taken as nothing: an unmeasured
@@ -336,14 +329,12 @@ def _side_measures(side: str, prefix: str, rows: list, districts: list,
             courts += sum(_rect_area(c) for c in got)
         elif (enclosure or {}).get(str(r.get("part"))):
             # **A block's court is the open part itself, not a rect a building claims.**
-            # The block design round. `COURT_RECTS` is what a *courtyard house*
-            # publishes about the yard inside it; a court that a block's four ranges
-            # enclose is an area leaf whose whole footprint **is** the court, and it
-            # publishes no such rect -- so the crowded ring's composed courts were
-            # counted as zero columns and `court_share` read 0.0 beside two courts
-            # standing in the world. The claim the compiler wrote on the leaf
-            # (`enclosure`) is what says this part is one; `usable.court_enclosed` is
-            # what says the ranges really stand round it.
+            # `COURT_RECTS` is what a *courtyard house* publishes about the yard inside
+            # it; a court that a block's four ranges enclose is an area leaf whose whole
+            # footprint **is** the court, and it publishes no such rect -- without this
+            # branch composed courts count as zero columns. The claim the compiler wrote
+            # on the leaf (`enclosure`) is what says this part is one;
+            # `usable.court_enclosed` is what says the ranges really stand round it.
             courts += _rect_area(_footprint(r) or [])
         elif str(r.get("type")) in COURT_TYPES:
             unpublished.append(str(r.get("part")))
@@ -360,15 +351,13 @@ def _side_measures(side: str, prefix: str, rows: list, districts: list,
             "ground_columns": ground,
             "built_cover": round(mass / ground, 4) if ground else None,
             "built_cover_by_rectangle": round(sum(areas) / ground, 4) if ground else None,
-            # **The median footprint is the building's, beside the extent's.** The block
-            # design round, after a second independent reader: `median_footprint` was
-            # the area of `emitted.footprint` -- the bounding box of every block a part
-            # laid, platform, ledge and eaves included -- while `median_neighbour_gap`
-            # beside it in the same record was corrected off `emitted.rects.main` in the
-            # delivery round. One contrast test, two rulers, and on the building
-            # rectangle the direction of the size contrast between the two fabrics
-            # **reverses**. Both are published; the one the contrast test reads is the
-            # building's, the same rectangle the gap is between.
+            # **The median footprint is the building's, beside the extent's.**
+            # `emitted.footprint` is the bounding box of every block a part laid,
+            # platform, ledge and eaves included; `median_neighbour_gap` is measured off
+            # `emitted.rects.main`. One contrast test must use one ruler, and the two can
+            # disagree on the *direction* of the size contrast between two fabrics. Both
+            # are published; the one the contrast test reads is the building's, the same
+            # rectangle the gap is between.
             "median_footprint": (statistics.median([_rect_area(f) for f in walls])
                                  if walls else None),
             "median_footprint_by_extent": (statistics.median(areas) if areas else None),
@@ -481,12 +470,12 @@ def _street_cells(state: str, network: dict | None) -> set:
 
 
 def _edges(rect: list, buildings: list, streets: set) -> dict:
-    """**Which edges of an anchor are fronts, and which are streets.** The fabric reset
-    round's ruler, replacing a universal proximity count: for each side of the anchor's
-    own rectangle, the share of its edge columns that meet a standing building's wall
-    within `ANCHOR_EDGE_REACH` straight out (the walk round a market and a lane), how
-    many of those buildings have their door on the wall facing the anchor, and whether
-    the side is open onto a street instead. A side is **fronted** where at least
+    """**Which edges of an anchor are fronts, and which are streets.** A per-edge ruler
+    rather than a universal proximity count: for each side of the anchor's own rectangle,
+    the share of its edge columns that meet a standing building's wall within
+    `ANCHOR_EDGE_REACH` straight out (the walk round a market and a lane), how many of
+    those buildings have their door on the wall facing the anchor, and whether the side
+    is open onto a street instead. A side is **fronted** where at least
     `ANCHOR_EDGE_SHARE` of it meets walls and at least one door faces it."""
     x0, z0, x1, z1 = rect
     out = {}
@@ -530,7 +519,7 @@ def _edges(rect: list, buildings: list, streets: set) -> dict:
 
 def fabric_measures(state: str, sec=None) -> dict:
     """**The street as a person meets it**, measured off the build's own records: the
-        fabric reset round's numbers, for a finding to cite and a ledger row to close on.
+        numbers a finding cites and a ledger row closes on.
 
           * `anchor.fronted_sides` -- of the section's market, how many edges off the street
             are fronted (`_edges`), and `anchor.street_sides` how many open onto a street;
@@ -580,10 +569,9 @@ def fabric_measures(state: str, sec=None) -> dict:
         out["courts.with_court"] = with_court
     with contextlib.suppress(Exception):
         out.update(ground_measures(state, sec, rows))
-    # **doors a street is above** (the design resolution round, the independent reader's
-    # r3): a built part in the section whose reserved doorstep stands more than a step
-    # off the lane it is entered from -- a shop door at 65 in a trench under a street at
-    # 69
+    # **doors a street is above**: a built part in the section whose reserved doorstep
+    # stands more than a step off the lane it is entered from -- a shop door in a trench
+    # four blocks under its street
     with contextlib.suppress(Exception):
         names = {str(r.get("part")) for r in rows}
         sunk = [t for t in ((network or {}).get("thresholds") or [])
@@ -598,13 +586,12 @@ RIDGE_HIGH = 3
 
 
 def ground_measures(state: str, sec, rows: list) -> dict:
-    """**The ground between the buildings, as a person crosses it** (the design
-    resolution round): `ground.step_max`, the largest difference of level between two
-    adjacent district pieces the section holds (the parent's decision, off
-    `plan.place.json`); and `ground.ridges`, the columns of open ground in the section
-    standing `RIDGE_HIGH` or more over both neighbours along x or z on the built world --
-    the fins the fabric reset's reader counted -- with every stood part's footprint and a
-    column round it left out, since a wall is not a ridge."""
+    """**The ground between the buildings, as a person crosses it**: `ground.step_max`,
+    the largest difference of level between two adjacent district pieces the section
+    holds (the parent's decision, off `plan.place.json`); and `ground.ridges`, the
+    columns of open ground in the section standing `RIDGE_HIGH` or more over both
+    neighbours along x or z on the built world -- fins -- with every stood part's
+    footprint and a column round it left out, since a wall is not a ridge."""
     import numpy as np
     from . import offline, observe
     out: dict = {}
@@ -672,10 +659,10 @@ def ground_measures(state: str, sec, rows: list) -> dict:
         ridge = (np.maximum(ax, az) >= RIDGE_HIGH) & ~built[1:-1, 1:-1] \
             & ~built[:-2, 1:-1] & ~built[2:, 1:-1] & ~built[1:-1, :-2] & ~built[1:-1, 2:]
         out["ground.ridges"] = int(ridge.sum())
-        # ...**and the holes**, the mirror of a ridge (the independent reader's n1, a
-        # slot 9-16 deep beside the ring street): open ground standing `RIDGE_HIGH` or
-        # more under both neighbours along one axis, and water standing inside a piece
-        # that carries buildings (n2, a pond six below the lane piece it was laid in)
+        # ...**and the holes**, the mirror of a ridge: open ground standing `RIDGE_HIGH`
+        # or more under both neighbours along one axis (a slot beside a street), and
+        # water standing inside a piece that carries buildings (a pond sunk below the
+        # lane piece it was laid in)
         bx = np.minimum(hh[:-2, 1:-1] - c, hh[2:, 1:-1] - c)
         bz = np.minimum(hh[1:-1, :-2] - c, hh[1:-1, 2:] - c)
         pit = (np.maximum(bx, bz) >= RIDGE_HIGH) & ~built[1:-1, 1:-1]
@@ -688,11 +675,10 @@ def ground_measures(state: str, sec, rows: list) -> dict:
             if a1 >= a0 and c1 >= c0:
                 in_piece[a0 - x0:a1 - x0 + 1, c0 - z0:c1 - z0 + 1] = True
         out["ground.water_in_pieces"] = int((wet & in_piece).sum())
-        # ...**and all of it, owned or not** (the parent composition round, the
-        # independent reader's n2 on its first candidate): a re-cut that moved the lake
-        # end out of a building piece took 32 columns off the count above and left 48
-        # columns of channel under the ring street's edge that no piece owned. Water is
-        # counted where it stands, and a revision is judged on this as well
+        # ...**and all of it, owned or not**: a re-cut that moves water out of a
+        # building piece lowers the count above while leaving the water standing where
+        # no piece owns it. Water is counted where it stands, and a revision is judged
+        # on this as well
         out["ground.water"] = int(wet.sum())
     return out
 
@@ -755,8 +741,8 @@ def _anchor(rows: list, usable: dict, plan: dict | None, streets=None) -> dict:
         nearest = min((_gap(rect, b) for _n, b in buildings), default=None) \
             if len(rect) == 4 else None
         proximity = len(near) >= ANCHOR_NEIGHBOURS and len(sides) >= ANCHOR_SIDES
-        # **the chosen space and its active edges**, not a proximity count (the fabric
-        # reset round): the edges off the street must be fronts facing the anchor
+        # **the chosen space and its active edges**, not a proximity count: the edges
+        # off the street must be fronts facing the anchor
         doors_of = {str(q.get("part")): q.get("door") for q in rows}
         edges = (_edges(rect, [(n_, b_, doors_of.get(n_)) for n_, b_ in buildings],
                         set(streets or ())) if len(rect) == 4 else {})
@@ -808,8 +794,8 @@ def _anchor(rows: list, usable: dict, plan: dict | None, streets=None) -> dict:
 #: How far a standing building may be from a market and still be its neighbour: a street
 #: (`PLOT_LANE` 5) and the clearance a lot keeps (3), in columns.
 ANCHOR_NEIGHBOUR_REACH = 8
-#: **The fabric reset round's anchor ruler.** How far out from an anchor's edge a wall
-#: may stand and still front it: the walk round a market and a lane
+#: **The anchor's edge ruler.** How far out from an anchor's edge a wall may stand and
+#: still front it: the walk round a market and a lane
 #: (`streetplan.MARKET_WALK` 2 + `placeplan.PLOT_LANE` 5 - 1).
 ANCHOR_EDGE_REACH = 6
 #: ...and how much of the edge those walls must cover for it to be a front.
@@ -865,12 +851,12 @@ def _in_section(d: dict, sec) -> bool:
 
 
 def _open_ground(state: str | None, plan: dict | None) -> set:
-    """**Open ground is not a court** (the fabric reset round): the parts a
-    street-composed district lays as the ground its streets and lots leave -- gardens and
-    yards the plan names as open ground (`open_ground` on the leaf, or the district's
-    `open` quarter) -- claim no enclosure and belong to nobody's ranges, so they are not
-    subjects of the courts relationship. A court a block's ranges enclose, a yard behind
-    a house and a courtyard house's own court still are."""
+    """**Open ground is not a court**: the parts a street-composed district lays as the
+    ground its streets and lots leave -- gardens and yards the plan names as open ground
+    (`open_ground` on the leaf, or the district's `open` quarter) -- claim no enclosure
+    and belong to nobody's ranges, so they are not subjects of the courts relationship.
+    A court a block's ranges enclose, a yard behind a house and a courtyard house's own
+    court still are."""
     out = set()
     try:
         from . import pipeline
@@ -889,23 +875,21 @@ def _open_ground(state: str | None, plan: dict | None) -> set:
 def _courts(rows: list, usable: dict, districts: list, sec=None, open_ground=None) -> dict:
     """Every court-owing subject in the section, and what the world shows for each.
 
-        **The denominator is the subjects, not the survivors.** The neighbourhood review's
-        fourth finding, measured on the delivered candidate: this collected the parts that
-        **stood** and whose type is a court type, so a failed courtyard house, a part the
-        plan never placed and an answer the library could not give all left the set silently
-        -- and four standing courts out of nine attempted subjects read as `demonstrated`.
-        Three kinds of subject are in scope here and every one of them is counted whether or
-        not anything stood on it:
+        **The denominator is the subjects, not the survivors.** Collecting only the parts
+        that **stood** and whose type is a court type lets a failed courtyard house, a part
+        the plan never placed and an answer the library could not give all leave the set
+        silently -- so four standing courts out of nine attempted subjects would read as
+        `demonstrated`. Three kinds of subject are in scope here and every one of them is
+        counted whether or not anything stood on it:
 
           * a **part whose type is a court** (`COURT_TYPES`) or that claimed a `courtyard`
             feature, or that `demand.required_by_part` bound the token to -- including the
             ones that did not stand;
           * a **district that adopted a courtyard-block form** (`demand.court_obligation`):
             a character or arrangement with a `courtyard_share`, the registered character of
-            its density, or a compile record that laid courts. This is the subject that could
-            not previously exist: the obligation is the *form's*, no leaf of the district need
-            be a courtyard-house type, and the crowded district asked for twenty-four
-            courtyard blocks while publishing nothing;
+            its density, or a compile record that laid courts. The obligation is the
+            *form's*: no leaf of the district need be a courtyard-house type, and a district
+            can ask for many courtyard blocks while publishing none;
           * anything already carrying the token on `emitted.required`, which is the
             production binding and may reach a part this function would not have guessed.
 
@@ -945,12 +929,10 @@ def _courts(rows: list, usable: dict, districts: list, sec=None, open_ground=Non
     per_part = []
     for r in courts:
         acc = usable.get((r.get("part"), "court_accessible"))
-        # **...and whether anything stands round it.** The block design round, and the
-        # audit's fourth cause read back on this reader: the gate this feeds says "the
-        # courts are entered, open and **enclosed** on the assembled world" and the only
-        # predicate it had was `court_accessible`, which asks whether a court is paved,
-        # open to the sky and reachable. Two paved tiles standing in open cobble
-        # answered it and the section record called them demonstrated.
+        # **...and whether anything stands round it.** The gate this feeds says "the
+        # courts are entered, open and **enclosed** on the assembled world", and
+        # `court_accessible` only asks whether a court is paved, open to the sky and
+        # reachable -- two paved tiles standing in open cobble answer it.
         # `usable.court_enclosed` asks the other half -- are there buildings on all four
         # sides of this court, on the blocks -- and where a court claims an enclosure,
         # holding it is part of being a court. A part that claims none (a market floor,
@@ -1018,11 +1000,10 @@ def _courts(rows: list, usable: dict, districts: list, sec=None, open_ground=Non
             "affirmative": answer["holds"] is True})
     subjects = len(per_part)
     # **A measurement gap and a question that does not arise are two different facts.**
-    # The neighbourhood delivery round: `usable` answered both `unsupported`, so a part
-    # that has no court (nothing owed, nothing missing) and a part whose court could not
-    # be read off the volume (a gap in the instrument) were one number. Neither
-    # establishes anything -- a measurement exception never becomes an affirmative
-    # outcome -- and only one of them is owed.
+    # A part that has no court (`inapplicable`: nothing owed, nothing missing) and a
+    # part whose court could not be read off the volume (`unsupported`: a gap in the
+    # instrument) are counted apart. Neither establishes anything -- a measurement
+    # exception never becomes an affirmative outcome -- and only one of them is owed.
     unsupported = [g for g in per_part
                    if str(g["court_accessible"].get("method")) == "unsupported"]
     inapplicable = [g for g in per_part
@@ -1136,14 +1117,11 @@ def _walk_section(state: str, sec, thresholds: list) -> dict | None:
         x0, z0, x1, z1 = (min(sec[0], sec[2]), min(sec[1], sec[3]),
                           max(sec[0], sec[2]), max(sec[1], sec[3]))
         # **The box a walk is bounded to has to contain the doorsteps it is asked
-        # about.** The block design round, found by an independent reader of the
-        # delivered block. A section whose `unit` is the block grows past its registered
-        # rectangle -- a block is taken whole or not at all -- so two of this block's
-        # doorsteps stood at x=-5724 while the flood was bounded to x <= -5728, four
-        # columns outside a box they could never enter. `stance_near`, which builds the
-        # threshold list, is not bounded, so they were counted among the 53 and could
-        # not be among the reached: **"2 thresholds not walkable" was a measurement of
-        # the bounding box** and unbounded the same walk reaches 47 of 47.
+        # about.** A section whose `unit` is the block grows past its registered
+        # rectangle -- a block is taken whole or not at all -- so its doorsteps can stand
+        # outside the registered box. `stance_near`, which builds the threshold list, is
+        # not bounded, so such a doorstep is counted and could never be reached: an
+        # "unwalkable threshold" that is **a measurement of the bounding box**.
         for v in stood.values():
             x0, z0 = min(x0, int(v[0])), min(z0, int(v[1]))
             x1, z1 = max(x1, int(v[0])), max(z1, int(v[1]))
@@ -1190,13 +1168,11 @@ def _route(rows: list, circulation: dict | None, network: dict | None,
         n_unreachable = len(unreachable)
     reached, cells = wc.get("reached"), wc.get("cells")
     one = bool(cells) and reached == cells and not int(n_unreachable or 0)
-    # **...over the section's own lanes.** The quarter design round, after its
-    # independent reader: the planned graph was asked to be connected across the whole
-    # city, so the section failed on 36 stances at z 770..778 -- outside the registered
-    # rectangle, and every listed one walkable on the built world. The question this
-    # relationship asks is whether the section's route is one; the planned check is re-
-    # run on the stored network and counted inside the section and the walk's margin,
-    # with the whole-city figure kept beside it.
+    # **...over the section's own lanes.** Asking the planned graph to be connected
+    # across the whole city fails the section on stances outside its registered
+    # rectangle. The question this relationship asks is whether the section's route is
+    # one; the planned check is re-run on the stored network and counted inside the
+    # section and the walk's margin, with the whole-city figure kept beside it.
     within = None
     _rect0 = (sec.get("rect") if isinstance(sec, dict) else sec) if sec else None
     if state and _rect0 and len(_rect0) == 4:
@@ -1210,12 +1186,11 @@ def _route(rows: list, circulation: dict | None, network: dict | None,
     if within is not None:
         one = not int(within.get("unreachable_within_n") or 0)
     # **...and the verdict is the walk on the final blocks, not the walk on the plan.**
-    # The delivery round. The planned check stays on the record beside it -- it is the
-    # check that catches a lane the planner could not have built, and it caught several
-    # -- but a relationship that says "walkable end to end on the built world" is
-    # answered by walking the built world. Where there is no built volume the
-    # relationship is `unmeasured` and says so; an absent artifact has never been a pass
-    # in this module and is not one here.
+    # The planned check stays on the record beside it -- it is the check that catches a
+    # lane the planner could not have built -- but a relationship that says "walkable
+    # end to end on the built world" is answered by walking the built world. Where there
+    # is no built volume the relationship is `unmeasured` and says so; an absent
+    # artifact is never a pass in this module.
     walk = None
     if state:
         try:
@@ -1279,19 +1254,17 @@ def _route(rows: list, circulation: dict | None, network: dict | None,
 def _features(rows: list, usable: dict, districts: list) -> dict:
     """Every obligation of every built part in scope, and what the world shows for it.
 
-        **The production binding, read where production writes it.** The neighbourhood
-        round's finding about this function: it collected the *district's* `demand.required`
-        tokens, matched them to parts by name prefix, and then decided each one by reading
-        `emitted.features` and `emitted.features_method` -- a second, parallel account of
-        what a part owes and whether it delivered, running beside the one the build itself
-        produces. Two consequences, both of them the kind this project keeps closing:
+        **The production binding, read where production writes it.** Collecting the
+        *district's* `demand.required` tokens, matching them to parts by name prefix and
+        deciding each by `emitted.features` / `emitted.features_method` would be a second,
+        parallel account of what a part owes and whether it delivered, running beside the
+        one the build itself produces. It would get two things wrong:
 
           * a part whose obligations came from anywhere other than its district's token list
-            had none here, however many the build had recorded on it;
-          * `emitted.features[tok] is True` with an `inferred` method was a pass, which is
+            would have none here, however many the build had recorded on it;
+          * `emitted.features[tok] is True` with an `inferred` method would pass, which is
             the type's own claim measured at emission -- while the answer the **assembled
-            world** gave the same feature sat one key away in `emitted.usable` and was never
-            consulted.
+            world** gave the same feature sits one key away in `emitted.usable`.
 
         So this reads `emitted.required` -- the per-part binding `demand.required_by_part`
         answers and `construction.confirm` stamps onto every row it re-reads -- and decides
@@ -1313,16 +1286,16 @@ def _features(rows: list, usable: dict, districts: list) -> dict:
             row carries its own `reason`, so the distinction survives per subject and not
             only in a total.
 
-        **A required feature with no evidence is owed, not absent.** The composition round's
-        rule, and the reason the split above is this way round rather than the other: the rule
-        exists to stop an unmeasured requirement reading as a satisfied one, and a part that
+        **A required feature with no evidence is owed, not absent.** That rule is the reason
+        the split above is this way round rather than the other: it exists to stop an
+        unmeasured requirement reading as a satisfied one, and a part that
         stood and was never asked is the case it was written for. Making "nothing asked" its
         own third status outside `owed` would have let a relationship with every subject
         unasked report something other than a failure, which is the escape one level up.
 
         A row that carries no `emitted.required` at all is a row `confirm` never re-read;
-        the district binding answers for it as it used to, the row says so in `from`, and the
-        parts it happened to are named in the measurement.
+        the district binding answers for it, the row says so in `from`, and the parts it
+        happened to are named in the measurement.
 
     """
     from . import construction
@@ -1458,7 +1431,6 @@ def _opens_on(a: dict, road: set, reach: int) -> bool:
 
 def _functions(state: str, rows: list, plan: dict | None, reg: dict, sec) -> dict:
     """**The homes and shops that work, subject by subject, on the assembled world.**
-        The design resolution round.
 
         A home is a part of a dwelling type in the section; it **works** when it stood, its
         door is reached on foot on the assembled world (`usable.entrance_connected`,
@@ -1527,11 +1499,11 @@ def _functions(state: str, rows: list, plan: dict | None, reg: dict, sec) -> dic
             if leaf.get("form"):
                 owed.update((leaf.get("form") or {}).get("params") or {})
             form_ok, form_why = formplan.row_meets(t, got, owed)
-        # **an unmeasured form is not a working one** (the parent composition round):
-        # where the type publishes a plan and the leaf owes a form, a measurement that
-        # did not come back (`form_ok` None) is unknown evidence, and a home is counted
-        # working only on a form measured to hold. A type with no plan, or a leaf owing
-        # none, has no form to show and is judged on standing and being entered.
+        # **an unmeasured form is not a working one**: where the type publishes a plan
+        # and the leaf owes a form, a measurement that did not come back (`form_ok`
+        # None) is unknown evidence, and a home is counted working only on a form
+        # measured to hold. A type with no plan, or a leaf owing none, has no form to
+        # show and is judged on standing and being entered.
         owes = bool(leaf.get("form")) and formplan.plan_fn(t) is not None
         working = bool(stood and entered and (form_ok is True
                                               or (form_ok is None and not owes)))
@@ -1544,12 +1516,11 @@ def _functions(state: str, rows: list, plan: dict | None, reg: dict, sec) -> dic
             homes.append(row)
         if is_shop:
             shops.append(row)
-    # **the spatial role of each working home and shop** (the parent composition round):
-    # a home whose door faces another's across its lane -- the residential lane the
-    # neighbourhood's brief owes -- and a shop whose door opens onto a street rather
-    # than being reached through the market. A replacement that keeps the counts and
-    # loses the relationship is a different neighbourhood, and the promotion guard reads
-    # these
+    # **the spatial role of each working home and shop**: a home whose door faces
+    # another's across its lane -- the residential lane the neighbourhood's brief owes --
+    # and a shop whose door opens onto a street rather than being reached through the
+    # market. A replacement that keeps the counts and loses the relationship is a
+    # different neighbourhood, and the promotion guard reads these
     road = set()
     with contextlib.suppress(Exception):
         place = _load(state, "plan.place.json") or {}
@@ -1613,10 +1584,9 @@ def record(state: str, *, registered: dict | None = None, of: str = "") -> dict:
     runs = list(sample.get("boundary_runs") or [])
 
     districts = _districts(state, plan)
-    # **every built row knows its district** (the fabric reset round): a leaf whose name
-    # is unique in the plan is not prefixed with its district, so a join by name missed
-    # eight of the street-composed quarter's buildings and the calm side under-counted
-    # itself (the independent reader's r1). The plan's own `in` says where each leaf is.
+    # **every built row knows its district**: a leaf whose name is unique in the plan is
+    # not prefixed with its district, so a join by name alone misses it and its side
+    # under-counts itself. The plan's own `in` says where each leaf is.
     with contextlib.suppress(Exception):
         from . import pipeline as _pl
         _dn = sorted((str(d.get("name")) for d in districts if d.get("name")),
@@ -1658,15 +1628,12 @@ def record(state: str, *, registered: dict | None = None, of: str = "") -> dict:
         if r.get("stood"):
             types[str(r.get("type"))] = types.get(str(r.get("type")), 0) + 1
     # **The construction check of the world that stands, not of the one the lanes were
-    # laid on.** The block design round, after a second independent reader:
-    # `circulation.json`'s `lint` is the check the *circulation* stage ran, over the
-    # dry-run volume as the lanes left it -- before a single building. The delivered
-    # section published `{E002: 15, E003: 17, E005: 3, E010: 1}` under a heading a
-    # reader takes as its own, copied from a check written two and a half hours earlier
-    # against a different world, while the build's own check reported three `E005`
-    # findings and nothing else. `lint.json` is the build's, `round.json`'s `lint` stage
-    # is where the driver records it; the circulation figure is kept beside it under its
-    # own name so the two are never read as one.
+    # laid on.** `circulation.json`'s `lint` is the check the *circulation* stage ran,
+    # over the dry-run volume as the lanes left it -- before a single building -- so it
+    # describes a different world from the one the section stands in. `lint.json` is
+    # the build's, `round.json`'s `lint` stage is where the driver records it; the
+    # circulation figure is kept beside it under its own name so the two are never read
+    # as one.
     lint = _load(state, "lint.json") or {}
     if not (lint.get("counts") or lint.get("errors")):
         rj = _load(state, "round.json") or {}
@@ -1676,12 +1643,11 @@ def record(state: str, *, registered: dict | None = None, of: str = "") -> dict:
             lint = got
     lint_of_lanes = (circulation or {}).get("lint") or {}
     return {
-        # **3**: the neighbourhood delivery round's two corrected rulers -- the court
-        # denominator is the section's own (`_in_section`) and the route verdict is a
-        # traversal of the assembled world (`_walk_section`) rather than a reading of
-        # the planned lane graph. A record written under an earlier version answered
-        # different questions; a reader comparing two candidates has to re-derive the
-        # older one rather than set the two side by side.
+        # **3**: the court denominator is the section's own (`_in_section`) and the
+        # route verdict is a traversal of the assembled world (`_walk_section`) rather
+        # than a reading of the planned lane graph. A record written under an earlier
+        # version answered different questions; a reader comparing two candidates has
+        # to re-derive the older one rather than set the two side by side.
         "record": "section", "version": 3, "of": of or os.path.basename(state),
         "by": "ethoslm.section.record -- measured off this build's own artifacts, not "
               "asserted; see the module docstring for why that distinction is the point",

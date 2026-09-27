@@ -38,13 +38,13 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 #: Every model role in the pipeline, and the tier each one defaults to. A tier is a name
 #: a provider entry in `models.json` resolves to a model id, so switching provider is
-#: one variable and the roles keep their relative weight. `research` is the integration
-#: review's missing state. With no retrieval provider configured `stage_reading`
-#: completed an **empty** reading and the claims job only ran once sources already
-#: existed, so a terminal agent -- a supported runtime -- had no route to do the
-#: research at all. That is a missing role, not a missing API key: a role with no entry
-#: in `models.json` routes to nobody and is answered by the agent driving the round,
-#: which is exactly what is wanted here.
+#: one variable and the roles keep their relative weight. `research` exists because,
+#: with no retrieval provider configured, `stage_reading` would complete an **empty**
+#: reading and the claims job only runs once sources already exist, so a terminal agent
+#: -- a supported runtime -- would have no route to do the research at all. That is a
+#: missing role, not a missing API key: a role with no entry in `models.json` routes to
+#: nobody and is answered by the agent driving the round, which is exactly what is
+#: wanted here.
 ROLES = ("spec", "plan", "type", "build", "revise", "judge", "research")
 
 TIER_OF = {"spec": "small", "plan": "frontier", "type": "frontier", "build": "frontier",

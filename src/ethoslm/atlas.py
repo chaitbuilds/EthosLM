@@ -74,13 +74,13 @@ def _region(args) -> tuple:
     return rx, rz, "read"
 
 
-# ----------------------------------------------------------------- biomes The transfer
-# round. A place spec's `setting` says what land a place stands in -- "an oasis" is dry
-# sandy country -- and the design path's site candidates were read off heights and water
-# alone, so a desert village was offered a snowy plain. The biome is already in every
-# saved chunk, one entry per 4x4x4 cell, so the atlas keeps it beside the heights: the
-# class (`groundread.BIOMES`) of the cell the ground stands in, one per 4x4 column, in a
-# file of its own so an atlas read before this keeps its heights.
+# ----------------------------------------------------------------- biomes
+# A place spec's `setting` says what land a place stands in -- "an oasis" is dry sandy
+# country -- and site candidates read off heights and water alone could offer a desert
+# village a snowy plain. The biome is already in every saved chunk, one entry per 4x4x4
+# cell, so the atlas keeps it beside the heights: the class (`groundread.BIOMES`) of the
+# cell the ground stands in, one per 4x4 column, in a file of its own so a heights file
+# already cached stays valid.
 
 #: biome classes by index in the biome layer; 0 is unclassed (ocean, river, beach, cave)
 BIOME_CLASSES = ("", "plains", "savanna", "forest", "jungle", "desert", "badlands",

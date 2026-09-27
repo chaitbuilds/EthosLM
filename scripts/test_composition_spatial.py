@@ -61,9 +61,9 @@ _LOADED: dict = {}
 def city():
     """Spec, place, the middle-ring part and its types.
 
-        `out/des-city` is immutable input -- read and never written. The round forbids
-        re-running interpretation, the site search or whole-city leaf compilation for a local
-        architectural edit, so the section's own districts are what these cases re-decide.
+        `out/des-city` is immutable input -- read and never written. A local architectural
+        edit does not re-run interpretation, the site search or whole-city leaf compilation,
+        so the section's own districts are what these cases re-decide.
 
     """
     if "city" in _LOADED:
@@ -151,9 +151,9 @@ def _probe(district, part, place, decls, spec, **over):
                                ceiling=int(d.get("structures") or 1)), d, bare
 
 
-#: **The one-row arrangement the design round built** (`arrange.ARRANGEMENT_ACTIONS`'s
-#: `row_depth`), which is a real decision a layout owner takes: one row of houses along
-#: a street rather than two back to back.
+#: **The one-row arrangement** (`arrange.ARRANGEMENT_ACTIONS`'s `row_depth`), which is a
+#: real decision a layout owner takes: one row of houses along a street rather than two
+#: back to back.
 ONE_ROW = {"rows": 1, "lot_depth": 8, "lot_width": 8, "frontage": "street",
            "courtyard_share": 0.0}
 
@@ -398,24 +398,19 @@ def t_s1d_a_court_share_spent_to_meet_a_lot_count_is_on_the_record():
 
 @case
 def t_s1f_district_uses_govern_type_selection():
-    """The user's central instruction for the composition round, and the number it was
-        found at.
+    """**What a district is for decides what it is built of.**
 
-        The built section's calm side came back with **5 temples and 4 halls against 1 shop
-        house in 22 buildings**, in the ring the sources describe as traders, craftsmen and
-        schoolteachers. The cause: the compiler drew every lot's type from everything the
-        *pool* admitted, and the pool a capability record approves for a ring whose landmark
-        programme needs civic types contains `hall` and `temple`. A type pool is what a quarter
-        may be built of; it is not what the quarter is for.
+        A compiler that draws every lot's type from everything the *pool* admits fills a
+        ring the sources describe as traders, craftsmen and schoolteachers with temples and
+        halls, because the pool a capability record approves for a ring whose landmark
+        programme needs civic types contains `hall` and `temple`. A type pool is what a
+        quarter may be built of; it is not what the quarter is for.
 
-        **This case is what the composition round's fix has to keep holding**, and it is now
-        asserted against the rule that replaced it. What the composition round wrote was a
-        `ROLE` filter with a registered 10% secondary share (`dc.PROGRAMME_USE_SHARE`); the
-        neighbourhood round replaced the share with an inferred programme (`dc.use_mix`,
-        `t_p1`..`t_p3` of `test_neighbourhood_spatial.py`). The civic types must still be out
-        of the fabric, the market must still be laid as the landmark it is, and the quarter's
-        own use must still be what its streets are drawn from -- those three are this case,
-        and they are checked here on the same two districts as before.
+        The rule is an inferred programme (`dc.use_mix`, `t_p1`..`t_p3` of
+        `test_neighbourhood_spatial.py`). The civic types must be out of the fabric, the
+        market must still be laid as the landmark it is, and the quarter's own use must be
+        what its streets are drawn from -- those three are this case, checked on two of the
+        middle ring's districts.
 
     """
     spec, place, part, decls, _d = city()
@@ -503,14 +498,13 @@ def t_s2a_an_alternative_the_validator_would_refuse_is_not_offered():
     # a `reservation` is never negotiable: it is on `refuses`, which is the gate
     checks = [f["check"] for f in bad["certificate"]["refuses"]]
     assert "reservation" in checks, bad["certificate"]
-    # **...and `arrangement` is beside it now, which is a true second refusal and a
-    # finding for the layout owner.** The neighbourhood round added
-    # `placeplan.arrangement_failures`: this band adopted 8x8 lots and the compiler laid
-    # 13x13, because the demand's own least lot (`lot_min`, the envelope for the
-    # features the requirement makes required) stands over a lot the character declared.
-    # That override is recorded on the record (`lot_asked` 8x8, `lot_laid` 13x13,
-    # `lot_refused`) rather than silent, so it is arguably a *report* and not a refusal
-    # -- raised with the round's coordinator, who owns that check.
+    # **...and `arrangement` is beside it, which is a true second refusal and a finding
+    # for the layout owner.** `placeplan.arrangement_failures`: this band adopted 8x8
+    # lots and the compiler laid 13x13, because the demand's own least lot (`lot_min`,
+    # the envelope for the features the requirement makes required) stands over a lot
+    # the character declared. That override is recorded on the record (`lot_asked` 8x8,
+    # `lot_laid` 13x13, `lot_refused`) rather than silent, so it is arguably a *report*
+    # and not a refusal.
     assert set(checks) <= {"reservation", "arrangement"}, bad["certificate"]
     # the wide sector raises no **reservation** refusal, which is what this case is
     # about. It does raise `arrangement`, for the same reason the thin band does and
@@ -658,19 +652,16 @@ def t_s2c_three_certified_arrangements_for_the_sections_own_districts():
                     f"{best['rows']}row {best['lots']} house(s) at "
                     f"{best['built_cover']:.1%} / {best['enclosure']:.1%}")
         if name == "lower_ring_north_2":
-            # **The crowded side, and what this case asserted before.** The composition
-            # round's claim was that the best alternative raises the allocated cover,
-            # the built mass, the frontage and the count together, on smaller lots --
-            # because every one of those has to move together or the figure is a
-            # relabelling. * `spec.columns_per_plot` and `placeplan.count_band` were
-            # corrected to take the adopted lot, so an arrangement of smaller lots is
-            # now asked for the count its own lot earns rather than the incumbent
-            # fabric's. The best alternative is therefore more, smaller houses with more
-            # frontage and more of the street fronted -- and **less** mass per column of
-            # ground, which is what smaller houses are. That trade is stated rather than
-            # hidden: the assertion below is that the count, the frontage and the
-            # enclosure move together on lots that did not grow, and that the mass that
-            # was given up is reported.
+            # **The crowded side.** On smaller lots the count, the frontage and the
+            # enclosure have to move together, or the figure is a relabelling.
+            # `spec.columns_per_plot` and `placeplan.count_band` take the adopted lot,
+            # so an arrangement of smaller lots is asked for the count its own lot earns
+            # rather than the incumbent fabric's. The best alternative is therefore more,
+            # smaller houses with more frontage and more of the street fronted -- and
+            # **less** mass per column of ground, which is what smaller houses are. That
+            # trade is stated rather than hidden: the assertion below is that the count,
+            # the frontage and the enclosure move together on lots that did not grow, and
+            # that the mass that was given up is reported.
             assert best["lots"] > base["lots"], (base["lots"], best["lots"])
             assert best["frontage_length"] > base["frontage_length"], \
                 (base["frontage_length"], best["frontage_length"])

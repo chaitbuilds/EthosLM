@@ -47,14 +47,13 @@ class Threshold:
     y: int                  # lane surface block; you stand at y+1
     facing: str             # from the lane cell into the plot
     door: tuple             # where the building pass must put its door leaf
-    #: **How far this doorstep stands from the ground its building is on.** The block
-    #: design round. `_threshold_for` has ranked a level doorstep first since the
-    #: delivery round and still returned the best bad candidate where no good one
-    #: existed, silently -- and `Builder._decide_rect` then sank the house to follow it.
-    #: The number is written down instead: 0 or 1 is a doorstep, more is an entrance
-    #: over a step, which `Builder.approach` lays as a flight and which siting refuses
-    #: to take its floor from (`Builder.PLANNED_STEP`). `None` where no ground reading
-    #: was available to measure it against.
+    #: **How far this doorstep stands from the ground its building is on.**
+    #: `_threshold_for` ranks a level doorstep first and still returns the best bad
+    #: candidate where no good one exists, so the number is written down rather than
+    #: left for `Builder._decide_rect` to sink the house after: 0 or 1 is a doorstep,
+    #: more is an entrance over a step, which `Builder.approach` lays as a flight and
+    #: which siting refuses to take its floor from (`Builder.PLANNED_STEP`). `None`
+    #: where no ground reading was available to measure it against.
     step: int | None = None
 
     def to_json(self):
@@ -377,13 +376,12 @@ def parts_to_routing(parts: list, passage=()) -> dict:
     sites, obstacles, passable = [], set(), set()
     # the clearance each wall's construction takes beside its line: the part's own
     # (stamped from its type's NEEDS by the caller) or the registered default, **plus
-    # whatever the type says stands outside the band the layout drew for it**. The
-    # design round's third contract: one occupied envelope, four consumers. The great
-    # wall's corbel course, its buttress piers and its hanging switchback are solid
-    # outside its declared width, and routing against the declared width is how the
-    # expression city got 134 lane cells built over. `stamp_occupation` puts
-    # `ground.occupied_envelope` on each part and this reads it; a part with none
-    # behaves exactly as it did.
+    # whatever the type says stands outside the band the layout drew for it**: one
+    # occupied envelope, four consumers. The great wall's corbel course, its buttress
+    # piers and its hanging switchback are solid outside its declared width, and
+    # routing against the declared width alone gets lane cells built over.
+    # `stamp_occupation` puts `ground.occupied_envelope` on each part and this reads it;
+    # a part with none is routed against its clearance alone.
     def _extra(p) -> int:
         try:
             base = max(0, int(p.get("clearance") if p.get("clearance") is not None
@@ -458,11 +456,11 @@ def parts_to_routing(parts: list, passage=()) -> dict:
                 "x1": max(p["x0"], p["x1"]), "z1": max(p["z0"], p["z1"])}
         if p.get("front"):
             site["front"] = p["front"]           # the way in is on this side
-        # **The compiled way in, taken verbatim.** The quarter design round: a leaf
-        # whose district compiler chose its pad, door and landing together (`site`) is
-        # approached at that landing and nowhere else, and its threshold's door is the
-        # compiled door at the compiled floor -- `_approach_candidates` and
-        # `_threshold_for` choosing again is how the pad and the way in came apart.
+        # **The compiled way in, taken verbatim.** A leaf whose district compiler chose
+        # its pad, door and landing together (`site`) is approached at that landing and
+        # nowhere else, and its threshold's door is the compiled door at the compiled
+        # floor -- if `_approach_candidates` and `_threshold_for` chose again, the pad and
+        # the way in could come apart.
         way = site_way(p)
         if way:
             site.update(way)
@@ -494,7 +492,8 @@ def site_way(p: dict) -> dict | None:
     `{"landing": (x, z), "face": walk-in facing, "door": (x, z), "door_y": int}` from a
     plot's `site` (the lane cell outside the plot on its street side, the door on its
     pad's edge) or a court's `court_site` (the inner end of its passage, the court's
-    edge cell). The quarter design round; a leaf with neither keeps the old path."""
+    edge cell). A leaf with neither gets None and its way in is found by
+    `_approach_candidates`."""
     st = p.get("site") if isinstance(p.get("site"), dict) else None
     if st and st.get("landing") and st.get("door") and st.get("facing") in _WALK_IN:
         return {"landing": (int(st["landing"][0]), int(st["landing"][1])),
@@ -1137,23 +1136,12 @@ def emit(builder, net: Network, mat: str = "cobblestone", *,
     for t in net.thresholds:
         dx, dz = {v: k for k, v in FACING.items()}[t.facing]
         px, pz = t.x + dx, t.z + dz
-        # **...and it does not re-level a cell the lane has already laid.** The spatial
-        # design round, found by building the block on the gate's own ground. A door
-        # cell can *be* a lane cell -- a threshold on a lane that turns, or on the
-        # gate's own approach -- and this pass then put a full block at the threshold's
-        # `y` and cleared three courses above it, which on a lane **step** is the step.
-        # Measured at the middle ring's gate: the network records (-5761, 768) at y=71
-        # with a south-facing stair, the world came out flat cobblestone at y=70, and
-        # `E007` refused the build for a lane cell that cannot be stood on -- one cell
-        # out of 44,726, the first riser of the ramp into the gate, removed by the pass
-        # that exists to make doors reachable. A gate is a fixed opening in a wall and
-        # its approach ramps up to it, so for four of this city's 872 thresholds the
-        # choice above has nowhere better to go. There the doorstep wins -- a doorway
-        # that cannot be walked into is not a way in -- and **the network record is
-        # corrected to say what was laid**: the cell becomes a landing at the
-        # threshold's own level. Levelling the world and leaving the record claiming a
-        # stair is what made `E007` refuse a build for a cell that was, in fact, exactly
-        # where the design meant it to be.
+        # **...and it does not re-level a cell the lane has already laid.** A door cell
+        # can *be* a lane cell -- a threshold on a lane that turns, or on a gate's
+        # approach ramp. There the doorstep wins -- a doorway that cannot be walked into
+        # is not a way in -- and **the network record is corrected to say what was
+        # laid**: the cell becomes a landing at the threshold's own level, so `E007`
+        # reads the world that was built rather than the stair the record used to claim.
         if (px, pz) in net.cells:
             over_lane += 1
             was = dict(net.cells[(px, pz)])

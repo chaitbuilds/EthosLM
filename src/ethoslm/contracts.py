@@ -405,10 +405,9 @@ def read(kind: str, doc: dict) -> dict:
                     f"marked `inferred`. A model's recollection is not evidence: either "
                     f"name the source it came from or say it was inferred",
                     record=kind, field="claims")
-            # **A source id that names nothing is worse than no source id.** The
-            # integration review's eighth finding, reproduced in one call: a claim
-            # citing `nonexistent-source` was accepted as sourced, so "this is
-            # evidenced" and "this is invented" were the same record with different
+            # **A source id that names nothing is worse than no source id.** Accepting
+            # a claim that cites `nonexistent-source` as sourced makes "this is
+            # evidenced" and "this is invented" the same record with different
             # spelling. A citation is a reference and a reference has to resolve.
             if c.get("source") and c["source"] not in have:
                 raise ContractError(

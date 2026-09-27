@@ -3,10 +3,9 @@
 A type, not a building. The circular terraced monument an ensemble sets beside or on its
 axis -- a stepped round mound of stone, each tier coped and railed, climbed by four
 flights on the cardinal axes, crowned by a round pavilion of posts under a conical roof
-(or left open round a central altar stone). It is what the composition round needed for
-the paired round monuments that flank the principal mass in the references it read, and
-it is general: a round terrace, a stupa-like mound or an open-air altar is the same
-composition at other parameters.
+(or left open round a central altar stone). It serves as the paired round monuments that
+flank an ensemble's principal mass, and it is general: a round terrace, a stupa-like
+mound or an open-air altar is the same composition at other parameters.
 
   tiers    how many stepped terraces, each two courses (the lowest three), stepping in
            evenly from the pad's inscribed circle

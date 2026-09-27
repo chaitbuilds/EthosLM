@@ -332,8 +332,8 @@ def stage_judge(rnd: Round, be, results: dict) -> dict:
                "identical_render": sum(1 for r in rows
                                        if r.get("identical_render"))}
         if spec.get("score", "floor") == "winners":
-            # E3 and step 3 do not have a correct side: each pair names its own winner
-            # and the pre-registered reading is about which arm won, not a rate.
+            # A comparison scored by winners has no correct side: each pair names its
+            # own winner and the pre-registered reading is about which arm won, not a rate.
             res["winners"] = {r["label"]: r.get("result") for r in rows}
             # The tie rate still travels. A round-robin over siblings from one brief is
             # scored this way and its *tie* rate is the headline, not a side note.
@@ -1432,12 +1432,11 @@ def _draw_preview(rnd: Round, plan: dict, parts: list, site, voice: str | None,
 
 
 #: What a revision or a repair may touch, and therefore what is put back where one is
-#: refused. **The whole candidate and not the plan files.** The integration review's
-#: fifth finding, reproduced: a rejected repair was rolled back and the round kept the
-#: rejected candidate's `resolution.json` and `findings.json`, so the plan said one
-#: thing and the record of what was wrong with it said another. A candidate is the plan,
-#: the programme it was laid out from, the records that describe it, the ground it was
-#: prepared on and the evidence it was judged by; restoring some of those is not
+#: refused. **The whole candidate and not the plan files.** Rolling back the plan alone
+#: keeps the rejected candidate's `resolution.json` and `findings.json`, so the plan says
+#: one thing and the record of what was wrong with it says another. A candidate is the
+#: plan, the programme it was laid out from, the records that describe it, the ground it
+#: was prepared on and the evidence it was judged by; restoring some of those is not
 #: restoring a candidate.
 REVISION_FILES = ("plan.", "district_", "place.json", "place.checked.json",
                   "plots.json", "network.json", "circulation.json", "voice.json",
@@ -1451,22 +1450,20 @@ REVISION_FILES = ("plan.", "district_", "place.json", "place.checked.json",
                   # the ground the candidate was prepared on, and the arterials it was
                   # routed with
                   "ground.json", "plateau.json", "terraces.json", "arterials.",
-                  # **the decisions a repair made, and the ground it made them on.** The
-                  # review rolled a candidate back and found the rejected candidate's
-                  # `layout_repairs.json` and `plan_repairs.json` still on disk beside
-                  # the restored plan -- so the accepted design carried the record of
-                  # revisions that had been withdrawn, and the repair budget those files
-                  # count was spent on a candidate that no longer existed. The terrain
-                  # was outside the snapshot for the same reason and is the one file the
-                  # terraces pass actually rewrites.
+                  # **the decisions a repair made, and the ground it made them on.**
+                  # Left out, the rejected candidate's `layout_repairs.json` and
+                  # `plan_repairs.json` stay on disk beside the restored plan -- the
+                  # accepted design carries the record of withdrawn revisions, and the
+                  # repair budget those files count is spent on a candidate that no
+                  # longer exists. The terrain is here for the same reason: `world.npz`
+                  # is the one file the terraces pass actually rewrites.
                   "layout_repairs.json", "plan_repairs.json", "reallocations.json",
                   "world.npz", "world_built.npz", "world.quarters-from.npz",
                   # **the parent's regional decisions and the markers of what they
-                  # laid** (the fabric reset round): a rolled-back plan beside the
-                  # rejected candidate's strip cut, or without the `.laid` marker that
-                  # tells the next pass its district was already re-laid for its form,
-                  # is two designs at once. The ring levels are the ground those cuts
-                  # were screened at.
+                  # laid**: a rolled-back plan beside the rejected candidate's strip
+                  # cut, or without the `.laid` marker that tells the next pass its
+                  # district was already re-laid for its form, is two designs at once.
+                  # The ring levels are the ground those cuts were screened at.
                   "sectors.", "terrace_levels.json")
 
 #: The preview directory is part of the candidate too: a reading and a drawing are
@@ -1556,9 +1553,9 @@ def _withdraw_preview(rnd: Round, d: str, rec: dict, why: str) -> dict:
     rec["stale"] = why
     rec["withdrawn"] = {"drawn": sorted(rec.get("drawn") or {}), "why": why,
                         "candidate": rec.get("candidate"),
-                        # **the evidence is kept, its authority is withdrawn.** The
-                        # closure round: a revision that was applied and then overtaken
-                        # by a moved candidate is still a thing that happened
+                        # **the evidence is kept, its authority is withdrawn.** A
+                        # revision that was applied and then overtaken by a moved
+                        # candidate is still a thing that happened
                         "applied": rec.get("applied"), "readings": rec.get("readings"),
                         "at": time.strftime("%Y-%m-%dT%H:%M:%S")}
     rec["drawn"] = {}
@@ -1877,13 +1874,12 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
     # is visible rather than inferred from a `revisions` counter.
     from .. import deps as _deps_c
     #: **Which design this inspection is of -- compared before it is overwritten.** The
-    #: review's fourth finding, and the bug was the order of these two lines: the new
-    #: candidate id was assigned first and the freshness branch below only ran when the
-    #: previous preview was already `done`, so a *pending* preview of a plan that had
-    #: since changed kept its drawing and its refusal, performed zero redraws, took the
-    #: new id and returned `done: true`. Binding an inspection to a candidate means
-    #: asking whether it is still that candidate, in every state and not only the
-    #: finished one.
+    #: order of these two lines matters: with the new candidate id assigned first, and
+    #: the freshness check made only for a preview already `done`, a *pending* preview
+    #: of a plan that has since changed would keep its drawing and its refusal, perform
+    #: zero redraws, take the new id and return `done: true`. Binding an inspection to a
+    #: candidate means asking whether it is still that candidate, in every state and not
+    #: only the finished one.
     now = _deps_c.candidate_id(rnd, plan=plan)
     was = rec.get("candidate")
     # **...and to the types and the model it was drawn with.** The fresh checker: a
@@ -1907,11 +1903,10 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
         rec = _withdraw_preview(rnd, d, rec, why)
     rec["candidate"] = now
     if rec.get("done"):
-        # **Done, of this plan.** The architecture audit's seventh finding: the stage's
-        # whole test was this flag, so a plan that had changed under it came back with
-        # the drawing of the one before. The loop is still bounded -- looked at once,
-        # revised at most once, then built -- but "already done" now means "done, and
-        # nothing it was made from has moved".
+        # **Done, of this plan.** With this flag as the stage's whole test, a plan that
+        # had changed under it would come back with the drawing of the one before. The
+        # loop is still bounded -- looked at once, revised at most once, then built --
+        # but "already done" means "done, and nothing it was made from has moved".
         from .. import deps
         # **"Never stamped" and "stamped, then withdrawn" are different.** They were the
         # same test -- `"preview" not in deps.json` -- and invalidating the preview
@@ -2075,11 +2070,11 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
     rec["revisions"] += 1
     rec["applied"] = {k: v for k, v in applied.items() if k != "plan"}
     rec["applied"]["why"] = str(doc.get("why") or "")
-    # **What the revision was for, by id, and what it measurably did.** The closure
-    # round's gate: a real finding causes a bounded change, and a current inspection
-    # verifies the improvement. `caused_by` is the judge's finding ids; `improvement` is
-    # the composition before and after, against the measures those findings named, and
-    # `verified` is written when the revised candidate has been read again.
+    # **What the revision was for, by id, and what it measurably did.** A real finding
+    # causes a bounded change, and a current inspection verifies the improvement.
+    # `caused_by` is the judge's finding ids; `improvement` is the composition before
+    # and after, against the measures those findings named, and `verified` is written
+    # when the revised candidate has been read again.
     rows = (rec.get("readings") or {}).get(tag, {}).get("findings") or []
     by_id = {f.get("id"): f for f in rows}
     cited = [c for c in (doc.get("caused_by") or []) if c in by_id]

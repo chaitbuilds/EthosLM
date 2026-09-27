@@ -73,30 +73,29 @@ NEEDS = {
 
 #: **What this house can do with a piece of ground: the least pad each storey count
 #: stands on.** In pad columns (across the frontage, along the depth), which is the unit
-#: `NEEDS["footprint"]` is in and `Builder.pad_extent` converts a plot to. The spatial-
-#: design round. `NEEDS` says what this type may stand on; it does not say what standing
-#: there *gets you*, and the layout was inferring that from the band's ceiling -- a
-#: capability limit standing in for a demand. A density word asks for an amount of
-#: ground and a shape; this is the answer to the other half of the question, said by the
-#: house that has to stand it. `district_compile.storey_pad` reads it; a type that
-#: declares nothing is unaffected and nothing here is required of any other file.
+#: `NEEDS["footprint"]` is in and `Builder.pad_extent` converts a plot to. `NEEDS` says
+#: what this type may stand on; it does not say what standing there *gets you*, and
+#: inferring that from the band's ceiling makes a capability limit stand in for a
+#: demand. A density word asks for an amount of ground and a shape; this is the answer
+#: to the other half of the question, said by the house that has to stand it.
+#: `district_compile.storey_pad` reads it; a type that declares nothing is unaffected
+#: and nothing here is required of any other file.
 #: Measured by `construction.probe_build` at three seeds x three fronts, and a row is
-#: the least pad at which **every** instance reached that many storeys: 1 storey 4x4 the
-#: band's own floor 2 storeys 5x9 `top` needs `house_d >= 8` and `w >= 5`; `_sizes`
-#: takes one row of the pad's depth for the rear strip once the pad is 8 deep, so nine
-#: columns of pad is eight columns of house 3 storeys 6x16 `top` needs `house_d >= 10`
-#: and `w >= 6`; at 6x11 and 6x12 the third storey stands at some seeds and not others,
-#: because `_sizes` drops the frontage to 5 about half the time. That is the variation,
-#: not a failure: a terrace of 6x12 lots stands at seven distinct heights in one
-#: language. 6x16 is where three is certain at every seed **and** the pad is still
-#: within this type's 6-column short side; 7x11 also gives three and is not offered,
-#: because a 7-column frontage is not this house. **Nothing declares 4 across.** The
-#: band's floor is 4 and the sweep stands clean there, but the sweep stands its
-#: instances on an *inset plot*: at a 4-wide pad this type laid a five-wide house in **9
-#: of 9** instances and the extra column landed in the plot's inset, which a party wall
-#: does not have. `_sizes` no longer lets the house leave its pad (see there), and a lot
-#: this type is asked to stand attached on is 5 across at the narrowest whatever the
-#: band admits.
+#: the least pad at which **every** instance reached that many storeys: 1 storey, 4x4:
+#: the band's own floor; 2 storeys, 5x9: `top` needs `house_d >= 8` and `w >= 5`, and
+#: `_sizes` takes one row of the pad's depth for the rear strip once the pad is 8 deep,
+#: so nine columns of pad is eight columns of house; 3 storeys, 6x16: `top` needs
+#: `house_d >= 10` and `w >= 6`; at 6x11 and 6x12 the third storey stands at some seeds
+#: and not others, because `_sizes` drops the frontage to 5 about half the time. That
+#: is the variation, not a failure: a terrace of 6x12 lots stands at seven distinct
+#: heights in one language. 6x16 is where three is certain at every seed **and** the
+#: pad is still within this type's 6-column short side; 7x11 also gives three and is
+#: not offered, because a 7-column frontage is not this house. **Nothing declares 4
+#: across.** The band's floor is 4 and the sweep stands clean there, but only because
+#: the sweep stands its instances on an *inset plot*: a five-wide house on a 4-wide pad
+#: puts its extra column in the plot's inset, which a party wall does not have.
+#: `_sizes` keeps the house on its pad (see there), and a lot this type is asked to
+#: stand attached on is 5 across at the narrowest whatever the band admits.
 STOREY_PAD = {1: (4, 4), 2: (5, 9), 3: (6, 16)}
 
 _NAME = {(1, 0): "east", (-1, 0): "west", (0, 1): "south", (0, -1): "north"}
@@ -157,16 +156,15 @@ def _sizes(rng, pad_d, pad_w, att_lo=False, att_hi=False):
     w = min(avail, 9, max(6, house_d - 1))
     if w >= 6 and rng.random() < 0.45:
         w -= 1
-    # **The house does not leave its pad.** The spatial-design round, measured through
-    # `construction.probe_build`: this line read `max(5, min(w, avail))`, so on a pad
-    # with four columns to spare it returned five and the frontage ran one column past
-    # the plot's edge in **9 of 9** instances at a 4x9 pad. The sweep never saw it
-    # because `type_needs` stands its instances on a plot with `site()`'s inset round
-    # the pad, and a column of overhang lands in the inset. A **party wall has no
-    # inset**: the column it would land in is the next house. Five is still the floor
-    # this house wants -- below it the passage and the rooms beside it do not both fit
-    # -- but where the pad cannot give five it gets what there is, and the `attempts`
-    # ladder below narrows again if the shell refuses.
+    # **The house does not leave its pad.** `max(5, min(w, avail))` alone would return
+    # five on a pad with four columns to spare and run the frontage one column past the
+    # plot's edge. A `type_needs` sweep does not see that, because it stands its
+    # instances on a plot with `site()`'s inset round the pad, and a column of overhang
+    # lands in the inset. A **party wall has no inset**: the column it would land in is
+    # the next house. Five is still the floor this house wants -- below it the passage
+    # and the rooms beside it do not both fit -- but where the pad cannot give five it
+    # gets what there is, and the `attempts` ladder below narrows again if the shell
+    # refuses.
     return rear, house_d, max(1, min(max(5, min(w, avail)), avail))
 
 
@@ -192,15 +190,13 @@ def _front_edge(part):
 
         Returns `(axis, sign, source)`.
 
-        Two questions with the same answer most of the time, and until the neighbourhood
-        delivery round only the second was asked. `part["front"]` is the compass side the
-        street is on -- the plan's own decision, now carried through `PART_GEOMETRY` into
-        `site()`; the reserved doorstep is where the circulation pass levelled a way in.
-        They agree whenever the plan was carried through, which is what `test_compile`
-        case 7 asserts of every leaf in a row. They come apart at a corner: the doorstep
-        of a wide shallow lot sitting on the corner of its front wall is exactly as near
-        the flank, and the tie-break below then reads the flank as the front and turns the
-        house ninety degrees.
+        Two questions with the same answer most of the time. `part["front"]` is the compass
+        side the street is on -- the plan's own decision, carried through `PART_GEOMETRY`
+        into `site()`; the reserved doorstep is where the circulation pass levelled a way
+        in. They agree whenever the plan was carried through. They come apart at a corner:
+        the doorstep of a wide shallow lot sitting on the corner of its front wall is
+        exactly as near the flank, and the tie-break below then reads the flank as the
+        front and turns the house ninety degrees.
 
         **Where they disagree the doorstep still wins**, and the disagreement is reported
         (`emitted.front_from`) rather than resolved silently: a front wall with no door in
@@ -321,20 +317,15 @@ def build(b, part, seed, storeys=None, front=None, **kw):
         """`(width, start)` for a frontage a party wall decides, **widened into a free
                 flank's slack rather than standing the house's corner on the doorstep**.
 
-                The neighbourhood delivery round's section build, and the one house in
-                eighty-three whose door the check could not walk into:
-
-                    E008 the doorway reserved for lower_ring_north_2_b0_0_40 at
-                         (-5828,67,621) cannot be walked into off its own threshold
-
-                It is a row's **end**. Its 6x9 lot insets to a 5x7 pad (`_insets` drops the east
-                side and takes one off the rest); `_sizes` gives the side veranda a free flank
-                allows the column it needs, leaving four; and four pinned to the attached flank
-                put the house's *corner* on the reserved doorstep, where the shell lays a corner
-                post and not a door. Swept through the generated production call at every column
-                of the frontage, before the fix: an east-attached end failed on the one column
-                its corner landed on and a west-attached end on the opposite one; a lot attached
-                on both flanks passed at all six, because there the house already fills the pad.
+                This is for a row's **end**. A 6x9 end lot, say, insets to a 5x7 pad (`_insets`
+                drops the east side and takes one off the rest); `_sizes` gives the side veranda
+                a free flank allows the column it needs, leaving four; and four pinned to the
+                attached flank would put the house's *corner* on the reserved doorstep, where the
+                shell lays a corner post and not a door (`E008`: the doorway cannot be walked
+                into off its own threshold). An east-attached end fails on the one column its
+                corner lands on and a west-attached end on the opposite one; a lot attached on
+                both flanks is fine at every column, because there the house already fills the
+                pad.
 
                 So an end spends its slack: one free flank is a column the terrace does not need,
                 and a side deck is worth less than a front door. The widths are tried from `ww`
@@ -383,10 +374,10 @@ def build(b, part, seed, storeys=None, front=None, **kw):
         [[(1, 2), (2, 1)], [(1, 2), (3, 1)], [(1, 3), (2, 1)]])
     eave_kind = vr.get("eave") or "upturned"
     tiers = 1
-    # **The ends are not the voice's to give this house.** Composition round. A row
-    # house's gable stands against the next house, so what happens at the end of the
-    # ridge is a fact about the end of the **row**; a voice that says "irimoya" is
-    # describing a building that stands free, and this one does not. The eave's reach
+    # **The ends are not the voice's to give this house.** A row house's gable stands
+    # against the next house, so what happens at the end of the ridge is a fact about
+    # the end of the **row**; a voice that says "irimoya" is describing a building that
+    # stands free, and this one does not. The eave's reach
     # *is* the voice's -- a crowded ring in a four-block lane cannot afford the two
     # blocks a ring of courtyard houses standing back behind their own gates can -- and
     # it arrives on `building()` from `TypeBuilder` without this file naming it.
@@ -480,16 +471,14 @@ def build(b, part, seed, storeys=None, front=None, **kw):
     fence = b.joinery(voice, "fence")
 
     # --- the party-wall verge: no roof over the next house's ground --- **A pocket
-    # between a low roof and a tall neighbour is a room nobody can enter.** The
-    # neighbourhood delivery round, measured in `out/nd-block` and reproduced offline on
-    # a plane (two adjacent lots, one storey beside two): `E003 a room of 15 cells at
-    # (-5706,72,656) cannot be walked into`, with `E011` beside it, five times -- once
-    # for every one-storey house in the block that had a taller neighbour. The geometry
+    # between a low roof and a tall neighbour is a room nobody can enter.** Two adjacent
+    # lots, one storey beside two, give `E003` (a room that cannot be walked into) with
+    # `E011` beside it, at every one-storey house with a taller neighbour. The geometry
     # is a single column, the depth of the house, two blocks high: its floor is this
     # house's own roof where it meets the party wall, its walls are that roof rising on
     # one side and the neighbour's on the other, and its ceiling is the neighbour's eave
-    # oversailing the plot line. The same junction gave `E004` eleven times, a roof
-    # stair reading as down-slope because the ground ahead of it fell into the pocket.
+    # oversailing the plot line. The same junction gives `E004`, a roof stair reading as
+    # down-slope because the ground ahead of it falls into the pocket.
     # The ridge of this house runs front to back, so what faces a party wall is a roof
     # **slope** and not a gable -- and a slope stopping short of the plot line is what
     # leaves the pocket. So on an attached flank the roof is closed with masonry from
@@ -580,14 +569,12 @@ def build(b, part, seed, storeys=None, front=None, **kw):
         b.place_block(X, fy + 3, Z, frame_blk)          # header over the passage
 
     # one screen upstairs, never reaching across, so nothing can be shut in **...and the
-    # furniture has to know it is there.** The neighbourhood delivery round, measured
-    # through `test_compile` case 7's own build: the upper floor of a two-storey terrace
-    # house read 15 of 42 floor cells unreachable on foot, 100% with a jump allowed.
-    # `holds()` decides whether a fitting cuts a room in half by flooding the room with
-    # `occ` blocked -- and these cells were never in `occ`, because `occ` is built below
-    # this line. So the flood walked straight through the screen, judged the far strip
-    # connected, and `lamps()` put a lantern in the one cell that actually joined it to
-    # the stair. The screen is recorded here and `occ` starts from it.
+    # furniture has to know it is there.** `holds()` decides whether a fitting cuts a
+    # room in half by flooding the room with `occ` blocked, and `occ` is built below this
+    # line. Without the screen in it the flood walks straight through the screen, judges
+    # the far strip connected, and `lamps()` can put a lantern in the one cell that
+    # actually joins it to the stair, leaving part of the upper floor unreachable on
+    # foot. The screen is recorded here and `occ` starts from it.
     screened = set()
     if st >= 2 and inner_hi - inner_lo >= 2 and rng.random() < 0.6:
         dscr = max(2, min(back - 1, back // 2 + 1))
@@ -892,10 +879,10 @@ def build(b, part, seed, storeys=None, front=None, **kw):
                 if (nout, tt) not in have:
                     continue
                 X, Z = deck_cell(nout, tt)
-                # **the step is never a post** (the fabric reset round): with a gap of 3
-                # on a six-wide deck the middle column is a post's, and the deck's one
-                # way down was walled -- found once party walls stopped leaving a slot
-                # at the deck's ends, which had been the only other way onto it
+                # **the step is never a post**: with a gap of 3 on a six-wide deck the
+                # middle column is a post's, and a post there walls the deck's one way
+                # down -- party walls leave no slot at the deck's ends, so there is no
+                # other way onto it
                 if (tt - runs[0]) % gap == 0 and tt != step_at:
                     for yy in range(fy + 1, fy + 4):
                         b.place_block(X, yy, Z, frame_blk)
@@ -903,17 +890,15 @@ def build(b, part, seed, storeys=None, front=None, **kw):
                 elif tt != step_at:
                     b.place_block(X, fy + 1, Z, fence)
         if st >= 2:
-            # **A ledge with a roof over it is a room nobody can get into.** The
-            # neighbourhood round, measured through `type_needs.instance` at pads 10x10
-            # and 11x11: this laid the storey line as a slab the whole length of the
-            # veranda, the main roof's eave already reached over the same ground two
-            # courses higher, and the void between them came back as `E003 a room of 8
-            # cells at (23,68,22) cannot be walked into` with `E011` beside it -- an
-            # enclosed gallery at first-floor level, floored, walled, roofed and with no
-            # way in. It is the same fault this file names twenty lines above about the
-            # veranda itself, one storey up. So the lip is laid where the sky is over it
-            # -- an eyebrow on an open deck, which is what it is for -- and not where
-            # something already stands there.
+            # **A ledge with a roof over it is a room nobody can get into.** A storey
+            # line laid as a slab the whole length of the veranda, under the main roof's
+            # eave two courses higher over the same ground, encloses the void between
+            # them: `E003` (a room that cannot be walked into) with `E011` beside it -- a
+            # gallery at first-floor level, floored, walled, roofed and with no way in.
+            # It is the same fault this file names twenty lines above about the veranda
+            # itself, one storey up. So the lip is laid where the sky is over it -- an
+            # eyebrow on an open deck, which is what it is for -- and not where something
+            # already stands there.
             lip = b.block(voice["trim"], "slab")
             for (k, tt) in sorted(have):
                 X, Z = deck_cell(k, tt)
@@ -933,11 +918,10 @@ def build(b, part, seed, storeys=None, front=None, **kw):
     # anything the furniture shut in behind it, if it can be proved shut in
     fx0, fz0, fx1, fz1 = rect(house_d, w, a)
     b.seal_voids(fx0, fz0, fx1, fz1, wall_blk)
-    # ...and on the whole pad, where a party wall now stands on the plot line (the
-    # fabric reset round: `site()` used to cut a slot through the neighbour's wall, and
-    # the slot was the only way into the strip of pad in front of a set-back house; with
-    # the wall kept, that strip is a pocket nobody can enter). Only a pocket that is
-    # provably enclosed, unreachable and wholly on this pad is closed.
+    # ...and on the whole pad, where a party wall stands on the plot line: with the
+    # neighbour's wall kept whole, the strip of pad in front of a set-back house is a
+    # pocket nobody can enter. Only a pocket that is provably enclosed, unreachable and
+    # wholly on this pad is closed.
     b.seal_voids(part["x0"], part["z0"], part["x1"], part["z1"], wall_blk)
 
     b.check_walkable(label)

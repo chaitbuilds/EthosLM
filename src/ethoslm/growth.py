@@ -257,13 +257,12 @@ def gate(rnd, be, tspec: dict, src_path: str, place_voice: str | None) -> dict:
             why_fn = (f"declares FUNCTION={decl.get('function')!r} and FORM="
                       f"{decl.get('form')!r}; this gap is `{fn}` in "
                       f"{tspec.get('form') or 'any form'}")
-        # **...and by a type whose function can be *used*.** The expression review's
-        # fourth finding: "its feature contract is stronger in the authoring brief than
-        # in the adoption gate". The brief tells the author that every feature carries a
-        # rectangle so `construction.outcome` can verify it; the gate then checked the
-        # declaration and the clean instances and never once asked whether a person
-        # could walk up to the thing the function needs. `usable` asks, on the world one
-        # probe build assembles.
+        # **...and by a type whose function can be *used*.** The feature contract is no
+        # weaker in the adoption gate than in the authoring brief: the brief tells the
+        # author that every feature carries a rectangle so `construction.outcome` can
+        # verify it, and checking only the declaration and the clean instances never asks
+        # whether a person can walk up to the thing the function needs. `usable` asks, on
+        # the world one probe build assembles.
         if not why_fn:
             used = _usable_for(tspec, src_path)
             if used.get("refused"):
@@ -321,9 +320,9 @@ def _usable_for(tspec: dict, src_path: str) -> dict:
                 "why": f"the usability probe's instance did not stand: {res.get('reason')}"}
     part = {**sited, "name": name, "kind": "plot", "type": name, "emitted": got}
     world = usable.World.of_builder(b, part)
-    # **The same three the production pass asks, named once.** The composition round:
-    # this tuple was `construction.CONFIRM_WANTS` written out a second time, so a change
-    # to what construction confirms left the adoption gate asking the old set.
+    # **The same three the production pass asks, named once.** A copy of
+    # `construction.CONFIRM_WANTS` written out here would let a change to what
+    # construction confirms leave the adoption gate asking the old set.
     answers = {w2: usable.check(world, name, w2) for w2 in construction.CONFIRM_WANTS}
     failed = sorted(k for k, a in answers.items() if a["holds"] is False)
     return {"asked": sorted(answers), "lot": [w, d],
@@ -383,11 +382,10 @@ def stage(rnd, be, spec: dict, gaps: list, *, types=None, site=None,
         sub = os.path.join("growth", name)
         path = _pipeline._resolve(os.path.join("types", f"{name}.py"))
         if os.path.exists(path):
-            # **A file with the right name is not the capability.** The architecture
-            # audit reproduced the bypass this replaces: `type_gaps` opened a gap
-            # because the only `tower` on disk was of the wrong form, and this line --
-            # `if os.path.exists(path)` -- closed it again with that very file, so the
-            # place was planned around a capability it did not have. The file is now a
+            # **A file with the right name is not the capability.** `type_gaps` can
+            # open a gap because the only `tower` on disk is of the wrong form, and a
+            # bare `os.path.exists(path)` would close it again with that very file,
+            # planning the place around a capability it does not have. The file is a
             # *candidate*: it is loaded, its declarations are read, and it is adopted
             # only where they answer the gap that was opened.
             from . import capability

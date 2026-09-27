@@ -40,9 +40,8 @@ NEEDS = {
 #: role any voice names and E014 reads material positions, not every string.
 _FLOWERS = ("poppy", "dandelion", "cornflower", "azure_bluet", "oxeye_daisy",
             "allium", "lily_of_the_valley")
-#: The craft round, E6: a hedge's leaf is the **voice's**, matched to its frame timber
-#: by `b.foliage()`, and this is only what a garden falls back to where nothing is
-#: handed it.
+#: A hedge's leaf is the **voice's**, matched to its frame timber by `b.foliage()`,
+#: and this is only what a garden falls back to where nothing is handed it.
 _BUSH = "oak_leaves[persistent=true]"
 
 
@@ -78,8 +77,8 @@ def _paths(x0, z0, x1, z1, layout, cx, cz):
         for (x, z) in _ring(x0 + 1, z0 + 1, x1 - 1, z1 - 1):
             out.add((x, z))
     else:                                            # beds
-        # the craft round (E6): the planted share rises -- a path every seven columns
-        # rather than every five takes the paving from 36% of a garden to 26%
+        # a path every seventh column rather than every fifth keeps the planted share
+        # up: paving is 26% of a garden rather than 36%
         for x in range(x0, x1 + 1):
             for z in range(z0, z1 + 1):
                 if (x - x0) % 7 == 0 or (z - z0) % 7 == 0:
@@ -89,7 +88,7 @@ def _paths(x0, z0, x1, z1, layout, cx, cz):
 
 def _worked(b, ground):
     """The setting's own surface as a path: the game's worked version of it where it has
-    one, and the block itself where it does not. The craft round, E6."""
+    one, and the block itself where it does not."""
     for cand in ("dirt_path",) if str(ground) in ("grass_block", "dirt",
                                                   "coarse_dirt", "podzol") else ():
         return cand
@@ -112,18 +111,18 @@ def build(b, part, seed, **params):
         layout = "cross"
 
     ground = b.block(b.voice["ground"])
-    # **Beds are soil.** The transfer round: a voice whose ground is dressed stone
-    # (`cut_sandstone_terraces`) planted its gardens' flowers in smooth sandstone. The
-    # path keeps the made ground; what is planted is planted in earth.
+    # **Beds are soil.** A voice whose ground is dressed stone
+    # (`cut_sandstone_terraces`) would otherwise plant its gardens' flowers in smooth
+    # sandstone. The path keeps the made ground; what is planted is planted in earth.
     soil = ground if ground.split("[")[0] in ("grass_block", "dirt", "coarse_dirt",
                                               "podzol", "rooted_dirt", "moss_block",
                                               "mud") else "grass_block"
-    # **A garden's path is the ground worked, not the voice's paving**, the craft round
-    # (E6): a path of the voice's `floor` under a kerb of its `trim` made an area the
-    # size of nine houses a large red rectangle in a voice whose trim is red sandstone,
-    # and from the air the upper ring's gardens read as terracotta. A garden is planted
-    # ground with a way through it; the floor is what a place that **names its own
-    # ground** paves with, and everywhere else it is the setting's own surface, swept.
+    # **A garden's path is the ground worked, not the voice's paving.** A path of the
+    # voice's `floor` under a kerb of its `trim` makes a garden the size of nine houses
+    # one large rectangle of the trim's colour -- terracotta from the air, in a voice
+    # whose trim is red sandstone. A garden is planted ground with a way through it; the
+    # floor is what a place that **names its own ground** paves with, and everywhere
+    # else it is the setting's own surface, swept.
     bush = b.foliage(b.voice["frame"]) + "[persistent=true]"
     made = str(b.voice.get("ground") or "") not in ("", "grass_block")
     path = b.block(b.voice["floor"]) if made else _worked(b, b.voice["ground"])

@@ -105,15 +105,13 @@ def _column(b, x, y0, y1, block):
 def _pave(b, rect, y, pattern, cx, cz, rng):
     """The floor of the square: one field, read at the scale of a person.
 
-        **Declared a figure** (composition round). The whole paved field is one drawn
-        thing -- the ground course and the accent that reads against it are the two halves
-        of one pattern, and repainting either destroys it -- so the declaration wraps the
-        lot rather than the accent cells alone. The design round's material pass had no way
-        to know: it turned this square's chequer of cobble and mossy cobble into camouflage
-        and the palace forecourts' laid quartz into uniform grey noise, and the round's
-        result names both (`out/des-material/comparison.json`, criterion 5). The pattern
-        exists nowhere but the arithmetic below, so this function is the only thing that
-        can say so.
+        **Declared a figure.** The whole paved field is one drawn thing -- the ground
+        course and the accent that reads against it are the two halves of one pattern, and
+        repainting either destroys it -- so the declaration wraps the lot rather than the
+        accent cells alone. A material pass has no other way to know: undeclared, a chequer
+        of cobble and mossy cobble becomes camouflage and laid quartz uniform grey noise.
+        The pattern exists nowhere but the arithmetic below, so this function is the only
+        thing that can say so.
 
     """
     x0, z0, x1, z1 = rect

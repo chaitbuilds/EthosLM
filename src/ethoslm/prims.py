@@ -301,12 +301,11 @@ def shape(name: str, kind: str = "full") -> str:
 def foliage(mat: str) -> str:
     """The leaf of a timber, where the game has one, and oak last.
 
-        The craft round, E6, and the same rule `joinery()` runs on: a grove built its canopy
-        out of a module constant (`oak_leaves`), so a belt of orchards in a Japanese voice
-        had dark-oak trunks under oak leaves and every palette this project has read the
-        same green. A tree's leaf is its timber's; a family the game grows no leaf of --
-        stone, a brick -- gets oak, which is the one place a fallback is right, because the
-        choice being made is which tree.
+        The same rule `joinery()` runs on. A canopy built out of a module constant
+        (`oak_leaves`) puts dark-oak trunks under oak leaves in a Japanese voice and reads
+        every palette the same green. A tree's leaf is its timber's; a family the game grows
+        no leaf of -- stone, a brick -- gets oak, which is the one place a fallback is right,
+        because the choice being made is which tree.
 
     """
     fam = family(mat) or str(mat or "")
@@ -319,14 +318,11 @@ def foliage(mat: str) -> str:
 def axial(block: str, axis: str = "y") -> str:
     """`block` laid on `axis`, where the game gives that block an axis at all.
 
-        The craft round, E2, and the eleventh time a rule has been in two places. Nine
-        committed types carry a private `_axial` that decides by the block's **name** --
-        `endswith(("_log", "_pillar", "_wood"))` -- and four of them then compose
-        `[axis=...]` at other call sites without going through it. A voice whose trim is
-        `purpur` lays `bare` as `purpur_block`, which is a cube with no axis and no name
-        ending in one of those three, and `purpur_block[axis=z]` is a block state the game
-        does not have: `workshop`'s bay beam and `gate_tower`'s lintel wrote it the day the
-        voice existed and the block registry is what found it.
+        One rule in one place. Deciding by the block's **name** --
+        `endswith(("_log", "_pillar", "_wood"))` -- is wrong: a voice whose trim is `purpur`
+        lays `bare` as `purpur_block`, which is a cube with no axis and no name ending in
+        one of those three, and `purpur_block[axis=z]` is a block state the game does not
+        have.
 
         So it is the **registry's** answer and not a string test: a block gets its axis
         where the registry says it has one, keeps any properties it already carries, and is
@@ -464,11 +460,10 @@ class Primitives:
         """`with b.figure("market_chequer"):` -- every block placed inside is part of a
                 **deliberate figure** and no material pass may repaint it.
 
-                The composition round, and the design round's own cause 4: the surface record
-                said who owned a cell and what role it had, and nothing said the cell was part
-                of a pattern somebody drew, so a contextual material pass replaced both market
-                floors' designed chequers, the palace courts' laid paving and the great wall's
-                string course with noise. Ownership was recorded; intent was not.
+                The surface record says who owns a cell and what role it has; without this,
+                nothing says the cell is part of a pattern somebody drew, and a contextual
+                material pass replaces a market floor's designed chequer, a court's laid paving
+                or a wall's string course with noise. Ownership is recorded; so is intent.
 
                 The patterns exist only as arithmetic inside a type program -- `(x // 2 + z // 2)
                 % 2`, a ring every second radius, a trim block every `STRING_EVERY` courses --
@@ -1307,16 +1302,15 @@ class Primitives:
                 of a wall is a few thousand columns and its bounding box is the city inside it.
                 The margin is applied round each column.
 
-                **A stripped log is a post, not a trunk.** The design round: `Builder.site()`
-                calls this for every part, so this box reaches past the plot into whatever a
-                neighbour already built, and `prims.shape(fam, "post")` returns
-                `stripped_<wood>_log` for all eight wood families -- every timber-framed voice
-                stands its frames in a block that ends `_log` and contains `_log`. One part's
-                site clearance therefore seeded on its neighbour's posts and flooded through
-                them: in `out/des-farm` the market square's canopy was left standing on nothing
-                and the construction check stopped the run with six `E010`s. Nothing the world
-                generates is ever `stripped_`, which is why `clear_ground_cover` one function
-                down already makes the same exclusion.
+                **A stripped log is a post, not a trunk.** `Builder.site()` calls this for
+                every part, so this box reaches past the plot into whatever a neighbour already
+                built, and `prims.shape(fam, "post")` returns `stripped_<wood>_log` for all eight
+                wood families -- every timber-framed voice stands its frames in a block that
+                ends `_log` and contains `_log`. Treated as trunks, a neighbour's posts would
+                seed one part's site clearance and flood through, leaving what they hold up
+                standing on nothing (`E010`). Nothing the world generates is ever `stripped_`,
+                which is why `clear_ground_cover` one function down already makes the same
+                exclusion.
 
         """
         removed = 0

@@ -35,7 +35,7 @@ class Skip(Exception):
 
 def _retained(name: str) -> dict:
     """The checked spec, site, plateau record, capabilities and intent of a retained
-    closure round, or Skip."""
+    round under `out/<name>`, or Skip."""
     st = os.path.join(ROOT, "out", name)
     p = os.path.join(st, "place.checked.json")
     if not os.path.exists(p) or not os.path.exists(os.path.join(st, "site.json")):

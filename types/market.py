@@ -610,12 +610,11 @@ def build(b, part, seed, **params):
     fy = int(part["floor_y"])
     w, d = x1 - x0 + 1, z1 - z0 + 1
     b.fill_region(x0, fy + 1, z0, x1, fy + 10, z1, "air")
-    # **The market floor is a figure**, composition round: the ground course here and
-    # the accent laid down the aisle below are one drawn thing -- the way through reads
-    # on the ground only because the two contrast -- and the design round's material
-    # pass replaced the pair with camouflage (`out/des-material/comparison.json`,
-    # criterion 5: "the market floor's chequer of quartz and diorite is replaced by
-    # camouflage"). Declared where it is laid, because nothing else knows.
+    # **The market floor is a figure**: the ground course here and the accent laid down
+    # the aisle below are one drawn thing -- the way through reads on the ground only
+    # because the two contrast -- and a material pass that replaced either would turn
+    # the floor's chequer of quartz and diorite into camouflage. Declared where it is
+    # laid, because nothing else knows.
     with b.figure("market_floor"):
         b.fill_region(x0, fy, z0, x1, fy, z1, _foot(b))
     # the aisle runs along the long axis

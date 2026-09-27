@@ -22,15 +22,13 @@ FORM = "east_asian"
 #: and a shop-house are both east Asian.
 ROLE = "urban"
 
-#: **What this building is for.** The neighbourhood round, found by reading a built
-#: section: this type declared no `FUNCTION`, so `district_compile.type_use` fell back
-#: to its `ROLE` and recorded its use as `unstated` -- an inference, said to be one on
-#: the record. A quarter's own fabric is drawn from the types whose *declared* function
-#: is the quarter's use, so an inferred `unstated` ranked below `row_house`'s declared
-#: `dwelling`, and the traders' ring of a city whose sources say in as many words that
-#: "its houses are courtyard houses" came out as thirty row houses and no courtyard
-#: house at all. A courtyard house is a dwelling; the file says so now, and the
-#: inference is retired for this type.
+#: **What this building is for.** Without a declared `FUNCTION`,
+#: `district_compile.type_use` falls back to the type's `ROLE` and records its use as
+#: `unstated` -- an inference, said to be one on the record. A quarter's own fabric is
+#: drawn from the types whose *declared* function is the quarter's use, so an inferred
+#: `unstated` ranks below `row_house`'s declared `dwelling`, and a ring whose sources say
+#: "its houses are courtyard houses" comes out as row houses and no courtyard house at
+#: all. A courtyard house is a dwelling, and the file says so.
 FUNCTION = "dwelling"
 
 #: What this type delivers, by name, so a requirement can ask for it and the assembled
@@ -44,11 +42,8 @@ PARAMS = {
 
 #: **The least a court may be and still be one.** Three columns on each axis: a person
 #: standing in the middle of it has open ground on every side, and the ring of ranges
-#: has something to stand round rather than a light well. The neighbourhood round
-#: measured the alternative on the retained build -- eight `court_large` instances whose
-#: courts came out 2x2, 3x2 and 3x3, six of which the assembled world then refused as
-#: courts -- and a 2x2 court is not a court that one well fills, it is a court that one
-#: well **is**.
+#: has something to stand round rather than a light well. A 2x2 court is not a court
+#: that one well fills, it is a court that one well **is**.
 COURT_MIN = 3
 
 #: What share of a court's own cells its furnishing may take. `construction.OPEN_STANDS`
@@ -74,18 +69,16 @@ PAD_MIN = COURT_MIN + 2 * RANGE_MIN
 
 NEEDS = {
     # The band `scripts/type_needs.py` measured, on a plane and on a bank: clean at
-    # every size from 6x6 to the 32x32 the sweep reaches, with no broken size between.
-    # It read 6-9 and 19-32 with nine sizes broken in the middle until the stair defects
-    # below were closed; those nine were one defect and the `except` list is empty now.
-    # rounds/type-needs.json is what this line is held to. **The floor is `PAD_MIN` and
-    # not the sweep's 6, because the sweep asks whether the type stands and this type's
-    # whole point is what it stands *round*.** The neighbourhood round measured what 6
-    # bought: on the retained section's 7x7 and 8x8 pads `court_large` laid four walls
-    # round a 2x2 light well with no room in any of the four ranges, published
-    # `courtyard: True` over it, and the assembled world refused six of the eight. A
-    # declared band that admits a lot the type cannot deliver the feature on is the same
-    # defect as a declared feature with no rectangle, one level up. `court_small` is the
-    # same idea for the small lots and its band starts below this.
+    # every size from 6x6 to the 32x32 the sweep reaches, with no broken size between,
+    # so the `except` list is empty. rounds/type-needs.json is what this line is held
+    # to. **The floor is `PAD_MIN` and not the sweep's 6, because the sweep asks whether
+    # the type stands and this type's whole point is what it stands *round*.** On a 7x7
+    # or 8x8 pad `court_large` would lay four walls round a 2x2 light well with no room
+    # in any of the four ranges and publish `courtyard: True` over it, which the
+    # assembled world refuses. A declared band that admits a lot the type cannot deliver
+    # the feature on is the same defect as a declared feature with no rectangle, one
+    # level up. `court_small` is the same idea for the small lots and its band starts
+    # below this.
     "footprint": (PAD_MIN, PAD_MIN, 32, 32),
     "frontage": "lane",
     "ground": "any",
@@ -350,15 +343,13 @@ def build(b, part, seed, **params):
     psp = rng.choice([2, 3])
     posts = [c for c in ((ex0, ez0), (ex1, ez0), (ex0, ez1), (ex1, ez1))]
     if yard_w >= 4 and yard_d >= 4:
-        # **The posts that carry the eave stand on the veranda, not in the court.** The
-        # neighbourhood round, measured on a 16x16 probe: this walked `_ring_cells(yx0,
-        # yz0, yx1, yz1)` -- the **yard's** own edge, one cell inside the engawa -- and
-        # planted a column of the voice's masonry every third cell of it. Seven of a
-        # 36-cell court's cells went to posts standing in open ground, and
-        # `usable.court_accessible` then answered "no longer open paved ground" on a
-        # court this type had itself filled in. A veranda post belongs on the veranda:
-        # the engawa ring is where the plate above it already runs (see the loop just
-        # above).
+        # **The posts that carry the eave stand on the veranda, not in the court.**
+        # Posts on the **yard's** own edge (`_ring_cells(yx0, yz0, yx1, yz1)`, one cell
+        # inside the engawa) would stand in open ground and take a small court's paving,
+        # and `usable.court_accessible` would then answer "no longer open paved ground"
+        # on a court this type had itself filled in. A veranda post belongs on the
+        # veranda: the engawa ring is where the plate above it already runs (see the
+        # loop just above).
         for (px, pz) in _ring_cells(ex0, ez0, ex1, ez1):
             if (abs(px - ex0) + abs(pz - ez0)) % (psp + 1) == 0:
                 posts.append((px, pz))
@@ -721,17 +712,16 @@ def build(b, part, seed, **params):
         furnish(cells, "light", "south", v["trim"], room="house", y=fys + 1,
                 test=up_shut, mark=up_mark)
 
-    # ---- the yard: planted ground, not a paved through-way ------------------ **A
-    # court is open ground, and what is put in it is held to a budget.** The
-    # neighbourhood round: `court_accessible` asks whether `construction.OPEN_STANDS`
-    # (four fifths) of the court's cells are paved and clear, and this pass planted a
-    # wellhead -- which is a 3x3 curb round a shaft, not one cell -- a trough or three
-    # and a lantern in whatever yard it was given, without ever asking how big the yard
-    # was. In a 6-cell court a well **is** the court. `yard_room` is what a fifth of
-    # this court comes to, less whatever the ranges have already taken out of it, and
-    # nothing is laid that would overrun it. A court too small to spend anything gets
-    # nothing, which is the right answer and not a failure: an empty 3x3 court is still
-    # a court.
+    # ---- the yard: planted ground, not a paved through-way ------------------
+    # **A court is open ground, and what is put in it is held to a budget.**
+    # `court_accessible` asks whether `construction.OPEN_STANDS` (four fifths) of the
+    # court's cells are paved and clear, and a wellhead -- a 3x3 curb round a shaft,
+    # not one cell -- a trough or three and a lantern, laid without asking how big the
+    # yard is, can overrun that. In a 6-cell court a well **is** the court. `yard_room`
+    # is what a fifth of this court comes to, less whatever the ranges have already
+    # taken out of it, and nothing is laid that would overrun it. A court too small to
+    # spend anything gets nothing, which is the right answer and not a failure: an
+    # empty 3x3 court is still a court.
     plot = [c for c in yard if c not in blocked and c not in passage]
     plot.sort(key=lambda c: (abs(c[0] - (yx0 + yx1) / 2.0)
                              + abs(c[1] - (yz0 + yz1) / 2.0), rng.random()))
@@ -809,14 +799,13 @@ def build(b, part, seed, **params):
     b.check_door(dx, fy + 1, dz)
     b.check_walkable(part["label"])
     b.check_attached()
-    # **The court is declared, so the assembled world can be asked about it.** The
-    # composition round: this type lays four ranges round a yard and published nothing
-    # about it, so `usable.court_accessible` answered `unsupported` on every one of the
-    # twenty-five courts the section built -- the registered relationship "courts that
-    # are enclosed and entered" could not be measured at all, and an unmeasured
-    # relationship holds nothing. `courtyard` is in `construction.OPEN_FEATURES`, so
-    # what is verified is that the yard is *open* ground reachable from the house, which
-    # is what a court is.
+    # **The court is declared, so the assembled world can be asked about it.** A type
+    # that lays four ranges round a yard and publishes nothing about it gets
+    # `unsupported` from `usable.court_accessible` on every court -- the relationship
+    # "courts that are enclosed and entered" cannot be measured at all, and an
+    # unmeasured relationship holds nothing. `courtyard` is in
+    # `construction.OPEN_FEATURES`, so what is verified is that the yard is *open*
+    # ground reachable from the house, which is what a court is.
     return {"ranges": 4, "storeys": ns, "yard": (yx0, yz0, yx1, yz1),
             "emitted": {"storeys": int(ns),
                         "features": {"courtyard": True, "chimney": False},

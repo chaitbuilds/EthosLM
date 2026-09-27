@@ -1986,11 +1986,11 @@ parts.
 
 def spec_brief(sentence: str, out_path: str) -> str:
     from .. import groundread, spec as spec_mod, styles
-    # **Every voice with the colour of the three materials a person sees of it**, the
-    # craft round (E2): a call choosing a palette per ring is choosing by colour, and a
-    # blurb alone asks it to know Minecraft's block list by heart. `ceremonial` is said
-    # out loud, because a voice that is a quarter's and not a place's is a candidate for
-    # a ring and never an answer to `voice` at the place level.
+    # **Every voice with the colour of the three materials a person sees of it**: a call
+    # choosing a palette per ring is choosing by colour, and a blurb alone asks it to
+    # know Minecraft's block list by heart. `ceremonial` is said out loud, because a
+    # voice that is a quarter's and not a place's is a candidate for a ring and never an
+    # answer to `voice` at the place level.
     def _line(k, v):
         seen = ", ".join(f"{r} {v['palette'][r]}{styles._colour_note(v['palette'][r])}"
                          for r in ("wall", "roof", "trim") if v["palette"].get(r))
@@ -2080,14 +2080,13 @@ def stage_site_search(rnd, be, results: dict) -> dict:
     p = rnd.rel("site_search.json")
     if os.path.exists(p):
         got = json.load(open(p))
-        # **Reused only where what it was scored against has not moved.** The
-        # architecture audit reproduced this: change a village's spec into a city's and
-        # the stage returned the village's site, because its whole test for "already
-        # done" was that the file exists. The site is still a fixture once chosen -- a
-        # round whose spec is unchanged never re-searches -- but a site chosen for a
-        # different place is stale, and the run says so rather than planning a city on a
-        # village's square. A round with no stamp at all (an older round, or a shipped
-        # fixture) is reused exactly as it was.
+        # **Reused only where what it was scored against has not moved.** "The file
+        # exists" is not a test for "already done": change a village's spec into a
+        # city's and it would return the village's site. The site is still a fixture
+        # once chosen -- a round whose spec is unchanged never re-searches -- but a site
+        # chosen for a different place is stale, and the run says so rather than
+        # planning a city on a village's square. A round with no stamp at all (an older
+        # round, or a shipped fixture) is reused exactly as it was.
         fresh, why = deps.check(rnd, "site_search")
         # **A fixture is an import, and a search that chose nothing is not a site.** A
         # search that failed still writes its record, and reading "no stamp" as "a
@@ -5505,11 +5504,11 @@ def stage_plan_levels(rnd, be, results: dict, spec: dict) -> dict:
     for c in (place.get("compounds") or []):
         cb = rnd.rel(f"compound_{c['name']}_prompt.md")
         cp = rnd.rel(f"plan.compound.{c['name']}.json")
-        # **An axial compound is laid by the library and no model is asked**, the craft
-        # round (E5), at the same seam a compiled district is read from: a family whose
-        # composition declares an axis is a *sequence* -- the gate, a forecourt, a hall,
-        # an inner court and the greatest hall at the far end -- and an order is not
-        # something a validator can ask for after the fact.
+        # **An axial compound is laid by the library and no model is asked**, at the
+        # same seam a compiled district is read from: a family whose composition declares
+        # an axis is a *sequence* -- the gate, a forecourt, a hall, an inner court and the
+        # greatest hall at the far end -- and an order is not something a validator can
+        # ask for after the fact.
         if not os.path.exists(cp):
             cpart = next((d for d in spec_mod.compounds(spec)
                           if placeplan._answers(c, d)), None)

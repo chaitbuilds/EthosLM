@@ -73,11 +73,11 @@ COSTS = {"relief": 1.0,        # per block of relief under the part
          "shrink": 0.1,        # per block a perimeter wall's half-side is under the edge
          "wall_distance": 0.1,  # per column a wall's centre is from the place's
          "axis": 10.0,
-         # **a side round the centre lost to a satellite**, per side (the closure
-         # round): a hall placed on the square's east side took the whole east strip
-         # with it, and the cottages the sentence gathers *around* the square could
-         # reach two of its four sides. Costed, not vetoed: a satellite has to stand
-         # somewhere, and where every side is small the least-losing one is taken.
+         # **a side round the centre lost to a satellite**, per side: a hall placed on
+         # the square's east side takes the whole east strip with it, and the cottages
+         # the sentence gathers *around* the square reach fewer of its four sides.
+         # Costed, not vetoed: a satellite has to stand somewhere, and where every side
+         # is small the least-losing one is taken.
          "strips": 60.0,
 }         # a part beside the centre on the gate's side of it
 
@@ -400,13 +400,13 @@ def _lot_min_for(tname: str | None, params: dict | None, features=(), *,
                  voice: str | None = None, seed: int = 1,
                  cache: str | None = None) -> tuple | None:
     """The least lot this type delivers these parameters **with these features** on,
-        from the envelope module where it exists (worker B's `envelope.lot_for`), else None.
+        from the envelope module where it exists (`envelope.lot_for`), else None.
 
-        **The features are not optional.** The expression review's first cause, measured on
-        the imported code: `lot_for("cottage", {"storeys": 2})` answers a 5x5 minimum and
-        `lot_for("cottage", {"storeys": 2}, features=("storeys",))` answers 15x17, because
-        with an empty feature list `_stands` checks no requested feature and a standing
-        shell answers a multi-storey query. Every caller here names what it is asking for.
+        **The features are not optional.** `lot_for("cottage", {"storeys": 2})` answers a
+        5x5 minimum and `lot_for("cottage", {"storeys": 2}, features=("storeys",))`
+        answers 15x17, because with an empty feature list `_stands` checks no requested
+        feature and a standing shell answers a multi-storey query. Every caller here names
+        what it is asking for.
 
     """
     if not tname:
@@ -451,10 +451,10 @@ class Refused(Exception):
     """**A demand nothing in the approved band delivers.**
 
         Raised where an envelope refuses, or where a required feature cannot be carried to
-        the envelope at all. The design round's first contract: "a failed or unknown
-        envelope becoming a smaller default" is the defect, so this is an exception and not
-        a return value -- a caller has to decide between an honest stop and an alternative
-        arrangement, and cannot accidentally carry on with a smaller lot.
+        the envelope at all. A failed or unknown envelope must never become a smaller
+        default, so this is an exception and not a return value -- a caller has to decide
+        between an honest stop and an alternative arrangement, and cannot accidentally
+        carry on with a smaller lot.
 
     """
 
@@ -534,13 +534,13 @@ def fabric_lot(part: dict, decls: dict, spec: dict | None = None, *,
     lm, why = _demand_lot(part, house, ch, demand, voice=voice)
     if why:
         src.append(why)
-    # **the form the use owes, not the envelope's shell** (the parent composition
-    # round). `demand.lot` asks whether a shell with the required features stands, which
-    # for a courtyard house owing a court of seven answered 13x13 while the form plan
-    # the compiler and the builder read needs 17x20 between party walls: the parent
-    # budgeted the ring on one estimate and the pieces were compiled on another. Where
-    # the character states what each use owes and the dwelling publishes its plan, the
-    # least lot is that plan's (`formplan.least_lot`, as the compiler asks it).
+    # **the form the use owes, not the envelope's shell**. `demand.lot` asks whether a
+    # shell with the required features stands, which for a courtyard house owing a court
+    # of seven answers 13x13 while the form plan the compiler and the builder read needs
+    # 17x20 between party walls: the parent would budget the ring on one estimate and the
+    # pieces be compiled on another. Where the character states what each use owes and
+    # the dwelling publishes its plan, the least lot is that plan's (`formplan.least_lot`,
+    # as the compiler asks it).
     if house is not None and (ch.get("forms") or {}).get("dwelling") is not None:
         from . import formplan as _fp
         dw = dict((ch.get("forms") or {}).get("dwelling") or {})
@@ -686,11 +686,10 @@ def land_need(part: dict, n: int, decls: dict, spec: dict | None = None, *,
            placeplan.PLOT_LANE if ch.get("frontage") == "open" else dc.LOT_GAP)
     min_len = 2 * dc.EDGE_MARGIN + placeplan.PLOT_LANE + k * w + (k - 1) * gap
     rows_needed = int(math.ceil(n / float(k))) if n else 0
-    # **How deep a district of this fabric is, from the arrangement and not a constant**
-    # (the design round's second contract). `district_compile.district_depth` is the one
-    # arithmetic both sides read: a band of one row of lots is a district, and a parent
-    # held to two rows is a parent whose least width had nothing to do with the houses
-    # standing in it.
+    # **How deep a district of this fabric is, from the arrangement and not a constant**.
+    # `district_compile.district_depth` is the one arithmetic both sides read: a band of
+    # one row of lots is a district, and a parent held to two rows is a parent whose
+    # least width has nothing to do with the houses standing in it.
     rows = int((arrangement or {}).get("rows") or min(2, max(rows_needed, 1)))
     row_gap = placeplan.PLOT_LANE if ch.get("frontage") == "open" else dc.LOT_GAP
     min_dep = dc.district_depth(ld, rows, row_gap)
@@ -762,9 +761,9 @@ def anchor_size(spec: dict, decls: dict, part: dict, decl: dict | None, kind: st
               if p["kind"] == "group" and entity_of(p, spec).get("class") == "building"]
     lot_cols, lot_src = 120, "no district of houses: a lot of 120 assumed"
     if groups:
-        # **the lot the fabric's own resolved demand asks for** (the design round's
-        # first contract): the anchor is sized in lots and a lot sized before the demand
-        # is a lot of a type the district may not be built of
+        # **the lot the fabric's own resolved demand asks for**: the anchor is sized in
+        # lots and a lot sized before the demand is a lot of a type the district may not
+        # be built of
         (w, d), src = fabric_lot(groups[0], decls, spec, allocation=allocation,
                                  demand=groups[0].get("demand"))
         lot_cols, lot_src = w * d, src[0]
@@ -848,12 +847,12 @@ class Solver:
         self.plateau = plateau or {}
         self.decls = {n: d for n, d in decls.items() if d is not None}
         self.voice = voice
-        # **The type the capability record approved, per defining part.** The
-        # integration round's third finding: `capability.match` wrote down which type
-        # answers each part and then the solver went and picked one of its own, so the
-        # record was a description of a decision nobody made. `_type_of` prefers what
-        # matching approved and falls back to `_type_for` only where matching has
-        # nothing to say -- a round with no capability record behaves exactly as before.
+        # **The type the capability record approved, per defining part.**
+        # `capability.match` writes down which type answers each part; a solver that
+        # picked one of its own would make the record a description of a decision nobody
+        # made. `_type_of` prefers what matching approved and falls back to `_type_for`
+        # only where matching has nothing to say -- a solve with no capability record
+        # picks by `_type_for` alone.
         self.caps = {k: v for k, v in (caps or {}).items() if v}
         self.ground = _Ground(vol)
         self.rng = random.Random(int(seed))
@@ -2911,14 +2910,13 @@ def approved_from_place(place: dict | None) -> tuple:
     """`({defining part: [approved types]}, {defining part: demand})` read off a place
         that has already been laid out.
 
-        **A place is the record of what was approved for it.** The design round, found by
-        running the farm's improve stage: `reallocate` re-solves through `solve_place`, and
-        where its caller passes no capability record `approved_fabric({})` is empty -- so
-        the re-solve resolved its demand against the *general library*, `house_types`
-        admitted every type of the role, and the district that had been built of `cottage`
-        came back built of `hall` and `worship`. The capability check then refused the
-        reallocation for it, and with a hall's lot in place of a cottage's the same
-        rectangles held ten of the sixteen the sentence states. One cause, both defects.
+        **A place is the record of what was approved for it.** `reallocate` re-solves
+        through `solve_place`, and where its caller passes no capability record
+        `approved_fabric({})` is empty -- so the re-solve would resolve its demand against
+        the *general library*, `house_types` would admit every type of the role, and a
+        district built of `cottage` could come back built of `hall` and `worship`. The
+        capability check then refuses the reallocation, and with a hall's lot in place of
+        a cottage's the same rectangles hold fewer houses than the sentence states.
 
         So a revision does not depend on its caller to hand it the record again. The place
         it is revising carries `fabric_types` and `demand` on every district
@@ -3058,9 +3056,8 @@ def solve_place(spec: dict, site: dict, plateau: dict | None, decls: dict, voice
     alloc = allocation_of(spec, allocation)
     was_cache = ENVELOPE_CACHE
     ENVELOPE_CACHE = envelope_cache or was_cache
-    # **Demand before size** (the design round's first contract): the approved fabric
-    # pool and the resolved demand go onto the defining parts before the first dimension
-    # is derived from one of them.
+    # **Demand before size**: the approved fabric pool and the resolved demand go onto
+    # the defining parts before the first dimension is derived from one of them.
     spec, refused = resolved_spec(spec, caps, intent, decls=decls, allocation=alloc,
                                   voice=voice, approved=approved, demands=demands)
     try:
@@ -3205,18 +3202,18 @@ def _arrangement_actions() -> tuple:
 
 ARRANGEMENT_ACTIONS = _arrangement_actions()
 
-#: **The composition round's three additions, and why each is a layout action.**
-#: enlarge_anchor the other direction of `shrink_anchor`. `shrink_anchor` clamped with
-#: `min(new, share)` so it could only ever reduce, and a finding that says the square is
-#: *too small for what gathers about it* -- which is what the checker's own `least`
-#: bound in `anchor_size` exists for -- had no action at all. `resize_anchor` is the
-#: same code taking a direction; both names route to it and `shrink_anchor` behaves
-#: exactly as it did. regroup gather the fabric toward the anchor and its streets
-#: (`Solver._compact`/`_straddle`), which until now ran only where the count was the
-#: sentence's own. A scattered-fabric finding is a real finding about an inferred count
-#: too. redistribute move **inferred** population between the districts of one part,
-#: preserving the place's total. and it is refused **by name** where the count is
-#: explicit or a district is marked exact.
+#: **Three actions beyond shrinking the anchor, and why each is a layout action.**
+#: `enlarge_anchor`: the other direction of `shrink_anchor`, which clamps with
+#: `min(new, share)` and so can only reduce; a finding that says the square is *too
+#: small for what gathers about it* -- what the checker's own `least` bound in
+#: `anchor_size` exists for -- needs an action too. `resize_anchor` is the same code
+#: taking a direction; both names route to it and `shrink_anchor` still only reduces.
+#: `regroup`: gather the fabric toward the anchor and its streets
+#: (`Solver._compact`/`_straddle`) whether or not the count is the sentence's own -- a
+#: scattered-fabric finding is a real finding about an inferred count too.
+#: `redistribute`: move **inferred** population between the districts of one part,
+#: preserving the place's total; refused **by name** where the count is explicit or a
+#: district is marked exact.
 RESIZE_ANCHOR_ACTIONS = ("shrink_anchor", "enlarge_anchor", "resize_anchor")
 REALLOCATE_ACTIONS = (*RESIZE_ANCHOR_ACTIONS, "resize_ring", "grow_land", "enlarge_lots",
                       "regroup", "redistribute", "move_object", *ARRANGEMENT_ACTIONS)
@@ -3314,15 +3311,14 @@ def _action_for(finding: dict, place: dict, spec: dict) -> tuple:
                                   if s in districts and districts[s].get("defines") in land),
                                  land[0])
     # **A density finding is not a lot-size finding because it says the word "lots".**
-    # The neighbourhood round, found by routing the section's own `s1`: "the lots cover
-    # 26.3% of the districts' ground against the at least 30% this build calls dense"
-    # contains the word `lot` and `about: fabric`, so it matched the clause below and
-    # was routed to `enlarge_lots` -- which is *precisely* the escape the clause after
-    # it exists to refuse, and which the comment there has argued against since the
-    # design round. Enlarging lots raises allocated cover and lowers built cover. A
-    # finding whose measure or words are about density is a density finding, and the
-    # arrangement branch below gets it first; `enlarge_lots` keeps every finding that is
-    # about the size of a house rather than the crowding of a quarter.
+    # "the lots cover 26.3% of the districts' ground against the at least 30% this build
+    # calls dense" contains the word `lot` and `about: fabric`, so without this test it
+    # would match the clause below and be routed to `enlarge_lots` -- *precisely* the
+    # escape the clause after it exists to refuse. Enlarging lots raises allocated cover
+    # and lowers built cover. A finding whose measure or words are about density is a
+    # density finding, and the arrangement branch below gets it first; `enlarge_lots`
+    # keeps every finding that is about the size of a house rather than the crowding of
+    # a quarter.
     _dense = (measure in ("lot_cover", "density") or about == "density"
               or any(w in says for w in ("cover", "dense", "sparse", "density",
                                          "crowd", "crowded")))
@@ -3487,13 +3483,12 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
         return place, rec
     rec.update(action=action, subject=subject)
     if action == "move_object":
-        # **A refusal names the owner that does have the action, and offers one.** The
-        # composition round: `pipeline/improve.py`'s `OWNER_ACTIONS` lists `move_object`
-        # for `layout` and this refused it unconditionally with a reason and nothing
-        # else, so the finding reached a dead end that looked like an exhausted action
-        # list. The owner that moves a part is the relation repair; where the subject is
-        # a district's fabric rather than a standing part, the layout's own `regroup` is
-        # the action that moves it, and the alternative says so by name.
+        # **A refusal names the owner that does have the action, and offers one.**
+        # `pipeline/improve.py`'s `OWNER_ACTIONS` lists `move_object` for `layout`, and a
+        # bare refusal would leave the finding at a dead end that looks like an exhausted
+        # action list. The owner that moves a part is the relation repair; where the
+        # subject is a district's fabric rather than a standing part, the layout's own
+        # `regroup` is the action that moves it, and the alternative says so by name.
         here = {d.get("name"): d for d in place.get("districts") or []}
         mine = (subject in here or any(d.get("defines") == subject
                                       for d in place.get("districts") or []))
@@ -3522,15 +3517,13 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
     why = ""
     parts_by = {p["name"]: p for p in spec.get("defining_parts") or []}
     if action in RESIZE_ANCHOR_ACTIONS:
-        # **The anchor's share moves in both directions**, the composition round's fifth
-        # change. `shrink_anchor` clamped with `min(new, share)`, so a finding asking
-        # for a *larger* square -- which is what `anchor_size`'s own `least` bound is
-        # about, and what "the palace's processional sequence needs relationships" means
-        # at the square's scale -- reached this branch and was told the anchor cannot be
-        # smaller. One body, a direction, and `shrink_anchor` is unchanged where it is
-        # asked to shrink. The direction is the finding's own where it states one, the
-        # action's name where the name says it, and down by default (which is every
-        # existing caller).
+        # **The anchor's share moves in both directions.** A shrink-only clamp
+        # (`min(new, share)`) would answer a finding asking for a *larger* square --
+        # which is what `anchor_size`'s own `least` bound is about, and what "the
+        # palace's processional sequence needs relationships" means at the square's
+        # scale -- by saying the anchor cannot be smaller. One body, a direction, and
+        # `shrink_anchor` only ever shrinks. The direction is the finding's own where it
+        # states one, the action's name where the name says it, and down by default.
         part = parts_by.get(subject) or spec_mod.core(spec) or {}
         fam = str(part.get("family") or "").lower()
         share = float((current.get("anchor") or {}).get("share")
@@ -3706,20 +3699,19 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
         # arrangement this place will actually be laid out with
         _seed = int(seed if seed is not None
                     else ((place.get("layout") or {}).get("seed") or 1))
-        # **the finding, so the comparison can rank for what this trial is for.** The
-        # neighbourhood delivery round: `alternatives` marks each row `helps` where it
-        # can estimate the measure the reading named and the estimate moves the way the
-        # finding asks, and ranks those above the general preferences.
+        # **the finding, so the comparison can rank for what this trial is for.**
+        # `alternatives` marks each row `helps` where it can estimate the measure the
+        # reading named and the estimate moves the way the finding asks, and ranks those
+        # above the general preferences.
         rows = _arrange.alternatives(on[0], cpart, place, decls, spec=spec, seed=_seed,
                                      parts_record=parts_record, finding=finding)
         # **A finding that names no action takes the comparison's best row, whatever
-        # action it belongs to.** The neighbourhood round's last piece of the same
-        # unification. `_action_for` walks `ARRANGEMENT_ACTIONS` in a fixed order and
-        # returns the first the subject has not tried, which is a *budget* rule -- one
-        # action per finding, so a refusal leaves the rest available -- and it was also
-        # being used as the *selection* rule. Those are different questions. Walking the
-        # list picks `row_depth` on the crowded ring and gets 75 houses. So: where the
-        # finding **names** an action, that action is what is offered and nothing else
+        # action it belongs to.** `_action_for` walks `ARRANGEMENT_ACTIONS` in a fixed
+        # order and returns the first the subject has not tried, which is a *budget*
+        # rule -- one action per finding, so a refusal leaves the rest available -- and
+        # not a *selection* rule: walking the list can pick `row_depth` on a crowded ring
+        # that the comparison ranks another action first for. So: where the finding
+        # **names** an action, that action is what is offered and nothing else
         # -- a reading that asks for a depth decision gets a depth decision. Where it
         # names none, the action is the one the comparison ranks first, and the record
         # says which rule chose it. The budget is unaffected either way: the dispatcher
@@ -3731,9 +3723,9 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
         alive = [a for a in here if a.get("arrangement") and not a.get("refused")
                  and int(a.get("lots") or 0) > 0]
         # **An alternative that is the fabric already standing is not a proposal.** The
-        # delivery round: the incumbent is now generated into the comparison (it is what
-        # every other row is one move from), so it has to be excluded from the rows this
-        # controller may *adopt* while staying in the ranking a reader sees.
+        # incumbent is generated into the comparison (it is what every other row is one
+        # move from), so it has to be excluded from the rows this controller may *adopt*
+        # while staying in the ranking a reader sees.
         alive = [a for a in alive if not a.get("incumbent")] or []
         if not alive:
             rec.update(refused=True, certified_on=on[0].get("name"),
@@ -3751,8 +3743,7 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
         # does, the action is refused **before** the build budget is spent, with the
         # estimates on the record so the next decision is about the mechanism rather
         # than about another rebuild. Where the reading names no measure this comparison
-        # can estimate, every row is eligible and the order is the standing one -- which
-        # is what it has always been.
+        # can estimate, every row is eligible and the order is the standing one.
         _knew = [a for a in alive if a.get("helps") is not None]
         _help = [a for a in _knew if a.get("helps")]
         if _knew and not _help:
@@ -3777,18 +3768,16 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
         # `alternatives` is already in the order it argues for; the first eligible row
         # is the choice, and no second ordering is applied here. **...and where the
         # first will not hold over the whole scope, the next is offered.** The
-        # neighbourhood delivery round, found by running the loop on the delivered
-        # section: the comparison ranked `compact_bay` first for every arrangement
-        # action the dispatcher offered, the ring-wide qualification below refused it on
-        # four of the traders' ring's seven rectangles, and the controller answered
-        # *"`row_depth` is not a decision this fabric offers"* -- four times, about four
-        # different actions, none of which had been tried. A local comparison ranking a
-        # proposal first is not a finding that the rest of the ring can carry it, and
-        # the qualification exists to say so; what it may not do is take the whole
-        # action list down with one row. So the rows are qualified in the order the
-        # comparison argues for and the first that holds everywhere is adopted, with the
-        # ones that did not on the record (`passed_over`). The cost is one compile per
-        # rectangle per row tried, which is the same cost the single row already paid,
+        # comparison can rank one row (say `compact_bay`) first for every arrangement
+        # action the dispatcher offers while the ring-wide qualification below refuses it
+        # on some of the ring's rectangles; stopping there would answer *"`row_depth` is
+        # not a decision this fabric offers"* about actions that were never tried. A
+        # local comparison ranking a proposal first is not a finding that the rest of
+        # the ring can carry it, and the qualification exists to say so; what it may not
+        # do is take the whole action list down with one row. So the rows are qualified
+        # in the order the comparison argues for and the first that holds everywhere is
+        # adopted, with the ones that did not on the record (`passed_over`). The cost is
+        # one compile per rectangle per row tried, the same cost a single row pays,
         # and it is paid before any build.
         pick, passed_over = None, []
         for _row in alive:
@@ -4019,14 +4008,13 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
         to = {"rings": {ring: {"width": new}}}
         why = (f"ring `{ring}` is {int(have)} wide and the built reading asks for it "
                f"{direction}; the width is set to {new} and the rings laid out again")
-    # **A revision does not re-decide what it is not revising.** The composition round,
-    # and it cost a whole improvement cycle before it was found: the layout measures
-    # which side the city's gates stand on from the ground under them, this site is flat
-    # plains so the four sides score within a whisker of each other, and a re-solve
-    # whose ring widths moved by a few columns measured the other side. The palace's
-    # gate then stood where no road arrived, the compound validator refused the place --
-    # correctly -- and **every one of the layout owner's actions was refused with the
-    # same message**, because the refusal had nothing to do with the action. The place
+    # **A revision does not re-decide what it is not revising.** The layout measures
+    # which side the city's gates stand on from the ground under them; on flat ground
+    # the four sides score within a whisker of each other, and a re-solve whose ring
+    # widths moved by a few columns can measure the other side. The palace's gate then
+    # stands where no road arrives, the compound validator refuses the place --
+    # correctly -- and **every one of the layout owner's actions is refused with the
+    # same message**, because the refusal has nothing to do with the action. The place
     # being revised is the record of what it has already decided; a choice this action
     # is not about is carried into the re-solve rather than measured again.
     carried = {k: v for k, v in (("axis_side",
@@ -4047,23 +4035,17 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
         plateau = {"part": core.get("name"), "rect": list(lay["plateau_rect"])}
     elif plateau is None and lay.get("compound_rect") and spec_mod.compound(core):
         plateau = {"part": core.get("name"), "rect": list(lay["compound_rect"])}
-    # **...and the ground this place was designed on goes with it.** The spatial design
-    # round's first finding, and it is the same rule one line above applied to the one
-    # field that was left out of it. `concentric_layout` takes the ring terraces off
-    # `plateau["terrace"]` where the plateau stage wrote one and off `site_median(vol,
-    # site)` otherwise. The stub built above carries a rectangle and nothing else, and
-    # `pipeline/improve.py` hands this function no volume -- so **both** sources were
-    # absent on every revision, `terrace` came back None, and every ring's `level` with
-    # it. Measured on the retained neighbourhood section: the baseline candidate
-    # `60c62ebbdb32933b` was laid with ring terraces at y 71 / 79 / 67 / 75 and its
-    # first revision `90b26d9c3f075492` with `terrace: null` and four `level: null`
-    # rings. Nothing asked for that. The ground proposal then had no terrace piece to
-    # lay (`ground.propose` reads `layout.terrace`), so the revised candidates' rings
-    # were **never levelled at all** and their houses were founded on the ground as
-    # found -- which on this section runs from y 16 to y 127 and is 9.7% standing water.
-    # The 57 refused row houses, the 973 unreachable lane stances and the great wall
-    # overtopped by the calm side's mesa are all downstream of a field that was dropped
-    # rather than decided. A terrace is a *ground* decision. No action in
+    # **...and the ground this place was designed on goes with it.** The same rule, for
+    # the terrace. `concentric_layout` takes the ring terraces off `plateau["terrace"]`
+    # where the plateau stage wrote one and off `site_median(vol, site)` otherwise. The
+    # stub built above carries a rectangle and nothing else, and `pipeline/improve.py`
+    # hands this function no volume -- so without this **both** sources would be absent
+    # on every revision, `terrace` would come back None, and every ring's `level` with
+    # it. The ground proposal would then have no terrace piece to lay (`ground.propose`
+    # reads `layout.terrace`), so the revised rings would **never be levelled** and
+    # their houses would be founded on the ground as found: refused row houses,
+    # unreachable lane stances and an overtopped great wall, all downstream of a field
+    # dropped rather than decided. A terrace is a *ground* decision. No action in
     # `REALLOCATE_ACTIONS` is about it, so it is carried, like the axis, rather than
     # measured again from a volume this caller may not have.
     if lay.get("terrace") and not (plateau or {}).get("terrace"):
@@ -4092,17 +4074,14 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
                        + "; ".join(f"{f.get('part')}: {f.get('why')}" for f in fails[:3]))
         return place, rec
     # **Count-preserving reallocation is an invariant, asserted here and not only in a
-    # test.** The composition round's fifth change, last clause. Every action above is a
-    # revision of an *inferred* dimension, and the re-solve derives counts from the
-    # geometry it produces -- so a narrower ring or a bigger anchor can, in principle,
-    # arrive with fewer counted structures than the sentence stated. Where the count is
-    # the sentence's own that is not a trade the layout owner may make, and until now
-    # nothing checked: the place came back, the rectangles had moved, and the number was
-    # whatever the arithmetic gave. An action that would lose a counted structure under
-    # an exact count is refused, by name, with both numbers. **A revision may not
-    # silently lose the ground the place was designed on.** The guard that would have
-    # caught the terrace defect above the moment it happened, and the general form of
-    # it: a re-solve that comes back with *no* ground design where the place being
+    # test.** Every action above is a revision of an *inferred* dimension, and the
+    # re-solve derives counts from the geometry it produces -- so a narrower ring or a
+    # bigger anchor can, in principle, arrive with fewer counted structures than the
+    # sentence stated. Where the count is the sentence's own that is not a trade the
+    # layout owner may make. An action that would lose a counted structure under an
+    # exact count is refused, by name, with both numbers. **A revision may not silently
+    # lose the ground the place was designed on.** The general form of the terrace rule
+    # above: a re-solve that comes back with *no* ground design where the place being
     # revised had one has not revised an allocation, it has thrown a decision away.
     # Refused by name, with both records, rather than returned as a place.
     was_t = (place.get("layout") or {}).get("terrace")
@@ -4147,14 +4126,13 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
     refabricated = {n: {"from": was_fab.get(n), "to": now_fab.get(n)}
                     for n in sorted(set(was_fab) | set(now_fab))
                     if was_fab.get(n) != now_fab.get(n)}
-    # **What this action changed outside the scope it declared.** The spatial design
-    # round's second connected cause: the re-solve is global, so an arrangement adopted
-    # for one ring re-derives every other district's count as well -- and the
-    # neighbourhood round's retained reading reports the traders' side losing houses to
-    # a decision that was about the crowded side. The scope is declared above; what
-    # falls outside it is measured here, reported always, and **refused where an
-    # unrelated district lost structures**, because losing a house somebody else was
-    # promised is not a side effect a local fabric decision is allowed to have.
+    # **What this action changed outside the scope it declared.** The re-solve is
+    # global, so an arrangement adopted for one ring re-derives every other district's
+    # count as well -- one side can lose houses to a decision that was about another.
+    # The scope is declared above; what falls outside it is measured here, reported
+    # always, and **refused where an unrelated district lost structures**, because
+    # losing a house somebody else was promised is not a side effect a local fabric
+    # decision is allowed to have.
     in_scope = set((rec.get("certified") or {}).get("scope") or ()) \
         | {str(d.get("name")) for d in place.get("districts") or []
            if d.get("defines") == subject or d.get("name") == subject}
@@ -4247,18 +4225,17 @@ def _reallocate(place: dict, spec: dict, finding: dict, rec: dict, *, site=None,
 
 # ------------------------------------------------------------ wall hierarchy, voice
 
-#: **What kind of wall a boundary is, and how tall**, derived from the request. The
-#: expression round: the place read held every concentric place's outermost wall to a
-#: great-wall constant of thirty, and a small walled hill town -- whose sentence said
-#: `walled` and nothing about a great wall -- failed for it. A wall is `great` only
-#: where the request or the sourced claims call it one (`GREAT_WALL_WORDS` in the spec's
-#: own words of it, or a claim about it); it is `compound` inside a compound; it is
-#: `town` otherwise. A great wall stands `GREAT_OVER` times the tallest other ring wall
-#: of its place, at the least, so hierarchy is relative and read off the design; a town
-#: wall stands over the storeys of the fabric it encloses by a parapet
-#: (`WALL_OVER_STOREYS`), clamped into its type's band. Every wall carries its
-#: `hierarchy` record with the inputs by name, and the reader's clause is asked of that
-#: record.
+#: **What kind of wall a boundary is, and how tall**, derived from the request. Holding
+#: every concentric place's outermost wall to a great-wall constant of thirty would fail
+#: a small walled hill town whose sentence says `walled` and nothing about a great wall.
+#: A wall is `great` only where the request or the sourced claims call it one
+#: (`GREAT_WALL_WORDS` in the spec's own words of it, or a claim about it); it is
+#: `compound` inside a compound; it is `town` otherwise. A great wall stands
+#: `GREAT_OVER` times the tallest other ring wall of its place, at the least, so
+#: hierarchy is relative and read off the design; a town wall stands over the storeys
+#: of the fabric it encloses by a parapet (`WALL_OVER_STOREYS`), clamped into its type's
+#: band. Every wall carries its `hierarchy` record with the inputs by name, and the
+#: reader's clause is asked of that record.
 GREAT_WALL_WORDS = ("great wall", "greatest wall", "great outer wall", "largest structure",
                     "largest man-made", "world's largest", "greatest structure")
 GREAT_OVER = 1.5

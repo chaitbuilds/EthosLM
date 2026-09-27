@@ -139,12 +139,11 @@ def measure(builder, part: dict) -> dict:
         wx1, wz1 = max(c[0] for c in walls), max(c[1] for c in walls)
         if wx1 - wx0 < 2 or wz1 - wz0 < 2:
             continue
-        # **A floor is judged over the roofed columns of the ring.** The expression
-        # round (worker B's request): a courtyard house is a ring of ranges round an
-        # open yard, and a yard paved at ground level and open to the sky is not a
-        # missing upper floor -- counted as one, a two-storey courtyard house measured
-        # one storey. A column with nothing above the storey's headroom is the yard; a
-        # plain block has every interior column roofed and measures as it did.
+        # **A floor is judged over the roofed columns of the ring.** A courtyard house
+        # is a ring of ranges round an open yard, and a yard paved at ground level and
+        # open to the sky is not a missing upper floor -- counted as one, a two-storey
+        # courtyard house would measure one storey. A column with nothing above the
+        # storey's headroom is the yard; a plain block has every interior column roofed.
         inner = [(x, z) for x in range(wx0 + 1, wx1) for z in range(wz0 + 1, wz1)
                  if any(yy > y + 3 and _name(n) not in AIR
                         for yy, n in cols.get((x, z), {}).items())]
@@ -206,8 +205,8 @@ def _declared(part: dict) -> dict:
 
 
 #: Features that are **open** -- a paved court, a yard, an aisle -- and are verified by
-#: their openness rather than by a mass standing on them (worker B's request, the
-#: expression round): paved at the floor and clear for three courses above.
+#: their openness rather than by a mass standing on them: paved at the floor and clear
+#: for three courses above.
 OPEN_FEATURES = ("courtyard", "yard", "court", "aisle", "roof_terrace")
 #: What share of an open feature's cells must be paved and clear for it to stand.
 OPEN_STANDS = 0.8
@@ -238,8 +237,8 @@ def _verify_open(cols: dict, rect, fy: int) -> bool:
 
 #: Features that are a **roof you can stand on**: solid over the claimed rectangle at
 #: the claimed level, with the rectangle's inside clear for a person above it (a parapet
-#: round the rim and a pergola's posts are allowed). The transfer round: "flat-roofed
-#: homes" was a label until this read the roof off the blocks.
+#: round the rim and a pergola's posts are allowed). Without this, "flat-roofed homes"
+#: would be a label rather than a roof read off the blocks.
 FLAT_FEATURES = ("flat_roof",)
 
 
@@ -266,13 +265,12 @@ def rects_of(claim) -> list:
     """A feature's claimed ground, as a **list** of rectangles.
 
         `[x0, z0, x1, z1]` is one rectangle; a list of those is a feature that stands in
-        several places at once. The design round's defect, found on the `des-farm` market
-        square: `types/square.py` published `rects.stalls` as the bounding box of its four
-        corner booths, which on a 40x40 square is a 38x38 rectangle with the whole middle of
-        the market inside it. `_verify_rect` asks whether half the columns of the rectangle
-        carry something, four small booths give it three per cent, and the square's stalls
-        read `claimed_not_found` **however well they stood**. A feature in four places is
-        four rectangles and not the box round them.
+        several places at once. Four corner booths published as their bounding box would,
+        on a 40x40 square, be a 38x38 rectangle with the whole middle of the market inside
+        it: `_verify_rect` asks whether half the columns of the rectangle carry something,
+        four small booths give it three per cent, and the stalls would read
+        `claimed_not_found` **however well they stood**. A feature in four places is four
+        rectangles and not the box round them.
 
     """
     if not claim:
@@ -303,14 +301,11 @@ def _verify_all(verify, cols: dict, claim, fy: int) -> tuple:
 
 #: How far above the floor a feature claimed by a rectangle is looked for: the storey it
 #: stands in, which is `STOREY_PITCH` less the floor itself. **A rectangle is two-
-#: dimensional and the column above it is not.** The design round's `des-farm` proof, on
-#: `homes_south_1_1_b0_0_00`: the cottage published a 1x1 `rects.hearth` and
-#: `prims.fitting` left no fire in it, and this function answered `verified` -- because
-#: it asked `y >= fy + 1` with no ceiling and found the **second storey's floor**, four
-#: courses up, standing in the hearth's own column. Seven of the farm's seventeen
-#: cottages certified a hearth that is not there, and the disagreement only surfaced
-#: when `usable` re-read the assembled world in a narrower window and `confirm` called
-#: the difference `overwritten`.
+#: dimensional and the column above it is not.** Asked as `y >= fy + 1` with no ceiling,
+#: a 1x1 `rects.hearth` with no fire in it would read `verified` off the **second
+#: storey's floor**, four courses up in the hearth's own column -- a hearth certified
+#: that is not there, which `usable` re-reading the assembled world in a narrower window
+#: would then call `overwritten`.
 FEATURE_COURSES = STOREY_PITCH - 1
 
 
@@ -363,10 +358,10 @@ def _verify_feature(cols: dict, name: str, claim, fy: int) -> tuple:
     """`(holds, standing, claimed, source)` for one claimed feature, at emission.
 
         The mass first (`_verify_rect`, or `_verify_open` where the feature is open ground),
-        then the **identity** where this build lays a block that carries it. The composition
-        round's second evidence connection: half a rectangle of the voice's own masonry is
-        not a hearth, and `source: "not_identified"` is a different fact from
-        `claimed_not_found` -- the type laid something there and it is not the thing.
+        then the **identity** where this build lays a block that carries it. Half a
+        rectangle of the voice's own masonry is not a hearth, and `source: "not_identified"`
+        is a different fact from `claimed_not_found` -- the type laid something there and it
+        is not the thing.
 
     """
     verify = (_verify_open if name in OPEN_FEATURES else
@@ -425,11 +420,11 @@ def outcome(builder, part: dict, decl: dict | None = None,
     #: rather than a bool, because "two of the four booths stand" is the fact and
     #: `False` is the summary of it.
     counted: dict = {}
-    # **A feature off the ground floor says where it stands.** The transfer round: a
-    # roof terrace is paved at the roof deck and a pergola stands on it, and read at the
-    # ground floor both were `claimed_not_found` however well they stood. A type that
-    # lays a feature at another level publishes it in `emitted.levels`, and the feature
-    # is verified in the same window at that level.
+    # **A feature off the ground floor says where it stands.** A roof terrace is paved
+    # at the roof deck and a pergola stands on it, and read at the ground floor both
+    # would be `claimed_not_found` however well they stood. A type that lays a feature
+    # at another level publishes it in `emitted.levels`, and the feature is verified in
+    # the same window at that level.
     lv = em.get("levels") or {}
     for name in CLAIMED_FEATURES:
         claim = (em.get("features") or {}).get(name)
@@ -454,11 +449,11 @@ def outcome(builder, part: dict, decl: dict | None = None,
     for name, want in (("outshot", requested.get("outshot")),):
         if want and features.get(name) is False and name not in omitted:
             omitted.append(name)
-    # **A rectangle whose blocks are not the feature is a loss, not a wording.** The
-    # composition round: `not_identified` means the type laid mass where it said a
-    # hearth or a stall stands and the fire, the counter or the goods are not in it.
-    # That is the same kind of fact as a feature that did not stand, so it reaches
-    # `constraint` and the obligation ledger by the same route.
+    # **A rectangle whose blocks are not the feature is a loss, not a wording.**
+    # `not_identified` means the type laid mass where it said a hearth or a stall
+    # stands and the fire, the counter or the goods are not in it. That is the same kind
+    # of fact as a feature that did not stand, so it reaches `constraint` and the
+    # obligation ledger by the same route.
     for name, how in source.items():
         if how == "not_identified" and name not in omitted:
             omitted.append(name)
@@ -484,13 +479,12 @@ def outcome(builder, part: dict, decl: dict | None = None,
     return {
         "storeys": m.get("storeys"), "levels": list(m.get("levels") or []),
         "features": features, "features_source": source,
-        # **How each answer was got, and of which world.** The design round's third
-        # contract. Every answer here is read off *this part's own pending blocks*,
-        # before the next part is built, so the strongest thing it can be is `inferred`:
-        # the geometry implies the feature at emission. Only `usable.check` on the
-        # assembled volume produces `observed`, and `construction.confirm` writes it
-        # back. A courtyard a later wall filled in was `verified` here and is `False`
-        # there, and the two words are why that can now be told.
+        # **How each answer was got, and of which world.** Every answer here is read
+        # off *this part's own pending blocks*, before the next part is built, so the
+        # strongest thing it can be is `inferred`: the geometry implies the feature at
+        # emission. Only `usable.check` on the assembled volume produces `observed`, and
+        # `construction.confirm` writes it back. A courtyard a later wall filled in is
+        # `verified` here and `False` there, and the two words are how that is told.
         "features_method": {f: _METHOD.get(source.get(f), "declared")
                             for f in features},
         "features_read_at": "emission",
@@ -526,24 +520,22 @@ _METHOD = {"measured": "inferred", "verified": "inferred",
 #: part that claims none of a want's features is answered `unsupported` by `usable` and
 #: is not thereby a failure. **The floor and not the whole set**: see `wants_for`, which
 #: adds the predicates a part's *required* features make applicable. **`court_enclosed`
-#: is on the floor and not in `wants_for`**, the block design round. The claim it
-#: answers is written by the *compiler* onto the court leaf and travels in the plot
-#: registry, not in the part's own `emitted` record -- so `wants_for`, which reads the
-#: row and the demand binding, has nothing to key on.
+#: is on the floor and not in `wants_for`**: the claim it answers is written by the
+#: *compiler* onto the court leaf and travels in the plot registry, not in the part's own
+#: `emitted` record -- so `wants_for`, which reads the row and the demand binding, has
+#: nothing to key on.
 CONFIRM_WANTS = ("entrance_connected", "equipment_reachable", "court_accessible",
                  "court_enclosed")
 
 #: Which predicate decides each **required** feature token, and what asking it also
-#: makes applicable. The composition round's first evidence connection: `confirm` asked
-#: a fixed three of the six predicates of every part whatever it was required to
-#: deliver, so a part required to hold a court was never asked whether its ranges
-#: enclose one and a part required to hold equipment indoors was never asked whether its
-#: rooms can be walked. Read off `usable.EQUIPMENT` and `usable.COURTS`, which are the
-#: two lists this build's feature tokens fall into. The **required** set and not the
-#: claimed set, deliberately. A feature a type chose to lay of its own accord keeps the
-#: three predicates it always had; a feature a requirement made mandatory gets the
-#: predicates that decide it. That is the difference between an evidence connection and
-#: a new bar applied to everything at once.
+#: makes applicable. A fixed three of the six predicates asked of every part would never
+#: ask a part required to hold a court whether its ranges enclose one, or a part required
+#: to hold equipment indoors whether its rooms can be walked. Read off `usable.EQUIPMENT`
+#: and `usable.COURTS`, which are the two lists this build's feature tokens fall into.
+#: The **required** set and not the claimed set, deliberately. A feature a type chose to
+#: lay of its own accord keeps the floor's predicates; a feature a requirement made
+#: mandatory gets the predicates that decide it. That is the difference between an
+#: evidence connection and a new bar applied to everything at once.
 WANTS_FOR_FEATURE = {
     "equipment": ("equipment_reachable", "passage_connected", "circulation_clear"),
     "court": ("court_accessible", "range_relation", "circulation_clear"),
@@ -1053,13 +1045,12 @@ def probe_build(type_name: str, w: int, d: int, params: dict | None = None, *,
         build instead of the committed `types/<type_name>.py`; see `_type_ns`.
 
         **`attached` is how many of the lot's flanks a neighbour stands against** -- 0 for a
-        free-standing lot, 1 for a row's end, 2 for a lot in the middle of one. The
-        neighbourhood delivery round: this argument did not exist and every probe was built
-        free on all four sides, while `Builder._insets` drops the inset on an attached side.
-        A 6x13 lot is a 4x11 pad detached and a 6x9 pad between party walls, and the second
-        is what a terrace leaf is actually handed. Nothing stands next door in the probe --
-        what is being measured is the pad, and the pad is decided by the plan's word, not by
-        whether the neighbour has been built yet.
+        free-standing lot, 1 for a row's end, 2 for a lot in the middle of one.
+        `Builder._insets` drops the inset on an attached side, so a probe built free on all
+        four sides measures the wrong pad: a 6x13 lot is a 4x11 pad detached and a 6x9 pad
+        between party walls, and the second is what a terrace leaf is actually handed.
+        Nothing stands next door in the probe -- what is being measured is the pad, and the
+        pad is decided by the plan's word, not by whether the neighbour has been built yet.
 
     """
     from . import offline, pipeline

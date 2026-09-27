@@ -18,9 +18,8 @@ BUILD_SCRATCH = os.path.join(_pipeline.ROOT, "out", "build_scratch")
 
 def _blind_dir(rnd: Round, sub: str, i: int) -> str:
     """`sub` is the candidate's arm path (`selection/wave1/c2`). Taken as a string
-    rather than looked up from a candidate id so the arms of a sight round, which are
-    not selection candidates, blind through exactly this code and hash to the same
-    scheme."""
+    rather than looked up from a candidate id so a round's `sight` arms, which are not
+    selection candidates, blind through exactly this code and hash to the same scheme."""
     import hashlib
     key = f"{rnd.name}/{sub}/{i}"
     return os.path.join(BUILD_SCRATCH,
@@ -50,7 +49,7 @@ def _blind_build(rnd: Round, sub: str, req_path: str,
     """Stage a build request where nothing about the candidate reaches the builder.
 
         `stages.build_from_files` writes its request under `arms/<arm>/<wave>/<cid>/builds/`,
-        and for a selection round **that path is itself the leak**: a builder handed
+        and for selection candidates **that path is itself the leak**: a builder handed
         `.../selection/wave1/c2/builds/build_0.py` has been told precisely the thing the
         spec says it must not be told -- that it is one of several and that something will
         be compared. So the brief and any images are copied into a hash-named scratch
@@ -415,8 +414,8 @@ def check_fixtures(rounds=FIXTURE_ROUNDS) -> list:
     }
     # Taken by *label*, not by (round, label): a fixture is named to its author by the
     # label alone -- in the brief's ground section and in `findings.md`'s table -- so
-    # two plots called `smithy` from two rounds would be one piece of ground with two
-    # heightmaps as far as the builder reading it could tell.
+    # two plots called `smithy` from different rounds would be one piece of ground with
+    # two heightmaps as far as the builder reading it could tell.
     out, taken = [], set()
     for name, why in FIXTURE_RULES:
         left = [p for p in pool if p["plot"] not in taken]
@@ -446,11 +445,10 @@ PART_EDGE_CLIFF = 4
 
 #: 151 a side is a closed loop of 600 columns, which is fifteen times the 40-column L
 #: and nearly four times the 160-column loop -- and it is the size a ring wall of a
-#: 512-block city actually is. Three fixtures have cost this project two rounds between
-#: them by being too small to fail on: `wall` was 4 of 4 on the L and 0 of 4 on the
-#: loop, and the class it failed on was one no declaration could express. A wall asked
-#: to climb sixty blocks of relief over six hundred columns, twenty high and five thick,
-#: is a different thing again.
+#: 512-block city actually is. A fixture too small to fail on proves nothing: `wall`
+#: was 4 of 4 on the L and 0 of 4 on the loop, and the class it failed on was one no
+#: declaration could express. A wall asked to climb sixty blocks of relief over six
+#: hundred columns, twenty high and five thick, is a different thing again.
 PART_EDGE_BIG = 151
 
 #: ...and the ground it may be cut from, largest first. Every one is a **pre-build**
@@ -989,12 +987,11 @@ def stage_type_check(rnd: Round, d: str, key: str, spec: dict) -> str:
     return p
 
 
-#: **The checker reads a silhouette.** Demo-polish, phase 1b. Nothing did. This is the
-#: one read that would have caught it: of the columns of a plot instance that rise a
+#: **The checker reads a silhouette**: of the columns of a plot instance that rise a
 #: storey above its floor, the share whose topmost block is the voice's roof family. A
-#: building's top is its roof. the lowest clean reading is 0.85, and what is not roof on
-#: a house is its chimney and its dormer cheeks. The temple read 0.089-0.345. The bar is
-#: 0.6: under every clean type by a quarter and over the box by the same.
+#: building's top is its roof. The lowest clean reading is 0.85, and what is not roof on
+#: a house is its chimney and its dormer cheeks; a roofless box reads about 0.09-0.35.
+#: The bar is 0.6: under every clean type by a quarter and over the box by the same.
 ROOF_SHARE_MIN = 0.6
 
 #: A column counts as the building, and not the court, the yard or a lantern on the
@@ -1309,12 +1306,12 @@ def _fixture_round(name: str):
 def _run_src(rnd: Round, be, prog: str, src: str, allow_collide: bool | None = None):
     """Execute composed source under the program's own name, on the round's ground.
 
-        `allow_collide` is the **checking** round's, never the fixture's. It used to be
-        read off `rnd.flags`, which for a fixture borrowed from another round is that
-        round's config -- and one early round ran with collisions allowed, so every type
-        checked on its two plots stood with `fitting()` refusing nothing: a barrel on the
-        foot of a flight, a bookshelf in a dais's step, and a sealed storey the city would
-        never have built. A type is checked under the city's rules. Demo-polish, 1c.
+        `allow_collide` is the **checking** round's, never the fixture's. Read off
+        `rnd.flags`, a fixture borrowed from another round would carry that round's config,
+        and a round run with collisions allowed would check every type with `fitting()`
+        refusing nothing: a barrel on the foot of a flight, a bookshelf in a dais's step,
+        and a sealed storey the city would never have built. A type is checked under the
+        city's rules.
 
     """
     from .. import offline, stages

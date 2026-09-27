@@ -244,38 +244,34 @@ RING_FIELDS = ("ring", "share", "walled", "voice")
 #: the density's own, 0 to 1 of the lot side; omit it and the frontage decides
 #: (`district_compile.VARIETY`). storeys `[lo, hi]`: the band a lot's building takes its
 #: storeys from, clamped into what each type declares. Omit it and the density's own
-#: band is used. A run of roofs steps rather than lying flat. `lot_width` is the
-#: realization round's, and it is the field an inspection asked for and could not have.
-#: The shore village came back as six buildings twenty-four columns wide -- a barn's
-#: frontage -- because the compiler grows the lot to make its district cover and a
-#: character could say how *deep* a lot is and never how *wide*. The reading asked for
-#: "more, smaller houses"; the only lever that existed made them shallower and the cover
-#: fell, so the revision was rolled back for doing what it was asked. A declared width
+#: band is used. A run of roofs steps rather than lying flat. `lot_width` exists
+#: because the compiler grows the lot to make its district cover: a character that
+#: could say how *deep* a lot is and never how *wide* could not ask for "more, smaller
+#: houses" -- the only lever made them shallower and the cover fell. A declared width
 #: is the compiler's to clamp into what the type admits and not to grow, which is the
 #: rule `lot_depth` has always had.
 CHARACTER_FIELDS = ("frontage", "block", "lot_width", "lot_depth", "attached",
                     "courtyard_share", "open_share", "landmarks", "variety", "storeys",
                     "layout", "court_least", "forms")
 
-#: **What each use's buildings owe, adopted as a minimum** (the design resolution
-#: round): `forms` is `{use: {parameter: value}}` -- `{"trade": {"storeys": 2},
-#: "dwelling": {"court": 7}}` -- and it is resolved against the type the compiler
-#: selects **for that use**, before any lot is sized. The district's `storeys` band is
-#: an inference about how a skyline varies; a form's value is what every building of
-#: that use must reach, and a lot that cannot hold it is refused or enlarged, never
-#: built lower.
+#: **What each use's buildings owe, adopted as a minimum**: `forms` is
+#: `{use: {parameter: value}}` -- `{"trade": {"storeys": 2}, "dwelling": {"court": 7}}`
+#: -- and it is resolved against the type the compiler selects **for that use**, before
+#: any lot is sized. The district's `storeys` band is an inference about how a skyline
+#: varies; a form's value is what every building of that use must reach, and a lot that
+#: cannot hold it is refused or enlarged, never built lower.
 FORM_USES = ("dwelling", "trade", "work", "worship", "civic", "store")
 FORM_PARAMS = {"storeys": (1, 4), "court": (3, 15)}
 
-#: **Character fields that govern a type parameter** (the fabric reset round): the
-#: compiler sets the parameter from the character on every leaf of a type that declares
-#: it, instead of drawing it, and admits only lots on which the value can be delivered.
+#: **Character fields that govern a type parameter**: the compiler sets the parameter
+#: from the character on every leaf of a type that declares it, instead of drawing it,
+#: and admits only lots on which the value can be delivered.
 CHARACTER_PARAMS = {"court_least": "court"}
 
-#: How a district's plan is made (the fabric reset round): `grid`, the block grid the
-#: compiler has always cut, or `street`, composed from its streets first -- principal
-#: streets and their fronts, the anchor and the fronts facing it, lanes, then lots
-#: (`ethoslm.streetplan`). Absent is `grid`.
+#: How a district's plan is made: `grid`, the block grid the compiler has always cut,
+#: or `street`, composed from its streets first -- principal streets and their fronts,
+#: the anchor and the fronts facing it, lanes, then lots (`ethoslm.streetplan`). Absent
+#: is `grid`.
 LAYOUTS = ("grid", "street")
 
 FRONTAGES = ("street", "open")
@@ -406,12 +402,11 @@ def structures_ceiling(kind: str | None) -> int:
     """The most things a place of this kind may stand up, **scaled by its ground and by
         the fabric it is built at**.
 
-        The craft round, E1, and the same argument a third time: the other half of that
-        statement is **how much ground one structure takes**, and 400 on 512 square is 655
-        columns a structure. The compiler lays a medium district at 323. A ceiling left at
-        the old fabric clips the count the new arithmetic gives -- a city of four rings on
-        768 asks for about a thousand structures against a ceiling of 900 -- and a ceiling
-        that clips an honest count is a ceiling deciding the answer.
+        The other half of the ground is **how much ground one structure takes**, and 400
+        on 512 square is 655 columns a structure. The compiler lays a medium district at
+        323. A ceiling left at the old fabric clips the count the new arithmetic gives -- a
+        city of four rings on 768 asks for about a thousand structures against a ceiling of
+        900 -- and a ceiling that clips an honest count is a ceiling deciding the answer.
 
     """
     return int(round(CEILING["structures"] * _ground_ratio(kind) * fabric_ratio()))
@@ -436,14 +431,13 @@ def fabric_reference() -> float:
 
 def fabric_ratio() -> float:
     """How much denser the library's own fabric is than the one `SIZE_BANDS` and
-        `CEILING["structures"]` were registered at. The craft round, E1.
+        `CEILING["structures"]` were registered at.
 
         655 columns a structure is a freestanding house on a square plot with a lane on all
-        four sides, which is the village this project measured a district on and the model
-        every number here was written against. `placeplan.fabric` measures what the compiler
-        actually lays -- a
-        frontage, a depth and a share of the street -- and a medium district comes out at
-        323. Read off the files, so a type added or a band closed moves it.
+        four sides, the model every number here was written against. `placeplan.fabric`
+        measures what the compiler actually lays -- a frontage, a depth and a share of the
+        street -- and a medium district comes out at 323. Read off the files, so a type
+        added or a band closed moves it.
 
     """
     from .placeplan import fabric, DENSITY_ROLE
@@ -456,11 +450,10 @@ def size_band_for(kind: str | None) -> tuple:
     """How many structures this kind is, as a band, **on the ground it is given and at
         the fabric it is built at**.
 
-        The craft round adds the fourth number in the same statement -- the ground one
-        structure takes (`fabric_ratio`) -- for the same reason: a band written at 655
-        columns a house refuses at 900 a city whose own arithmetic, at the fabric the
-        compiler lays, asks for a thousand. Every kind's band moves under it, because the
-        fabric is the library's and not the kind's.
+        The ground one structure takes (`fabric_ratio`) scales the band as well as the
+        kind's ground does: a band written at 655 columns a house refuses at 900 a city
+        whose own arithmetic, at the fabric the compiler lays, asks for a thousand. Every
+        kind's band moves under it, because the fabric is the library's and not the kind's.
 
     """
     lo, hi = SIZE_BANDS[kind]
@@ -1161,14 +1154,11 @@ def columns_per_plot(part: dict, arrangement: dict | None = None) -> int:
     """The **lot** one structure of this defining part stands on, its density applied,
         and **the arrangement's own lot where one has been adopted**.
 
-        The neighbourhood round's fourth place where the adopted arrangement did not govern,
-        and the one that decided the round's own deliverable. This answered from the density
-        word alone -- 100 columns for `dense`, the library's measured dense lot -- whatever
-        fabric the district was actually laid with. `concentric_layout` divides a sector's
-        ground by this to cap its count (`caps`), so a ring that had adopted 6x6 lots was
-        still capped as though it were standing 10x10 ones: `lower_ring_north_2` held 69
-        houses on 12,696 columns, one every 184, and no arrangement in the catalogue could
-        reach past that number because the number was not about the arrangement.
+        `concentric_layout` divides a sector's ground by this to cap its count (`caps`).
+        Answered from the density word alone -- 100 columns for `dense`, the library's
+        measured dense lot -- a ring that had adopted 6x6 lots would still be capped as
+        though it were standing 10x10 ones, and no arrangement could reach past a number
+        that was not about the arrangement.
 
         **The lot, and only the lot.** `plot_share` carries the same warning and it is the
         same circle: `open_share` and `courtyard_share` are levers the compiler *moves* to
@@ -1189,28 +1179,24 @@ def columns_per_plot(part: dict, arrangement: dict | None = None) -> int:
 def plot_share(part: dict) -> float:
     """How much of this defining part's district ground is plots.
 
-        The craft round: the lots' share of a block and its streets, off the compiler's own
-        fabric (`placeplan.fabric`), so `structures_for` below is `columns` over what one
-        house of that fabric actually costs.
+        The lots' share of a block and its streets, off the compiler's own fabric
+        (`placeplan.fabric`), so `structures_for` below is `columns` over what one house of
+        that fabric actually costs.
 
     """
     from .placeplan import fabric, DENSITY_ROLE
     d = part.get("density") or "medium"
-    # **Of the fabric this part is actually built of.** `fabric` has always taken the
-    # character and this caller has always dropped it, so a district that declared its
-    # own lot was held to the cover of the density's *default* lot -- a target computed
-    # for a fabric it had been told not to build. Found by running the shore village's
-    # revision: the inspection asked for a twelve-column frontage, the district laid it,
-    # and its validator refused it for covering 30% against a floor derived from a
-    # twenty-four column one. A check whose evidence is a different decision than the
-    # one that was made is the defect this whole round is about, one level down. **The
-    # declared lot, and not the shares.** The lot is a thing a character *declares* and
-    # the compiler honours; `open_share` and `courtyard_share` are the levers the
-    # compiler moves to reach its count, and feeding those back into the count is a
-    # circle: a character asking for open ground everywhere made `houses_per_block`
-    # zero, so the district was asked for no houses, so there was nothing for the
-    # compiler to lower the share for. Found by running `test_compile`'s own
-    # `open_share: 1` case.
+    # **Of the fabric this part is actually built of**, character passed through, so a
+    # district that declared its own lot is not held to the cover of the density's
+    # *default* lot -- a target computed for a fabric it was told not to build, which
+    # would refuse a declared twelve-column frontage against a floor derived from a
+    # twenty-four column one. **The declared lot, and not the shares.** The lot is a
+    # thing a character *declares* and the compiler honours; `open_share` and
+    # `courtyard_share` are the levers the compiler moves to reach its count, and feeding
+    # those back into the count is a circle: a character asking for open ground
+    # everywhere (`open_share: 1`) would make `houses_per_block` zero, so the district
+    # would be asked for no houses and there would be nothing for the compiler to lower
+    # the share for.
     ch = {k: v for k, v in (part.get("character") or {}).items()
           if k in ("lot_width", "lot_depth", "attached", "frontage")}
     return float(fabric(d, part.get("role") or DENSITY_ROLE.get(d),
@@ -1227,9 +1213,9 @@ def structures_for(columns: float, part: dict, shape: tuple | None = None) -> in
     if shape is None:
         return by_ground
     # **...and never more than the grid that ground assumes can be laid on it.** The
-    # craft round, E1: the divide above is right for a rectangle big enough to run a
-    # grid on and wrong for a strip, and a district asked for more houses than its own
-    # shape holds is a hand-back nobody can answer.
+    # divide above is right for a rectangle big enough to run a grid on and wrong for a
+    # strip, and a district asked for more houses than its own shape holds is a
+    # hand-back nobody can answer.
     return min(by_ground, fabric_fit(int(shape[0]), int(shape[1]), d, role,
                                      part.get("character")))
 
@@ -1343,12 +1329,11 @@ def read_spec(doc: dict, sentence: str | None = None, count: dict | None = None)
         spec["invariants"] = str(invariants).strip()
     if ring_voices:
         spec["authored_voices"] = ring_voices
-    # **The least ground the parts need, before the count's footprint stands.** The
-    # closure round's transfer case: an explicit count of twenty-four sized the
-    # footprint at 240 and the ring arithmetic could not lay a 93-column compound and
-    # two rings at their least widths in it. Extent, hierarchy and count are resolved
-    # together: the footprint is the larger of what the count implies and what the
-    # defining parts need, and the record says which governed.
+    # **The least ground the parts need, before the count's footprint stands.** A small
+    # explicit count can size a footprint in which the ring arithmetic cannot lay a
+    # large compound and its rings at their least widths. Extent, hierarchy and count
+    # are resolved together: the footprint is the larger of what the count implies and
+    # what the defining parts need, and the record says which governed.
     try:
         from . import placeplan as _placeplan
         least = _placeplan.least_footprint(spec)
@@ -1360,12 +1345,11 @@ def read_spec(doc: dict, sentence: str | None = None, count: dict | None = None)
     if least and int(least) >= int(spec["needs"]["footprint"]):
         spec["footprint_from"] = {"least_footprint": int(least),
                                   "why": "the defining parts' least ground governs"}
-    # **...and the ground the sentence's own count needs at its density words.** The
-    # expression round (worker A): `least_footprint` is the side the ring layout refuses
-    # below; `wanted_footprint` adds the ground each ring of the count needs at the
-    # least cover its density word admits, so a sparse ring of nine farmhouses is not
-    # squeezed onto a count-sized site and the farm's fields are not short of their
-    # purpose.
+    # **...and the ground the sentence's own count needs at its density words.**
+    # `least_footprint` is the side the ring layout refuses below; `wanted_footprint`
+    # adds the ground each ring of the count needs at the least cover its density word
+    # admits, so a sparse ring of nine farmhouses is not squeezed onto a count-sized
+    # site and the farm's fields are not short of their purpose.
     try:
         from . import placeplan as _placeplan
         wanted = _placeplan.wanted_footprint(spec)
@@ -1508,8 +1492,7 @@ def _read_needs(got, structures: int, kind: str | None = None,
             out["plateau"] = int(got["plateau"])
         # A spec on the record is read back as the spec it was, and the record is not
         # resized. ...or the footprint the defining parts' least ground governed, which
-        # a checked spec records beside its needs (`footprint_from`) -- the closure
-        # round
+        # a checked spec records beside its needs (`footprint_from`)
         if got.get("footprint") is not None \
                 and int(got["footprint"]) != want \
                 and int(got["footprint"]) != min(want, footprint_ceiling(kind)) \
@@ -1556,16 +1539,15 @@ def scale_to_ceiling(spec: dict) -> dict:
     got = sum(p["structures"] for p in spec["defining_parts"])
     spec["structures"] = min(cap, got or min(want, cap))
     lo, hi = spec["size_band"]
-    # **The band the sentence gave is not the band the ceiling may move.** The
-    # architecture audit, and the sharpest thing it found: asked for *exactly 2,000
-    # houses*, the ceiling reduced the place to 1,824 and moved the acceptance band down
-    # to match, so `in_band` passed and the run reported success on a request it had not
-    # met. A ceiling is a statement about this system's capacity. It is not a licence to
-    # rewrite what was asked for. So the band moves only where it was the **library's
-    # own inference** -- the kind's band, which is revisable by definition -- and stands
-    # where the **sentence** set it. A spec whose explicit count cannot be reached keeps
-    # the band that says so, carries `unmet` naming the limiting constraint, and fails
-    # the count clause honestly.
+    # **The band the sentence gave is not the band the ceiling may move.** Asked for
+    # *exactly 2,000 houses*, a ceiling that reduced the place and moved the acceptance
+    # band down to match would let `in_band` pass and the run report success on a
+    # request it had not met. A ceiling is a statement about this system's capacity. It
+    # is not a licence to rewrite what was asked for. So the band moves only where it was
+    # the **library's own inference** -- the kind's band, which is revisable by
+    # definition -- and stands where the **sentence** set it. A spec whose explicit
+    # count cannot be reached keeps the band that says so, carries `unmet` naming the
+    # limiting constraint, and fails the count clause honestly.
     explicit = spec.get("explicit_count")
     if explicit:
         spec["unmet"] = {

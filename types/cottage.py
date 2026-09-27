@@ -1001,15 +1001,12 @@ def build(b, part, seed, **params):
                  max_cells=400)
     b.check_walkable(label)
     b.check_attached()
-    # **A rectangle for a fire that is not there is a false certificate.** The design
-    # round, measured on a probe: a one-storey cottage lays its campfire and a
-    # *two*-storey one lays none at all -- `b.fitting("hearth", ...)` answers `ok` and
-    # the fire is not in the emitted blocks -- and this file published `rects.hearth`
-    # either way. `construction._verify_rect` then found the second storey's floor four
-    # courses up the hearth's own column and certified it, so seven of the `des-farm`
-    # farm's seventeen cottages carried a verified hearth that does not exist. The
-    # rectangle is published only where the fire is standing when the house is finished;
-    # where it is not, the hearth is `omitted`, which is what it is, and
+    # **A rectangle for a fire that is not there is a false certificate.**
+    # `b.fitting("hearth", ...)` can answer `ok` while the fire is not in the emitted
+    # blocks, and `construction._verify_rect` would then find an upper storey's floor
+    # up the hearth's own column and certify a hearth that does not exist. The
+    # rectangle is published only where the fire is standing when the house is
+    # finished; where it is not, the hearth is `omitted`, which is what it is, and
     # `construction.constraint` routes it to the owner who can build it.
     if hearth_cell is not None:
         hx, hz, hy = hearth_cell

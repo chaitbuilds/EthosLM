@@ -518,12 +518,11 @@ def r8_a_gate_on_a_cut_run_opens_the_wall_in_either_order():
 
 @case
 def r9_runs_built_one_after_another_never_climb_their_neighbours():
-    """The city build's regression (`wall_palace_003`, out/ds-city region 3_4): runs are
-    built region after region, each on the world as its neighbours left it, and the
-    leaf reaches the type through `PART_GEOMETRY`. Its end segments were sited on the
-    neighbour's wall (floors of 133 and 182 under a wall at 83), the ring context was
-    dropped on the way to the type, and the walk climbed half a block a station to
-    meet the false floors: a crown ~72 over its floor. Here: a ring cut into runs, each
+    """A city's runs are built region after region, each on the world as its neighbours
+    left it, and the leaf reaches the type through `PART_GEOMETRY`. End segments sited
+    on the neighbour's wall read false floors far above the ring's, and with the ring
+    context dropped on the way to the type the walk climbs half a block a station to
+    meet them, leaving a crown far over its floor. Here: a ring cut into runs, each
     built on the volume the runs before it left, the part composed through
     `PART_GEOMETRY`, with the ring's context and without it; every column's top stays
     within max(ring_floors) + height + 2, a tower's drum within its own courses more

@@ -1,15 +1,14 @@
 """Where construction can actually stand: the ground a district's count is derived from.
 
-The neighbourhood review's first remaining cause, in its own words: *"Planning capacity is
-not terrain-and-access feasibility."* `district_compile` does not read terrain at all,
-`placeplan.developable_columns` subtracts the arterial's band and the standing parts'
-clearances from a rectangle but not water and not an impossible grade, and
-`arrange.certificate_for` calls the district validator with `ground=None`. So the crowded
-ring's rectangles ran past the ring terrace onto low wet ground, the denser fabric filled
-what it was told was developable, houses were sited on decks over water, and the walk
-network broke -- 973 unreachable lane stances in the retained reading. Three numbers were
-in play and none of them was the same number: the rectangle's columns, the columns a
-count was derived from, and the columns a building could be founded on.
+*Planning capacity is not terrain-and-access feasibility.* `district_compile` does not read
+terrain at all, `placeplan.developable_columns` subtracts the arterial's band and the
+standing parts' clearances from a rectangle but not water and not an impossible grade, and
+`arrange.certificate_for` calls the district validator with `ground=None`. Planned on those
+alone, a ring's rectangles run past the ring terrace onto low wet ground, the denser fabric
+fills what it is told is developable, houses are sited on decks over water, and the walk
+network breaks. Three numbers are in play and none of them is the same number: the
+rectangle's columns, the columns a count was derived from, and the columns a building
+could be founded on.
 
 This module is the third one, measured, and nothing else. It builds nothing, it decides
 nothing, and it refuses to guess: it reads the observed baseline under a rectangle, is
@@ -93,14 +92,12 @@ PIT_PAD = 8
 #: blocks, and a lattice of deep shafts is not quietly made a plateau.
 PIT_DEPTH_REACHES = 3
 
-#: **...and a knoll** (the design resolution round): the same pocket rule above the
-#: level. A boulder of ground five columns across and ten blocks over a terrace's level
-#: refused the market piece's market (the one lot in from its corner it could stand on)
-#: at the ring's own level, and the piece was laid two blocks higher to step round it --
-#: a ten- block retaining face to its neighbour for twenty columns of cut. A pocket over
-#: the bound of at most `KNOLL_COLUMNS` columns, found whole on the padded window so a
-#: hillside's edge is never a pocket, and at most `KNOLL_DEPTH_REACHES` reaches over the
-#: level, is cut; `knolls` costs it.
+#: **...and a knoll**: the same pocket rule above the level. A small boulder of ground
+#: standing well over a terrace's level can refuse the one lot a market could stand on,
+#: and raising the whole piece to step round it buys a few columns of cut with a tall
+#: retaining face to its neighbour. A pocket over the bound of at most `KNOLL_COLUMNS`
+#: columns, found whole on the padded window so a hillside's edge is never a pocket, and
+#: at most `KNOLL_DEPTH_REACHES` reaches over the level, is cut; `knolls` costs it.
 KNOLL_COLUMNS = 64
 #: How many columns in from each side a slot below the level is filled.
 SLOT_PASSES = 2
@@ -112,24 +109,24 @@ TERRAIN_FIELDS = ("columns", "feasible_columns", "wet_columns", "reclaimed_colum
                   "off_level_columns", "broken_columns", "unreached_columns",
                   "outside_columns", "measured")
 
-#: **What a design does to one column of ground it has designed.** The neighbourhood
-#: delivery round, and the half of the question this module did not answer. The mask
-#: above says which columns may be **developed**. Nothing said which columns would be
-#: **moved**, so `Builder.terrace_annulus` levelled every column of the rectangle it was
-#: handed and the two instruments disagreed by 3,767,160 blocks of cut on the retained
-#: section's rings alone -- housing excluded from a hillside because the hillside should
-#: not be cut, and the hillside cut anyway. These eight answers are exhaustive over a
-#: rectangle and they partition it: four the design moves, three it leaves exactly where
-#: it found them, one it never read. `level` already at the level: nothing is moved
-#: `fill` dry ground below the level, brought up to it `reclaim` standing water the
-#: level stands over, filled from the bed (clause 1) `cut` ground above the level, taken
-#: down to it `keep_water` water this level does not stand over, or could not fill
-#: inside the bound: it stays water `keep_high` ground further above the level than the
-#: bound: left standing `keep_low` ground further below the level than the bound: left
-#: open `unread` outside the observed volume: never moved on ground nobody read A column
-#: is moved **iff** it is in the mask, which is the whole point: the columns `terrain`
-#: refuses are exactly the columns the builder does not touch, so the two reconcile
-#: column for column rather than by argument.
+#: **What a design does to one column of ground it has designed.** The mask above says
+#: which columns may be **developed**; this says which columns are **moved**. Without it
+#: `Builder.terrace_annulus` levels every column of the rectangle it is handed, and a
+#: hillside that housing was kept off, because it should not be cut, is cut anyway.
+#: These eight answers are exhaustive over a rectangle and they partition it: four the
+#: design moves, three it leaves exactly where it found them, one it never read.
+#:   * `level` -- already at the level: nothing is moved
+#:   * `fill` -- dry ground below the level, brought up to it
+#:   * `reclaim` -- standing water the level stands over, filled from the bed (clause 1)
+#:   * `cut` -- ground above the level, taken down to it
+#:   * `keep_water` -- water this level does not stand over, or could not fill inside the
+#:     bound: it stays water
+#:   * `keep_high` -- ground further above the level than the bound: left standing
+#:   * `keep_low` -- ground further below the level than the bound: left open
+#:   * `unread` -- outside the observed volume: never moved on ground nobody read
+#: A column is moved **iff** it is in the mask, which is the whole point: the columns
+#: `terrain` refuses are exactly the columns the builder does not touch, so the two
+#: reconcile column for column rather than by argument.
 DISPOSITIONS = ("level", "fill", "reclaim", "cut",
                 "keep_water", "keep_high", "keep_low", "unread")
 
@@ -285,14 +282,13 @@ def terrain(vol, rect, *, level=None, relief: int = RELIEF, routes=None,
     # the reclaimed ground for the depth of the fill that reclaimed it, because the fill
     # *is* the ground there. `reclaimed_fill` records how deep it has to be, so a caller
     # can see the difference between filling a puddle and filling a lake. **...and the
-    # fill has a bound, the coordinator's addition.** The clause as first written had no
-    # stop: measured on the retained section, the middle ring's level of y=79 reclaims
-    # 4,934 columns of `middle_ring_north_east` under up to **44 blocks** of fill and
-    # calls every one of them feasible. That is not an earthwork, it is a dam, and a
-    # design that can buy any amount of ground by raising the water is back to deriving
-    # a count from ground nothing can be built on. `fill` is the most a reclamation may
-    # raise the bed; None leaves the clause unbounded, which is what a caller asking
-    # "what is under this ground" wants and what every existing call does.
+    # fill has a bound.** Without one, a ring's level can reclaim thousands of columns
+    # under tens of blocks of fill and call every one of them feasible. That is not an
+    # earthwork, it is a dam, and a design that can buy any amount of ground by raising
+    # the water is back to deriving a count from ground nothing can be built on. `fill`
+    # is the most a reclamation may raise the bed; None leaves the clause unbounded,
+    # which is what a caller asking "what is under this ground" wants and what every
+    # existing call does.
     reclaimed = ((wet & (water + 1 <= lvl)) if lvl is not None
                  else np.zeros((w, d), bool))
     if fill is not None and lvl is not None:
@@ -307,15 +303,14 @@ def terrain(vol, rect, *, level=None, relief: int = RELIEF, routes=None,
     off = np.zeros((w, d), bool)
     if lvl is not None:
         off = inside & ~decided & (np.abs(bed - lvl) > relief)
-    # **...except a pit.** The quarter design round. The bound is about hillsides and
-    # lakes -- earth a design should not move -- and it also refused a shaft five
-    # columns across and nineteen deep in the middle of a terraced quarter's own street:
-    # left as found, the street dipped eleven blocks into it and the doorways facing it
-    # could not be walked into. A pocket below the level of at most `PIT_COLUMNS`
-    # columns -- measured whole, on a window `PIT_PAD` wider than the rectangle, so a
-    # trench or a valley is never a pocket -- is filled to the level whatever its depth;
-    # its columns are this design's ground, and `pits` says how many and how deep, so
-    # the earthwork is costed rather than hidden.
+    # **...except a pit.** The bound is about hillsides and lakes -- earth a design
+    # should not move -- and without this it would also refuse a narrow, deep shaft in
+    # the middle of a terraced quarter's own street: left as found, the street dips into
+    # it and the doorways facing it cannot be walked into. A pocket below the level of
+    # at most `PIT_COLUMNS` columns -- measured whole, on a window `PIT_PAD` wider than
+    # the rectangle, so a trench or a valley is never a pocket -- is filled to the level
+    # whatever its depth; its columns are this design's ground, and `pits` says how many
+    # and how deep, so the earthwork is costed rather than hidden.
     pits = {"columns": 0, "pockets": 0, "max_fill": 0}
     if lvl is not None and PIT_COLUMNS:
         from scipy import ndimage
@@ -380,10 +375,9 @@ def terrain(vol, rect, *, level=None, relief: int = RELIEF, routes=None,
                 knolls["columns"] += int(m.sum())
                 knolls["pockets"] += 1
                 knolls["max_cut"] = max(knolls["max_cut"], int((bed[m] - lvl).max()))
-    # **...and a slot** (the design resolution round, the independent reader's n1): a
-    # pocket below the level too large for the pit rule can still be one or two columns
-    # wide where it meets the terrace -- a shaft nine to sixteen deep along the ring
-    # street's edge, left open because the whole hole it belonged to was more than
+    # **...and a slot**: a pocket below the level too large for the pit rule can still
+    # be one or two columns wide where it meets the terrace -- a deep shaft along a ring
+    # street's edge, left open because the whole hole it belongs to is more than
     # `PIT_COLUMNS`. A low column with feasible ground on both sides along one axis is
     # filled, `SLOT_PASSES` columns in from each side; `slots` costs it.
     slots = {"columns": 0}

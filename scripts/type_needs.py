@@ -82,10 +82,10 @@ PLOT_SIZES = tuple(range(3, 23)) + (24, 28, 32)
 #: integer to 48 is four times the work for the same answer.
 AREA_SIZES = PLOT_SIZES + (40, 48)
 POINT_SIZES = tuple(range(3, 17))
-#: **A wall's mass reaches a rampart's**, the craft round (E4): these were 1, 2 and 3,
-#: so three was all that was ever certified and a city's outer wall was forty-eight high
-#: and three thick -- a screen. The widths a place may declare are
-#: `placeplan.WALL_MASSES`, and the sweep tries them and the ones between.
+#: **A wall's mass reaches a rampart's.** Certifying only widths 1 to 3 would leave a
+#: city's outer wall forty-eight high and three thick -- a screen. The widths a place
+#: may declare are `placeplan.WALL_MASSES`, and the sweep tries them and the ones
+#: between.
 EDGE_WIDTHS = (1, 2, 3, 5, 7, 9, 12)
 #: An edge's runs reach a district's scale on purpose.
 EDGE_RUNS = (4, 8, 16, 32, 64, 96, 128)
@@ -93,18 +93,14 @@ EDGE_RUNS = (4, 8, 16, 32, 64, 96, 128)
 #: The ground the sweep stands on: one level plane, deep enough to plinth into.
 FLAT_Y = 64
 
-#: and a size passes only if it passes on both. The plane alone was the whole sweep for
-#: four rounds and it was measuring half the question. `site()` gives a pad with little
-#: relief a **plinth** and one with real relief a **platform**, and those are two
-#: different pieces of ground for everything that stands on the edge of them: the way
-#: in, the doorstep, what the pad's rim looks like. rooms with no walkable floor -- in
-#: `court_large` and `hall` at 24 to 31 across, every one of them clean at that size on
-#: this sweep's plane; the cause was in the library and is fixed
-#: (`TypeBuilder._clear_doorstep`), and the reason it reached a city is that **no
-#: instrument in this project ever stood a large plot on a slope**. The terrain bank
-#: asks whether the library can prepare ground and the fixtures it samples are six
-#: pieces of real world with no large plot on any of them; this asks what size of
-#: prepared ground a type can use and asked it on a plane. Neither could see it. A
+#: **Every size is swept on a plane and on a slope** (`GROUNDS`), and a size passes only
+#: if it passes on both. A plane alone measures half the question. `site()` gives a pad
+#: with little relief a **plinth** and one with real relief a **platform**, and those
+#: are two different pieces of ground for everything that stands on the edge of them:
+#: the way in, the doorstep, what the pad's rim looks like. A large plot can be clean on
+#: a plane and still leave rooms with no walkable floor on a platform
+#: (`TypeBuilder._clear_doorstep` is the library's side of that), and the terrain bank's
+#: fixtures carry no large plot, so only this sweep stands one on a slope. A
 #: **fall across the part** and not a gradient: a platform of any size cuts the same
 #: amount of face, so one gradient would make a 3x3 pad flat and a 32x32 pad a cliff and
 #: the sweep would be measuring the fixture. Eight is the most `site()` takes across
@@ -261,8 +257,8 @@ def _part(name: str, kind: str, size: tuple) -> tuple:
                 "facing": "north", "size": size[0]}
         # A passage point is also swept **in a wall**: siting sizes a gate's pad from
         # its wall's height (`Builder.point_pad`), so the pad this size answers to is
-        # the wall three times as high, and the type builds to that crown. Demo-polish,
-        # 2b. Below nine there is no tower form and the wall is a low one.
+        # the wall three times as high, and the type builds to that crown. Below nine
+        # there is no tower form and the wall is a low one.
         if _passage(name) and size[0] >= 9:
             part["edge"] = {"name": "a_wall", "type": "great_wall",
                             "height": Builder.POINT_PAD_PER_HEIGHT * size[0], "width": 3}
@@ -593,8 +589,8 @@ def envelope_rows(names: list, transcribe_rows: bool) -> int:
     """`--envelope <type ...>`: measure each type's ENVELOPE rows (the least lot on
     which every parameter combination stands with each feature it declares, at one
     seed and at three) through `ethoslm.envelope.table`, and print them or, with
-    `--transcribe`, write them onto the type file as its `ENVELOPE` table. The
-    expression round: the same instrument the layout consults before it draws a lot."""
+    `--transcribe`, write them onto the type file as its `ENVELOPE` table: the same
+    instrument the layout consults before it draws a lot."""
     from ethoslm import envelope
     for name in names:
         t0 = time.perf_counter()

@@ -1,26 +1,25 @@
-"""**Six questions asked of the world that stands, not of the record that describes it.**
+"""**Seven questions asked of the world that stands, not of the record describing it.**
 
-The design round's third contract. What established a feature before this was one of
-three things, and none of them is use:
+Three things can appear to establish a feature, and none of them is use:
 
   * a **label** -- `FUNCTION = "market"` on the type file, which `intent._function_measure`
     reads and reports as a measurement of function;
   * an **occupied bounding box** -- `construction._verify_rect` asks whether half the
     columns of the rectangle the type claimed have something standing on them, which is
     the same answer for a stall, a bench, a bell and a pile of rubble;
-    **the composition round closes that where the library lays an identifiable block**:
+    **this module closes that where the library lays an identifiable block**:
     see `FEATURE_BLOCKS`. A hearth is a fire, a forge is a furnace, and a stall carries a
     counter or its goods. Where this build lays no block that identifies a feature the
     record says so (`identity: "unsupported"`) instead of inventing a proxy;
   * a **generator assertion** -- `emitted.features = {"stalls": True}`, the type's own
     account of what it did, believed where nothing could check it.
 
-And all three were read off the part's **own emission**, before the next part was built.
+And all three are read off the part's **own emission**, before the next part is built.
 A courtyard a later wall filled in, a forge a neighbour's terrace buried and a door the
-finishing pass paved over were all recorded as delivered, because nobody asked again
+finishing pass paved over would all be recorded as delivered, because nothing asks again
 afterwards.
 
-So: six predicates, on the **assembled** volume, after all construction.
+So: seven predicates, on the **assembled** volume, after all construction.
 
     check(world, part, want, *, plan=None, registry=None)
         -> {"holds": bool | None,
@@ -37,7 +36,7 @@ round, and a caller that wants to report coverage reads `method`.
 
 **No new pathfinder.** Every reachability answer here comes from `observe.Nav` through
 `lint.Context`, which is the one walk model this project has (`observe.WALK_MODEL`).
-`World.of` assembles that context once per built world and the six predicates are then
+`World.of` assembles that context once per built world and the seven predicates are then
 essentially free, which is what lets them run on every part rather than on a sample.
 """
 from __future__ import annotations
@@ -46,27 +45,23 @@ import json
 import os
 import re
 
-#: The wants, in the order the contract names them. **Seven** since the block design
-#: round: `court_enclosed` is the question `range_relation` could not be asked -- a
-#: block's court is enclosed by *other parts*, and nothing in this module had a way to
-#: ask whether they stood. See its docstring.
+#: The wants, in the order the contract names them. `court_enclosed` is the question
+#: `range_relation` cannot ask -- a block's court is enclosed by *other parts*, and only
+#: it asks whether they stand. See its docstring.
 WANTS = ("entrance_connected", "passage_connected", "equipment_reachable",
          "circulation_clear", "court_accessible", "range_relation", "court_enclosed")
 
 #: The observation methods, weakest last. Nothing here ever returns `holds: True` with
 #: `method: "declared"`: a declaration is what this module exists to stop counting.
-#: **`inapplicable` is not `unsupported`**, the neighbourhood delivery round, and the
-#: independent reader's own finding about the round before it: *"`usable.json` has no
-#: failures because two thirds of its checks were unanswerable, not because they
-#: passed."* Two hundred and one of the delivered candidate's three hundred and eight
-#: answers were `unsupported`, and they are two entirely different facts wearing one
-#: word. A row house has no court, so `court_accessible` is a question about it that
-#: does not arise -- nothing is owed, nothing is missing, and counting it as an
-#: unanswered question makes the coverage figure meaningless in the direction that
-#: flatters. A part that *does* claim a court and whose floor level could not be read is
-#: a **measurement gap**, and that is what a reader needs to see. Neither ever
-#: establishes a predicate; the round's rule is that a measurement exception must not
-#: become an affirmative outcome, and `answer` still refuses `holds: True` for both.
+#: **`inapplicable` is not `unsupported`.** They are two entirely different facts, and
+#: one word for both lets a report have no failures because most of its checks were
+#: unanswerable rather than because they passed. A row house has no court, so
+#: `court_accessible` is a question about it that does not arise -- nothing is owed,
+#: nothing is missing, and counting it as an unanswered question makes the coverage
+#: figure meaningless in the direction that flatters. A part that *does* claim a court
+#: and whose floor level could not be read is a **measurement gap**, and that is what a
+#: reader needs to see. Neither ever establishes a predicate: a measurement exception
+#: must not become an affirmative outcome, and `answer` refuses `holds: True` for both.
 METHODS = ("observed", "inferred", "declared", "inapplicable", "unsupported")
 
 #: The methods that are an absence of evidence rather than evidence.
@@ -83,13 +78,12 @@ EQUIPMENT = ("stalls", "forge", "hearth", "counter", "altar", "dais", "benches",
 #: `construction.OPEN_FEATURES` verifies by openness rather than by mass.
 COURTS = ("courtyard", "court", "yard")
 
-#: **How far from a court's edge a building may stand and still be a side of it.** The
-#: block design round, and a second independent reader's measurement: the compiler wrote
-#: `reach: 13` on the leaf, which is wider than the court is deep, and the nearest mass
-#: on every face of every delivered court is 4 or 5 columns out -- the clearance between
-#: the court's paving and the ranges' lots (`district_compile.LOT_GAP` plus the inset
-#: `site()` leaves round a pad) and no more. Six columns is that clearance and one more;
-#: beyond it the measure reaches past a range into the next block's ground and the
+#: **How far from a court's edge a building may stand and still be a side of it.** Not
+#: the `reach` the compiler writes on the leaf, which can be wider than the court is
+#: deep: the nearest mass on every face of a court is 4 or 5 columns out -- the clearance
+#: between the court's paving and the ranges' lots (`district_compile.LOT_GAP` plus the
+#: inset `site()` leaves round a pad) and no more. Six columns is that clearance and one
+#: more; beyond it the measure reaches past a range into the next block's ground and the
 #: sentence "buildings stand on all four sides" stops being about this court.
 ENCLOSED_REACH = 6
 
@@ -100,11 +94,11 @@ ENCLOSED_REACH = 6
 #: building and half the clearance between two lots is the ordinary urban block.
 ENCLOSED_FACE_COVER = 0.5
 
-#: **How far past a range's pad inset its wall may stand and still be a face.** The
-#: quarter design round: where a court owns its margin (`court_site.margin`, out to the
-#: ranges' lot lines), the reach is measured from the margin's edge and is the ranges'
-#: own pad inset (`buildlib.PAD_SITE_INSET`) plus this: the wall column itself and one
-#: more for a verandah post or an eave the wall stands behind.
+#: **How far past a range's pad inset its wall may stand and still be a face.** Where a
+#: court owns its margin (`court_site.margin`, out to the ranges' lot lines), the reach
+#: is measured from the margin's edge and is the ranges' own pad inset
+#: (`buildlib.PAD_SITE_INSET`) plus this: the wall column itself and one more for a
+#: verandah post or an eave the wall stands behind.
 ENCLOSED_WALL_REACH = 2
 
 #: The open-ground types that **are** a court rather than claim one: a shared court a
@@ -128,35 +122,29 @@ REACH = 2
 #: four is the same bar `construction.measure` holds a storey's wall ring to.
 COURT_SIDES = 3
 
-#: **What makes a side of a court a range rather than a wall.** The neighbourhood round,
-#: and the two questions the old measurement ran together. `range_relation` read one
-#: ring of cells outside the court and asked whether they carry the part's mass at wall
-#: height. A courtyard house in this library's tradition is a ring of rooms behind a
-#: *veranda*, so the ring immediately outside the court is boards, posts and open air
-#: **by design** and the ranges stand a column further out. Measured on flat-ground
-#: probes of `court_large` at eight pads: the predicate found 0, 1 or 2 ranged sides on
-#: courts that four ranges of rooms stood round. That is a measurement artefact and not
-#: a finding about the building -- and, the other way about, a yard inside a bare
-#: boundary wall was "ranged" on all four sides, which is the reading the predicate's
-#: own docstring says it exists to refuse. Two measurements now, over the band from the
-#: court's edge out to the part's own footprint edge on that side: * a side is
-#: **closed** when at least half its columns carry the part's mass at wall height
-#: anywhere in that band -- the enclosure question, which the veranda no longer hides; *
-#: a side is **ranged** when it is closed **and** the part's own ground reaches
-#: `RANGE_DEPTH` columns beyond the court there -- the "rooms and not a wall" question.
+#: **What makes a side of a court a range rather than a wall.** Two questions, kept
+#: apart. A courtyard house in this library's tradition is a ring of rooms behind a
+#: *veranda*, so the ring of cells immediately outside the court is boards, posts and
+#: open air **by design** and the ranges stand a column further out. Reading only that
+#: ring for mass at wall height finds few ranged sides on courts that four ranges of
+#: rooms stand round -- and, the other way about, calls a yard inside a bare boundary
+#: wall "ranged" on all four sides. So two measurements, over the band from the court's
+#: edge out to the part's own footprint edge on that side:
+#:   * a side is **closed** when at least half its columns carry the part's mass at wall
+#:     height anywhere in that band -- the enclosure question, which the veranda does
+#:     not hide;
+#:   * a side is **ranged** when it is closed **and** the part's own ground reaches
+#:     `RANGE_DEPTH` columns beyond the court there -- the "rooms and not a wall"
+#:     question.
 #: Two and not one: one column of a part's ground behind a court is a boundary wall, and
 #: two is the shallowest band that can hold a room. The setback and not a count of mass
 #: cells along the ray, deliberately. Counting mass makes the verdict turn on whether a
-#: chest happens to stand in it: measured on `court_large` at an 11x9 pad, twenty-four
-#: of a hundred and eight probes read one ranged side where the rest read four, on
-#: ranges of identical depth, because a room behind a veranda is air at wall height
-#: except where the furnishing pass reached. A range is a fact about the plan, and the
-#: plan is where it is read. The verdict needs `COURT_SIDES` closed **and**
-#: `RANGED_SIDES` of them ranged, so a walled garden fails where it used to pass and a
-#: veranda court passes where it used to fail. Neither bar is a relaxation of the other:
-#: `COURT_SIDES` is unmoved and `RANGED_SIDES` is new. A court with three ranges and a
-#: gate wall -- which is what `court_small` is -- reads four closed and three ranged,
-#: and says so.
+#: chest happens to stand in it: a room behind a veranda is air at wall height except
+#: where the furnishing pass reached, so ranges of identical depth would read
+#: differently. A range is a fact about the plan, and the plan is where it is read. The
+#: verdict needs `COURT_SIDES` closed **and** `RANGED_SIDES` of them ranged, so a walled
+#: garden fails and a veranda court passes. A court with three ranges and a gate wall --
+#: which is what `court_small` is -- reads four closed and three ranged, and says so.
 RANGE_DEPTH = 2
 
 #: How many of the closed sides must be a range of rooms rather than a wall. Two: a
@@ -183,25 +171,24 @@ ROOM_REACH = 2
 #: question `lint.w005_site_unserved` asks of a planned site, asked here of a built one.
 APRON = 2
 
-#: **What makes a feature that feature and not an occupied rectangle.** The composition
-#: round's second evidence connection, and the defect is the one this module's own
-#: header admitted: `_stands_in` counts any non-air column within `FEATURE_COURSES` of
-#: the floor, so a pile of rubble in a hearth rectangle answered exactly as a fire did.
-#: A word here is a **substring of a block id**, matched against the block the assembled
-#: world carries; the ids are the ones the library actually lays, read off
-#: `prims.Builder.FITTING_BLOCKS` and the two market types, not guessed: * `hearth` --
-#: `FITTING_BLOCKS["hearth"]` lays `campfire[lit=true]` on a stone base
-#: (`prims.fitting`), and `types/court_large.py` lays the same through `furnish`. A lit
-#: furnace or smoker is the other fire this library knows. `iron_bars` is in the
-#: fitting's vocabulary as a grate and is **not** here: a grate is not a fire. * `forge`
-#: -- `FITTING_BLOCKS["forge"]` is a furnace, `["anvil"]` an anvil or a smithing table;
-#: `types/workshop.py` reports whichever of them it laid. * `stalls` --
-#: `types/market.py._stall` and `types/square.py._stall` both lay a counter (the voice's
-#: footing under a **slab** top) and the booth's goods (a `barrel` crate, a
-#: `crafting_table`, a fence-and-pressure-plate table, or a `lantern` hung under the
-#: hood). Measured on the two production types: a 30x18 market carries 20 slabs, 10
-#: barrels and 10 lanterns in its stalls rectangle, and a 40x40 square's four booths
-#: carry a slab or a table each. Plain voice masonry -- rubble -- carries none of them.
+#: **What makes a feature that feature and not an occupied rectangle.** `_stands_in`
+#: counts any non-air column within `FEATURE_COURSES` of the floor, so a pile of rubble
+#: in a hearth rectangle answers exactly as a fire does. A word here is a **substring of
+#: a block id**, matched against the block the assembled world carries; the ids are the
+#: ones the library actually lays, read off `prims.Builder.FITTING_BLOCKS` and the two
+#: market types, not guessed:
+#:   * `hearth` -- `FITTING_BLOCKS["hearth"]` lays `campfire[lit=true]` on a stone base
+#:     (`prims.fitting`), and `types/court_large.py` lays the same through `furnish`. A
+#:     lit furnace or smoker is the other fire this library knows. `iron_bars` is in the
+#:     fitting's vocabulary as a grate and is **not** here: a grate is not a fire.
+#:   * `forge` -- `FITTING_BLOCKS["forge"]` is a furnace, `["anvil"]` an anvil or a
+#:     smithing table; `types/workshop.py` reports whichever of them it laid.
+#:   * `stalls` -- `types/market.py._stall` and `types/square.py._stall` both lay a
+#:     counter (the voice's footing under a **slab** top) and the booth's goods (a
+#:     `barrel` crate, a `crafting_table`, a fence-and-pressure-plate table, or a
+#:     `lantern` hung under the hood): a market's stalls carry slabs, barrels and
+#:     lanterns, and a square's booths a slab or a table each. Plain voice masonry --
+#:     rubble -- carries none of them.
 #: A feature **absent** from this table has no identifiable block in this build. Its
 #: mass is still measured and its identity is reported `unsupported`, which is the
 #: honest answer and not a proxy: nothing in `types/worship.py` distinguishes the
@@ -838,10 +825,10 @@ def court_accessible(world: "World", name: str, row: dict, prov: dict) -> dict:
         pass may have filled it -- and adds the two halves nobody asked: that a person
         standing in the part can get out into it, and that it is **open to the sky**.
 
-        **A court is a floor and the sky over it.** The composition round: paved at the floor
-        and clear for three courses is also true of a room, a cellar and the ground floor of
-        an arcade, so a court a later storey or a neighbour's roof was carried over remained
-        a court by this measurement. `SKY_COURSES` above the headroom have to be clear over
+        **A court is a floor and the sky over it.** Paved at the floor and clear for three
+        courses is also true of a room, a cellar and the ground floor of an arcade, so by
+        that measurement alone a court a later storey or a neighbour's roof was carried
+        over would remain a court. `SKY_COURSES` above the headroom have to be clear over
         `construction.OPEN_STANDS` of its cells -- the same share the paving is held to, so a
         portico along one side is not a filled court and a roof over it is.
 
@@ -878,13 +865,11 @@ def court_accessible(world: "World", name: str, row: dict, prov: dict) -> dict:
             x0, z0, x1, z1 = rect
             cells = [(x, z) for x in range(min(x0, x1), max(x0, x1) + 1)
                      for z in range(min(z0, z1), max(z0, z1) + 1)]
-            # **A bottom slab is a floor, not a roof.** The neighbourhood delivery
-            # round. "Open" was `air at fy+1..fy+3`, which is the right question about a
-            # courtyard a later storey may have been carried over and the wrong one
-            # about a court somebody laid a kerb round: the two composed courts of the
-            # crowded ring are paved `packed_mud` with a border of spruce slabs and four
-            # lanterns, and the border made 22 of their 40 columns read as filled. A
-            # slab is a step a person walks on. For a court that **is** the open part,
+            # **A bottom slab is a floor, not a roof.** "Open" as `air at fy+1..fy+3` is
+            # the right question about a courtyard a later storey may have been carried
+            # over and the wrong one about a court somebody laid a kerb round: a border
+            # of slabs round a paved court would read as filled columns. A slab is a
+            # step a person walks on. For a court that **is** the open part,
             # the test is the one every other physical predicate in this project uses --
             # can a person stand here -- and the sky test below is unchanged, so a court
             # something was built over still fails.
@@ -1112,11 +1097,11 @@ def court_enclosed(world: "World", name: str, row: dict, prov: dict) -> dict:
     vol = world.ctx.vol
     x0, z0, x1, z1 = (int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3]))
     court = (x0, z0, x1, z1)
-    # **Measured from the court including the margin it owns.** The quarter design
-    # round: a court's margin -- the planted ring out to its ranges' lot lines -- is the
-    # court's (`court_site`), so what is left between it and a range's wall is that
-    # range's own pad inset, which is `buildlib.pad_insets`' number and not a constant
-    # the fabric's setbacks drift from. A claim with no margin keeps `ENCLOSED_REACH`.
+    # **Measured from the court including the margin it owns.** A court's margin -- the
+    # planted ring out to its ranges' lot lines -- is the court's (`court_site`), so what
+    # is left between it and a range's wall is that range's own pad inset, which is
+    # `buildlib.pad_insets`' number and not a constant the fabric's setbacks drift from.
+    # A claim with no margin keeps `ENCLOSED_REACH`.
     margin = claim.get("margin")
     if margin:
         from .buildlib import PAD_SITE_INSET
@@ -1125,15 +1110,13 @@ def court_enclosed(world: "World", name: str, row: dict, prov: dict) -> dict:
         reach = int(PAD_SITE_INSET) + ENCLOSED_WALL_REACH
     else:
         reach = ENCLOSED_REACH
-    # **The bars are this predicate's and never the claim's.** The block design round,
-    # after a second independent reader: the compiler wrote `reach: 13` on the leaf --
-    # wider than an eight-column court is deep -- and wrote no `cover_bar` at all, so
-    # the coverage half of the test defaulted to zero and was **inert**. A claim that
-    # carries its own bar is a claim that grades itself. The claim says what was *built*
-    # (which ranges, where the court is, where the passage is); the measurement and what
-    # counts as passing it belong here, so a record written before this correction is
-    # measured correctly by it and an older artifact can be re-read without being
-    # rewritten.
+    # **The bars are this predicate's and never the claim's.** A compiled leaf can carry
+    # a `reach` wider than its court is deep and no `cover_bar` at all, which would leave
+    # the coverage half of the test at zero and **inert**; a claim that carries its own
+    # bar is a claim that grades itself. The claim says what was *built* (which ranges,
+    # where the court is, where the passage is); the measurement and what counts as
+    # passing it belong here, so an older record is measured correctly and can be
+    # re-read without being rewritten.
     bar = int(claim.get("gap_bar") or 4)
     entry_bar = bar + int(claim.get("entry_bar") or 0)
     cover_bar = ENCLOSED_FACE_COVER
@@ -1196,11 +1179,9 @@ def court_enclosed(world: "World", name: str, row: dict, prov: dict) -> dict:
         "east": ([(x1 + 1, z) for z in range(z0, z1 + 1)], (1, 0))}
     got = {side: walk(cells, step) for side, (cells, step) in faces.items()}
     gaps = {side: v[0] for side, v in got.items()}
-    # **How much of each face carries building, beside the widest hole in it.** The
-    # block design round, after an independent reader measured the delivered pair: the
-    # hole test alone passes an eight-column face with two columns covered (`..X...X.`),
-    # which is a true statement about holes and a false one about walls. Both bars have
-    # to hold.
+    # **How much of each face carries building, beside the widest hole in it.** The hole
+    # test alone passes an eight-column face with two columns covered (`..X...X.`), which
+    # is a true statement about holes and a false one about walls. Both bars have to hold.
     cover = {side: (round(v[1] / float(v[2]), 3) if v[2] else 0.0)
              for side, v in got.items()}
     # **...and the passage is the street face's one hole by design**: where the claim
@@ -1257,7 +1238,7 @@ def court_enclosed(world: "World", name: str, row: dict, prov: dict) -> dict:
 
 
 def _court_passage(world: "World", claim: dict, court, fy: int, street: str) -> dict:
-    """**Is there a way in, and does it open onto this court?** The quarter design round.
+    """**Is there a way in, and does it open onto this court?**
 
     Three questions, each on the evidence: the claim records a passage; the passage
     **shares columns** with the court along its street face (a gap in a street front

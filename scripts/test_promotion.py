@@ -92,11 +92,10 @@ def _put(rnd: Rnd, *, candidate: str, rels: dict, types: dict) -> None:
 def t1_a_rejected_trial_puts_the_accepted_candidate_back_whole():
     """**The whole candidate, byte for byte, and nothing the trial left behind.**
 
-        `stages_media._restore` covers the design records; a rebuild writes `parts.json`,
-        `section.json`, `usable.json`, the inspection and the built world, and the
-        neighbourhood round's rollback covered none of them. That is how its final frames
-        identified `829fb25adb7b6b84` while `inspection/views.json` identified
-        `90b26d9c3f075492`.
+        `stages_media._restore` covers the design records; a rebuild also writes
+        `parts.json`, `section.json`, `usable.json`, the inspection and the built world,
+        and a rollback that misses any of them leaves the final frames of one candidate
+        beside an `inspection/views.json` of another.
 
     """
     tmp = tempfile.mkdtemp(prefix="promote-t1-")

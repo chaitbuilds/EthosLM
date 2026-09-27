@@ -65,11 +65,10 @@ def t_b_a_lost_storey_names_the_lot_and_a_rebuild_delivers_it():
     b2, s2, r2 = C.probe_build("cottage", w, d, leaf["params"], seed=1)
     o2 = C.outcome(b2, s2, None, leaf["params"])
     assert o2["storeys"] == 3 and not o2["omitted"], o2
-    # control: a lot that already delivers gets no constraint **about its storeys**. The
-    # design round narrowed `_verify_rect`'s window to the courses a feature's own
-    # storey holds (`FEATURE_COURSES`), and this lot turns out to lay no hearth. That is
-    # a constraint about the fire and not about the height, and this case is about the
-    # height.
+    # control: a lot that already delivers gets no constraint **about its storeys**.
+    # `_verify_rect`'s window is the courses a feature's own storey holds
+    # (`FEATURE_COURSES`), and this lot lays no hearth. That is a constraint about the
+    # fire and not about the height, and this case is about the height.
     b3, s3, r3 = C.probe_build("cottage", 28, 12, leaf["params"], seed=1)
     o3 = C.outcome(b3, s3, None, leaf["params"])
     got3 = C.constraint(dict(leaf, x1=27, z1=11), None, o3)

@@ -1,14 +1,13 @@
-"""**What a neighbourhood's forms need of the parent that cuts its land.** The parent
-composition round.
+"""**What a neighbourhood's forms need of the parent that cuts its land.**
 
-The design resolution round made one form plan per type the answer every layer reads
-(`ethoslm.formplan`), and stopped at the lot: the parent still spread a strip's count over
-its pieces by feasible columns and cut the strip where its ground broke, and the forms
-entered only when each piece was compiled. A sum of lot areas says nothing about whether
-the arrangement those lots need -- a row of shops, the clearance behind it, two rows of
-courtyard houses facing each other across their lane -- fits the ground it was given. The
-design resolution section showed the consequence: a lane piece 76 wide on a strip 51
-deep holds its houses back to back with a lane on each outer edge, whatever the count.
+One form plan per type is the answer every layer reads (`ethoslm.formplan`), and it stops
+at the lot. A parent that spreads a strip's count over its pieces by feasible columns and
+cuts the strip where its ground breaks meets the forms only when each piece is compiled,
+and a sum of lot areas says nothing about whether the arrangement those lots need -- a
+row of shops, the clearance behind it, two rows of courtyard houses facing each other
+across their lane -- fits the ground it was given. A lane piece 76 wide on a strip 51
+deep, cut that way, holds its houses back to back with a lane on each outer edge,
+whatever the count.
 
 This module turns the adopted forms into the **section and module** each street
 arrangement needs, in the composer's own units (`streetplan`: the lane, the clearance
@@ -390,9 +389,8 @@ def strip_depth(rects: list, routes, *, along_x: bool) -> tuple:
 
 
 #: The fewest houses a residential lane must hold on each side to be a lane of a quarter
-#: rather than a court entrance: a lane holding one or two houses a side is what the
-#: parent composition round delivered on a strip 51 deep (four houses on one lane), and
-#: its reader called it a hamlet's fabric beside a market.
+#: rather than a court entrance: a lane holding one or two houses a side (four houses on
+#: one lane of a strip 51 deep) reads as a hamlet's fabric beside a market.
 LANE_LEAST = 3
 
 #: Where a ring's principal street runs across its strips, and so how many sides of it

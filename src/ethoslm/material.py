@@ -367,10 +367,10 @@ def plan(surfaces_doc: dict, recipe: dict, settings: dict | None, seed: int,
             # **A declared figure is not noise to be overwritten.** The type that laid
             # the market's chequer, the court's laid paving or the wall's string course
             # said so at the write (`Primitives.figure`, `surfaces.FLAGS["figure"]`),
-            # and a pass that had no way to know replaced all three with camouflage in
-            # the design round. Refused here rather than in the decision, and taken out
-            # of the denominator too, so the random arm is still matched cell for cell
-            # on the cells a recipe may actually reach.
+            # and a pass with no way to know would replace all three with camouflage.
+            # Refused here rather than in the decision, and taken out of the denominator
+            # too, so the random arm is still matched cell for cell on the cells a recipe
+            # may actually reach.
             figs = [c for c in cells if int(c[4]) & fig_bit]
             if figs:
                 figure_refused += len(figs)
@@ -472,14 +472,13 @@ def apply(built: Volume, surfaces_doc: dict, recipe: dict, settings: dict | None
             continue
         # **The structural world is authoritative.** A cell the record owned can have
         # been cleared since -- a later part's sweep, a doorstep held open -- and a
-        # block written into air there is a new block with new physics (the rings
-        # comparison: two lint errors from twelve such cells). Only a cell that still
-        # holds the block the record saw is finished -- **the same block in the same
-        # state**. This compared bare names until the composition round, so a stair re-
-        # faced or a slab moved to the top half after the record was made counted as
-        # unchanged, and the substitution below then wrote the record's own stale suffix
-        # back over it and turned the block round. `surfaces.same_state` says why it
-        # compares the properties both sides name.
+        # block written into air there is a new block with new physics. Only a cell that
+        # still holds the block the record saw is finished -- **the same block in the
+        # same state**. Comparing bare names would count a stair re-faced or a slab moved
+        # to the top half after the record was made as unchanged, and the substitution
+        # below would then write the record's own stale suffix back over it and turn the
+        # block round. `surfaces.same_state` says why it compares the properties both
+        # sides name.
         stands = built.state(x, y, z)
         if not _surfaces.same_state(old, stands):
             stale += 1

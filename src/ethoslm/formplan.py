@@ -1,15 +1,14 @@
-"""**The form a lot holds, asked of the type before the lot is drawn.** The design
-resolution round.
+"""**The form a lot holds, asked of the type before the lot is drawn.**
 
-The fabric reset round answered "does this design work?" four times, in four places, with
-four different estimates: the envelope certificate (does a shell stand on this rectangle),
-the compiler's lot band (`court_least + 6 + 2 * FRONT_INSET`), `settle_storeys` (the
-envelope again, with the flanks the row really has) and the type's own `build()` (which
-thinned its ranges to a clear depth of one to reach the court it was asked for). All four
-agreed that a 15-wide lot held a courtyard house with a court of seven; only the last knew
-the rooms had become corridors, and it did not say so.
+Without it "does this design work?" is answered in four places, with four different
+estimates: the envelope certificate (does a shell stand on this rectangle), the
+compiler's lot band (`court_least + 6 + 2 * FRONT_INSET`), `settle_storeys` (the envelope
+again, with the flanks the row really has) and the type's own `build()` (which can thin
+its ranges to a clear depth of one to reach the court it was asked for). All four can
+agree that a 15-wide lot holds a courtyard house with a court of seven while only the
+last knows the rooms have become corridors, and it does not say so.
 
-A type that knows its own geometry now publishes it: `form_plan(pad_w, pad_d, *, params,
+A type that knows its own geometry publishes it: `form_plan(pad_w, pad_d, *, params,
 front, attached)` returns the rooms, court and storeys a pad holds -- or a refusal naming
 the pad it would need. This module is the one place a **lot** is turned into that pad
 (the inset rule `buildlib.pad_insets` applies: `inset` on a free side, none on a party
@@ -192,7 +191,7 @@ def measure(vol, tname: str, part: dict, emitted: dict | None) -> dict:
     """The critical dimensions of what stands, read off the blocks.
 
     For a courtyard house: the court (open to the sky, measured) and, for every range,
-    the clear depth between its outer and court walls, measured on the ground floor along
+    the clear depth between its outer and court walls, taken on the ground floor along
     three lines across it. For a shop house: the storeys whose floor a flight reaches and
     the ground-floor clear width. Anything the type does not publish is omitted."""
     em = emitted or {}
@@ -370,7 +369,7 @@ def measure_row(vol, row: dict) -> dict | None:
 
 
 def row_meets(tname: str, got: dict | None, params: dict | None) -> tuple:
-    """`(ok, why)` -- do the dimensions measured on the world meet what the form owes?
+    """`(ok, why)` -- do the dimensions read off the world meet what the form owes?
     A type without a form plan has nothing here to meet and answers `(None, ...)`."""
     params = dict(params or {})
     if got is None:

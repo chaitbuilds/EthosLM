@@ -1237,15 +1237,15 @@ def _terraform(spec: dict, plateau: int, allow: int) -> dict:
 # before any ground is made, and a preflight that says what all of it will cost before
 # any of it is spent.
 
-#: **Registered.** What one read costs, per 512x512 square, measured on the concentric
-#: run's own search log. The preflight scales both by area and prints the sum.
+#: **Registered.** What one read costs, per 512x512 square: a tile read through
+#: GDMC-HTTP, from a search's own log. The preflight scales both by area and prints the
+#: sum.
 COST_FILE_READ_S = 15.0
-#: ...re-measured on the ground run's own first live session: six 768x768 squares of
-#: fresh ground read through the server in 19 to 51 s each, which is 30 s per 512 square
-#: and not the 240 the concentric log suggested (that log's four minutes a square were
-#: the HTTP re-reads of squares the files held, which the search no longer makes). Its
-#: preflight refused a radius at 490 min that the measured cost puts under two hours;
-#: re-registered from the measurement before the second session.
+#: ...and fresh ground generated and read through the server: 19 to 51 s per 768x768
+#: square in a live session, which is about 30 s per 512 square. Four minutes a square
+#: is the cost of HTTP re-reads of squares the region files already hold, which the
+#: search no longer makes; charging that here would make the preflight refuse radii that
+#: finish well inside `SEARCH_BOUND_S`.
 COST_GENERATE_S = 30.0
 
 #: **Registered.** How long a search may say it is about to take before it refuses to

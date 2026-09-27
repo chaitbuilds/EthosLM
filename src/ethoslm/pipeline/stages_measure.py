@@ -27,25 +27,21 @@ def stage_lint(rnd: Round, be, results: dict) -> dict:
         region = (X, Z, X + s["size"] - 1, Z + s["size"] - 1)
     plots = json.load(open(rnd.rel("plots.json"))) \
         if os.path.exists(rnd.rel("plots.json")) else []
-    # **A sample is linted over the sample.** The integration review's finding, and it
-    # is a scoping error with a large and misleading output: `stage_parts` builds a
-    # construction sample -- two adjoining quarters and what joins them -- and this
-    # stage then read the whole place's plot registry and the whole place's region, so
-    # every plot of the other thirty-four districts was reported as a room nobody can
-    # walk into and a block held up by nothing. They were not built. A check whose scope
-    # and whose construction disagree is measuring the disagreement.
+    # **A sample is linted over the sample.** `stage_parts` builds a construction sample
+    # -- two adjoining quarters and what joins them -- so reading the whole place's plot
+    # registry and region here would report every plot of the other districts, which were
+    # not built, as a room nobody can walk into and a block held up by nothing. A check
+    # whose scope and whose construction disagree is measuring the disagreement.
     scope = None
     built_rec = rnd.rel("parts.json")
     if os.path.exists(built_rec):
         rec = json.load(open(built_rec))
-        # **Every registry row carries the floor its part was sited at.** The expression
-        # round's rings baseline: `plots.json` on disk had no `y0` on any row (the
-        # construction stage's annotation does not reach the file on the parallel path),
-        # so `room_owner` could not tell a natural cave under the temple court from the
-        # great hall's interior and the whole town blocked on a 340-cell overhang the
-        # plateau had re-skinned. The construction record is authoritative for where
-        # each part stands; the registry the check reads is annotated from it here,
-        # always.
+        # **Every registry row carries the floor its part was sited at.** `plots.json` on
+        # disk can lack `y0` (the construction stage's annotation does not reach the file
+        # on the parallel path), and without it `room_owner` cannot tell a natural cave
+        # under a court from a hall's interior. The construction record is authoritative
+        # for where each part stands; the registry the check reads is annotated from it
+        # here, always.
         from .stages_build import floors_into
         plots = floors_into(plots, [r for w in rec.get("waves") or []
                                     for r in (w.get("parts") or [])])
@@ -69,11 +65,11 @@ def stage_lint(rnd: Round, be, results: dict) -> dict:
     t0 = time.perf_counter()
     net = rnd.network()
     if scope and scope.get("sample") and net is not None:
-        # **...and its doorways are the sample's** (the design resolution round): the
-        # lanes are laid for the whole local scope, and a threshold reserved for a house
-        # outside the sample -- not built, so its doorway is bare ground -- is not a
-        # doorway this build obstructed. Only the sample's own parts' thresholds are
-        # checked; the lane cells stay whole, so connectivity is still the scope's.
+        # **...and its doorways are the sample's**: the lanes are laid for the whole
+        # local scope, and a threshold reserved for a house outside the sample -- not
+        # built, so its doorway is bare ground -- is not a doorway this build obstructed.
+        # Only the sample's own parts' thresholds are checked; the lane cells stay whole,
+        # so connectivity is still the scope's.
         import copy as _copy
         _names = {p.get("label") for p in plots} | {p.get("name") for p in plots}
         net = _copy.copy(net)
@@ -93,12 +89,11 @@ def stage_lint(rnd: Round, be, results: dict) -> dict:
            "findings": [{"code": f.code, "message": f.message, "pos": f.pos}
                         for f in rep.findings]}
     out["confirmed"] = _confirm_features(rnd, vol, ctx, net)
-    # **...and the built artifact is stamped over the record as it now stands.** The
-    # composition round, found by asking `deps.check(rnd, "built")` on a state that had
-    # just finished: `stage_parts` stamps `built` over `parts.json` and then *this*
-    # stage rewrites `parts.json` with the assembled world's answers, so the stamped
-    # output digest never matched the file again and every later invocation rebuilt 139
-    # parts to reproduce a world it already had. The confirmation is part of what a
+    # **...and the built artifact is stamped over the record as it now stands.**
+    # `stage_parts` stamps `built` over `parts.json` and then *this* stage rewrites
+    # `parts.json` with the assembled world's answers, so without a fresh stamp the output
+    # digest would never match the file again and every later invocation would rebuild
+    # every part to reproduce a world it already has. The confirmation is part of what a
     # built candidate is; the stamp is re-made here, after it, over the same outputs.
     with contextlib.suppress(Exception):
         from .. import deps as _deps_l
@@ -155,11 +150,11 @@ def stage_lint(rnd: Round, be, results: dict) -> dict:
 def _confirm_features(rnd: Round, vol, ctx, net) -> dict:
     """**Ask the assembled world what each part actually delivers**, and write it down.
 
-        The design round's third boundary, at the one point in the pipeline where the whole
-        place stands and the volume is already open. `construction.outcome` measures a
-        part's own emission *before its neighbours are built*, so a courtyard a later wall
-        filled in, a forge a terrace buried and a door the finishing pass paved over were
-        all still recorded as delivered. `construction.confirm` re-reads them here through
+        This is the one point in the pipeline where the whole place stands and the volume is
+        already open. `construction.outcome` measures a part's own emission *before its
+        neighbours are built*, so a courtyard a later wall filled in, a forge a terrace
+        buried and a door the finishing pass paved over would all still be recorded as
+        delivered. `construction.confirm` re-reads them here through
         `ethoslm.usable`'s predicates, mutates `parts.json` where an answer moved, and leaves
         `usable.json` beside it so a reader can see *how* each answer was got and what was
         standing when it was read.
@@ -173,12 +168,11 @@ def _confirm_features(rnd: Round, vol, ctx, net) -> dict:
     if not os.path.exists(rec_p):
         return {"skipped": "no parts record: nothing was built to confirm"}
     rec = json.load(open(rec_p))
-    # **The predicates this part owes, not a fixed three.** The composition round: the
-    # default ran `entrance_connected`, `equipment_reachable` and `court_accessible` on
-    # everything, so three of the six existed and no part was ever asked about the
-    # features *it* was required to deliver. The demand binding says what is required of
-    # what (`demand.required_by_part`), and `confirm` derives each part's predicate set
-    # from it. With no binding the answer is what it was.
+    # **The predicates this part owes, not a fixed three.** The fixed default
+    # (`entrance_connected`, `equipment_reachable`, `court_accessible` on everything)
+    # never asks a part about the features *it* is required to deliver. The demand
+    # binding says what is required of what (`demand.required_by_part`), and `confirm`
+    # derives each part's predicate set from it. With no binding the fixed set is asked.
     binding = {}
     try:
         binding = demand.required_by_part(rnd.place_spec(),
@@ -207,25 +201,20 @@ def _confirm_features(rnd: Round, vol, ctx, net) -> dict:
                              "want": want, "holds": a.get("holds"),
                              "method": a.get("method"), "why": a.get("why"),
                              "subjects": a.get("subjects"),
-                             # **the evidence, not only the verdict.** The block design
-                             # round, and an independent reader's finding: every
-                             # predicate returns what it measured -- the gaps round a
-                             # court, the share of each face that carries building,
-                             # which ranges stood -- and this serializer kept the
-                             # sentence and threw the numbers away, so checking a claim
-                             # meant rebuilding the world. The reader did; it should not
-                             # have been necessary.
+                             # **the evidence, not only the verdict.** Every predicate
+                             # returns what it measured -- the gaps round a court, the
+                             # share of each face that carries building, which ranges
+                             # stood -- and keeping only the sentence would mean
+                             # rebuilding the world to check a claim.
                              **({"evidence": a["evidence"]}
                                 if isinstance(a.get("evidence"), dict) and a["evidence"]
                                 else {})})
-    # **What was asked, what was answered, and what did not arise.** The neighbourhood
-    # delivery round, and the independent reader's finding about the round before it:
-    # "`usable.json` has no failures because two thirds of its checks were unanswerable,
-    # not because they passed." The document listed three hundred and eight answers and
-    # published no count of how many of them were answers. It does now, and a question
-    # that does not arise (a row house has no court) is counted apart from a question
-    # the library could not answer about a part that does claim one, which is a gap in
-    # the instrument and is the number a reader needs.
+    # **What was asked, what was answered, and what did not arise.** `usable.json` with
+    # no failures because most of its checks were unanswerable has not passed, so the
+    # count of real answers is published. A question that does not arise (a row house
+    # has no court) is counted apart from a question the library could not answer about
+    # a part that does claim one, which is a gap in the instrument and is the number a
+    # reader needs.
     by_method: dict = {m: 0 for m in usable.METHODS}
     for r in rows:
         by_method[str(r.get("method"))] = by_method.get(str(r.get("method")), 0) + 1
@@ -428,15 +417,15 @@ def stage_measures(rnd: Round, be, results: dict) -> dict:
 def measure_program(rnd: Round, be, prog: str, mine: set, margin: int = 6) -> dict:
     """One program, by every instrument that never sees an image.
 
-        Lifted out of `stage_measures` unchanged so the arms of a sight round are measured
-        by exactly the same code as the selection candidates -- two measurement paths that
-        drifted apart would make the two rounds incomparable, which is the whole reason
-        there is one measurement schema.
+        Lifted out of `stage_measures` unchanged so a round's arms are measured by exactly
+        the same code as the selection candidates -- two measurement paths that drifted
+        apart would make arms and candidates incomparable, which is the whole reason there
+        is one measurement schema.
 
         `articulation` is the one addition, and it carries **no registered direction** in
         any round. It is reported beside `blocks` for that reason: it is a fact about wall
-        surfaces, put on the record because a person named facade depth as the thing that
-        separated two candidates and nothing here was watching it.
+        surfaces, on the record because facade depth can separate two candidates that
+        nothing else here tells apart.
 
     """
     from .. import articulation as artic_mod
@@ -883,8 +872,8 @@ def stage_arm_measures(rnd: Round, be, results: dict) -> dict:
                seconds=out[cid]["seconds"], blocks=out[cid]["blocks"],
                walk_pct=out[cid]["walk_pct"])
     # Arm A is free: the four selection candidates are independent blind builds of this
-    # brief. Read off the measures the selection round already wrote where they are
-    # there, so nothing is rebuilt and nothing is re-measured under a second definition.
+    # brief. Read off the measures already written for them where they are there, so
+    # nothing is rebuilt and nothing is re-measured under a second definition.
     for cid, prog in (a.get("control") or {}).items():
         out[f"A/{cid}"] = measure_program(rnd, be, os.path.join(_pipeline.ROOT, prog), mine,
                                           margin=margin)
@@ -1920,9 +1909,9 @@ def _m_fabric(rnd, be, results, bar) -> dict:
     left = {r["district"]: r["undeveloped_share"] for r in recs}
     out["assigned"] = {"undeveloped_share": left, "max": most,
                        "over": sorted(n for n, v in left.items() if v > most)}
-    # 4b. **the rhythm**, the craft round (E3): distinct building shapes per hundred and
-    # the longest run of identical neighbours on one street face, both off the
-    # compiler's own record, and the second wall material's share of the street
+    # 4b. **the rhythm**: distinct building shapes per hundred and the longest run of
+    # identical neighbours on one street face, both off the compiler's own record, and
+    # the second wall material's share of the street
     from .. import district_compile as dc
     rh = {r["district"]: r.get("variety") for r in recs if r.get("variety")}
     alt = {r["district"]: r.get("wall_alt") for r in recs if r.get("wall_alt")}
@@ -2362,12 +2351,12 @@ def stage_place_check(rnd, be, results: dict) -> dict:
     parts_rec = json.load(open(pr)) if os.path.exists(pr) else (
         results.get("parts") or {})
     built, base = built_volumes(rnd)
-    # **The sentence's own requirements, against the resolved design.** The architecture
-    # round: the `asked/...` clauses check what the request said outright, and two of
-    # them -- the layout policy and what the buildings face -- are facts about the
-    # *resolution* rather than about any one part, so the record that carries them is
-    # read here and handed in. Without it those clauses answer `unresolved`, which is
-    # honest and useless. **The judgment, where there is one of *this* candidate.** See
+    # **The sentence's own requirements, against the resolved design.** The `asked/...`
+    # clauses check what the request said outright, and two of them -- the layout policy
+    # and what the buildings face -- are facts about the *resolution* rather than about
+    # any one part, so the record that carries them is read here and handed in. Without
+    # it those clauses answer `unresolved`, which is honest and useless.
+    # **The judgment, where there is one of *this* candidate.** See
     # `stage_qualify`. A verdict about the design before a revision is evidence about a
     # place that is gone, so the identity it would close stays open and says why --
     # which is the difference between an inspection bound to a candidate and one merely
@@ -2393,17 +2382,17 @@ def stage_place_check(rnd, be, results: dict) -> dict:
                          # and how high, which is what `rings/elevation` is asked of
                          layout=(json.load(open(rnd.rel("plan.place.json"))).get("layout")
                                  if os.path.exists(rnd.rel("plan.place.json")) else None))
-    # **Open material findings of the built world block completion.** The expression
-    # round: the inspection's findings were a report appended after the fact, and the
-    # farm finished with its square thirteen times its cottages still recorded. The
-    # improve stage writes a disposition for every finding; a material one still open --
-    # no owner action, a refused action, or a spent budget -- is a clause this read
-    # fails on, at built evidence, and says which. Optional findings never block.
-    # **...and the ledger is what is asked, not the last reading.** The design round: a
-    # judged finding and an emitted construction constraint are obligations of one
-    # shape, they survive a reading that omits them, and an applied action that moved
-    # nothing leaves its row owed. `obligations.json` is the record; the dispositions
-    # file beside it is a projection of it for readers that predate the ledger.
+    # **Open material findings of the built world block completion.** The inspection's
+    # findings are not a report appended after the fact, or a place finishes with its
+    # worst finding still recorded against it. The improve stage writes a disposition
+    # for every finding; a material one still open -- no owner action, a refused action,
+    # or a spent budget -- is a clause this read fails on, at built evidence, and says
+    # which. Optional findings never block.
+    # **...and the ledger is what is asked, not the last reading.** A judged finding and
+    # an emitted construction constraint are obligations of one shape, they survive a
+    # reading that omits them, and an applied action that moved nothing leaves its row
+    # owed. `obligations.json` is the record; the dispositions file beside it is a
+    # projection of it for readers that predate the ledger.
     from .. import obligation as obligation_mod
     led = obligation_mod.load(rnd.state)
     disp_p = rnd.rel("inspection", "dispositions.json")

@@ -20,26 +20,22 @@ compiled site's door in the middle of the pad's street edge and its landing on t
     a4  the same shop row on the bank
 
 (front north here; `build_row(front=...)` also stands a run on the other three fronts)
-and each asserts:
-every part stands (no refusal, no `SiteRefused`); the build family of
+and each asserts: every part stands (no refusal, no `SiteRefused`); the build family of
 the linter reports no error on the row's plots, with the lane as the network (so E002 is
 "the door cannot be reached on foot from the lane"); no gap column between neighbours
 below the eave, anywhere along the party wall and at the lane face; no block written by a
 part's `build()` outside its own plot except the door approach in front of it; for a
 courtyard house, the court is open to the sky and at least 5x5 on a 15x17 lot, and the
-lane face is blank wall apart from the gate (no window or opening in it). Pictures of each row (isometric, top-down,
-lane elevation) go to `out/fr-work-types/`.
+lane face is blank wall apart from the gate (no window or opening in it). Pictures of
+each row (isometric, top-down, lane elevation) go to `out/fr-work-types/`.
 
-**What fails here today is not the types.** The run is built in the production order --
-`site()` then `build()`, lot after lot, as `instantiated_source` composes it -- and
-`Builder._site_lay` lays its pad's one-column ledge on every side, attached ones
-included: it fills the neighbour's column to the floor and cuts it to `floor + 5`, so
-each lot's `site()` takes the party wall its already-built neighbour stood on the plot
-line (a one-column slot through the lane face, the depth of the house; the same 72 cells
-in a row of four `row_house` terraces). `--site-first` sites the whole run before
-building any of it, which isolates the types from that: every case passes. The fix is
-the library's (the ledge and its cut kept off the sides `part["attached"]` names) and is
-reported, not made, by the form worker.
+**The run is built in the production order** -- `site()` then `build()`, lot after lot,
+as `instantiated_source` composes it -- so each lot is sited after its neighbour already
+stands on the plot line. That is why `Builder.site()` keeps its pad's one-column ledge and
+its cut off the sides `part["attached"]` names: laid there, the ledge would clear the
+neighbour's party wall above the floor and leave a one-column slot through the lane face,
+the depth of the house. `--site-first` sites the whole run before building any of it,
+which isolates the types from that order.
 """
 from __future__ import annotations
 

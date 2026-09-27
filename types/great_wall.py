@@ -520,26 +520,29 @@ def _gate(frs, zones, ranges, cells, rng):
 # ======================================================================================
 # THE CURVED WALL ENGINE -- one text, carried verbatim by `wall.py` and `great_wall.py`
 # (a type file is a standalone program and cannot import its sibling;
-# `scripts/test_round_walls.py` asserts the two copies are identical). The design
-# synthesis round. A round ring is `boundary.Outline.polyline`: hundreds of short axial
-# and 45-degree runs. Drawn segment by segment, as the square-ring code below does,
-# every one of those joins is a corner square and a level change, and a diagonal run's
-# swept cells are a checkerboard. So a path with a diagonal in it is drawn as **one
-# field**: every column near the line is given its distance to the polyline and where
-# along it it lies (`u`, in lattice steps), and the wall is the columns within its half-
-# width -- a solid, 4-connected band on every run and round every join. What each column
-# carries is read off `u`: level the walk climbs the ground: each station's own segment
-# floor plus the wall's height, then an upper envelope rising or falling one HALF block
-# a station (a slab course), so the walk never steps more than half a block between
-# neighbours and never drops under its own segment's floor + height; a tower or a gate
-# flattens its reach to one level. body from the column's own footing (the site's, or
-# the ground where it is not a site column) to the walk -- never over air. parapet the
-# outer ring of the band, solid one course over the walk with a merlon every
-# `Builder.merlon(i)` of arc; a crown road carries one on each edge. towers a round
-# bastion every `every` blocks of ARC LENGTH, projecting past the outer face, flat-
-# topped at the walk with a drum and a crenellated roof; the walk runs through the drum.
-# ways down: a square stair turret against the inner face at every `turret_nth` tower, a
-# switchback climbing round its core from a door at the inner ground to the walk.
+# `scripts/test_round_walls.py` asserts the two copies are identical). A round ring is
+# `boundary.Outline.polyline`: hundreds of short axial and 45-degree runs. Drawn segment
+# by segment, as the square-ring code below does, every one of those joins is a corner
+# square and a level change, and a diagonal run's swept cells are a checkerboard. So a
+# path with a diagonal in it is drawn as **one field**: every column near the line is
+# given its distance to the polyline and where along it it lies (`u`, in lattice steps),
+# and the wall is the columns within its half-width -- a solid, 4-connected band on every
+# run and round every join. What each column carries is read off `u`:
+#   level -- the walk climbs the ground: each station's own segment floor plus the
+#     wall's height, then an upper envelope rising or falling one HALF block a station
+#     (a slab course), so the walk never steps more than half a block between neighbours
+#     and never drops under its own segment's floor + height; a tower or a gate flattens
+#     its reach to one level.
+#   body -- from the column's own footing (the site's, or the ground where it is not a
+#     site column) to the walk, never over air.
+#   parapet -- the outer ring of the band, solid one course over the walk with a merlon
+#     every `Builder.merlon(i)` of arc; a crown road carries one on each edge.
+#   towers -- a round bastion every `every` blocks of ARC LENGTH, projecting past the
+#     outer face, flat-topped at the walk with a drum and a crenellated roof; the walk
+#     runs through the drum.
+#   ways down -- a square stair turret against the inner face at every `turret_nth`
+#     tower, a switchback climbing round its core from a door at the inner ground to the
+#     walk.
 # ======================================================================================
 
 _CW_EPS = 1e-6

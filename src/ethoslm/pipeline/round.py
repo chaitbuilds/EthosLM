@@ -544,13 +544,12 @@ def _needs_model(res: dict) -> list:
 def _reenter(res: dict) -> str | None:
     """Why this stage has asked to be run again, or None.
 
-        **A state the driver executes, and the reason it exists.** The integration review
-        drove the production return shape of a repaired preview through this very function's
-        caller: the stage returned a dict whose `note` said "the stage re-enters to inspect
-        the plan it produced", the driver read the note as it reads any other string, and
-        the round went on to build a plan nobody had inspected. Prose is not control flow.
-        A stage that has changed the candidate under itself says `status: "reenter"` -- on
-        the result or on one of its entries -- and this is what the loop below asks.
+        **A state the driver executes, and the reason it exists.** A `note` saying "the
+        stage re-enters to inspect the plan it produced" is read by the driver as any other
+        string, and the round goes on to build a plan nobody inspected. Prose is not
+        control flow. A stage that has changed the candidate under itself says
+        `status: "reenter"` -- on the result or on one of its entries -- and this is what
+        the loop below asks.
 
     """
     if res.get("status") == "reenter":
@@ -649,12 +648,10 @@ def run(rnd: Round, stages=DETERMINISTIC, backend=None, wait: int = 0,
         secs = round(time.perf_counter() - t0, 2)
         results[name].setdefault("seconds", secs)
         record("round", name=rnd.name, stage=name, seconds=secs)
-        # **A stage still waiting on an agent is a stage that has not finished.** The
-        # integration review drove this loop: a preview returning an unanswered judge
-        # job was followed by `parts`, because `wait=0` skips the loop above entirely
-        # and nothing after it asked whether the stage was still pending. Every stage
-        # downstream then ran against a candidate nobody had inspected, and the only
-        # thing preventing construction was a person restricting the stage list by hand.
+        # **A stage still waiting on an agent is a stage that has not finished.**
+        # `wait=0` skips the loop above entirely, so without this check a preview
+        # returning an unanswered judge job would be followed by `parts`, and every
+        # stage downstream would run against a candidate nobody had inspected.
         # Pending is an **outcome**, like stopping: the round says what it is waiting
         # for and where to write the answer, and the next invocation resumes at the same
         # stage with the answer on disk. That is what makes a terminal agent a

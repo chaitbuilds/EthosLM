@@ -26,8 +26,8 @@ PARAMS = {
 }
 
 #: What turf is: the ground a thing is planted in. A voice whose own ground is made --
-#: dressed stone, beaten earth -- still plants a grove in soil (the transfer round: an
-#: oasis's palms stood in smooth sandstone).
+#: dressed stone, beaten earth -- still plants a grove in soil (an oasis's palms do not
+#: stand in smooth sandstone).
 SOIL = ("grass_block", "dirt", "coarse_dirt", "podzol", "rooted_dirt", "moss_block",
         "mud", "mycelium")
 
@@ -42,10 +42,10 @@ NEEDS = {
     "clearance": 1,
 }
 
-#: The craft round, E6: the leaf is the **voice's**, matched to its frame timber by
-#: `b.foliage()`, and this is only what a grove falls back to where nothing is handed
-#: it. A belt of orchards in a Japanese voice had dark-oak trunks under oak leaves, and
-#: every palette this project has read the same green.
+#: The leaf is the **voice's**, matched to its frame timber by `b.foliage()`, and this
+#: is only what a grove falls back to where nothing is handed it. One fixed leaf would
+#: put dark-oak trunks under oak leaves in a Japanese voice and read the same green in
+#: every palette.
 _LEAF = "oak_leaves[persistent=true]"
 _UNDER = ("fern", "poppy", "dandelion", "azure_bluet")
 
@@ -75,17 +75,13 @@ def _spots(x0, z0, x1, z1, planting, rng, cx, cz):
             for z in range(az0, az1 + 1, step):
                 out.append((x, z))
     elif planting == "avenue":
-        # **Two rows only where two rows fit.** The neighbourhood round, found by
-        # building the section: this laid a trunk at each side of the strip whenever the
-        # two sides were not the same column, and on a six-wide verge the two sides are
-        # **adjacent** (`ax1 - ax0 == w - 5 == 1`). Each tree then throws its canopy a
-        # block wide at its own top, so the taller of a pair wrote a leaf over the
-        # shorter one's top trunk block -- and the lint read exactly what was there:
-        # `E010 1 blocks at (-5654,83,720) are held up by nothing
-        # (stripped_dark_oak_log)`, twice, on one grove of the traders' ring, because a
-        # leaf is not what holds a log up. An avenue is two rows with a way between
-        # them; where the ground gives no room for that it is one row, which is what a
-        # verge this narrow is.
+        # **Two rows only where two rows fit.** On a six-wide verge the two sides of the
+        # strip are **adjacent** (`ax1 - ax0 == w - 5 == 1`), and each tree throws its
+        # canopy a block wide at its own top, so with a trunk at each side the taller of
+        # a pair writes a leaf over the shorter one's top trunk block -- and the lint
+        # reads a log held up by nothing (`E010`), because a leaf is not what holds a
+        # log up. An avenue is two rows with a way between them; where the ground gives
+        # no room for that it is one row, which is what a verge this narrow is.
         two = (ax1 - ax0) >= 2 * _REACH + 1
         for z in range(az0, az1 + 1, 3):
             out.append((ax0, z))
@@ -188,15 +184,13 @@ def build(b, part, seed, **params):
                 b.place_block(x, y, z, swept if floor == "swept" else ground)
             b.place_block(x, y + 1, z, "air")
 
-    # **Nothing is planted on the doorway the circulation pass reserved.** The
-    # neighbourhood round, found by building the section: `area_way_in` below clears
-    # that cell to head height *after* the trees are planted, so a trunk standing on it
-    # lost its lower two blocks and the rest of it hung in the air -- `E010 1 blocks at
-    # (-5654,83,720) are held up by nothing (stripped_dark_oak_log)`, twice, on one
-    # grove of the traders' ring. The `walk` set above is drawn from `part["door"]`,
-    # which is the *side* the way in is on; `door_cell` is the cell the pass actually
-    # reserved and is what `area_way_in` clears. Both are kept clear of trunks now, and
-    # the call at the end stays as the guarantee it has always been.
+    # **Nothing is planted on the doorway the circulation pass reserved.** `area_way_in`
+    # below clears that cell to head height *after* the trees are planted, so a trunk
+    # standing on it would lose its lower two blocks and the rest of it hang in the air
+    # (`E010`). The `walk` set above is drawn from `part["door"]`, which is the *side*
+    # the way in is on; `door_cell` is the cell the pass actually reserved and is what
+    # `area_way_in` clears. Both are kept clear of trunks, and the call at the end stays
+    # as the guarantee.
     reserved = b.door_cell(x0, z0, x1, z1)
     if reserved is not None:
         walk.add((int(reserved[0]), int(reserved[1])))

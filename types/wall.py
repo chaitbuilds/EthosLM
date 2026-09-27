@@ -36,10 +36,9 @@ FACES = ("framed", "plain")
 FACE_FROM = 12
 
 NEEDS = {
-    # The band `scripts/type_needs.py` measured. **The width reaches a rampart's**, the
-    # craft round (E4): the sweep only ever tried 1, 2 and 3, and the re-sweep over the
-    # widths a place may declare as a wall's mass stands 2,520 instances of this type at
-    # 1, 2, 3, 5, 7, 9 and 12 with none failing. A ring wall of a 512-block city takes a
+    # The band `scripts/type_needs.py` measured. **The width reaches a rampart's**: a
+    # sweep over every width a place may declare as a wall's mass (1, 2, 3, 5, 7, 9 and
+    # 12) builds this type with none failing. A ring wall of a 512-block city takes a
     # vertex at least every 128 columns.
     "footprint": (1, 4, 12, 128),
     "frontage": "any",
@@ -87,26 +86,29 @@ def _terrain_bias(b, pts, axis):
 # ======================================================================================
 # THE CURVED WALL ENGINE -- one text, carried verbatim by `wall.py` and `great_wall.py`
 # (a type file is a standalone program and cannot import its sibling;
-# `scripts/test_round_walls.py` asserts the two copies are identical). The design
-# synthesis round. A round ring is `boundary.Outline.polyline`: hundreds of short axial
-# and 45-degree runs. Drawn segment by segment, as the square-ring code below does,
-# every one of those joins is a corner square and a level change, and a diagonal run's
-# swept cells are a checkerboard. So a path with a diagonal in it is drawn as **one
-# field**: every column near the line is given its distance to the polyline and where
-# along it it lies (`u`, in lattice steps), and the wall is the columns within its half-
-# width -- a solid, 4-connected band on every run and round every join. What each column
-# carries is read off `u`: level the walk climbs the ground: each station's own segment
-# floor plus the wall's height, then an upper envelope rising or falling one HALF block
-# a station (a slab course), so the walk never steps more than half a block between
-# neighbours and never drops under its own segment's floor + height; a tower or a gate
-# flattens its reach to one level. body from the column's own footing (the site's, or
-# the ground where it is not a site column) to the walk -- never over air. parapet the
-# outer ring of the band, solid one course over the walk with a merlon every
-# `Builder.merlon(i)` of arc; a crown road carries one on each edge. towers a round
-# bastion every `every` blocks of ARC LENGTH, projecting past the outer face, flat-
-# topped at the walk with a drum and a crenellated roof; the walk runs through the drum.
-# ways down: a square stair turret against the inner face at every `turret_nth` tower, a
-# switchback climbing round its core from a door at the inner ground to the walk.
+# `scripts/test_round_walls.py` asserts the two copies are identical). A round ring is
+# `boundary.Outline.polyline`: hundreds of short axial and 45-degree runs. Drawn segment
+# by segment, as the square-ring code below does, every one of those joins is a corner
+# square and a level change, and a diagonal run's swept cells are a checkerboard. So a
+# path with a diagonal in it is drawn as **one field**: every column near the line is
+# given its distance to the polyline and where along it it lies (`u`, in lattice steps),
+# and the wall is the columns within its half-width -- a solid, 4-connected band on every
+# run and round every join. What each column carries is read off `u`:
+#   level -- the walk climbs the ground: each station's own segment floor plus the
+#     wall's height, then an upper envelope rising or falling one HALF block a station
+#     (a slab course), so the walk never steps more than half a block between neighbours
+#     and never drops under its own segment's floor + height; a tower or a gate flattens
+#     its reach to one level.
+#   body -- from the column's own footing (the site's, or the ground where it is not a
+#     site column) to the walk, never over air.
+#   parapet -- the outer ring of the band, solid one course over the walk with a merlon
+#     every `Builder.merlon(i)` of arc; a crown road carries one on each edge.
+#   towers -- a round bastion every `every` blocks of ARC LENGTH, projecting past the
+#     outer face, flat-topped at the walk with a drum and a crenellated roof; the walk
+#     runs through the drum.
+#   ways down -- a square stair turret against the inner face at every `turret_nth`
+#     tower, a switchback climbing round its core from a door at the inner ground to the
+#     walk.
 # ======================================================================================
 
 _CW_EPS = 1e-6
@@ -1322,14 +1324,12 @@ def build(b, part, seed, **params):
                 else:
                     sc = bs + (wy - bs) // 2
                     if sc > bb:
-                        # **The string course is a figure.** Composition round. This one
-                        # trim slab per bay, all at one height, is the horizontal line
-                        # that says the wall is dressed; the design round's material
-                        # pass put vertical stains up this face that cut straight
-                        # through it (`out/des-material/comparison.json`, criterion 5,
-                        # on `great_wall_upper_ring` -- which is this type). The wall
-                        # body either side of the line stays editable, so the mass may
-                        # age while the line does not break.
+                        # **The string course is a figure.** This one trim slab per bay,
+                        # all at one height, is the horizontal line that says the wall is
+                        # dressed; a material pass that runs vertical stains up this face
+                        # would cut straight through it. The wall body either side of the
+                        # line stays editable, so the mass may age while the line does
+                        # not break.
                         with b.figure("wall_string_course"):
                             b.place_block(kx, sc, kz, b.block(voice["trim"], "slab")
                                           + "[type=top]")
@@ -1396,9 +1396,9 @@ def build(b, part, seed, **params):
             b.steps(kept, STEPMAT)
         return len(kept)
 
-    # **A plain face carries sparse ways down**, the craft round. The layout stamps
-    # `stairs` on the part beside its `face`; `sparse` puts a way down at each vertex
-    # and beside each gate, where a person actually climbs, and nowhere else.
+    # **A plain face carries sparse ways down.** The layout stamps `stairs` on the part
+    # beside its `face`; `sparse` puts a way down at each vertex and beside each gate,
+    # where a person actually climbs, and nowhere else.
     sparse = str(part.get("stairs") or "") == "sparse"
     spacing = rnd.choice([14, 16, 18])
     if sparse:

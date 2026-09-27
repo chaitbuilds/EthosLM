@@ -97,13 +97,12 @@ def _candidate(rnd) -> str:
 
 #: The owners a repair in this build can actually act on. Everything else is routed,
 #: reported and left -- which is a better answer than a change that looks like one.
-#: **`layout` is the integration round's addition and it is the important one.** Before
-#: it, the only repair this system could make was "want fewer houses": a finding about
-#: geometry -- homes fronting away from the water they were asked to face, a residual
-#: strip of ground promised more lots than it can hold -- had nowhere to go, so the run
-#: either stopped or asked for different adjectives. Reducing an inferred count is not a
-#: spatial repair, and a loop whose only lever is the target is a loop that closes every
-#: finding the same way.
+#: **`layout` is the important one.** Without it the only repair would be "want fewer
+#: houses": a finding about geometry -- homes fronting away from the water they were
+#: asked to face, a residual strip of ground promised more lots than it can hold --
+#: would have nowhere to go, so the run would either stop or ask for different
+#: adjectives. Reducing an inferred count is not a spatial repair, and a loop whose only
+#: lever is the target is a loop that closes every finding the same way.
 ACTS_ON = ("scale", "layout")
 
 #: How many districts one frontage repair may reorient. A bound and not a target: the
@@ -220,9 +219,9 @@ def _relation_repair(rnd, spec: dict, f: dict, place: dict | None) -> dict | Non
     plan = rnd.plan()
     parts = _pipeline.plan_parts(plan) if plan else []
     # **Deferred until the evidence exists.** A relation between the houses and the
-    # square is measured on the houses, and before the districts compile there are none:
-    # acting on a measurement of two place-level parts moved the square to the middle of
-    # a hall. Not an attempt, and not charged as one.
+    # square is read off the houses, and before the districts compile there are none:
+    # acting on a measurement of two place-level parts can move the square into the
+    # middle of a hall. Not an attempt, and not charged as one.
     if not parts or not int(w.get("subjects") or 0):
         return {"refused": True, "deferred": True,
                 "why": ("this relation is measured on the assembled plan's leaves and "

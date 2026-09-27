@@ -59,10 +59,10 @@ def _ring(x0, z0, x1, z1):
     return out
 
 
-#: **How far apart the bands of trim in a plaza's floor are**, the craft round (E6).
-#: Every fourth column made a quarter of a paved square the voice's trim, and in a voice
-#: whose trim is red sandstone a plaza the size of nine houses reads from the air as a
-#: red rectangle. A band every eighth is a band.
+#: **How far apart the bands of trim in a plaza's floor are.** A band every fourth
+#: column makes a quarter of a paved square the voice's trim, and in a voice whose trim
+#: is red sandstone a plaza the size of nine houses reads from the air as a red
+#: rectangle. A band every eighth is a band.
 BAND_EVERY = 8
 
 

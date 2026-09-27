@@ -1,11 +1,10 @@
 """The three primitives that own a correctness rule, checked without a server.
 
-Same discipline as scripts/test_roof_rules.py, and for the same reason: the roof stair
-facing was inverted *in the library* and every roof in every build was serrated for four
-rounds before anyone noticed. A primitive that owns a correctness rule is wrong
-everywhere at once, so each one here is exercised on ground built to trip it, and each
-suite is then run against a deliberately broken version of the rule to show it
-discriminates. A test that only passes proves nothing.
+Same discipline as scripts/test_roof_rules.py, and for the same reason: a roof stair
+facing inverted *in the library* serrates every roof in every build. A primitive that
+owns a correctness rule is wrong everywhere at once, so each one here is exercised on
+ground built to trip it, and each suite is then run against a deliberately broken
+version of the rule to show it discriminates. A test that only passes proves nothing.
 
 Run: .venv/bin/python scripts/test_step_rules.py
 """
@@ -609,10 +608,10 @@ def main():
     for name, ok, note in form_cases():
         case(name, ok, note)
 
-    # ---- and does any of it discriminate? --------------------------------- The roof
-    # stair facing was inverted in the library for four rounds and every test that
-    # existed passed the whole time. A suite that cannot fail on broken code is not
-    # evidence, so each rule is re-run against a version built to break it.
+    # ---- and does any of it discriminate? --------------------------------- A suite
+    # that cannot fail on broken code is not evidence -- an inverted roof stair facing
+    # in the library can pass every test there is -- so each rule is re-run against a
+    # version built to break it.
     print("\n# does the suite discriminate? the same cases on code built to trip it\n")
     fired = 0
     broken = steps_cases(broken=True)

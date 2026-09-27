@@ -81,25 +81,25 @@ OPTIONAL_SHAPED = ("wall_alt",)
 
 #: What a voice may say about its roof, and the default of each. These are `roof()`'s
 #: own keyword arguments; `None` for `profile`, `ends` and `overhang` is the roof
-#: style's own, which is what keeps every stored program byte-identical. **`overhang`
-#: joined them in the composition round.** How far a roof oversails the wall is one of
-#: the three things a reader actually sees about a roof -- with the pitch and what the
-#: ends do -- and it is the one a voice could not say. S202 (`sources/INDEX.md`):
-#: "Overhang the roof 1-2 blocks past the wall for a shadow line". A crowded ring of
-#: party-walled houses under dark tile and a prosperous ring of courtyard houses under
-#: green tile are not the same building at two palettes, and the eave is where the
-#: difference is cheapest to state. `None` means `roof()`'s own default of one block, so
-#: a voice that says nothing builds byte-identically.
+#: style's own, which is what keeps every stored program byte-identical. **Why
+#: `overhang` is one of them.** How far a roof oversails the wall is one of the three
+#: things a reader actually sees about a roof -- with the pitch and what the ends do --
+#: and the building guidance is plain: "Overhang the roof 1-2 blocks past the wall for
+#: a shadow line". A crowded ring of party-walled houses under dark tile and a
+#: prosperous ring of courtyard houses under green tile are not the same building at
+#: two palettes, and the eave is where the difference is cheapest to state. `None`
+#: means `roof()`'s own default of one block, so a voice that says nothing builds
+#: byte-identically.
 ROOF_KEYS = {"profile": None, "ends": None, "eave": "straight", "tiers": 1,
              "overhang": None}
 
-#: **A second silhouette, for what a place holds at its middle.** Demo-polish, 2a. A
-#: voice carried one silhouette, so a capital's throne hall stood under the same roof as
-#: its smallest house and nothing in the roofscape said which was which (the render
-#: look's finding 6). `roof_civic` is optional, takes the same four keys as `roof` and
-#: is validated by the same rules; `TypeBuilder` hands it to `roof()` and `building()`
-#: in place of `roof` for a type whose `ROLE` is `civic`, and falls back to `roof` where
-#: the voice is silent. No type names any of it.
+#: **A second silhouette, for what a place holds at its middle.** With one silhouette
+#: per voice, a capital's throne hall stands under the same roof as its smallest house
+#: and nothing in the roofscape says which is which. `roof_civic` is optional, takes
+#: the same four keys as `roof` and is validated by the same rules; `TypeBuilder` hands
+#: it to `roof()` and `building()` in place of `roof` for a type whose `ROLE` is
+#: `civic`, and falls back to `roof` where the voice is silent. No type names any of
+#: it.
 ROOF_CIVIC = "roof_civic"
 
 #: The prose a brief reads. Optional, every one of them: a voice with no notes is a
@@ -189,11 +189,11 @@ def validate(voice: dict, where: str = "a voice") -> dict:
     if chimney is not None and not isinstance(chimney, bool):
         raise VoiceError(f"{where}: 'chimney' is true, false, or absent for the place's "
                          f"form to decide, not {chimney!r}")
-    # **A voice may say it is not a whole place's.** The craft round, E2: a palette for
-    # the richest quarter of a place -- white stone, a gilded roof -- is a candidate a
-    # spec call may name for a ring, and is never what the deterministic chooser falls
-    # back to when nothing said (`stages_plan._choose_voice`). A place built end to end
-    # in a ceremonial palette has no centre.
+    # **A voice may say it is not a whole place's.** A palette for the richest quarter
+    # of a place -- white stone, a gilded roof -- is a candidate a spec call may name
+    # for a ring, and is never what the deterministic chooser falls back to when
+    # nothing said (`stages_plan._choose_voice`). A place built end to end in a
+    # ceremonial palette has no centre.
     ceremonial = voice.get("ceremonial")
     if ceremonial is not None and not isinstance(ceremonial, bool):
         raise VoiceError(f"{where}: 'ceremonial' is true, false, or absent, not "

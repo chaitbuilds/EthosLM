@@ -101,23 +101,22 @@ def _dry_circulation(rnd: Round, be) -> dict:
     mat = plan.get("circulation_material") or "cobblestone"
     if mat not in prims.MATERIALS:
         mat = "cobblestone"
-    # **The lanes are laid on the ground before any lane, every time.** The expression
-    # round's farm: the improve stage replanned after construction and this stage --
-    # which bakes the lanes into `world.npz` from the backend's working volume -- wrote
-    # the first candidate's sixteen cottages and its square into the base ground, so the
-    # rebuild stood on the previous build (three blocked doorways, then a market on a
-    # hill of its own paving). The ground as the plateau and the terraces left it is
-    # kept beside the base the first time lanes are routed, and every routing starts
-    # from it: a replan's lanes replace the previous lanes instead of joining them.
+    # **The lanes are laid on the ground before any lane, every time.** This stage bakes
+    # the lanes into `world.npz` from the backend's working volume, so when the improve
+    # stage replans after construction, routing on that volume would write the previous
+    # build into the base ground and the rebuild would stand on it (blocked doorways, a
+    # market on a hill of its own paving). The ground as the plateau and the terraces
+    # left it is kept beside the base the first time lanes are routed, and every routing
+    # starts from it: a replan's lanes replace the previous lanes instead of joining them.
     before_lanes = rnd.rel(rnd.base_volume.replace(".npz", ".before-lanes.npz"))
     base_p = rnd.rel(rnd.base_volume)
     if not os.path.exists(before_lanes) and os.path.exists(base_p):
         import shutil
         shutil.copyfile(base_p, before_lanes)
-    # **...and locally, only the local lanes are taken back.** The block design round.
-    # Under a declared scope the roads outside it are what this unit connects *to*: the
-    # base keeps them, the scope's own columns go back to the ground before any lane,
-    # and the routing below is asked about this unit's sites only.
+    # **...and locally, only the local lanes are taken back.** Under a declared scope
+    # the roads outside it are what this unit connects *to*: the base keeps them, the
+    # scope's own columns go back to the ground before any lane, and the routing below
+    # is asked about this unit's sites only.
     from .. import local as _local
     scope = _local.scope_of(rnd)
     scope_rec: dict = {}
@@ -181,9 +180,8 @@ def _dry_circulation(rnd: Round, be) -> dict:
     if scope is not None:
         # what this solve *lays* is held to the scope's outer bound, as the terraces'
         # writes are: a lane cell the solve reached past it is ground the scope does not
-        # own (the fabric reset round: the gate street's cells were laid at the
-        # arterial's designed level on the retained side of the gate, floating in its
-        # passage)
+        # own (a gate street's cells past the bound would be laid at the arterial's
+        # designed level on the retained side of the gate, floating in its passage)
         _o = scope["outer"]
         net_here = circulate.Network(
             {c: r for c, r in net.cells.items()
@@ -206,11 +204,9 @@ def _dry_circulation(rnd: Round, be) -> dict:
                        and not _local.meets(scope, (t.x, t.z, t.x, t.z))]
             merged = dict(keep_cells)
             merged.update(net.cells)
-            # **...and a retained house the section builds is given back its way in**
-            # (the design resolution round). A kept plot with no reserved doorstep was
-            # entered through the party-wall slot `site()` used to cut; with the slot
-            # gone its door opened into its neighbour's wall and it did not stand
-            # (`lower_ring_north_2_b3_1_04`, the fabric reset reader's site_a). Its doorstep
+            # **...and a retained house the section builds is given back its way in.**
+            # `site()` cuts no party-wall slot, so a kept plot with no reserved doorstep
+            # would open its door into its neighbour's wall and not stand. Its doorstep
             # is reserved on its own front, off the kept lane in front of it.
             def _g(x, z):
                 i, j = x - vol.x0, z - vol.z0
@@ -391,11 +387,10 @@ def stage_circulation(rnd: Round, be, results: dict) -> dict:
     net = rnd.network()
     if not be.live:
         # **Under a local scope the network on disk is the city's, not this plan's.**
-        # The quarter design round: re-laying a district no longer deletes the lanes
-        # (they are the boundary condition the scope merges into), so "a network exists"
-        # stopped meaning "this plan was routed". What the scope was routed for is
-        # recorded (`scope_sites`) and a plan whose sites in the scope differ is routed
-        # again.
+        # Re-laying a district does not delete the lanes (they are the boundary
+        # condition the scope merges into), so "a network exists" does not mean "this
+        # plan was routed". What the scope was routed for is recorded (`scope_sites`)
+        # and a plan whose sites in the scope differ is routed again.
         stale_scope = None
         if net is not None and getattr(be, "dry_run", False):
             want = _scope_sites(rnd)
@@ -684,14 +679,12 @@ def stage_finish(rnd: Round, be, results: dict) -> dict:
                                    built_digest=_deps_f.content_print(built),
                                    note=doc.get("note") or "")
             # **...and the record on disk says what is true of the assembled world.**
-            # The design round, worker C's second request. Each part's surface record is
-            # made inside one builder before its neighbours exist, so a cell a later
-            # part overwrote, one another part protects, one that no longer stands and
-            # one that nothing can see are all still in it. Between a fifth and a half
-            # of the recorded editable cells are of those kinds on the cached candidates
-            # (22,110 -> 12,688 on the farm; 262,618 -> 167,448 on the city). Half a
-            # second on a city-sized volume, and it is the difference between a record
-            # and a record that is right.
+            # Each part's surface record is made inside one builder before its
+            # neighbours exist, so a cell a later part overwrote, one another part
+            # protects, one that no longer stands and one that nothing can see are all
+            # still in it -- commonly between a fifth and a half of the recorded editable
+            # cells. Half a second on a city-sized volume, and it is the difference
+            # between a record and a record that is right.
             _reconcile_surfaces(rnd, sp, built)
         with contextlib.suppress(ValueError):
             _deps_f.stamp(rnd, "built", outputs=["parts.json", "world_built.npz"]
@@ -1019,11 +1012,11 @@ def instantiated_source(type_src: str, instances: list, mat=None, roof=None) -> 
         # The type's own answer, kept. `_part` is the very dict `site()` appended to
         # `Builder.parts`, so writing the result into it is how the driver finds out
         # what the type said -- and a type that **refuses** ("no massing stood on this
-        # pad") is the one thing a round that instantiates 35 parts most needs to hear.
-        # `role=`: the type's own `ROLE`, read off the module the type source just
-        # defined, so `TypeBuilder` can hand a civic type the voice's civic silhouette
-        # (demo-polish, 2a). A stored instance program written before this calls
-        # `type_builder(_part)` and gets the voice's one roof, as it always did.
+        # pad") is the one thing a round that instantiates dozens of parts most needs to
+        # hear. `role=`: the type's own `ROLE`, read off the module the type source just
+        # defined, so `TypeBuilder` can hand a civic type the voice's civic silhouette. A
+        # stored instance program that calls `type_builder(_part)` without it gets the
+        # voice's one roof.
         out.append(f"_part['build'] = build(type_builder(_part, "
                    f"role=globals().get('ROLE')), _part, {int(seed)}{kw})")
     return "\n".join(out) + "\n"
@@ -1045,7 +1038,7 @@ def voice_palette(voice: str | None) -> dict | None:
 
 def voice_roof(voice: str | None) -> dict | None:
     """The silhouette of a voice, as `roof()`'s own four parameters -- and, under
-    `"civic"`, the voice's civic silhouette where it names one (demo-polish, 2a).
+    `"civic"`, the voice's civic silhouette where it names one.
     `TypeBuilder` takes the civic one for a type whose `ROLE` is `civic` and the
     four keys for every other; nothing else reads the extra key."""
     from .. import styles
@@ -2060,14 +2053,14 @@ def _record_call(rnd: Round, subj: dict, n: int, prog: str, sha: str,
         driver never holds the conversation -- it only knows what it put in the blinded
         directory and what came back. That is what is logged: `chars_in` is the brief plus
         the findings plus, on a bounce, the scrubbed error, and `chars_out` is the program
-        that came back. `seconds` is 0 because wall clock is not the driver's to measure,
-        exactly as the selection round's rows record it; the token figure is 4 chars a
-        token and `measure.model_call` labels it as an estimate.
+        that came back. `seconds` is 0 because wall clock is not the driver's to measure;
+        the token figure is 4 chars a token and `measure.model_call` labels it as an
+        estimate.
 
         Deduped against the log rather than against `_draft_row`'s cache, and deliberately.
-        The cache is keyed on the program's bytes, so a stage re-run over a draft measured
-        before this logging existed would record nothing at all and the round would report
-        a cost far under what it spent. The log is the thing being appended to, so the log
+        The cache is keyed on the program's bytes, so a stage re-run over a draft the
+        cache already holds would record nothing at all and the round would report a cost
+        far under what it spent. The log is the thing being appended to, so the log
         is the thing that says whether this call is already on it -- and a builder bounced
         and rewritten has different bytes and is correctly a second row.
 
@@ -2503,13 +2496,12 @@ SECTION_GATE_CLEAR = 16
 def _clip_runs(path: list, rect: tuple, *, half: int = 0) -> list:
     """The parts of an edge's polyline that lie inside `rect`, as separate runs.
 
-        **A section is bounded at a cut, not by paying for the whole circuit.** The design
-        round's sampler kept an edge leaf whenever its *bounding* rectangle met the sample
-        (`sample_parts`, and `part_rect` of an edge is the bbox of the whole ring), so one
-        wall segment touching the sample bought the entire annulus and its gates: 48 parts
-        of which the walls, the gates and a compound were most, and the inhabited fabric the
-        section was chosen for was two short rows. Clipping the line means the boundary in
-        the section is the boundary *of* the section.
+        **A section is bounded at a cut, not by paying for the whole circuit.**
+        `part_rect` of an edge is the bbox of the whole ring, so keeping an edge leaf
+        whenever its *bounding* rectangle meets the sample lets one wall segment touching
+        the sample buy the entire annulus and its gates, crowding out the inhabited fabric
+        the section was chosen for. Clipping the line means the boundary in the section is
+        the boundary *of* the section.
 
         Axis-aligned runs are clipped to the rectangle. A diagonal run -- a ring's chamfer --
         is kept only where it lies wholly inside, because half a staircase is not a wall
@@ -2580,11 +2572,11 @@ def _block_key(name: str | None):
 def section_parts(parts: list, section: dict) -> tuple:
     """The leaves of a **registered section**: one connected piece of a larger place.
 
-        The composition round. `sample_parts` above chooses its own extent from the plan --
-        the quarter with a market, the nearest compound, the quarter between them -- which
-        is a rule for finding *an* interesting seam and not a rule for answering a stated
-        architectural question. This takes the extent as given, registered before any
-        candidate was compiled, and selects against it:
+        `sample_parts` above chooses its own extent from the plan -- the quarter with a
+        market, the nearest compound, the quarter between them -- which is a rule for
+        finding *an* interesting seam and not a rule for answering a stated architectural
+        question. This takes the extent as given, registered before any candidate was
+        compiled, and selects against it:
 
           - a **plot or area leaf is taken whole or not at all**, so a section cut falls
             between buildings and never through one. A leaf that straddles the boundary is
@@ -2620,14 +2612,12 @@ def section_parts(parts: list, section: dict) -> tuple:
         return r[0] <= x1 and x0 <= r[2] and r[1] <= z1 and z0 <= r[3]
 
     # **A section may select whole blocks rather than a rectangle's worth of leaves.**
-    # The block design round. `whole_in` takes a plot or an area whole or not at all, so
-    # a cut falls between buildings and never through one -- and it still falls through
-    # the *compositions* those buildings make. A court block whose front range is inside
-    # the rectangle and whose back range is two columns outside it builds three ranges
-    # of four, and the court in the middle of them is then read, photographed and
-    # counted as open ground. That is exactly the "arbitrary crop through a court" the
-    # round refuses: "Choose scope for the relationship being designed; an arbitrary
-    # crop through a court or route is not a complete unit." With `unit: "block"` the
+    # `whole_in` takes a plot or an area whole or not at all, so a cut falls between
+    # buildings and never through one -- and it still falls through the *compositions*
+    # those buildings make. A court block whose front range is inside the rectangle and
+    # whose back range is two columns outside it builds three ranges of four, and the
+    # court in the middle of them is then read, photographed and counted as open ground:
+    # an arbitrary crop through a court is not a complete unit. With `unit: "block"` the
     # selection is closed under the compiler's own block: a leaf inside the rectangle
     # brings in every other leaf of its block, wherever that block reaches. The extent
     # grows to whole blocks and the record says by how much.
@@ -2732,9 +2722,9 @@ def section_parts(parts: list, section: dict) -> tuple:
            "joining_parts": joins,
            "boundary_runs": runs_rec,
            "cut_out": cut_out,
-           # the block design round: what the rectangle would have cut through and the
-           # block selection kept whole, so "the extent is bigger than the registered
-           # rectangle" is a thing on the record and not a surprise in an image
+           # what the rectangle would have cut through and the block selection kept
+           # whole, so "the extent is bigger than the registered rectangle" is a thing
+           # on the record and not a surprise in an image
            "unit": unit,
            "grown_to_whole_blocks": grown,
            "blocks": sorted(f"{d}/{i},{j}" for (d, i, j) in here_blocks),
@@ -2753,7 +2743,7 @@ def section_parts(parts: list, section: dict) -> tuple:
 
 
 def annotate_gates(parts: list) -> list:
-    """Which point stands on which edge, and what that means for both. Demo-polish, 2b.
+    """Which point stands on which edge, and what that means for both.
 
         A point whose anchor is on an edge's swept line gets `part["edge"]` -- the edge's
         name, type, declared `height` and `width` -- and, where it names no `size` of its
@@ -3048,12 +3038,11 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None,
             "placed": placed.get("placed"), "failed": placed.get("failed"),
             "ground": sited.get("ground"), "floor_y": sited.get("floor_y"),
             "sited": (sited.get("sited") or {}).get("reason"),
-            # **The way in that was actually laid.** The neighbourhood delivery round:
-            # `site()` chooses the door cell on the pad it prepared and `approach()`
-            # answers, against the world it has just changed, whether a person can walk
-            # to it. Both were inside the sited dict and neither reached the record, so
-            # nothing downstream could tell a structure entered somewhere other than its
-            # reserved doorstep from one that cannot be entered at all.
+            # **The way in that was actually laid.** `site()` chooses the door cell on
+            # the pad it prepared and `approach()` answers, against the world it has just
+            # changed, whether a person can walk to it. Both go on the record, so
+            # downstream can tell a structure entered somewhere other than its reserved
+            # doorstep from one that cannot be entered at all.
             "door": (list(sited["door"]) if sited.get("door") else None),
             "way_in": {"ok": bool(((sited.get("sited") or {}).get("approach") or {})
                                   .get("ok")),

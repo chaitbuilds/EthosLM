@@ -538,11 +538,11 @@ def s9_the_types_hang_their_door_on_the_compiled_door():
 
 @case
 def s10_a_compiled_doorway_has_its_floor_under_the_door():
-    """`out/qd-city`: seven sited court houses stood with air at floor level under their
-    door. The router reserves the compiled door on the pad's edge, `_site_lanes` counted
-    every threshold door as a lane column, and `_site_lay` left that column unlaid -- so
-    `clear_ground_cover`'s air stayed and the type's doorstep put-back restored it. Built
-    here with the network the router now plans: the door cell has a solid floor."""
+    """A sited court house must not stand with air at floor level under its door. The
+    router reserves the compiled door on the pad's edge; if `_site_lanes` counts every
+    threshold door as a lane column, `_site_lay` leaves that column unlaid -- so
+    `clear_ground_cover`'s air stays and the type's doorstep put-back restores it. Built
+    here with the network the router plans: the door cell has a solid floor."""
     out = []
     for tn, params in (("court_large", {"storeys": 1, "yard": "well"}),
                        ("court_small", {"storeys": 1}),

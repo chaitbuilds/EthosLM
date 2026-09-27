@@ -1,8 +1,8 @@
 """Observation that is not rendering.
 
 **judge at the cheapest observation that can exhibit the defect.** A render cannot
-exhibit reachability, so four rounds of render-only judgement missed every defect a
-human found in ten minutes on foot.
+exhibit reachability, so render-only judgement misses defects a human finds in minutes
+on foot.
 
 This module is the layer the linter is built on. Cheapest first:
 
@@ -10,21 +10,18 @@ This module is the layer the linter is built on. Cheapest first:
             GDPC already holds in memory. Seconds for 192x192x112, versus most of an
             hour if you call getBlockGlobal per voxel.
   Nav       a walk model: which cells a player can stand in, and which stances connect
-            to which. This is the piece that answers "can you get in", which nothing in
-            the project could do before.
+            to which. This is the piece that answers "can you get in".
   shelter   which air is under cover, and which is sealed off from the sky entirely.
   rooms     connected components of sheltered standing space -- the interiors.
   light     propagated block light and sky light, instead of a count of light sources.
 
-It is the real client's movement code, so it cannot disagree with the game. It is the
-wrong answer *here*. Node is not installed and nix cannot install it (no writable daemon
-socket), so it would mean downloading a Node tarball and driving it through the store
-loader the way setup_runtime.sh does for the JDK, then babysitting a bot over a network
-namespace that is destroyed at the end of every shell call -- all before learning
-anything. The BFS is one file, needs no new dependency, runs in-process during a pass,
-and answers exactly the question the linter asks. The cost is that its movement rules
-are a *model* of the game rather than the game, so they are stated explicitly in RULES,
-each one small enough to build as an obstacle in-world and check by walking it.
+A bot running the real client's movement code (a Node library) could not disagree with
+the game, but it is the wrong answer *here*: it needs a Node runtime and a bot kept
+connected to a live server, all before learning anything. The BFS is one file, needs no
+new dependency, runs in-process during a pass, and answers exactly the question the
+linter asks. The cost is that its movement rules are a *model* of the game rather than
+the game, so they are stated explicitly in RULES, each one small enough to build as an
+obstacle in-world and check by walking it.
 
 Heights are in **half-blocks** throughout, because every surface a player stands on in
 Minecraft is at a whole or half block: a slab top is 0.5, a full block is 1.0. Integer
@@ -820,9 +817,9 @@ class Nav:
 
                 Derived, not seeded from a declared centre. It is the largest set of *outdoor*
                 stances reachable from a single stance **without jumping once** -- the ground a
-                person can walk around on. This is the distinction the spec draws and that four
-                rounds missed: a door reachable from open air, given enough scrambling, is not
-                the same as a door that fronts the street.
+                person can walk around on. This is the distinction that matters: a door
+                reachable from open air, given enough scrambling, is not the same as a door
+                that fronts the street.
 
                 Reachability is not symmetric here (you can fall somewhere you cannot climb
                 back out of), so these are coverings rather than true components. That is the

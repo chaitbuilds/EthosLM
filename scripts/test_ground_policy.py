@@ -254,7 +254,7 @@ def p3_the_terrace_record_reconciles_with_the_mask_over_the_same_ground():
     assert c["keep_high"] + c["keep_low"] == (got["off_level_columns"]
                                               + got["broken_columns"]), (c, got)
     assert dis["max_cut"] <= REACH, dis
-    # the quarter design round's pit rule: fill beyond the reach only in a recorded pit
+    # the pit rule: fill beyond the reach only in a recorded pit
     assert dis["max_fill"] <= REACH or (
         got["pits"]["columns"] and dis["max_fill"] <= F.PIT_DEPTH_REACHES * REACH), dis
 
@@ -431,10 +431,9 @@ def p6_every_piece_of_the_sections_designed_ground_is_inside_the_bound():
 
         The gate approaches are **excluded and named**, because they are not the same
         question: a ramp exists to move earth so that a gate can be reached, and bounding it
-        refuses the palace gate's approach outright (135 columns, 0 feasible at y=83) and
-        leaves the gate unreachable. Together the approaches move 6,435 blocks, 0.09% of
-        what this stage lays. Reshaping access is a design choice the round authorizes; it
-        is recorded here rather than left to be discovered.
+        can refuse a gate's approach outright and leave the gate unreachable. Together the
+        approaches move a small fraction of what this stage lays. Reshaping access is a
+        design choice; it is recorded here rather than left to be discovered.
 
     """
     import json

@@ -536,10 +536,10 @@ def t_baseline_and_prepared_ground_are_two_grounds():
         assert deps.check(rnd, "plan")[0], deps.check(rnd, "plan")
         # The ground as it was found, kept aside before anything cuts it -- which is
         # what `stage_plateau` writes and what `terrain` is the identity of. Then the
-        # cut, then the stamp: that is `stage_terraces`' own order, and the realization
-        # round's output-identity rule makes it load-bearing, because a stamp now
-        # records what it accepted and one written before its output exists describes a
-        # file that is gone.
+        # cut, then the stamp: that is `stage_terraces`' own order, and the
+        # output-identity rule makes it load-bearing, because a stamp records what it
+        # accepted and one written before its output exists describes a file that is
+        # gone.
         with open(rnd.rel("world" + deps.BASELINE), "wb") as fh:
             fh.write(b"the ground as it was found")
         with open(rnd.rel("world.npz"), "wb") as fh:

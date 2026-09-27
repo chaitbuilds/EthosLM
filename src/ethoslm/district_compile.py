@@ -75,16 +75,15 @@ LOT_GAP = 3
 AREA_GAP = 2
 
 #: How much of a rectangle the ground has to be able to carry before this compiler will
-#: lay anything on it. The spatial-design round, and the coordinator's ground interface
-#: (`ethoslm.feasible`): a district now carries a measured mask of the columns a building
-#: may be founded on, and a plot **most of whose columns the mask refuses** is a plot on
-#: the lake. Half, and not all, for a reason the round's own figures give: on
-#: `middle_ring_north_west` 35.4% of the rectangle can carry a building, and a bar of
-#: "every column" would lay nothing at all there and turn a district that should compile
-#: smaller into a district that does not compile. `site()` cuts and fills a pad, and the
-#: ground a plinth can absorb is exactly what this slack is for; below half the plinth
-#: is a causeway. A block and a piece of open ground are held to the same bar, because
-#: the question -- is there ground here to build on -- is the same one.
+#: lay anything on it. A district carries a measured mask of the columns a building may
+#: be founded on (`ethoslm.feasible`), and a plot **most of whose columns the mask
+#: refuses** is a plot on the lake. Half, and not all: where only a third of a district's
+#: rectangle can carry a building, a bar of "every column" would lay nothing at all and
+#: turn a district that should compile smaller into one that does not compile. `site()`
+#: cuts and fills a pad, and the ground a plinth can absorb is exactly what this slack
+#: is for; below half the plinth is a causeway. A block and a piece of open ground are
+#: held to the same bar, because the question -- is there ground here to build on -- is
+#: the same one.
 GROUND_FOUNDED = 0.5
 
 #: **This compiler consults the feasibility mask.** Declared rather than assumed,
@@ -106,20 +105,17 @@ def block_lots_for(density: str, lot_width: int | None = None,
     """How many lots long a block of this density's fabric is, at **this** lot width.
 
         **A block is a length of street, and a count of lots is only the same thing while
-        every lot is the same width.** The spatial-design round, measured through
-        `placeplan.fabric`: `BLOCK_LOTS["dense"]` is 3, and it was written when a dense lot
-        was the density's own 10-column square -- 30 columns of frontage between two cross
+        every lot is the same width.** `BLOCK_LOTS["dense"]` is 3 for a dense lot that is
+        the density's own 10-column square -- 30 columns of frontage between two cross
         streets. A row of party walls is 5 or 6 columns wide, so the same 3 lots is 18
-        columns, and a block that shrank with its lots while `PLOT_LANE` stayed at 5 spends
-        *more* of the ring on street the narrower its houses get. That is backwards: a narrow
-        frontage is the thing attachment is for, and it was being charged for itself.
+        columns, and a block that shrank with its lots while `PLOT_LANE` stayed at 5 would
+        spend *more* of the ring on street the narrower its houses get. That is backwards: a
+        narrow frontage is the thing attachment is for, and it would be charged for itself.
 
-        Measured on the retained dense fabric (`fabric("dense", "urban", {"attached": True})`,
-        a 6x8 lot): 3 lots a block is 552 columns holding 4.95 houses, **111.5 columns a
-        house**; the same lot on a block holding the density's own 30 columns of frontage is
-        5 lots, 840 columns, 8.25 houses, **101.8**. Nine per cent of the crowded ring was
-        going to cross streets that the square fabric this number was written for never paid
-        for.
+        On the dense attached fabric (`fabric("dense", "urban", {"attached": True})`, a 6x8
+        lot), 3 lots a block is **111.5 columns a house**; 5 lots, the density's own 30
+        columns of frontage, is **101.8** -- nearly a tenth of the ground saved from cross
+        streets the square fabric never paid for.
 
         So the count is the density's own block *length* divided by the width of the lot
         actually being laid, floored at the registered count and capped at `BLOCK_LOTS_MAX`
@@ -154,10 +150,10 @@ def storey_pad(decl: dict, storeys: int) -> tuple | None:
     """`(across, along)` of the least **pad** this type needs to stand `storeys` storeys,
         off its own `STOREY_PAD` declaration, or None where it declares nothing.
 
-        **The other half of the question a lot asks.** The spatial-design round: `NEEDS`
-        says what ground a type may stand on and nothing said what standing there *gets*,
-        so the layout was reading a type's footprint ceiling as though it were a statement
-        about storeys -- a capability limit standing in for a demand. A density word asks for
+        **The other half of the question a lot asks.** `NEEDS` says what ground a type may
+        stand on and nothing there says what standing on it *gets*, so without this the
+        layout reads a type's footprint ceiling as though it were a statement about storeys
+        -- a capability limit standing in for a demand. A density word asks for
         an amount of ground and a shape; this is the type's answer about what it can do with
         it, declared by the file that has to build it and measured there.
 
@@ -194,27 +190,22 @@ def storey_pad(decl: dict, storeys: int) -> tuple | None:
 WIDEN_UP_TO = 0.5
 
 #: Every fourth lot takes another of the role's types rather than the house, where the
-#: role has more than one plot type that admits the lot. **The floor and not the rule**
-#: since the craft round (E3): a lot draws its own type from everything the role admits
-#: at its size, and this is what guarantees a second type on a short street where the
-#: draw might not reach one. **Within the quarter's own uses**, since the composition
-#: round -- see `use_mix`. It used to mean "another of the *pool's* types", and the pool
-#: a capability record approves for a ring of traders includes the civic types the
-#: ring's landmark needs, so every fourth lot of the middle ring drew a hall or a
-#: temple: the built section came back with 5 temples and 4 halls against 1 shop house
-#: in 22 buildings. Variety inside the intended uses is a street of dwellings and shops;
-#: variety across uses is a civic precinct.
+#: role has more than one plot type that admits the lot. **The floor and not the rule**:
+#: a lot draws its own type from everything the role admits at its size, and this is
+#: what guarantees a second type on a short street where the draw might not reach one.
+#: **Within the quarter's own uses** -- see `use_mix`. The pool a capability record
+#: approves for a ring of traders includes the civic types the ring's landmark needs, so
+#: "another of the *pool's* types" makes every fourth lot a hall or a temple. Variety
+#: inside the intended uses is a street of dwellings and shops; variety across uses is a
+#: civic precinct.
 OTHER_EVERY = 4
 
-#: **Retired by the neighbourhood round, and kept here with its reasoning.** The
-#: composition round registered a tenth of a district's lots as the share it might spend
-#: on a use other than the quarter's own, on the argument that "a tenth is one building
-#: in a block of ten, which is a guild hall on a long street of houses". The number
-#: worked as a brake on civic filler and it was still a **universal quota**: the same
-#: tenth in a traders' quarter, a farm belt and an elite ring, in a project whose whole
-#: claim is that a place's composition is derived from its own design. The neighbourhood
-#: round's instruction is explicit -- "infer and record this neighbourhood's mix from
-#: the design... avoid universal quotas". What replaced it (`use_mix`): the uses a
+#: **Retired, and kept here with its reasoning.** A tenth of a district's lots as the
+#: share it may spend on a use other than the quarter's own ("one building in a block of
+#: ten, which is a guild hall on a long street of houses") works as a brake on civic
+#: filler and is still a **universal quota**: the same tenth in a traders' quarter, a
+#: farm belt and an elite ring, in a project whose whole claim is that a place's
+#: composition is derived from its own design. What replaced it (`use_mix`): the uses a
 #: quarter holds are the ones its **own design names** -- its resolved demand's
 #: requirements and the words of its own description -- and *where* each use stands is a
 #: spatial decision (the street the quarter's anchor fronts) rather than a fraction. The
@@ -247,22 +238,21 @@ FUNCTION_USE = {"dwelling": "home", "market": "market", "worship": "worship"}
 UNSTATED_USE = "unstated"
 
 #: **How far a lot's width and depth may stray from the density's own**, as a fraction
-#: of the lot side, by what the street is. The craft round, E3: the compiler divided a
-#: street's frontage evenly, so every lot was one width and the building on it was one
-#: building -- twenty-one cottages on identical pads in a village, and a district that
-#: reads from the air as a comb. A terrace is *meant* to be regular, so an attached row
-#: varies least; a street of detached houses varies more; freestanding buildings a lane
-#: apart on open frontage vary most, because nothing lines them up.
+#: of the lot side, by what the street is. A street's frontage divided evenly makes every
+#: lot one width and every building on it one building -- a village of cottages on
+#: identical pads that reads from the air as a comb. A terrace is *meant* to be regular,
+#: so an attached row varies least; a street of detached houses varies more;
+#: freestanding buildings a lane apart on open frontage vary most, because nothing lines
+#: them up.
 VARIETY = {"open": 0.35, "street": 0.3, "attached": 0.0}
 
-#: **Registered before the numbers that test them** (the craft round, E3), and read on
-#: every compiled district's own record: shapes_per_hundred distinct building shapes --
-#: the type, the width, the depth and the storeys, which is what a person sees of a
-#: house from outside -- per hundred houses in the district. identical_run the longest
-#: run of neighbours of one shape along one street face. A rhythm is not a comb. What
-#: the compiler read before the phase, on the compile fixture: **30.2 per hundred and a
-#: run of 3** for a medium detached district, **15.8 and 3** for a row of party walls.
-#: Both numbers are set above that, so neither is met by standing still.
+#: Read on every compiled district's own record: shapes_per_hundred distinct building
+#: shapes -- the type, the width, the depth and the storeys, which is what a person sees
+#: of a house from outside -- per hundred houses in the district. identical_run the
+#: longest run of neighbours of one shape along one street face. A rhythm is not a comb.
+#: A street divided evenly scores about **30 per hundred and a run of 3** for a medium
+#: detached district and **16 and 3** for a row of party walls; both bars are set above
+#: that, so neither is met by standing still.
 SHAPES_PER_HUNDRED = 35
 IDENTICAL_RUN_MAX = 2
 
@@ -270,19 +260,18 @@ IDENTICAL_RUN_MAX = 2
 # ------------------------------------------------------------------- the character
 
 #: **What the layout may settle about a district's own arrangement**, over the character
-#: its defining part declares. The design round's second contract: a parent's dimensions
-#: and its children's arrangement are negotiated together, so the ring layout has to be
-#: able to say "this ring is one row of houses deep, in bays this wide" and have the
-#: compiler lay exactly that -- and the compiler stays the authority on whether it
-#: holds. These are decisions about *this rectangle*, so they live on the district
-#: record and not on the defining part, whose character is a statement about the whole
-#: fabric. A value the spec's own character declared is never overridden (`_declared`).
-#: `perimeter` is the neighbourhood round's addition: whether a block is built on all
-#: four of its faces with its court inside, rather than on its two long faces with the
-#: back row given to the court. It is a decision about *this rectangle* like the rest of
-#: them -- a block has to be deep enough and long enough to hold one -- and the compiler
-#: stays the authority on whether it fits (`_compile_once`; `counts.perimeter_blocks`
-#: says how many blocks actually became one).
+#: its defining part declares. A parent's dimensions and its children's arrangement are
+#: negotiated together, so the ring layout has to be able to say "this ring is one row
+#: of houses deep, in bays this wide" and have the compiler lay exactly that -- and the
+#: compiler stays the authority on whether it holds. These are decisions about *this
+#: rectangle*, so they live on the district record and not on the defining part, whose
+#: character is a statement about the whole fabric. A value the spec's own character
+#: declared is never overridden (`_declared`). `perimeter` says whether a block is built
+#: on all four of its faces with its court inside, rather than on its two long faces
+#: with the back row given to the court. It is a decision about *this rectangle* like
+#: the rest of them -- a block has to be deep enough and long enough to hold one -- and
+#: the compiler stays the authority on whether it fits (`_compile_once`;
+#: `counts.perimeter_blocks` says how many blocks actually became one).
 ARRANGEMENT_FIELDS = ("rows", "lot_width", "lot_depth", "frontage", "attached",
                       "courtyard_share", "block", "perimeter")
 
@@ -315,11 +304,11 @@ def character_of(part: dict, district: dict | None = None) -> dict:
     # `arrangement_revises` names it, so a reader can see which words of the brief the
     # layout overruled and why.
     revised = []
-    # **A district composed from its streets has no grid arrangement to adopt** (the
-    # fabric reset round): an `arrangement` is the grid's settled lot, rows and block
-    # form for this rectangle, and one left on a district by an earlier grid layout --
-    # the quarter design round's `perimeter` of 13x13 lots -- would re-cut the streets'
-    # lots to the old grid's size. The composition searches its own proposals.
+    # **A district composed from its streets has no grid arrangement to adopt**: an
+    # `arrangement` is the grid's settled lot, rows and block form for this rectangle,
+    # and one left on a district by an earlier grid layout -- a `perimeter` of 13x13 lots,
+    # say -- would re-cut the streets' lots to the old grid's size. The composition
+    # searches its own proposals.
     street = str(out.get("layout") or "") == "street"
     for k, v in ((district or {}).get("arrangement") or {}).items():
         if v is None or k not in ARRANGEMENT_FIELDS or street:
@@ -342,11 +331,10 @@ def character_of(part: dict, district: dict | None = None) -> dict:
         band = out.get("storeys")
         hi_w = max(lo_w, int(band[1]) if band else lo_w)
         out["storeys"] = [lo_w, hi_w]
-    # **The parent's programme distribution stands over the character's landmarks.** The
-    # quarter design round: where the layout re-cut a sector into pieces, the sector's
-    # landmarks belong to its piece nearest the gate, and the others carry none
-    # (`stages_plan._negotiate_sectors`), so a strip cut in four does not lay four
-    # markets.
+    # **The parent's programme distribution stands over the character's landmarks.**
+    # Where the layout re-cut a sector into pieces, the sector's landmarks belong to its
+    # piece nearest the gate, and the others carry none (`stages_plan._negotiate_sectors`),
+    # so a strip cut in four does not lay four markets.
     if district is not None and district.get("landmarks") is not None:
         out["landmarks"] = list(district["landmarks"])
     out["density"] = density
@@ -365,12 +353,11 @@ def district_depth(lot_depth: int, rows: int, row_gap: int, *,
     """**The least depth a district of these blocks needs**, in columns: its two edge
         margins, the street its lots front on, one block, and the clearance behind it.
 
-        The one arithmetic the ring layout and the compiler share on this question. The
-        expression round's dead end was that the ring's least width carried a *constant*
-        district depth of 28 whatever the fabric was -- so a ring whose count needed 22
-        stood at 37 and the density was measured over the difference. A district one row of
-        seven-deep lots thick is nineteen columns, and that is a decision this owner can
-        take.
+        The one arithmetic the ring layout and the compiler share on this question. A
+        ring's least width that carries a *constant* district depth whatever the fabric is
+        stands wider than its count needs, and the density is measured over the
+        difference. A district one row of seven-deep lots thick is nineteen columns, and
+        that is a decision this owner can take.
 
     """
     from .placeplan import PLOT_LANE
@@ -431,18 +418,12 @@ def _attached_lot(decl: dict, side: int, flanks: tuple,
         frees a flank, and the pad's inset comes back on it (`Builder._insets`). None where
         no size does.
 
-        **Nearest by area, not by side**, the neighbourhood round, and the ranking it
-        replaces is why the library's row house has been a 6x6 box:
-
-            ws = sorted(..., key=lambda v: (abs(v - side), v))
-            ds = sorted(..., key=lambda v: (abs(v - side), v))
-
-        -- both axes ranked by distance from the *same* number, so the first admitted pair
-        is the **squarest** one and a type whose declared sentence is "narrow to the lane,
-        deep into the plot" can never be given its own shape. Worse, it made the type's band
-        unwidenable: re-sweeping `row_house` to `(4, 4, 6, 24)` under the old rank moves the
-        dense fabric lot from 6x8 to 10x10, which is bigger lots and fewer houses, so the
-        correct measurement was being suppressed by a ranking rule.
+        **Nearest by area, not by side.** Ranking both axes by distance from the *same*
+        number makes the first admitted pair the **squarest** one, so a type whose declared
+        sentence is "narrow to the lane, deep into the plot" can never be given its own
+        shape, and a row house comes out a 6x6 box. It also makes a type's band
+        unwidenable: re-sweeping `row_house` to `(4, 4, 6, 24)` under a by-side rank moves
+        the dense fabric lot from 6x8 to 10x10, which is bigger lots and fewer houses.
 
         Area is the thing a density word actually means (`placeplan.occupancy_shares`' plot
         is a *number of columns*), and among lots of equal ground the narrower frontage is
@@ -451,17 +432,16 @@ def _attached_lot(decl: dict, side: int, flanks: tuple,
         stands in for it where no caller passed one, so every existing call behaves as a
         square ask.
 
-        **`shape` is the (frontage, depth) the density asked for**, the spatial-design round,
-        and it is what makes ranking by area safe to widen a band under. Area alone is a
-        circle round a number: with the depth ceiling at 6 the nearest lot to a hundred
-        columns was 6x8 (48) because nothing deeper was admitted, and the moment the ceiling
-        moved the *exact* hundred -- 10x10 -- became available and won, which is the 182
-        columns a house the last round measured and refused to adopt. A density word that can
-        only say "a hundred columns" cannot tell a narrow deep terrace from a large square
-        plot; `placeplan.density_lot` says both now. Depth is ranked first and as a floor,
-        because depth is what carries a stair and a lot one column short of it stands one
-        storey however much ground it has; then frontage nearest the ask; then area; then,
-        unchanged, the narrower and shallower lot, because among lots of equal ground more
+        **`shape` is the (frontage, depth) the density asked for**, and it is what makes
+        ranking by area safe to widen a band under. Area alone is a circle round a number:
+        with the depth ceiling at 6 the nearest lot to a hundred columns is 6x8 (48)
+        because nothing deeper is admitted, and the moment the ceiling moves the *exact*
+        hundred -- 10x10 -- becomes available and wins, at far more ground a house. A
+        density word that can only say "a hundred columns" cannot tell a narrow deep terrace
+        from a large square plot; `placeplan.density_lot` says both. Depth is ranked first
+        and as a floor, because depth is what carries a stair and a lot one column short of
+        it stands one storey however much ground it has; then frontage nearest the ask; then
+        area; then the narrower and shallower lot, because among lots of equal ground more
         front doors on a length of street is what a party wall is for.
 
     """
@@ -592,12 +572,12 @@ def house_types(decls: dict, role: str | None, form: str | None = None,
 
 def terrace_order(pairs: list) -> list:
     """**Which attached type a density's arithmetic is charged for**, when nothing
-    names one. The fabric reset round: once `courtyard_house` and `shop_house` declared
-    `ATTACHED`, "the first attached type" in the table's alphabetical order made the
-    crowded ring's party-walled terrace a row of courtyard houses in the density
-    arithmetic (`placeplan.fabric`). A density word's own lot is a home's -- not a shop's
-    -- and the least one the library lays, so homes come first, the smallest declared
-    pad first among them; a district whose own design names its type still leads with it
+    names one. With `courtyard_house` and `shop_house` declaring `ATTACHED`, "the first
+    attached type" in the table's alphabetical order would make the crowded ring's
+    party-walled terrace a row of courtyard houses in the density arithmetic
+    (`placeplan.fabric`). A density word's own lot is a home's -- not a shop's -- and
+    the least one the library lays, so homes come first, the smallest declared pad first
+    among them; a district whose own design names its type still leads with it
     (`use_mix`)."""
     def key(nd):
         n, d = nd
@@ -622,15 +602,15 @@ def area_types(decls: dict, role: str | None, form: str | None = None) -> dict:
     return out
 
 
-# ------------------------------------------------- what the request *requires* here The
-# composition round's first change: "markets, courts, streets and working land made
-# necessary by the programme must reserve usable space before ordinary housing consumes
-# it". To reserve space for a thing one must first know that the request asked for it,
-# and the compiler had no way to tell a landmark the character *preferred* from one the
-# sentence **requires** -- so the area branch below dropped an unplaceable market into
-# `kind = "row"` and laid houses on the ground it was for, and not one field of the
-# record said so. These three functions are how requiredness arrives, and none of them
-# names a market, a place or a type: the fact comes off the district's resolved demand.
+# ------------------------------------------------- what the request *requires* here
+# Markets, courts, streets and working land made necessary by the programme must reserve
+# usable space before ordinary housing consumes it. To reserve space for a thing one
+# must first know that the request asked for it, and tell a landmark the character
+# *preferred* from one the sentence **requires** -- otherwise an unplaceable market
+# falls into `kind = "row"`, houses are laid on the ground it was for, and not one field
+# of the record says so. These three functions are how requiredness arrives, and none
+# of them names a market, a place or a type: the fact comes off the district's resolved
+# demand.
 
 
 def _requirements_of(district: dict | None) -> list:
@@ -866,9 +846,7 @@ def named_types(text_rows: list, admitted: list) -> dict:
         **Not a segment of a name on its own**, and that restriction is the whole reason this
         is trustworthy: "house" alone names three of this library's five urban types, one of
         which is a shop, so an elite ring described as "courtyard houses on generous lots"
-        would acquire a street of shops from the word `houses`. Measured on the retained
-        city: with segment matching the upper ring names `trade`; without it, only the middle
-        ring does, which is what the sources say.
+        would acquire a street of shops from the word `houses`.
 
     """
     toks = [(w, where) for text, where in (text_rows or []) for w in _tokens(text)]
@@ -920,12 +898,10 @@ def use_mix(district: dict | None, ch: dict, houses: list, role: str | None, *,
     """**This quarter's programme: which uses it holds, which types answer them, and
         where each one stands** -- inferred from this district's own design.
 
-        The composition round put a use filter here, and the neighbourhood round's brief is
-        what was wrong with it: "The current `use_mix` filter compares coarse `ROLE` values,
-        imposes a fixed 10% secondary-use share, and falls back to other uses when none
-        match. It removes civic filler but is insufficient as a general programme."
-
-        All three are answered, and none of them by a constant:
+        A plain use filter compares coarse `ROLE` values, imposes a fixed secondary-use
+        share, and falls back to other uses when none match: it removes civic filler but is
+        insufficient as a general programme. All three are answered here, and none of them
+        by a constant:
 
           **1. The use is the type's own declaration, not its `ROLE`.** `type_use` reads
           `FUNCTION`, the `trade` parameter and -- only where a type declares neither -- the
@@ -961,8 +937,8 @@ def use_mix(district: dict | None, ch: dict, houses: list, role: str | None, *,
         (in the pool, asked for by nothing, not drawn) -- plus `uses`, the whole inferred
         programme with its derivation, which is what the plan file and the record carry.
 
-        A district whose pool holds only its own use -- the lower ring's single `row_house` --
-        behaves exactly as it did.
+        A district whose pool holds only its own use -- a single `row_house`, say -- lays
+        its whole pool as its own fabric.
 
     """
     want = str(role or "")
@@ -1058,16 +1034,13 @@ def use_mix(district: dict | None, ch: dict, houses: list, role: str | None, *,
                    f"the fabric is laid from what the pool has, in the pool's own order, "
                    f"and this mix is the pool's rather than the programme's")
     # **A quarter is built of what its own design names, before what the pool happens to
-    # rank first.** The neighbourhood round, found by building the section twice. The
-    # compiler takes the head of `own` as the district's house, and `own`'s order is the
-    # approved pool's -- which `arrange`'s fabric rung sorts **smallest footprint
-    # first**, a rule whose purpose is *recovery* for a district short of its count and
-    # not a statement about what the quarter is. So when the generator stream corrected
-    # `court_large`'s declared floor from 6x6 to 9x9 and `court_small`'s from 4x4 to 8x9
-    # -- honest corrections; at the old floors the types raised `empty range in randint`
-    # and published 2x2 light wells as courtyards -- both slid to the back of the pool
-    # behind `row_house`, and the traders' ring of a city whose sources say in as many
-    # words that "its houses are courtyard houses" came out as thirty row houses.
+    # rank first.** The compiler takes the head of `own` as the district's house, and
+    # `own`'s order is the approved pool's -- which `arrange`'s fabric rung sorts
+    # **smallest footprint first**, a rule whose purpose is *recovery* for a district
+    # short of its count and not a statement about what the quarter is. Under that order
+    # types with a large declared floor (`court_large` at 9x9, `court_small` at 8x9) sit
+    # behind `row_house`, and a traders' ring whose sources say in as many words that "its
+    # houses are courtyard houses" would come out as a street of row houses.
     # `named_types` already reads the district's own `purpose` and notes against what
     # the library's types declare. Where the design names a type of the quarter's own
     # use, it leads the quarter's fabric; the rest keep the pool's order behind it.
@@ -1204,18 +1177,14 @@ def _court_type(areas: dict, role: str | None) -> str | None:
     return next((t for t in order if t in areas), next(iter(areas), None))
 
 
-#: **What a court a block's own ranges enclose is made of.** The neighbourhood delivery
-#: round, found by building the section and asking the court predicate about it.
-#: `_court_type` answers "what is the open ground behind a row of houses", and for an
-#: urban role that is a `yard` -- a working yard, which fences its own perimeter and
-#: stands barrels in it. That is right for the ground behind a row and wrong for a court
-#: four ranges already enclose: the enclosure is the buildings', and the yard's fence
-#: closes the space a second time. Measured on this section's two composed courts, both
-#: of which stood: `lower_ring_north_2_pc0_0_0` is an 8x5 tile with a spruce fence round
-#: all of it and barrels inside, and `usable.court_accessible` answered *"is no longer
-#: open paved ground in the assembled world"* -- correctly, of a court that is mostly
-#: fence. A court is paved open ground with the sky over it, so the order is the paved
-#: types first and the yard last, and the record says which was laid.
+#: **What a court a block's own ranges enclose is made of.** `_court_type` answers "what
+#: is the open ground behind a row of houses", and for an urban role that is a `yard` --
+#: a working yard, which fences its own perimeter and stands barrels in it. That is
+#: right for the ground behind a row and wrong for a court four ranges already enclose:
+#: the enclosure is the buildings', and the yard's fence closes the space a second time,
+#: so `usable.court_accessible` rightly reads a court that is mostly fence as no longer
+#: open paved ground. A court is paved open ground with the sky over it, so the order is
+#: the paved types first and the yard last, and the record says which was laid.
 ENCLOSED_COURT_TYPES = ("plaza", "square", "garden", "yard")
 
 
@@ -1370,19 +1339,15 @@ def _grid_axis(band: np.ndarray, axis: int, total: int, street: int, block: int,
     the ground beyond it (a road, the next district's street) is the way in.
     Returns (runs, axial)."""
     # **A line is a street of this grid where the road covers it, and a road crossing it
-    # is not one.** The block design round, found by asking why every block of
-    # `lower_ring_north_2` had a road through its back range. `across = band.any(axis)`
-    # is True for a line the band *touches*, and a district with one road along it and
-    # two roads across it has every line touched: 65 of 65 here. `across.sum()` was then
-    # 65 against a bar of 15, the band was declared not-axial, and `_runs` laid the grid
-    # over the whole rectangle **ignoring the road entirely** -- so a block row ended
-    # two columns inside the carriageway, the back range of every block in the district
-    # was refused for the arterial, 19 lots were dropped and no court could be composed
-    # anywhere in the crowded ring. The question is not whether a line is touched but
-    # whether it is *covered*: a street running along this axis fills its own lines and
-    # puts a few columns in everyone else's. The width test the comment above earns
-    # stays, over the covered lines only, so a wide swathe of road is still an obstacle
-    # and not a street.
+    # is not one.** `band.any(axis)` is True for a line the band *touches*, and a
+    # district with one road along it and two roads across it has every line touched; the
+    # band then reads as not axial, and `_runs` lays the grid over the whole rectangle
+    # **ignoring the road entirely** -- a block row ends inside the carriageway, the back
+    # range of every block is refused for the arterial, its lots are dropped and no court
+    # can be composed. The question is not whether a line is touched but whether it is
+    # *covered*: a street running along this axis fills its own lines and puts a few
+    # columns in everyone else's. The width test the comment above earns stays, over the
+    # covered lines only, so a wide swathe of road is still an obstacle and not a street.
     cover = band.mean(axis=1 - axis) if band.size else np.zeros(total, dtype=float)
     across = cover >= AXIAL_SHARE
     axial = bool(across.any()) and int(across.sum()) <= AXIAL_DEPTH * street
@@ -1425,13 +1390,12 @@ def _feasible_core(cum, U: int, V: int, bar: float,
                    least_u: int, least_v: int) -> tuple | None:
     """**The part of a rectangle a grid can actually be laid over**, or None.
 
-        The neighbourhood delivery round. `_largest_free` answers "the largest rectangle
-        every column of which is feasible", which is the right question for a standing part
-        and the wrong one here: on `middle_ring_north_west`'s mesa the largest all-true
-        rectangle is **391 columns of the 3,227** that can carry a building, because the
-        feasible set is a scatter and not a shelf. A district's grid does not need every
-        column -- `GROUND_FOUNDED` is the share a *lot* is held to -- it needs a rectangle
-        most of which is buildable.
+        `_largest_free` answers "the largest rectangle every column of which is feasible",
+        which is the right question for a standing part and the wrong one here: on a mesa
+        the feasible set is a scatter and not a shelf, and the largest all-true rectangle
+        can be an eighth of the columns that can carry a building. A district's grid does
+        not need every column -- `GROUND_FOUNDED` is the share a *lot* is held to -- it
+        needs a rectangle most of which is buildable.
 
         Found by peeling: the border line (of the four) with the least feasible ground is
         dropped, and again, until the rectangle as a whole is over the bar or it has shrunk
@@ -1511,13 +1475,12 @@ DEPTH_GIVE = 4
 LOT_GROW_MAX = 10
 
 #: **When a district's grid is laid over its buildable core rather than its rectangle.**
-#: The neighbourhood delivery round. Two bars, both registered before the numbers that
-#: test them: * the rectangle has to be **mostly refused** -- a district that can build
+#: Two bars: * the rectangle has to be **mostly refused** -- a district that can build
 #: on most of itself keeps its whole rectangle, because moving a grid off a corner costs
 #: streets and frontage and buys nothing; * the core has to be **most of what is
 #: feasible** -- a mask that refuses half a district in a checkerboard has no core to
 #: move to, and shrinking the grid onto one patch of it would throw away the other half.
-#: `lower_ring_south_1` is 16% feasible and coring it took it from 9 lots to **15**. So
+#: A district a sixth feasible lays more lots on its core than across its rectangle, so
 #: the bar is "mostly refused" and not "not entirely buildable".
 GROUND_CORE_WHOLE = 0.5
 GROUND_CORE_LEAST = 0.45
@@ -1549,13 +1512,12 @@ ENTRY_RUN = 2
 #: prepares. See `pad_founded`.
 PAD_INSET = 2
 
-#: **How far a lot may be deepened to carry a height its own band asks for.** The
-#: neighbourhood delivery round. A density word says how much ground a house gets and a
-#: storey band says how tall the fabric is; where the lot the first resolves admits only
-#: the floor of the second, the two disagree by a column or two and the resolution is
-#: the type's own envelope. Four columns, because beyond that the lot is no longer the
-#: lot the density asked for and the honest answer is that this density does not carry
-#: that band.
+#: **How far a lot may be deepened to carry a height its own band asks for.** A density
+#: word says how much ground a house gets and a storey band says how tall the fabric is;
+#: where the lot the first resolves admits only the floor of the second, the two
+#: disagree by a column or two and the resolution is the type's own envelope. Four
+#: columns, because beyond that the lot is no longer the lot the density asked for and
+#: the honest answer is that this density does not carry that band.
 STOREY_DEPTH_REACH = 4
 
 #: A landmark's plot is at most this many of the density's lot sides across: a hall at
@@ -1608,23 +1570,20 @@ def compile_district(district: dict, part: dict, place: dict, decls: dict, *,
     # of it: the number the compiler works to and the number it is refused on are one
     # number.
     from .placeplan import RURAL_COVER
-    # **The farmland cover is the farmland's, here as well as in the validator.** The
-    # review's fourth finding reached this objective too, and it is the more damaging
-    # place for it: keyed on `role == "rural"`, a fishing village's district was scored
-    # against a 60% ground-cover target it had never been asked to meet, and the search
-    # therefore preferred a one-lot configuration that met it over a two-lot one that
-    # did not -- and the validator then refused the district for having too few houses.
-    # The compiler chose the arrangement its own validator rejects. Found by running the
-    # held-out village; the two now key on the same fact.
+    # **The farmland cover is the farmland's, here as well as in the validator.** Keyed
+    # on `role == "rural"`, a fishing village's district would be scored against a 60%
+    # ground-cover target it was never asked to meet, and the search would prefer a
+    # one-lot configuration that met it over a two-lot one that did not -- which the
+    # validator then refuses for having too few houses. The compiler would choose the
+    # arrangement its own validator rejects, so the two key on the same fact.
     want_ground = max(t["min_ground_columns"],
                       int(math.ceil(RURAL_COVER * t["usable_columns"]))
                       if spec_mod.land_use(part) == "farmland" else 0)
 
     def clauses(rec):
         """**The clauses the search chooses between, by name.** Returned as a dict because
-        this tuple has been mis-sliced once already at real cost (see the note in the
-        loop below), and because the composition round adds a clause *before* the count
-        -- which would have shifted every index the loop reads.
+        a positional tuple is easy to mis-slice (see the note in the loop below), and a
+        clause *before* the count would shift every index the loop reads.
         """
         plots = rec["plot_cover"] * rec["columns"]
         ground = rec["ground_cover"] * rec["columns"]
@@ -1774,11 +1733,10 @@ def compile_district(district: dict, part: dict, place: dict, decls: dict, *,
         # 4. the lot, **down**: a shallower lot, a column at a time, down to
         # `DEPTH_GIVE` under the density's own, where a deep block's middle becomes two
         # more rows and the district is still short of houses. **A depth the character
-        # named is not the compiler's to give away** -- lever 3 has said so since it was
-        # written and this said nothing, so under the craft round's count a district
-        # that asked for lots seventeen deep got fourteen and the record called it a
-        # raise. A lever gives back what the density suggested, never what the character
-        # declared.
+        # named is not the compiler's to give away**, as lever 3 already holds: otherwise
+        # a district that asked for lots seventeen deep gets fourteen and the record calls
+        # it a raise. A lever gives back what the density suggested, never what the
+        # character declared.
         if not ok_lots and not ch0.get("lot_depth"):
             deep = _lot_side(ch["density"])
             have = int(ch.get("lot_depth") or rec["lot"][1])
@@ -1894,11 +1852,10 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     form = (spec or {}).get("form")
     # **The fabric pool the capability record approved for this district**, written onto
     # it by `placesolve.solve_place`. None where no record reached the layout, which is
-    # every call that predates the record and every direct call from a test. **The
-    # demand this district resolved before it was sized** (the design round's first
-    # contract), where the layout wrote one: the approved type pool, the required
+    # every direct call from a test. **The demand this district resolved before it was
+    # sized**, where the layout wrote one: the approved type pool, the required
     # parameters and features, and the requirement ids that made them required. It is
-    # what the envelope questions below carry; a district with none behaves as it did.
+    # what the envelope questions below carry; a district with none skips them.
     dem = district.get("demand") or None
     houses = house_types(decls, role, form, approved=district.get("fabric_types"))
     areas = area_types(decls, role, form)
@@ -1947,13 +1904,13 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     # nothing, it lays no lots.
     want_lots = int(district.get("structures") or 0)
     # **A width the character declared is the width**, clamped into what the type admits
-    # and not raised by the cover lever -- the same rule a declared `lot_depth` has
-    # always had. Without it an inspection could ask for a narrower frontage and get a
-    # wider one, because the lever that makes a district cover its ground is the lever
-    # that widens the lot. **What the resolved demand says this district's fabric needs
-    # of a lot**, before a side is chosen (the design round's first contract). A refusal
-    # here is a refusal: nothing in the approved band delivers a feature the requirement
-    # made required, and a smaller lot is not an answer to that.
+    # and not raised by the cover lever -- the same rule a declared `lot_depth` has.
+    # Without it an inspection could ask for a narrower frontage and get a wider one,
+    # because the lever that makes a district cover its ground is the lever that widens
+    # the lot. **What the resolved demand says this district's fabric needs of a lot**,
+    # before a side is chosen. A refusal here is a refusal: nothing in the approved band
+    # delivers a feature the requirement made required, and a smaller lot is not an
+    # answer to that.
     dem_lot, lot_refused = _demand_lot(dem, district)
     declared_w = ch.get("lot_width")
     if declared_w:
@@ -2006,29 +1963,23 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         terraced = named_t + terrace_order([x for x in terraced if x not in named_t])
         pick = None
         # **The lot the character or the adopted arrangement asked for, exactly**, where
-        # the type admits it. The neighbourhood round's first seam defect: an adopted
-        # `lot_depth` reached `character_of` -- so the record said 6x6 -- and reached
-        # the plots only when it happened to stand at the width `_attached_lot` had
-        # already chosen, and when it did not, the depth was silently the other number
-        # and nothing said so. An adopted arrangement is either laid or refused by name.
+        # the type admits it. An adopted `lot_depth` reaches `character_of`, so the record
+        # says it; were it to reach the plots only when it happened to stand at the width
+        # `_attached_lot` chose, the depth would silently be some other number. An
+        # adopted arrangement is either laid or refused by name.
         want_lot = ((int(declared_w), int(ch["lot_depth"]))
                     if declared_w and ch.get("lot_depth") else None)
         want_area = (int(want_lot[0]) * int(want_lot[1])) if want_lot else None
-        # **...and the shape the density asked for, where nobody declared one.** The
-        # spatial design round, found by building the section and looking at its street.
+        # **...and the shape the density asked for, where nobody declared one.**
         # `placeplan.fabric` resolves a dense attached fabric to a **6x13** terrace and
-        # charges the ring's ground for one; this call passed `side` and an area and
-        # nothing else, so `_attached_lot` answered with the nearest lot to a hundred
-        # columns -- **10x9** -- and the compiler laid that. Two rules about one
-        # question, again: the arithmetic that says what a house costs and the compiler
-        # that lays it disagreed by four columns of frontage. What that looks like
-        # built, on this section's crowded ring: 82 row houses on 10-wide lots, each one
-        # **6 wide**, so every party wall stands four columns short of its neighbour and
-        # a street of terraces reads from the air as detached houses on lawns -- which
-        # is what the independent reader said of the round before this one, about the
-        # same street, for the same reason. A preference and not a demand: `shape` ranks
-        # the candidates and a type that cannot stand at that depth still gets the lot
-        # its own band admits.
+        # charges the ring's ground for one; given only `side` and an area,
+        # `_attached_lot` answers with the nearest lot to a hundred columns -- **10x9** --
+        # and the arithmetic that says what a house costs and the compiler that lays it
+        # disagree by four columns of frontage. Built, that is row houses **6 wide** on
+        # 10-wide lots: every party wall stands four columns short of its neighbour, and a
+        # street of terraces reads from the air as detached houses on lawns. A preference
+        # and not a demand: `shape` ranks the candidates and a type that cannot stand at
+        # that depth still gets the lot its own band admits.
         shape = None
         if want_lot is None:
             with contextlib.suppress(Exception):
@@ -2153,7 +2104,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     # **How far one lot may differ from the next**, in columns: the character's own
     # `variety` where it names one, and what the street is where it does not
     # (`VARIETY`). A terrace is meant to be regular and varies least; freestanding
-    # buildings a lane apart vary most. The craft round, E3.
+    # buildings a lane apart vary most.
     var = ch.get("variety")
     if var is None:
         var = VARIETY["attached" if attached else ("open" if open_front else "street")]
@@ -2296,18 +2247,15 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     # **Is a block built round its court?**.
     perimeter = bool(ch.get("perimeter"))
 
-    # --- the reservations, **before the ground is cut into blocks** --------------- The
-    # composition round's first change. The grid was cut from the fabric's own lot and
-    # block, the landmark was then given whichever block came nearest the middle, and
-    # its side was clamped to that block (`max(lo, min(hi, 17, block_w, block_d))`) --
-    # so a block narrower than the landmark's own floor produced a side the same block
-    # then refused, the leaf fell through to `kind = "row"`, and the ground the request
-    # required for a market became a row of houses with nothing recorded. Measured on a
-    # middle-ring sector laid one row deep: 19 houses, no market, `landmarks: 0`, and
-    # every check silent. So the reservation is sized first, and where the request
-    # **requires** it the block grid is sized to hold it rather than capping it. A
-    # landmark the character merely prefers is left exactly as it was: its block is what
-    # the fabric's own grid gives.
+    # --- the reservations, **before the ground is cut into blocks** -----------------
+    # Were the grid cut from the fabric's own lot and block first, the landmark given
+    # whichever block came nearest the middle and its side clamped to that block, a
+    # block narrower than the landmark's own floor would produce a side the same block
+    # then refuses: the leaf falls through to `kind = "row"`, and the ground the request
+    # required for a market becomes a row of houses with nothing recorded. So the
+    # reservation is sized first, and where the request **requires** it the block grid
+    # is sized to hold it rather than capping it. A landmark the character merely
+    # prefers is left as it is: its block is what the fabric's own grid gives.
     reserve = reservations_of(district, ch, decls, lot=(w, ld), side=side)
     demand_short: list = []
     reserve_drove = None
@@ -2360,19 +2308,17 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                     taken[u, v] = True
 
     # --- ...and the ground a building may actually be founded on ------------------
-    # **The third kind of unavailable ground.** The spatial-design round, and the
-    # review's first finding at the level it bites: this module's own docstring says it
-    # does not read terrain, `placeplan.developable_columns` now subtracts the ground
-    # `ethoslm.feasible` refuses so a district's *count* is honest, and the grid was still
-    # laid over the whole rectangle -- so the count was right and the lots were on the
-    # lake. The arterial's band and a standing part's clearance are ground this compiler
-    # has always known it may not build on; water and a grade the terrace cannot reach
-    # are the same kind of fact, and they go in the same predicate. `feasible.mask_of`
-    # answering None is **not** "all bad": a record with no bitmap is ground nobody
-    # measured, and treating it as refused would empty every district compiled without a
-    # volume, which is every fixture and every unit test. It is also not silently "all
-    # good" -- `ground["measured"]` is the flag that says which, and a district that
-    # carries a measured record gets the mask applied.
+    # **The third kind of unavailable ground.** `placeplan.developable_columns`
+    # subtracts the ground `ethoslm.feasible` refuses so a district's *count* is honest;
+    # a grid laid over the whole rectangle regardless would get the count right and put
+    # the lots on the lake. The arterial's band and a standing part's clearance are
+    # ground this compiler knows it may not build on; water and a grade the terrace
+    # cannot reach are the same kind of fact, and they go in the same predicate.
+    # `feasible.mask_of` answering None is **not** "all bad": a record with no bitmap is
+    # ground nobody measured, and treating it as refused would empty every district
+    # compiled without a volume, which is every fixture and every unit test. It is also
+    # not silently "all good" -- `ground["measured"]` is the flag that says which, and a
+    # district that carries a measured record gets the mask applied.
     ground_rec = district.get("ground") or {}
     #: The level this district's ground was designed at, carried onto every leaf so the
     #: builder sites a house on the terrace it was planned for rather than on a
@@ -2405,19 +2351,17 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         cum[1:, 1:] = np.cumsum(np.cumsum(ok.astype(np.int32), axis=0), axis=1)
 
         def founded(u0, u1, v0, v1) -> bool:           # noqa: F811 -- the measured case
-            # **...and the ground it is entered from.** The neighbourhood delivery
-            # round, found by building the block once the earthwork was bounded. The
-            # mask was asked about the lot and about nothing else, so a lot whose own
-            # columns are mostly prepared could be entered across a column the design
-            # had refused -- `middle_ring_north_east_b0_0_02` stood on a plinth at y=64
-            # and the lane at its doorstep was left at its own bed of y=60, three blocks
-            # below the plot's edge, and `E008` said the reserved doorway could not be
-            # walked into off its own threshold. The plot was right, the lane was right,
-            # and the seam between two correct decisions ran through the way in. A
-            # doorstep is one column outside the plot (`SKIRT`), which is where
-            # `circulate._threshold_for` reserves it and where `site()` lays the
-            # platform's ledge. Asking the mask over the lot *and its skirt* refuses the
-            # lot that cannot be reached instead of standing it and refusing its door.
+            # **...and the ground it is entered from.** Asked about the lot alone, the
+            # mask lets a lot whose own columns are mostly prepared be entered across a
+            # column the design refused: the plot stands on a plinth, the lane at its
+            # doorstep is left at its own bed a few blocks below the plot's edge, and
+            # `E008` says the reserved doorway cannot be walked into off its own
+            # threshold. The plot is right, the lane is right, and the seam between two
+            # correct decisions runs through the way in. A doorstep is one column outside
+            # the plot (`SKIRT`), which is where `circulate._threshold_for` reserves it
+            # and where `site()` lays the platform's ledge. Asking the mask over the lot
+            # *and its skirt* refuses the lot that cannot be reached instead of standing
+            # it and refusing its door.
             # **Two questions, not one bigger rectangle.** Asking the share over the lot
             # *and* its skirt as a single rectangle makes the test weaker, not stronger:
             # a 13x13 lot 49% of which the design refuses passes at 15x15 if the ring
@@ -2437,15 +2381,13 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         def pad_founded(u0, u1, v0, v1, need=None) -> bool:  # noqa: F811 -- measured
             """**Is the ground this building will stand on ground the design prepares?**
 
-            The block design round, found by building the section: `middle_ring_north_east
-            _b0_1_01` is a `court_large` on a 13x13 lot whose ground runs y=64..73. The
-            mask refuses those columns -- a nine-block cut is past
-            `placeplan.DISTRICT_TERRACE_REACH` -- but they are a minority of the lot, so
-            `founded`'s two share tests admitted it; `site()` then cut the flattest pad it
-            could out of broken ground, handed the type **7x7**, and `court_large` refused
-            it by name ("four ranges of 3 round a court of 3 need 9 on each axis"). What
-            stood was a platform and an approach with nothing on them: `E010`, eight
-            blocks held up by nothing.
+            Where the mask refuses a minority of a lot's columns -- a cut past
+            `placeplan.DISTRICT_TERRACE_REACH`, say -- `founded`'s two share tests admit
+            it; `site()` then cuts the flattest pad it can out of broken ground, hands the
+            type a pad under its floor, and the type refuses it by name (`court_large`:
+            "four ranges of 3 round a court of 3 need 9 on each axis"). What stands is a
+            platform and an approach with nothing on them: `E010`, blocks held up by
+            nothing.
 
             A share is the right test for "is this lot mostly buildable" and the wrong one
             for "can this building be built". A pad is the rectangle `site()` insets out of
@@ -2530,13 +2472,13 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 return True
             along_v = front in (fr.front(True), fr.front(False))
             run = 0
-            # **the arterial is a street a door may open onto.** The quarter design
-            # round: a road cell is not in the ground mask (the road owns it), so a lot
-            # fronting the gate street -- the one street every visitor arrives on -- was
-            # refused its way in, and the end range of the court block beside it with
-            # it. A doorstep on the carriageway's edge is a doorstep on a prepared
-            # street. ...**and so is the road just outside the district**, where a lot
-            # stands at the district's own edge against the arterial that bounds it.
+            # **the arterial is a street a door may open onto.** A road cell is not in
+            # the ground mask (the road owns it), so without this a lot fronting the gate
+            # street -- the one street every visitor arrives on -- is refused its way in,
+            # and the end range of the court block beside it with it. A doorstep on the
+            # carriageway's edge is a doorstep on a prepared street. ...**and so is the
+            # road just outside the district**, where a lot stands at the district's own
+            # edge against the arterial that bounds it.
             def _on_road(u, v) -> bool:
                 # the doorstep on the road, or on the verge between this district's
                 # frame and the road (`ROAD_VERGE` columns): the lane that joins them is
@@ -2572,8 +2514,8 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         """Which of the four unavailable grounds refused this rectangle. Asked in the
         order a reader cares about: the road, then a standing part, then the terrain,
         and last the **way in** -- a lot whose own ground the design prepares and whose
-        street face it does not is a different finding with a different repair, and the
-        block design round separates them."""
+        street face it does not is a different finding with a different repair, so the
+        two are kept apart."""
         if band[u0:u1 + 1, v0:v1 + 1].any():
             return "arterial"
         if taken[u0:u1 + 1, v0:v1 + 1].any():
@@ -2591,17 +2533,17 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         ledger[u0:u1 + 1, v0:v1 + 1] = L[what]
 
     # --- the site: one compatible pad, door and landing, chosen here -----------------
-    # **A pad somewhere and an entrance somewhere are not a compatible pair.** The
-    # quarter design round, and the block design audit's second cause. `pad_founded` and
-    # `entrance_ok` answered "is there one" and returned a boolean; `Builder._site_pad`,
-    # `circulate._approach_candidates`, `_threshold_for` and `_door_cell` then chose the
-    # pad, the landing and the door again, each by its own rule. `site_solve` chooses
-    # them **once**, on the prepared-ground mask the two predicates read, with the pad
-    # inset by the one definition the builder uses (`buildlib.pad_insets`), and the leaf
-    # carries the answer as `site`. Every consumer downstream reads it verbatim. Written
-    # only where the district's ground decision has a level (`_design_level`): a site's
-    # floor is that level, and a plan with no measured ground (every fixture) has no
-    # floor to carry, so it keeps the old path unchanged.
+    # **A pad somewhere and an entrance somewhere are not a compatible pair.**
+    # `pad_founded` and `entrance_ok` answer "is there one" and return a boolean; left
+    # to `Builder._site_pad`, `circulate._approach_candidates`, `_threshold_for` and
+    # `_door_cell`, the pad, the landing and the door would each be chosen again by its
+    # own rule. `site_solve` chooses them **once**, on the prepared-ground mask the two
+    # predicates read, with the pad inset by the one definition the builder uses
+    # (`buildlib.pad_insets`), and the leaf carries the answer as `site`. Every consumer
+    # downstream reads it verbatim. Written only where the district's ground decision
+    # has a level (`_design_level`): a site's floor is that level, and a plan with no
+    # measured ground (every fixture) has no floor to carry, so its leaves carry no
+    # `site` and the consumers choose for themselves.
     _mask_ok = ok if gmask is not None else None
     #: lots refused after they were drawn, by the ground they were refused on
     sites_refused = {"pad": 0, "entrance": 0, "storeys": 0}
@@ -2649,9 +2591,9 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         sides = [s for s in sides if s in _OUT and s not in att]
         if not sides:
             return None, "entrance"
-        # **a lot composed on its street may stand one column off it** (the fabric reset
-        # round): `inset` is the leaf's own where it carries one (`p["inset"]`), and the
-        # library's `PAD_SITE_INSET` otherwise
+        # **a lot composed on its street may stand one column off it**: `inset` is the
+        # leaf's own where it carries one (`p["inset"]`), and the library's
+        # `PAD_SITE_INSET` otherwise
         ix0, iz0, ix1, iz1 = (site_pad_rect(int(x0), int(z0), int(x1), int(z1), att)
                               if inset is None else
                               site_pad_rect(int(x0), int(z0), int(x1), int(z1), att,
@@ -2874,10 +2816,10 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     # remainder: what is left at the end of a run is a verge
     cols, axial_u = _grid_axis(sub_band, 0, u_hi - u_lo + 1, street, block, w, lead=lead,
                                widen=not attached and not ceiling_binds)
-    # **A perimeter block is entered on all four faces**, the quarter design round: laid
-    # against the district's back edge, its back range fronted ground no street reaches
-    # and `entrance_ok` refused every lot of it, so no composition could close on a
-    # district whose blocks are one row deep. Its rows end with a street as well.
+    # **A perimeter block is entered on all four faces**: laid against the district's
+    # back edge, its back range would front ground no street reaches and `entrance_ok`
+    # would refuse every lot of it, so no composition could close on a district whose
+    # blocks are one row deep. Its rows end with a street as well.
     rows, axial_v = _grid_axis(sub_band, 1, v_hi - v_lo + 1, street, bd, ld, lead=lead,
                                trail=perimeter)
     if core:
@@ -2895,11 +2837,11 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         blocks = [(0, 0)]
         n_blocks = 1
     # the free block nearest the district's middle takes the landmark -- **or nearest
-    # the point the quarter is entered from**, where the parent names one. The quarter
-    # design round: the traders' market was put on the grid's middle block, seventy
-    # columns from the gate the whole quarter is entered through, and nothing asked that
-    # a market meet the street its visitors arrive on. `access` is the ring's gate
-    # (`stages_plan._negotiate_sectors`), in world columns.
+    # the point the quarter is entered from**, where the parent names one. A market on
+    # the grid's middle block can stand far from the gate the whole quarter is entered
+    # through, and nothing else asks that a market meet the street its visitors arrive
+    # on. `access` is the ring's gate (`stages_plan._negotiate_sectors`), in world
+    # columns.
     cu, cv = (fr.U - 1) / 2.0, (fr.V - 1) / 2.0
     _acc = district.get("access")
     if _acc:
@@ -2911,13 +2853,13 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                                            ij))
 
     def _landmark_u(u0_, u1_, s_) -> int:
-        """Where along its block a landmark of side `s_` stands: centred, as it always
-        was -- **or at the end nearest the quarter's access**, where the parent names
-        one. The quarter design round: centred on a 48-column block, a 17-column market
-        left fifteen columns either side, too few for a lot, so the market's own block
-        held no house and "a market among houses" stood alone on its frontage. At the
-        end nearest the gate it meets the gate street and the rest of the block is one
-        run of frontage its houses can stand on."""
+        """Where along its block a landmark of side `s_` stands: centred -- **or at the
+        end nearest the quarter's access**, where the parent names one. Centred on a
+        48-column block, a 17-column market leaves fifteen columns either side, too few
+        for a lot, so the market's own block holds no house and "a market among houses"
+        stands alone on its frontage. At the end nearest the gate it meets the gate
+        street and the rest of the block is one run of frontage its houses can stand
+        on."""
         if not _acc:
             return u0_ + ((u1_ - u0_ + 1) - s_) // 2
         # one lot in from that end where the block has room for a lot either side, so
@@ -2962,11 +2904,9 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     n_open = int(round(float(ch.get("open_share") or 0.0) * n_blocks))
     court_share = float(ch.get("courtyard_share") or 0.0)
     n_court = int(round(court_share * n_blocks))
-    # **A form that owes a court lays one.** The neighbourhood delivery round, and the
-    # audit's fourth cause. `demand.court_obligation` publishes the obligation off this
-    # same share, so a district at 0.05 over eight blocks *owes* a court and
-    # `round(0.4)` laid **none** -- which is the whole of "the crowded ring has no
-    # court" on the delivered candidate, and no amount of re-ranking arrangements or
+    # **A form that owes a court lays one.** `demand.court_obligation` publishes the
+    # obligation off this same share, so a district at 0.05 over eight blocks *owes* a
+    # court and `round(0.4)` lays **none**, and no amount of re-ranking arrangements or
     # widening the housing pool reaches it. A share is a proportion of a fabric, not a
     # permission to round the obligation away: where the share is positive and the
     # district has a block to spend, at least one block is a court block.
@@ -2991,27 +2931,26 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         kind_of.setdefault(b, "row")
 
     # --- the quarter's principal street ----------------------------------------------
-    # **Where the work of a quarter stands.** The neighbourhood round replaced
-    # `PROGRAMME_USE_SHARE` -- a tenth of every district's lots, everywhere -- with a
-    # spatial decision this district's own plan already contains: a trade belongs on the
-    # street its market is on. So the principal street is the one the **anchor** fronts:
-    # the block the reservation was given, and the block across the street from it.
-    # Where nothing anchors this district it is the middle block of its own grid, which
-    # is the block the landmark rule would have picked and the nearest thing to a main
-    # street a bare grid has. **A street and not a block**, and both sides of it: the
-    # low-v faces of the blocks in the anchor's own row and the high-v faces of the row
-    # before it. A street is a length of frontage, which is what the trade on it is a
-    # count of. The remaining rows are the quarter's houses, so the scale of the claim
-    # is one street of this district's own grid: a half of a two-row sector, a third of
-    # a three-row one, and the share is whatever those faces actually held. **A district
-    # of one street has no principal street**, and that restriction is load bearing. On
-    # a 200x17 band the grid cuts one block row, so the one street is the only street --
-    # and a rule that gives the quarter's work the principal street gave it *every lot
-    # the district has*: measured on the round's own thin fixture, three buildings, all
-    # of them shops, in a quarter whose fabric is homes. A principal street is principal
-    # relative to the back streets behind it; where there are none, the work stands on
-    # whatever lots the quarter's own grain admits it on and the record says why it got
-    # no street of its own.
+    # **Where the work of a quarter stands.** Not a share of every district's lots
+    # (`PROGRAMME_USE_SHARE`, retired) but a spatial decision this district's own plan
+    # already contains: a trade belongs on the street its market is on. So the principal
+    # street is the one the **anchor** fronts: the block the reservation was given, and
+    # the block across the street from it. Where nothing anchors this district it is the
+    # middle block of its own grid, which is the block the landmark rule would have
+    # picked and the nearest thing to a main street a bare grid has. **A street and not
+    # a block**, and both sides of it: the low-v faces of the blocks in the anchor's own
+    # row and the high-v faces of the row before it. A street is a length of frontage,
+    # which is what the trade on it is a count of. The remaining rows are the quarter's
+    # houses, so the scale of the claim is one street of this district's own grid: a
+    # half of a two-row sector, a third of a three-row one, and the share is whatever
+    # those faces actually held. **A district of one street has no principal street**,
+    # and that restriction is load bearing. On a 200x17 band the grid cuts one block
+    # row, so the one street is the only street -- and a rule that gives the quarter's
+    # work the principal street would give it *every lot the district has*: three
+    # buildings, all of them shops, in a quarter whose fabric is homes. A principal
+    # street is principal relative to the back streets behind it; where there are none,
+    # the work stands on whatever lots the quarter's own grain admits it on and the
+    # record says why it got no street of its own.
     lm_block = next((ij for ij, k in kind_of.items() if k == "landmark"), None)
     principal_j = (int(lm_block[1]) if lm_block is not None
                    else (len(rows) // 2 if rows else None))
@@ -3055,8 +2994,8 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     n_leaf = [0]
     #: The shape of every house, street face by street face, in the order it was laid:
     #: the type, the width, the depth and the storeys, which is what a person walking
-    #: down the street sees of it. The craft round, E3, and the two numbers the phase
-    #: registers are read off this.
+    #: down the street sees of it. `SHAPES_PER_HUNDRED` and `IDENTICAL_RUN_MAX` are read
+    #: off this.
     faces: list = []
     #: What the district still owes the voice's second wall material, in buildings.
     alt_debt = [0.0]
@@ -3087,17 +3026,16 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         compositions that have not been laid."""
         return int(want_lots) - int(reserved[0]) - int(counts["lots"])
 
-    #: **How many of a lot's flanks the next building stands against.** The
-    #: neighbourhood delivery round. `Builder._insets` drops the pad's inset on an
-    #: attached side, so a 6x13 plot with two party walls hands `build()` a 6x9 pad and
-    #: the same plot standing free hands it 4x11 -- and `row_house`'s own declaration
-    #: (`STOREY_PAD[2] = (5, 9)`, in **pad** columns) admits a second storey on the
-    #: first and refuses it on the second. The envelope has to be asked the question the
-    #: lot is actually in, and the two ends of a terrace are a different question from
-    #: its middle: they have one free flank each. A fabric's *intended* configuration is
-    #: what a lot is drawn under -- a terrace is drawn expecting both neighbours -- and
-    #: the leaf's own count is settled below, after the drops, when the neighbours are
-    #: known (`settle_storeys`).
+    #: **How many of a lot's flanks the next building stands against.** `Builder._insets`
+    #: drops the pad's inset on an attached side, so a 6x13 plot with two party walls
+    #: hands `build()` a 6x9 pad and the same plot standing free hands it 4x11 -- and
+    #: `row_house`'s own declaration (`STOREY_PAD[2] = (5, 9)`, in **pad** columns)
+    #: admits a second storey on the first and refuses it on the second. The envelope has
+    #: to be asked the question the lot is actually in, and the two ends of a terrace are
+    #: a different question from its middle: they have one free flank each. A fabric's
+    #: *intended* configuration is what a lot is drawn under -- a terrace is drawn
+    #: expecting both neighbours -- and the leaf's own count is settled below, after the
+    #: drops, when the neighbours are known (`settle_storeys`).
     _FABRIC_FLANKS = 2 if attached else 0
 
     def _keeps_storeys(tname, decl, w_cols, deep, shallow) -> bool:
@@ -3524,20 +3462,18 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     def lots_along(u0, u1, v0, v1, front, i, j, r, plots, depth=None):
         """A row of lots along one street face of a block, in [u0, u1] x [v0, v1].
 
-                **A street is a rhythm and not a comb**, the craft round (E3). The run used to
-                be divided evenly, so every lot was one width, every building the same type and
-                every roof the same height -- twenty-one cottages on identical pads. Each lot
-                now draws its own width and its own depth inside the band the character sets
+                **A street is a rhythm and not a comb.** A run divided evenly makes every lot
+                one width, every building the same type and every roof the same height. Each
+                lot draws its own width and its own depth inside the band the character sets
                 (`spread`), and its own type from everything the role admits at that size; the
                 widths still tile the run exactly, because the last lot takes what is left.
 
-                **...and a street of another use has the grain of that use**, the neighbourhood
-                round. The face that fronts the quarter's principal street is drawn from the work
-                this district's design names (`_principal_face`), and a shop is not a courtyard
-                house: it stands on its own lot inside its own envelope. Measured on the retained
-                city, and the reason this exists at all -- the middle ring's lot is 13x13 and
-                `shop_house`'s sweep found 13 broken, so a shop street held at the quarter's own
-                lot came back with **no shops at all** and nothing said why.
+                **...and a street of another use has the grain of that use.** The face that
+                fronts the quarter's principal street is drawn from the work this district's
+                design names (`_principal_face`), and a shop is not a courtyard house: it
+                stands on its own lot inside its own envelope. Held at the quarter's own lot
+                -- a 13x13, say, which `shop_house`'s sweep finds broken -- a shop street
+                comes back with **no shops at all** and nothing says why.
 
         """
         if budget_left() <= 0:
@@ -3552,14 +3488,13 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
             face_decl = street_decl
             if depth is None:
                 # **The principal street's depth is the street type's, unless that costs
-                # the quarter's own house a storey it admits.** The neighbourhood
-                # delivery round, found by the registered rhythm bar. The work a quarter
-                # is for stands on its main street and is sized for its own type, and
-                # narrowing the whole face to that depth took the row house from 13 deep
-                # to 12 -- which is exactly the column between two storeys and one, so
-                # the main street of the quarter came out at a single height while the
-                # back streets had two. Where the street type stands at the deeper lot
-                # as well, the face keeps it and both uses get what they admit.
+                # the quarter's own house a storey it admits.** The work a quarter is for
+                # stands on its main street and is sized for its own type, and narrowing
+                # the whole face to that depth can take the row house from 13 deep to 12
+                # -- exactly the column between two storeys and one -- so the main street
+                # comes out at a single height while the back streets have two. Where the
+                # street type stands at the deeper lot as well, the face keeps it and both
+                # uses get what they admit.
                 keep = (_keeps_storeys(house_name, house, w, dd0, min(dd0, td))
                         and stands(face_decl, lw, dd0))
                 dd0 = dd0 if keep else min(dd0, td)
@@ -3646,10 +3581,9 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
             if others and (counts["lots"] % OTHER_EVERY) == OTHER_EVERY - 1:
                 pool = [(n2, d2) for n2, d2 in others if stands(d2, ww, dd)] \
                     or [(house_name, house)]
-            # **...and the quarter's own work, on the street it belongs on.** This was
-            # `PROGRAMME_USE_SHARE` of the district's lots, spread evenly, and the
-            # neighbourhood round's brief says why that had to go: a fixed tenth is a
-            # universal quota, and a quota is not a programme. What a quarter's
+            # **...and the quarter's own work, on the street it belongs on.** Not a fixed
+            # share of the district's lots spread evenly (`PROGRAMME_USE_SHARE`): that is
+            # a universal quota, and a quota is not a programme. What a quarter's
             # programme actually says is *what* its work is and *where* it goes -- and
             # where trade goes is the street its market is on. So the faces that front
             # the principal street (`_principal_face`) are drawn from the work this
@@ -3692,13 +3626,11 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 if not stands(decl, ww, dd) or not free(ua, ub, va, vb,
                                                        front=_entry_side):
                     continue
-            # **and the ground can carry the pad this type needs.** The block design
-            # round, found by building the section: `middle_ring_north_east_b0_1_01` is
-            # a `court_large` on a 13x13 lot whose ground runs y=64..73, `founded`'s
-            # share tests admitted it, `site()` cut the flattest 7x7 it could out of the
-            # broken half and the type refused it by name -- leaving a platform and an
-            # approach with nothing on them (`E010`, eight blocks held up by nothing).
-            # The lot is admitted for the type and the *ground* is admitted for its pad.
+            # **and the ground can carry the pad this type needs.** A lot can pass
+            # `founded`'s share tests while `site()` can cut only a pad under the type's
+            # floor out of its broken part, and the type refuses it by name -- leaving a
+            # platform and an approach with nothing on them (`E010`). The lot is admitted
+            # for the type and the *ground* is admitted for its pad.
             if _design_level is not None:
                 # **the pad and the way in this lot will be built with**, chosen once
                 # (`site_solve`) under the attachment the fabric intends; the leaf's own
@@ -3742,11 +3674,11 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                          int((got_leaf.get("params") or {}).get("storeys", 1))))
             mark(ua, ub, va, vb, "lot")
             counts["lots"] += 1
-        # **The second stone, at the share the library registers, by the street.** The
-        # craft round, E3: `TypeBuilder` decides one part at a time off a hash and a
-        # street is a distribution, so the compiler -- which can see the whole face --
-        # says which lots are faced in the voice's `wall_alt` and spreads them evenly,
-        # because a quarter of a street clumped at one end is not a quarter of a street.
+        # **The second stone, at the share the library registers, by the street.**
+        # `TypeBuilder` decides one part at a time off a hash and a street is a
+        # distribution, so the compiler -- which can see the whole face -- says which
+        # lots are faced in the voice's `wall_alt` and spreads them evenly, because a
+        # quarter of a street clumped at one end is not a quarter of a street.
         if row:
             # the share is the **district's** and not the face's: a face of three lots
             # rounded on its own gives one, which is a third, and every face in the
@@ -3815,11 +3747,10 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         """**A row of lots along one *cross* street of a block**: the run goes across the
                 district's grain (along v) and the lots are `ld` deep into the block (along u).
 
-                The neighbourhood round's `perimeter` arrangement needs this and nothing in this
-                compiler has ever had it -- every lot ever laid here fronts one of the two long
-                faces of its block, so the short faces of every block in every district this
-                project has built are blank ground and the cross streets have nothing standing on
-                them. A perimeter block is four faces and a court, and these are the other two.
+                The `perimeter` arrangement needs this: every lot `lots_along` lays fronts one
+                of the two long faces of its block, which leaves the short faces blank ground
+                and the cross streets with nothing standing on them. A perimeter block is four
+                faces and a court, and these are the other two.
 
                 Deliberately the plain version of `lots_along`: an even division of the run, no
                 `spread`, and **detached whatever the district is**, because a party wall is a
@@ -3930,8 +3861,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     COURT_LEAST = 5
 
     #: **How much of a court's face has to carry building for the face to be there.**
-    #: The block design round, after an independent reader measured the delivered pair:
-    #: the gap test alone -- "no unbroken run of uncovered columns wider than the
+    #: The gap test alone -- "no unbroken run of uncovered columns wider than the
     #: fabric's own clearance" -- passes an eight-column face with two columns covered,
     #: in the pattern `..X...X.`. A hole test is the right question about a passage and
     #: the wrong one about a wall. Half, because a court whose faces are half building
@@ -3962,27 +3892,24 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         """
         V, U = v1 - v0 + 1, u1 - u0 + 1
         # **...and a range round a court still has to carry the height its band asks
-        # for.** The neighbourhood delivery round, found by the rhythm bar: this branch
-        # takes depth out of the ranges to make room for the court, and taking one
-        # column too many takes the second storey off every house in the range -- which
-        # on a terrace of one width is the whole of its variation. `row_house` on a
-        # 6-wide attached lot admits 2 storeys at 13 deep and 1 at 12, so a court that
-        # costs its ranges that column costs the street its skyline. The depth is chosen
-        # as the deepest the block leaves room for **that keeps what `ld` admits**, and
-        # only where no such depth exists does it take what stands.
+        # for.** This branch takes depth out of the ranges to make room for the court,
+        # and taking one column too many takes the second storey off every house in the
+        # range -- which on a terrace of one width is the whole of its variation.
+        # `row_house` on a 6-wide attached lot admits 2 storeys at 13 deep and 1 at 12, so
+        # a court that costs its ranges that column costs the street its skyline. The
+        # depth is chosen as the deepest the block leaves room for **that keeps what `ld`
+        # admits**, and only where no such depth exists does it take what stands.
         _band = _storeys_band(house, ch)
         _fl = 2 if attached else 0
 
         def _admits_here(d2) -> bool:
-            # **The emitter's own test, and not a weaker one.** The block design round,
-            # found by composing this city's first court block: this asked `_admits` in
-            # the both-flanks-attached configuration only, and `lots_along` asks
+            # **The emitter's own test, and not a weaker one.** `lots_along` asks
             # `stands()` -- every configuration a party wall can be in, because the two
-            # ends of a terrace have a free flank whatever the fabric intended. So a
-            # 6x13/6x5 pair was chosen here (5 deep is admitted between two party walls)
-            # and the back range then laid **no lot at all** (6x5 standing free insets
-            # to 4x3, which `row_house` refuses). The composition came out four ranges
-            # on paper, one range in the world, and was rolled back.
+            # ends of a terrace have a free flank whatever the fabric intended. Asking
+            # `_admits` in the both-flanks-attached configuration only would choose a
+            # 6x13/6x5 pair (5 deep is admitted between two party walls) whose back
+            # range then lays **no lot at all** (6x5 standing free insets to 4x3, which
+            # `row_house` refuses): four ranges on paper, one in the world.
             return stands(house, w, d2)
 
         def _heights(d2):
@@ -4005,27 +3932,23 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
             return int(d2) if d2 >= 3 else 0
 
         # **The two ranges round a court need not be the same depth**, and on most
-        # blocks they cannot both be the depth that carries a stair. The neighbourhood
-        # delivery round: this block is 36 columns deep, two 13-deep ranges and their
-        # clearances take 32 and leave 4 for the court, which is under the least a court
-        # may measure; two 12-deep ranges leave 6 and take the second storey off **every
-        # house of both ranges**, which is a street at one height and the run of
-        # identical neighbours the rhythm bar refuses. One range at 13 and one at 12
-        # leaves 5, which is a court, and gives the block two heights. A court block
-        # whose two ranges differ in depth is the ordinary urban block and not a
-        # compromise. So the pair is searched, best first: most ranges keeping the
-        # height their band admits, then deepest, then most room left for the court.
-        # **...and the band between them has to hold the end ranges too.** The block
-        # design round, found by composing this city's first court block. The pair was
-        # chosen for the court's own least measure (`COURT_LEAST`, 5) and the end ranges
-        # were then drawn across that band by `lots_across`, which needs a run of at
-        # least one lot's **width** -- 6 here. On a 29-deep block the deepest admissible
-        # pair leaves 5, `lots_across` computed `k = (5 + 3) // (6 + 3) = 0` and
-        # returned before laying anything, so the composition came out as a street
-        # range, a back range and a court open at both ends: `perimeter_open`, every
-        # time, on every block of this city. Two ranges of eight leave seven, which
-        # holds a cross lot and closes the court. So the floor for the band is what the
-        # block is actually going to put in it.
+        # blocks they cannot both be the depth that carries a stair. On a block 36
+        # columns deep, two 13-deep ranges and their clearances take 32 and leave 4 for
+        # the court, which is under the least a court may measure; two 12-deep ranges
+        # leave 6 and take the second storey off **every house of both ranges**, which
+        # is a street at one height and the run of identical neighbours the rhythm bar
+        # refuses. One range at 13 and one at 12 leaves 5, which is a court, and gives
+        # the block two heights. A court block whose two ranges differ in depth is the
+        # ordinary urban block and not a compromise. So the pair is searched, best first:
+        # most ranges keeping the height their band admits, then deepest, then most room
+        # left for the court. **...and the band between them has to hold the end ranges
+        # too.** The end ranges are drawn across that band by `lots_across`, which needs
+        # a run of at least one lot's **width**; a pair chosen for the court's own least
+        # measure alone (`COURT_LEAST`, 5) can leave less. On a 29-deep block of 6-wide
+        # lots the deepest admissible pair leaves 5, `k = (5 + 3) // (6 + 3) = 0`, and
+        # the court comes out open at both ends (`perimeter_open`). Two ranges of eight
+        # leave seven, which holds a cross lot and closes the court. So the floor for the
+        # band is what the block is actually going to put in it.
         lo_c, hi_c, _ex_c = _plot_range(house)
         cross_wid = max(int(lo_c), min(int(hi_c), int(w)))
         cd_want = deepest((U - 2 * LOT_GAP - COURT_LEAST) // 2)
@@ -4065,14 +3988,12 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 the geometry and no field of the plan). An archway a third along a street front
                 is the ordinary place for one and leaves the enclosure whole.
 
-                **...and it has to be opposite the court.** The block design round, found by an
-                independent reader of the delivered block: on a 40-column block whose end ranges
-                are 13 deep the court runs from `u0+16` to `u0+23`, and a third of the way along
-                the *block* is `u0+11` -- so the passage was cut through the front range opposite
-                the **end range**, and neither of the two delivered passages shared a single
-                column with the court it was recorded as the way into. A passage that does not
-                open onto the court is a gap in a street front. `cu0`/`cu1` are the court's own
-                run and the passage is searched inside it.
+                **...and it has to be opposite the court.** On a 40-column block whose end
+                ranges are 13 deep the court runs from `u0+16` to `u0+23`, and a third of the
+                way along the *block* is `u0+11` -- a passage through the front range opposite
+                the **end range**, sharing no column with the court it is the way into. A
+                passage that does not open onto the court is a gap in a street front.
+                `cu0`/`cu1` are the court's own run and the passage is searched inside it.
 
                 Lifted out of `compose_court_block` so the reservation pass and the emission
                 answer the same question about the same block: a need computed against one
@@ -4099,18 +4020,17 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     def court_need(u0, u1, v0, v1, side_least, rd, rd_b, cd) -> dict:
         """**What this composition will cost its district, before any of it is laid.**
 
-                The block design round. A court block's four ranges are its children, and a
-                composition is adopted -- or refused -- as a whole: this is the number of houses
-                the district has to be able to afford for the court between them to be enclosed
-                at all. `{"lots", "ranges": {...}, "entry": (ea, eb) | None}`.
+                A court block's four ranges are its children, and a composition is adopted --
+                or refused -- as a whole: this is the number of houses the district has to be
+                able to afford for the court between them to be enclosed at all.
+                `{"lots", "ranges": {...}, "entry": (ea, eb) | None}`.
 
                 **It counts lots this block can actually carry**, and that is the half that
                 makes it a reservation rather than an estimate. A run divided by a lot and a
-                clearance says how many lots would fit on empty level ground; the back face of
-                `lower_ring_north_2`'s first block is under the arterial road, and a composition
-                reserved on the arithmetic laid its street range, found no ground for its back
-                range and was rolled back -- having taught the district nothing except that the
-                block before it should have had the houses. So each face is walked here with
+                clearance says how many lots would fit on empty level ground; where a block's
+                back face is under the arterial road, a composition reserved on the arithmetic
+                lays its street range, finds no ground for its back range and is rolled back,
+                and the houses it held go unspent. So each face is walked here with
                 `free()`, the same predicate the emitter uses, under the same front: a face with
                 no room is zero, and a composition with a zero face is not reserved at all.
 
@@ -4267,25 +4187,22 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         # reader is never told a court is enclosed, or entered, because an arrangement
         # said `perimeter`. ...and a court closed on two sides is not closed: `cd` is 0
         # where the block had no width for its end ranges, which is a close and says so.
-        # **Asked of the geometry, and not of the bookkeeping.** The delivery round:
-        # counting four non-empty ranges says four ranges were laid, which is not the
-        # same sentence as "this court has a building on each of its four sides". A face
-        # whose lots were drawn short of the court's own centre line, or whose last lot
-        # was dropped, leaves a court open at the one place a reader looks. So the claim
-        # is made the way `test_neighbourhood_spatial.p6` measures it: for each court
-        # tile, is there a plot of this block within reach on each of its four sides,
-        # covering the tile's own centre.
+        # **Asked of the geometry, and not of the bookkeeping.** Counting four non-empty
+        # ranges says four ranges were laid, which is not the same sentence as "this
+        # court has a building on each of its four sides". A face whose lots were drawn
+        # short of the court's own centre line, or whose last lot was dropped, leaves a
+        # court open at the one place a reader looks, so the claim is read off the
+        # court's own geometry (below).
         laid = [q for q in plots[_mine0:] if q.get("kind", "plot") == "plot"]
         courts_here = [q for q in plots[_mine0:]
                        if q.get("kind") == "area" and str(q.get("name", "")).startswith(
                            f"pc{i}_{j}")]
         reach = int(rd) + 2 * LOT_GAP + 1
 
-        # **Enclosure is a property of the court, and it is measured as a gap.** The
-        # block design round. The delivery round asked, of each court *tile*, whether a
-        # plot covered the tile's own centre on each of its four sides -- and a court
-        # laid as several tiles along its length then failed at the tiles the end ranges
-        # do not reach, so a court enclosed by four ranges could report
+        # **Enclosure is a property of the court, and it is measured as a gap.** Asked of
+        # each court *tile* -- does a plot cover the tile's own centre on each of its four
+        # sides -- a court laid as several tiles along its length fails at the tiles the
+        # end ranges do not reach, so a court enclosed by four ranges could report
         # `courts_enclosed: 0` and a court open on a whole face could report one tile
         # shut. Neither sentence is about the place. What makes a court a court is that
         # **a person standing in it has building on every side**: so the court's own
@@ -4369,10 +4286,9 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 # **how far out the mass of a range actually starts**, which is the
                 # clearance this fabric leaves between the court's paving and a lot
                 # (`LOT_GAP`) plus the inset `site()` leaves round a pad (`PAD_INSET`).
-                # The delivery round's `reach` was the range's whole depth plus its
-                # clearances -- thirteen columns, wider than the court is deep -- and an
-                # independent reader was right that "buildings on all four sides"
-                # measured at that distance is a weaker sentence than it sounds.
+                # The range's whole depth plus its clearances (`range_reach`) is wider
+                # than the court is deep, and "buildings on all four sides" measured at
+                # that distance is a weaker sentence than it sounds.
                 "reach": int(LOT_GAP + PAD_INSET + 1),
                 "range_reach": int(reach),
                 "cover_bar": COURT_FACE_COVER,
@@ -4505,23 +4421,22 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         #: how many compositions this district owes: every block where the arrangement
         #: is `perimeter`, else the share its form asks for
         want_courts = int(n_blocks if perimeter else n_court)
-        # **and it may be any block of this district that can carry one.** The block
-        # design round. `court_deep[:n_court]` picks the court blocks off a seeded
-        # shuffle before anything knows where the road runs, and the first block of
-        # `lower_ring_north_2` has the arterial along its back face -- so the one court
-        # this district owed was reserved on the one block whose back range cannot be
-        # built, and there was no second chance. The obligation is the district's and
-        # not that block's: the marked blocks are tried first, then any other block deep
-        # enough for two rows, until the district's courts are placed or it runs out of
-        # blocks. **Deep enough for a composition, not deep enough for two rows.**
-        # `court_deep` is the *old* courtyard block's test -- a block whose back row is
+        # **and it may be any block of this district that can carry one.**
+        # `court_deep[:n_court]` picks the court blocks off a seeded shuffle before
+        # anything knows where the road runs, so the one court a district owes could be
+        # reserved on the one block whose back range cannot be built -- the arterial
+        # along its back face -- with no second chance. The obligation is the district's
+        # and not that block's: the marked blocks are tried first, then any other block
+        # deep enough for two rows, until the district's courts are placed or it runs out
+        # of blocks. **Deep enough for a composition, not deep enough for two rows.**
+        # `court_deep` is the plain courtyard block's test -- a block whose back row is
         # the court -- and it asks for two full lots of depth plus the gap between them.
         # A composed block is four ranges round a court and its ranges are as deep as
-        # the block leaves room for: `lower_ring_north_2`'s second block row is 26
-        # columns where two 13-deep rows need 29, and it holds two 7-deep ranges round a
-        # 6-deep court perfectly well. `court_range_depth` is the test that knows that,
-        # so it is the test, and the candidates are every block this district did not
-        # give to a landmark or to open ground.
+        # the block leaves room for: a block row of 26 columns, where two 13-deep rows
+        # need 29, holds two 7-deep ranges round a 6-deep court perfectly well.
+        # `court_range_depth` is the test that knows that, so it is the test, and the
+        # candidates are every block this district did not give to a landmark or to open
+        # ground.
         cand_blocks = ([b for b in order_blocks if kind_of[b] == "courtyard"]
                        + [b for b in order_blocks if kind_of[b] == "row"])
         for (i, j) in cand_blocks:
@@ -4578,7 +4493,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     if court_plan:
         counts["courts_reserved"] = sum(g["need"] for g in court_plan.values())
 
-    # --- **composed from its streets** (the fabric reset round) ----------------------
+    # --- **composed from its streets** ------------------------------------------------
     # Where the character says `layout: street`, the block grid above is not what is
     # laid. `ethoslm.streetplan` decides the principal streets from the routed road, the
     # anchor at the street nearest the way in and the fronts that face it, the lanes and
@@ -4658,11 +4573,11 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         # row's free end, where the flank keeps its inset)
         c_least = int(ch.get("court_least") or 0)
         # **What each use owes, resolved against the type selected for it, before any
-        # lot is sized** (the design resolution round). `forms` is the character's
-        # adopted minimum per use; the lot is then asked of the type's own form plan
-        # (`ethoslm.formplan`) -- the rooms, court and storeys the builder will lay -- in
-        # the flank configurations a run leaves its lots in, and a character lot that
-        # cannot hold the form is enlarged to what can, openly, never the form shrunk.
+        # lot is sized**. `forms` is the character's adopted minimum per use; the lot is
+        # then asked of the type's own form plan (`ethoslm.formplan`) -- the rooms, court
+        # and storeys the builder will lay -- in the flank configurations a run leaves its
+        # lots in, and a character lot that cannot hold the form is enlarged to what can,
+        # openly, never the form shrunk.
         from . import formplan as _fp
         forms_ch = {u: dict(v) for u, v in (ch.get("forms") or {}).items()}
         dw_form = dict(forms_ch.get("dwelling") or {})
@@ -4819,14 +4734,14 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                              "access": _acc2, "house": house_spec, "shop": shop_spec,
                              "anchor": anchor_spec}, fh)
         # the parent's street arrangement for this piece, where the strip was cut to
-        # hold its modules (`parentdemand.refit`, the parent composition round): lanes
-        # across the strip, rows facing each other across them
+        # hold its modules (`parentdemand.refit`): lanes across the strip, rows facing
+        # each other across them
         _mod = ((district.get("sector") or {}).get("module") or {})
-        # ...or the ring's own section, where the ring's width was set for one (the city
-        # attempt round, `placeplan.ring_section_demand`): `along` is lanes along the
-        # strip behind the principal street's row, `across` is lanes across it with rows
-        # facing each other. The section is **owed**: the record below says so, and a
-        # composition that cannot hold it is not admissible
+        # ...or the ring's own section, where the ring's width was set for one
+        # (`placeplan.ring_section_demand`): `along` is lanes along the strip behind the
+        # principal street's row, `across` is lanes across it with rows facing each
+        # other. The section is **owed**: the record below says so, and a composition
+        # that cannot hold it is not admissible
         _sec = dict(district.get("section") or {})
         if not _mod.get("arrangement") and _sec.get("arrangement"):
             _mod = {"arrangement": _sec["arrangement"], "owed": bool(_sec.get("owed")),
@@ -4864,8 +4779,8 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                        "preference": p["preference"], "houses": p["houses"],
                        "shops": p["shops"]} for p in got_c["proposals"]],
             "why": got_c["why"],
-            # what each use owes and the lot its form plan needs (the design resolution
-            # round): the lot is the form's, not the character's
+            # what each use owes and the lot its form plan needs: the lot is the form's,
+            # not the character's
             "forms": form_lots,
             **({"module": {**got_c["module"], "parent": _mod}} if got_c.get("module")
                else {})}
@@ -4987,13 +4902,13 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                                     now.append(s_)
                         now = sorted(set(now))
                         if pp_.get("form") and set(was) - set(now):
-                            # **a form's wall stays on its lot line** (the design
-                            # resolution round): a neighbour refused on its ground frees
-                            # this flank, and taking the pad's inset back there shrinks
-                            # the house under the form it was admitted for -- one
-                            # refusal then cascades down the row. The flank stands as a
-                            # blank wall on open ground instead: still `attached` for
-                            # the pad, recorded as having no neighbour.
+                            # **a form's wall stays on its lot line**: a neighbour
+                            # refused on its ground frees this flank, and taking the
+                            # pad's inset back there shrinks the house under the form it
+                            # was admitted for -- one refusal then cascades down the row.
+                            # The flank stands as a blank wall on open ground instead:
+                            # still `attached` for the pad, recorded as having no
+                            # neighbour.
                             pp_["blank_flanks"] = sorted(set(pp_.get("blank_flanks")
                                                              or ()) | (set(was) - set(now)))
                             counts["party_walls"] -= len(was) - len(now)
@@ -5251,13 +5166,13 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                         lots_along(ua + s + LOT_GAP, u1, v0, v0 + ld - 1,
                                    fr.front(True), i, j, 2, plots)
                         if two_rows:
-                            # **the houses behind a market back onto it.** The quarter
-                            # design round: in a block deeper than two rows the back row
-                            # stood twenty columns behind the market with a strip of
-                            # nobody's ground between, and the market stood alone on its
-                            # own block. Behind the landmark the back row's lots run as
-                            # deep as the block leaves (entered from the back street, as
-                            # before), so the market is among houses on two sides.
+                            # **the houses behind a market back onto it.** In a block
+                            # deeper than two rows the back row would stand well behind
+                            # the market with a strip of nobody's ground between, and the
+                            # market alone on its own block. Behind the landmark the back
+                            # row's lots run as deep as the block leaves (entered from
+                            # the back street), so the market is among houses on two
+                            # sides.
                             deep0 = v0 + s + LOT_GAP
                             if v1 - deep0 + 1 > ld and ua - u0 >= 0:
                                 a_, b_ = max(u0, ua - LOT_GAP), min(u1, ua + s + LOT_GAP - 1)
@@ -5271,14 +5186,13 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                                 lots_along(u0, u1, v1 - ld + 1, v1, fr.front(False),
                                            i, j, 1, plots)
                         continue
-            # **The reservation did not fit, so the demand goes back to its owner.** The
-            # composition round's first change, and the one line of it that matters:
-            # this was `kind = "row"` and nothing else -- the ground reserved for the
-            # thing the request required became ordinary housing and no field of the
-            # record, the plan file or the validator said a word. The block is still
-            # filled (a block of nothing is not better than a block of houses), and the
-            # unmet demand is now returned with what was needed, what was available and
-            # what would make it fit; `compile_district.score` ranks an arrangement that
+            # **The reservation did not fit, so the demand goes back to its owner.** With
+            # `kind = "row"` alone, the ground reserved for the thing the request required
+            # would become ordinary housing and no field of the record, the plan file or
+            # the validator would say a word. The block is still filled (a block of
+            # nothing is not better than a block of houses), and the unmet demand is
+            # returned with what was needed, what was available and what would make it
+            # fit; `compile_district.score` ranks an arrangement that
             # keeps it over one that loses it, and `placeplan.district_failures` refuses
             # the district where the demand was **required**.
             if decl is not None and not any(x.get("subject") == res.get("subject")
@@ -5297,12 +5211,11 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                         res, u1 - u0 + 1, v1 - v0 + 1, block, bd, fr.U, fr.V, want_lots)})
             kind = "row"
         # **A district may be told which way its lots front**, and where it is, a block
-        # lays one row and not two. The integration round's second finding: the saved
-        # shoreline village had nine of fifteen homes fronting *away* from the water it
-        # was asked to face, and every check passed, because a two-row block puts one
-        # row on each side of it and the checks were reading the district's aspect
-        # ratio. A ribbon district's streets run along the shore either way; which side
-        # of a street a door is on is a different decision and nothing was making it.
+        # lays one row and not two. A two-row block puts one row on each side of it, so a
+        # shoreline village can have most of its homes fronting *away* from the water it
+        # was asked to face while every check that reads the district's aspect ratio
+        # passes. A ribbon district's streets run along the shore either way; which side
+        # of a street a door is on is a different decision, and this is what makes it.
         # So: `district["faces"]` names a side, the row that fronts that side is laid,
         # and the rest of the block is the court or the open ground it would otherwise
         # have been. It costs the back row -- a place that must face one way holds fewer
@@ -5342,19 +5255,17 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                                              f"f{i}_{j}")
             continue
         # **A block composed about its court: built on all four faces, with the court
-        # inside and a passage into it.** The neighbourhood round's `perimeter`
-        # arrangement, and the delivery round's composition. A back-row `courtyard`
-        # block is a block whose *back row* is the court, so the court is open along
-        # both short faces, the cross streets carry nothing, and the enclosure the
-        # arrangement's own name promises is not in the geometry -- which is what the
-        # composition round's built section looks like from above. Here the front range
+        # inside and a passage into it.** The `perimeter` arrangement. A back-row
+        # `courtyard` block is a block whose *back row* is the court, so the court is open
+        # along both short faces, the cross streets carry nothing, and the enclosure the
+        # arrangement's own name promises is not in the geometry. Here the front range
         # (with its passage), the back range and a range at each end of the middle band
         # are laid and what is left in the middle is the court. **A district whose
         # adopted form owes a court composes one whether or not its arrangement said
-        # `perimeter`.** The delivery round: the obligation comes off the form
-        # (`demand.court_obligation`), the composition is how it is realized, and a
-        # block too small for it falls through to the two-row block below with the
-        # shortfall on the record rather than in silence.
+        # `perimeter`.** The obligation comes off the form (`demand.court_obligation`),
+        # the composition is how it is realized, and a block too small for it falls
+        # through to the two-row block below with the shortfall on the record rather
+        # than in silence.
         _side_least = _plot_range(house)[0]
         _booked = court_plan.get((i, j))
         #: True where a composition was begun on this block and rolled back, or where
@@ -5397,17 +5308,15 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
             if deep and ceiling_binds:
                 deep = min(deep, ld)
             # **...and a depth the character or the adopted arrangement named is not the
-            # compiler's to deepen.** The neighbourhood round, measured on the retained
-            # crowded ring: `compact_bay` adopted 6x6 at one row to a block, this branch
-            # deepened every lot to the 8 the block had room for, and the alternative
-            # was then ranked on a 6x8 fabric under a 6x6 label. Lever 4 above has said
-            # since the craft round that a named depth is not the compiler's to *give
-            # away*; this is the same rule in the other direction. **Held to `ld` and
-            # not to the named number**, which is the same thing where the lot was laid
-            # as named and is the only safe form of it where it was not: a 200x17 band
-            # adopted an 8-deep lot, `lot_min` raised the district's own to 13 because
-            # the required features need it, and holding the block's one row to the
-            # stale 8 laid **no house at all** -- the type does not stand on it.
+            # compiler's to deepen.** Deepening every lot of an adopted 6x6 bay to the 8
+            # the block has room for would rank the alternative on a 6x8 fabric under a
+            # 6x6 label. Lever 4 above holds that a named depth is not the compiler's to
+            # *give away*; this is the same rule in the other direction. **Held to `ld`
+            # and not to the named number**, which is the same thing where the lot was
+            # laid as named and is the only safe form of it where it was not: where
+            # `lot_min` raises an adopted 8-deep lot to 13 because the required features
+            # need it, holding the block's one row to the stale 8 lays **no house at
+            # all** -- the type does not stand on it.
             if deep and ch.get("lot_depth"):
                 deep = min(deep, int(ld))
             # ...and never so deep that the count's lots exceed the ceiling: three farm
@@ -5451,16 +5360,14 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                    for q in quarters.values() for p in q["plots"]
                    if p["kind"] == "plot")
 
-    # **An exact count over its ceiling is narrowed, not trimmed.** The block design
-    # round, found by replanning the city after the grid learned to stand its blocks
-    # beside a road rather than across it: `agrarian_belt_south_3` laid 1,566 columns of
-    # lots against a sparse ceiling of 1,547 -- nineteen columns, 1.2% -- and the
-    # validator stopped the whole plan twice for it. The count is the sentence's and is
-    # not this compiler's to reduce (see `exact` above), and the loop below only knows
-    # how to remove a lot; so an exact district gives the columns back off the
-    # **widths** of its widest lots, down to the least side its type admits, and says it
-    # is over only where narrowing cannot reach. A district a per cent over its word is
-    # a district with slightly narrower houses, not a district with one house fewer.
+    # **An exact count over its ceiling is narrowed, not trimmed.** An exact district can
+    # lay a per cent or so more lot columns than its word's ceiling, and the validator
+    # stops the whole plan for it. The count is the sentence's and is not this
+    # compiler's to reduce (see `exact` above), and the loop below only knows how to
+    # remove a lot; so an exact district gives the columns back off the **widths** of
+    # its widest lots, down to the least side its type admits, and says it is over only
+    # where narrowing cannot reach. A district a per cent over its word is a district
+    # with slightly narrower houses, not a district with one house fewer.
     if ceiling_cols is not None and exact and _plot_cols() > ceiling_cols:
         _least_w = _plot_range(house)[0]
         while _plot_cols() > ceiling_cols:
@@ -5501,12 +5408,12 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
             counts["lots"] -= 1
             trimmed += 1
     # --- the sites, against the plan as it finally stands ----------------------------
-    # The quarter design round. Narrowing moves a lot's edge and trimming takes a lot
-    # out of a terrace, freeing its neighbour's flank; a site chosen before either is a
-    # site of a different plot. So every sited leaf is re-sited here with the flanks its
-    # neighbours actually stand against. A leaf that no longer has a compatible pad and
-    # way in is refused -- except in an exact district, whose count is the sentence's:
-    # there it keeps no `site` (the old path) and the record names it.
+    # Narrowing moves a lot's edge and trimming takes a lot out of a terrace, freeing its
+    # neighbour's flank; a site chosen before either is a site of a different plot. So
+    # every sited leaf is re-sited here with the flanks its neighbours actually stand
+    # against. A leaf that no longer has a compatible pad and way in is refused -- except
+    # in an exact district, whose count is the sentence's: there it keeps no `site` and
+    # the record names it.
     sites_missing: list = []
     if _design_level is not None:
         _all = [(qq, p) for qq in quarters.values() for p in qq["plots"]
@@ -5659,8 +5566,8 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                  if row["role"] == "fabric" else None))})
     # **A use the design asked for and the ground did not hold is a shortfall, named.**
     # Not a refusal -- a quarter that could not seat its shops is still a quarter -- and
-    # not silence either, which is what the composition round's filter gave when the one
-    # trade type of a traders' ring fell out of the pool for being the wrong lot size.
+    # not silence either, as when the one trade type of a traders' ring falls out of the
+    # pool for being the wrong lot size.
     programme["short"] = [
         {"type": n, "requirement": rq, "why":
             f"`{rq}` requires a {n} of this district and no lot of its principal street "
@@ -5684,9 +5591,8 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                      + f"; {counts['lots']} lots"),
            "quarters": [q for q in quarters.values() if q["plots"]],
            "character": {k: v for k, v in ch.items()},
-           # **The programme travels with the artifact that gets built.** The
-           # neighbourhood round: "record the inferred mix on the compiled district so
-           # it can be read downstream and the section record can report it".
+           # **The programme travels with the artifact that gets built**, so the inferred
+           # mix can be read downstream and the section record can report it.
            # `district_failures`, the assembler and the section record all read the
            # *file* and not the compile record, so a plan whose quarter is a traders'
            # quarter says so here.
@@ -5704,19 +5610,16 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
     plot_cols = sum((p["x1"] - p["x0"] + 1) * (p["z1"] - p["z0"] + 1)
                     for p in leaves if p["kind"] == "plot")
     ground_cols = sum((p["x1"] - p["x0"] + 1) * (p["z1"] - p["z0"] + 1) for p in leaves)
-    # **A lot is ground promised to a building; it is not a building.** The design
-    # round's second contract: `plot_cover` has always been the *lots'* share of the
-    # rectangle, so a cover figure improved by drawing the same houses on bigger empty
-    # lots read as denser construction. `footprint_columns` is the mass those lots admit
-    # -- the pad `site()` will hand `build()`, the plan's own solid extent -- and the
-    # two are reported apart so the difference is visible. **And it is an estimate,
-    # which is now what it is called.** The neighbourhood round: "Alternative 'built
-    # cover' is currently pad area (`district_compile.footprint_columns`), not
-    # construction. Label estimates honestly." The number is the same number; what
-    # changes is that `pad_columns` says in its name what it is, `footprint_estimate`
-    # marks it, and `footprint_basis` says what would replace it. Nothing that stands
-    # has been measured at this point in the run -- there is no world yet -- and a
-    # reader who takes this for construction is taking a plan for a building.
+    # **A lot is ground promised to a building; it is not a building.** `plot_cover` is
+    # the *lots'* share of the rectangle, so a cover figure improved by drawing the same
+    # houses on bigger empty lots reads as denser construction. `footprint_columns` is
+    # the mass those lots admit -- the pad `site()` will hand `build()`, the plan's own
+    # solid extent -- and the two are reported apart so the difference is visible. **And
+    # it is an estimate, and is called one**: `pad_columns` says in its name what it is,
+    # `footprint_estimate` marks it, and `footprint_basis` says what would replace it.
+    # Nothing that stands has been measured at this point in the run -- there is no
+    # world yet -- and a reader who takes this for construction is taking a plan for a
+    # building.
     foot_cols = footprint_columns(leaves)
     record = {"district": district["name"], "part": part.get("name"), "seed": seed,
               **({"composition": composition} if composition is not None else {}),
@@ -5750,11 +5653,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
               # what that let it be built of**: the quarter's own fabric, the other uses
               # its own design asks for and how each was asked, the types the pool held
               # that nothing asked for, and the share each use came to -- **measured**,
-              # with its derivation, never set. The user's instruction for the
-              # composition round and the number it was found at: 5 temples and 4 halls
-              # against 1 shop house in 22 buildings of the middle ring; the
-              # neighbourhood round's, and its number: 1 shop in 22 buildings of a ring
-              # the sources call the traders' and craftsmen's.
+              # with its derivation, never set.
               "use_mix": {"role": mix["role"], "primary": mix["primary"],
                           "own": [n for n, _d in mix["own"]],
                           "programme": [n for n, _d in mix["programme"]],
@@ -5778,17 +5677,16 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
               "block_kinds": {k: sum(1 for b in blocks if kind_of[b] == k)
                               for k in ("row", "courtyard", "open", "landmark")},
               # **The court this district's adopted form owes, and what became of it.**
-              # The delivery round. `demand.court_obligation` publishes the obligation
-              # off the same `courtyard_share`; this says what the compiler did with it,
-              # so a reader can tell "no court was owed" from "a court was owed and the
-              # blocks are too shallow to compose one" from "a court was composed and
-              # entered". `courts` beside it is the number of court tiles laid. **Held
-              # is "a composition closed", not "a block was deep enough for two rows".**
-              # The block design round. `court_deep` is the old courtyard block's test
-              # and a composed block is four ranges at the depth the court leaves them,
-              # so `lower_ring_north_2` published `blocks_deep_enough: 0` and `unheld:
-              # true` on a compile that had just laid an enclosed court. The obligation
-              # is held by the compositions that were adopted.
+              # `demand.court_obligation` publishes the obligation off the same
+              # `courtyard_share`; this says what the compiler did with it, so a reader
+              # can tell "no court was owed" from "a court was owed and the blocks are
+              # too shallow to compose one" from "a court was composed and entered".
+              # `courts` beside it is the number of court tiles laid. **Held is "a
+              # composition closed", not "a block was deep enough for two rows".**
+              # `court_deep` is the plain courtyard block's test and a composed block is
+              # four ranges at the depth the court leaves them, so a district with no
+              # block two rows deep can still lay an enclosed court. The obligation is
+              # held by the compositions that were adopted.
               "court_obligation": ({"share": court_share,
                                     "blocks_asked": int(n_court),
                                     "blocks_considered": len(compositions),
@@ -5807,28 +5705,28 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                                             f"closed")}
                                    if court_owed else None),
               # **Every complete composition this district considered, and its
-              # verdict.** The block design round. A court block is adopted as a whole
-              # or not begun, and this is the ledger of both: the blocks whose
-              # composition was reserved and closed, the blocks whose reservation the
-              # count could not afford, and the blocks whose composition was laid and
-              # **rolled back** because its court did not close. A reader can tell an
-              # unowed court from an unaffordable one from one that was refused on the
-              # geometry, which the old `perimeter_open` count could not say.
+              # verdict.** A court block is adopted as a whole or not begun, and this is
+              # the ledger of both: the blocks whose composition was reserved and closed,
+              # the blocks whose reservation the count could not afford, and the blocks
+              # whose composition was laid and **rolled back** because its court did not
+              # close. A reader can tell an unowed court from an unaffordable one from one
+              # that was refused on the geometry, which a bare `perimeter_open` count
+              # cannot say.
               "compositions": [dict(x) for x in compositions],
               "composition_reserved": int(counts.get("courts_reserved") or 0),
               "grid": {"columns": len(cols), "rows": len(rows)},
               "leaves": len(leaves), **counts, "dropped": dropped,
-              # **What the ground refused, by name and in columns.** The spatial-design
-              # round: `arrange.alternatives` ranks proposals and the acceptance runner
-              # reads them, and neither can tell a district that was laid small from a
+              # **What the ground refused, by name and in columns.**
+              # `arrange.alternatives` ranks proposals and the acceptance runner reads
+              # them, and neither can tell a district that was laid small from a
               # district whose ground would not carry what it was asked for unless the
               # compiler says so. `ground_measured` false means no mask was read and
               # this rule did not run -- which is not the same as a mask that refused
               # nothing. ...and the columns are the **district's own** infeasible
               # columns, not a sum over the rectangles this rule refused: `free()` is
-              # asked about overlapping candidates and adding them up gave a district of
-              # 11,400 columns a refusal of 13,010, which is not a measurement of
-              # anything.
+              # asked about overlapping candidates, and adding them up can give a
+              # district a refusal larger than the district, which is not a measurement
+              # of anything.
               "lots_refused_for_ground": int(dropped["ground"]),
               "ground_refused_columns": (
                   int(ground_rec.get("columns") or 0)
@@ -5882,10 +5780,10 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
               "variety": _variety(faces),
               "wall_alt": _wall_alt_record(leaves),
               # **The sites this plan carries, and the lots it refused for want of
-              # one.** The quarter design round: a leaf's `site` is the one pad, floor,
-              # door and landing construction builds; a lot with no compatible pad and
-              # way in, or whose envelope refuses its type's storeys with no other type
-              # of its use to stand there, is refused here and counted apart.
+              # one.** A leaf's `site` is the one pad, floor, door and landing
+              # construction builds; a lot with no compatible pad and way in, or whose
+              # envelope refuses its type's storeys with no other type of its use to
+              # stand there, is refused here and counted apart.
               "sites": {"sited": sum(1 for p in leaves if p.get("site")),
                         "courts_sited": sum(1 for p in leaves if p.get("court_site")),
                         "refused": dict(sites_refused),
@@ -5924,17 +5822,15 @@ def pad_columns(leaves: list) -> int:
         `site()` will hand `build()` for each plot, summed -- not the lots they stand on, and
         **not what was built**.
 
-        The design round's escape route E2, in one number. A district whose lots grew from
-        6x7 to 10x10 covers more ground with the same fifteen houses, and a density figure
-        read off the lots calls that denser construction. The pad is what a person walking
-        the street *would* see standing; an empty lot is not a building.
+        A district whose lots grow from 6x7 to 10x10 covers more ground with the same
+        fifteen houses, and a density figure read off the lots calls that denser
+        construction. The pad is what a person walking the street *would* see standing; an
+        empty lot is not a building.
 
-        The neighbourhood round renamed it. It was `footprint_columns`, and every consumer
-        read it into a field called `built_columns` and a figure called "built cover" -- so
-        the project's whole history of built cover is this estimate under a name that says it
-        was measured. The estimate is a good one and it is the only answer available before
-        anything is built; what it is not is construction. `footprint_columns` remains as an
-        alias because retained records and `placeplan.region_columns` use the old name.
+        The estimate is a good one and it is the only answer available before anything is
+        built; what it is not is construction, which is why it is not called
+        `built_columns`. `footprint_columns` remains as an alias because retained records
+        and `placeplan.region_columns` use that name.
 
     """
     from .buildlib import Builder
@@ -5959,9 +5855,9 @@ footprint_columns = pad_columns
 def _wall_alt_record(leaves: list) -> dict:
     """The share of this district's houses faced in the voice's second wall material.
 
-        The craft round, E3. `Builder.WALL_ALT_SHARE` is the library's number and the
-        compiler is what makes it a **share** rather than a distribution, because it can see
-        the whole street; `WALL_ALT_TOLERANCE` is how far a district may sit from it.
+        `Builder.WALL_ALT_SHARE` is the library's number and the compiler is what makes it
+        a **share** rather than a distribution, because it can see the whole street;
+        `WALL_ALT_TOLERANCE` is how far a district may sit from it.
 
     """
     said = [p for p in leaves if isinstance(p.get("wall_alt"), bool)]
@@ -6119,10 +6015,10 @@ def _demand_module():
 
 
 def _storeys_band(decl: dict, ch: dict) -> tuple:
-    """**A street has a skyline**, the craft round (E3): the height of a building is the
-    character's own band clamped into what the type declares, so a run of roofs steps
-    rather than lying flat and a district that wants to be low is low in every type on
-    it. Where the two bands do not meet, the type's own is what it can build.
+    """**A street has a skyline**: the height of a building is the character's own band
+    clamped into what the type declares, so a run of roofs steps rather than lying flat
+    and a district that wants to be low is low in every type on it. Where the two bands
+    do not meet, the type's own is what it can build.
     """
     spec_p = ((decl.get("params") or {}).get("storeys") or ())
     if not (isinstance(spec_p, (list, tuple)) and len(spec_p) >= 3
@@ -6136,13 +6032,13 @@ def _storeys_band(decl: dict, ch: dict) -> tuple:
 
 
 def _variety(faces: list) -> dict:
-    """**Is this street a rhythm or a comb?** The craft round, E3, read off the shapes
-        the compiler laid rather than off the built world, because it is the plan that
-        decides them and a plan is on disk in a fiftieth of a second.
+    """**Is this street a rhythm or a comb?** Read off the shapes the compiler laid
+        rather than off the built world, because it is the plan that decides them and a
+        plan is on disk in a fiftieth of a second.
 
-        Two numbers, both registered before they were read: how many distinct building
-        shapes there are per hundred houses (`SHAPES_PER_HUNDRED`), and the longest run of
-        neighbours of one shape along one street face (`IDENTICAL_RUN_MAX`).
+        Two numbers: how many distinct building shapes there are per hundred houses
+        (`SHAPES_PER_HUNDRED`), and the longest run of neighbours of one shape along one
+        street face (`IDENTICAL_RUN_MAX`).
 
     """
     flat = [sh for face in faces for sh in face]
@@ -6155,13 +6051,12 @@ def _variety(faces: list) -> dict:
             run = run + 1 if a == b else 1
             longest = max(longest, run)
     per = 100.0 * len(kinds) / len(flat) if flat else 0.0
-    # **...and which of the four things a shape is made of actually varies.** The craft
-    # round's two numbers say a street is a comb and do not say *why*, and the reason is
-    # almost always one of these four standing still: the neighbourhood round's reading
-    # of the retained section's crowded side is "one house repeated ninety-six times",
-    # and the cause is that its lot admits one storey of its type, not that the compiler
-    # failed to vary anything. A reader who has these four does not have to open the
-    # leaves to tell a layout limit from a generator limit.
+    # **...and which of the four things a shape is made of actually varies.** The two
+    # numbers say a street is a comb and do not say *why*, and the reason is almost
+    # always one of these four standing still: a street that reads as one house repeated
+    # many times is usually a lot that admits one storey of its type, not a compiler
+    # that failed to vary anything. A reader who has these four does not have to open
+    # the leaves to tell a layout limit from a generator limit.
     return {"lots": len(flat), "shapes": len(kinds), "faces": len(faces),
             "per_hundred": round(per, 1), "longest_run": int(longest),
             "types": len({sh[0] for sh in flat}),

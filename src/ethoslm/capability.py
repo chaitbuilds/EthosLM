@@ -47,10 +47,9 @@ GROUND_ANY = "any"
 def _ground_set(v) -> list:
     """`needs.ground` as a list of ground classes, however it was written.
 
-        Found by reading the cards this produced: `needs = {"ground": "any"}` is what all
-        28 committed types declare, and `list("any")` is `['a', 'n', 'y']` -- a card whose
-        ground classes were three letters. It never bit because nothing asked; the
-        integration round asks.
+        `needs = {"ground": "any"}` is the usual declaration, and `list("any")` is
+        `['a', 'n', 'y']` -- a card whose ground classes are three letters. A string is one
+        class.
 
     """
     if v is None:
@@ -510,11 +509,11 @@ def wants_of(spec: dict, *, round_boundaries: bool = False,
         if fp:
             want["footprint"] = fp
         out.append(site_facts(want))
-    # **What the request says the place is FOR, where no defining part carries it.** The
-    # expression round (worker B's request): a `function/market` or a courtyard feature
-    # the interpretation read and no part names never became a want, so the growth path
-    # could not open a gap for it. One want per such requirement, `of: "function"`, so
-    # `match` records it covered or uncovered and `gaps` can grow it.
+    # **What the request says the place is FOR, where no defining part carries it.** A
+    # `function/market` or a courtyard feature the interpretation read and no part names
+    # would otherwise never become a want, so the growth path could not open a gap for
+    # it. One want per such requirement, `of: "function"`, so `match` records it covered
+    # or uncovered and `gaps` can grow it.
     answered = {str(w.get("function") or "") for w in out} | {
         str(w.get("family") or "") for w in out}
     place_words = ("village", "town", "city", "hamlet", "place", "settlement", "ring",

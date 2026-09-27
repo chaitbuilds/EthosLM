@@ -160,17 +160,13 @@ def t_p1_the_programme_is_inferred_from_the_design_and_not_from_a_constant():
     assert mix["use_of"]["shop_house"] == "trade", mix["use_of"]
     assert mix["use_of"]["courtyard_house"] == "home", mix["use_of"]
     # **A type that declares nothing is recorded as an inference, and the rule is about
-    # the mechanism rather than about one file.** This named `court_small` -- which
-    # declared no `FUNCTION`, so its use was inferred from its `ROLE`. The neighbourhood
-    # round then *declared* it, because the inference had a cost: a quarter's own fabric
-    # is drawn from the types whose declared function is its use, so an inferred
-    # `unstated` ranked below `row_house`'s declared `dwelling` and the traders' ring of
-    # a city whose sources say "its houses are courtyard houses" built thirty row
-    # houses. The rule this case is about is unmoved: wherever a type still states
-    # nothing, the record says the use is an inference and not a declaration. Where
-    # every admitted type declares one -- the better state, and the one this pool is now
-    # in -- there is no inference to record and the case says so rather than asserting
-    # one exists.
+    # the mechanism rather than about one file.** An inference has a cost: a quarter's
+    # own fabric is drawn from the types whose declared function is its use, so an
+    # inferred `unstated` ranks below another type's declared `dwelling`. Wherever a type
+    # still states nothing, the record says the use is an inference and not a
+    # declaration. Where every admitted type declares one -- the better state, and the
+    # one this pool is in -- there is no inference to record and the case says so rather
+    # than asserting one exists.
     unstated = sorted(n for n, u in mix["use_of"].items() if u == dc.UNSTATED_USE)
     if unstated:
         assert any("inference from the role and not a declaration" in s
@@ -203,14 +199,13 @@ def t_p1_the_programme_is_inferred_from_the_design_and_not_from_a_constant():
 
 @case
 def t_p2_a_required_use_is_laid_at_the_count_its_requirement_asks():
-    """No universal quota. The composition round spent `PROGRAMME_USE_SHARE` -- a
-        registered tenth -- on any use a district's programme asked for; a requirement is a
-        statement that the place must **hold** the thing, and one temple answers
-        `feature/temple`.
+    """No universal quota. A registered share (`PROGRAMME_USE_SHARE`, a tenth) spent on
+        any use a district's programme asked for is not what a requirement means: a
+        requirement is a statement that the place must **hold** the thing, and one temple
+        answers `feature/temple`.
 
         Run on the traders' ring with `feature/temple` added to its resolved demand and
-        nothing else changed, which is the same control the composition round used and the
-        opposite expectation.
+        nothing else changed.
 
     """
     x, part, decls, spec, place = district(TRADERS)
@@ -251,9 +246,9 @@ def t_p2_a_required_use_is_laid_at_the_count_its_requirement_asks():
 def t_p3_the_quarters_work_stands_on_the_street_its_anchor_fronts():
     """A trade belongs on the street its market is on.
 
-        Measured on the traders' ring: every shop the compiler laid is on the block row the
-        market's reservation was given or the one across the street from it, and none is
-        anywhere else. That is what makes the share a consequence -- "the traders' market
+        On the traders' ring, every shop the compiler lays is on the block row the market's
+        reservation was given or the one across the street from it, and none is anywhere
+        else. That is what makes the share a consequence -- "the traders' market
         belongs to its neighbourhood" is a statement about position, and a tenth spread
         evenly down a district is a statement about frequency.
 
@@ -307,27 +302,19 @@ def t_p3_the_quarters_work_stands_on_the_street_its_anchor_fronts():
 
 @case
 def t_p4_every_proposal_is_ranked_on_its_own_geometry():
-    """**Rewritten, and the rule it now tests is stated here.** The neighbourhood round
-        wrote this case to assert that `arrange.alternatives`, given a parts record, reports
-        `built_columns` off the previous build's **emitted** rectangles. The spatial design
-        round's independent review found that this is not a reuse of an observation at all:
-
-            "`arrange.alternatives` passes the previous candidate's `parts_record` into
-            `region_columns` and `street_enclosure` for hypothetical newly compiled leaves.
-            Both match emitted measurements by part name, without proving unchanged geometry.
-            A reused leaf name can therefore attach the old footprint to a new arrangement."
-
-        The compiler's leaf names are **positional** -- `b2_0_06` is block 2, row 0, lot 6 --
-        so a different arrangement of the same rectangle re-uses almost every name for a lot
-        of a different size in a different place. The old assertion was therefore an
-        assertion that a mislabelled estimate be produced. What is tested now is the
-        corrected rule: every row is the compiler's own pad arithmetic, uniformly, and the
-        row says so; the observation is taken after the build
-        (`improve._estimate_vs_built`), where the geometry is the geometry that was built.
+    """**Every row is the compiler's own pad arithmetic, uniformly, and says so**, even
+        when `arrange.alternatives` is given a parts record. Passing a previous build's
+        `parts_record` into `region_columns` and `street_enclosure` for newly compiled
+        leaves would match emitted measurements by part name without proving unchanged
+        geometry, and the compiler's leaf names are **positional** -- `b2_0_06` is block 2,
+        row 0, lot 6 -- so a different arrangement of the same rectangle re-uses almost
+        every name for a lot of a different size in a different place, and a reused name
+        would attach the old footprint to a new arrangement. The observation is taken
+        after the build (`improve._estimate_vs_built`), where the geometry is the geometry
+        that was built.
 
         The compile record's own honest labelling -- `pad_columns`, `footprint_estimate`,
-        `footprint_basis` -- is unchanged and is still asserted; that half of the
-        neighbourhood round's case was right and stands.
+        `footprint_basis` -- is asserted too.
 
     """
     _got, rec, x, part, decls, spec, place = compiled(CROWDED)
@@ -388,10 +375,10 @@ def t_p5_the_new_arrangement_operations_are_offered_and_certified():
     """"Add or revise reusable arrangement operations where existing ones cannot shape a
         convincing street."
 
-          `terrace`      party walls or none. `attached` has been an `ARRANGEMENT_FIELD`
-                         since the design round and **no action ever wrote one**, so whether
-                         the buildings of a street touch was settled by the district brief's
-                         author and was never a decision the layout could revise.
+          `terrace`      party walls or none. `attached` is an `ARRANGEMENT_FIELD`, and
+                         without an action that writes it whether the buildings of a street
+                         touch would be settled by the district brief's author and never be
+                         a decision the layout could revise.
           `compact_bay`  the narrowest bay, one row to a block, on the longest block: the
                          three compaction levers together. Every other action moves one value
                          of the character, so the best crowded street any of them could offer
@@ -438,8 +425,8 @@ def t_p5b_the_new_operations_measurably_change_the_street():
         the incumbent is a name, not a decision.
 
         The crowded ring is the subject. Its declared fabric is 6x8 attached lots on a
-        40-column block, which is what the composition round built and what the user read as
-        "terraces standing in stripes with grass voids as wide as the terraces".
+        40-column block, which reads as terraces standing in stripes with grass voids as
+        wide as the terraces.
 
     """
     x, part, decls, spec, place = district(CROWDED)
@@ -452,7 +439,7 @@ def t_p5b_the_new_operations_measurably_change_the_street():
     # every alternative offered carries the real validator's verdict -- **and lays the
     # lot it was ranked on**, which is the seam `placeplan.arrangement_failures` closes:
     # a row ranked on the cover and the frontage of a fabric it did not lay is not a
-    # comparison, and the composition round's list had three of them
+    # comparison
     for a in rows:
         assert a["verdict"] in ("ok", "refused"), a
         assert a["pad_columns"] > 0 and a["allocated_columns"] > a["pad_columns"], a
@@ -469,7 +456,7 @@ def t_p5b_the_new_operations_measurably_change_the_street():
              if (best.get(k) or 0) > (base.get(k) or 0)]
     assert len(moved) >= 2, (moved, base, best)
     # ...and somewhere in the list is an arrangement that lays **more houses** than the
-    # declaration, which is the finding the composition round could not close
+    # declaration
     more = [a for a in rows if not a["refuses"] and a["lots"] > base["lots"]]
     assert more, [(a["action"], a["lots"]) for a in rows]
     most = max(more, key=lambda a: a["lots"])
@@ -523,7 +510,7 @@ def t_p6_a_perimeter_block_builds_its_corners_and_encloses_its_court():
     #: the crowded ring's 184x69 loses the back row of its first block row to the
     #: arterial and its second is three columns short of a second row of lots, both of
     #: which are true facts about that ground and neither of which is about perimeter
-    #: blocks. Measured on the section's own districts below, and reported.
+    #: blocks. The section's own districts are measured below, and reported.
     def probe(ask, arrangement):
         rect = {"name": "perimeter_probe", "x0": 0, "z0": 0, "x1": 199, "z1": 119,
                 "structures": ask, "defines": src["defines"],

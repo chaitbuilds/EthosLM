@@ -512,15 +512,13 @@ def spaces_brief(ids: list) -> str:
     """The outdoor rooms this pass's walls form the edge of.
 
         `SPACES` above is addressed to the planner: it asks for a top-level key. A builder
-        handed that text is being told to edit a JSON file it is not writing, which is what
-        step 3's `+spaces` arm actually did. `plan_brief` meanwhile does not mention the
-        planner's spaces at all, so until now nothing downstream of the planner has ever
-        seen them -- the outdoor rooms were designed and then thrown away.
+        handed that text is being told to edit a JSON file it is not writing. `plan_brief`
+        does not mention the planner's spaces at all, so without this nothing downstream of
+        the planner sees them -- the outdoor rooms would be designed and then thrown away.
 
-        E3 killed spaces-as-plat and said that if the idea returned it would return as
-        terrain-following outdoor rooms rather than as a street grid. This is that, at brief
-        level: the space comes first, and the footprint is derived from the edge it has to
-        make.
+        Spaces come back as terrain-following outdoor rooms, not as a plat laid out like a
+        street grid. At brief level that means the space comes first, and the footprint is
+        derived from the edge it has to make.
 
     """
     plan = json.load(open(os.path.join(settlement.STATE, "plan.json")))

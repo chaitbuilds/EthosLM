@@ -1,16 +1,14 @@
 """**An improvement survives its complete trial, or the best result is still there.**
 
-The neighbourhood round's rollback ended at replanning. `improve._apply_layout` snapshots
-the design records, applies the action, lays the plan out again, and restores where the
-*plan* fails -- and once planning succeeded, `stage_improve` rebuilt, and when the rebuild
-stopped at lint it returned `blocked` and left the failed trial on disk as the candidate.
-Both of that round's cycles stopped at lint. Its second failed revision, `829fb25adb7b6b84`,
-is what it delivered: a candidate with a failed route relationship, four courts standing of
-nine subjects, and an inspection describing a different world.
+`improve._apply_layout` snapshots the design records, applies the action, lays the plan out
+again, and restores where the *plan* fails -- but a trial whose planning succeeds can still
+stop at lint when it is rebuilt, and a rollback that ends at replanning leaves that failed
+trial on disk as the candidate: a failed route relationship, courts missing, and an
+inspection describing a different world.
 
-So the transaction boundary moves out to where the evidence is. A **trial** is a candidate
-under test; the **accepted** candidate is the best result this lineage has reached and is
-kept whole on disk beside it. A trial is promoted only when
+So the transaction boundary is where the evidence is. A **trial** is a candidate under
+test; the **accepted** candidate is the best result this lineage has reached and is kept
+whole on disk beside it. A trial is promoted only when
 
   1. its rebuild completed -- ground, terraces, circulation, parts, finish, lint, material,
      section, inspection -- and
@@ -26,14 +24,11 @@ the accepted candidate is put back byte for byte.
 is the one `stages_media.REVISION_FILES` already argues for, plus what construction and
 inspection wrote: a candidate is its design records, its dependency stamps, the world
 volumes, the parts record and the ground under it, the obligations ledger and the reading
-that judged it. Restoring some of those is not restoring a candidate -- which is how the
-neighbourhood round ended with frames identifying `829...` and an `inspection/views.json`
-identifying `90b...`.
+that judged it. Restoring some of those is not restoring a candidate: it leaves the frames
+of one candidate beside an `inspection/views.json` of another.
 
 This is deliberately not a general transaction framework. It is a directory of files, a
-copy out and a copy back, and a record of what was tried; the round's own instruction is
-"reuse valid outputs or rebuild a small candidate completely when simpler; do not build a
-general transaction framework for its own sake".
+copy out and a copy back, and a record of what was tried.
 """
 from __future__ import annotations
 
@@ -54,13 +49,12 @@ RECORD = "trials.json"
 #: **The rest of the artifact boundary**, beyond the design records `REVISION_FILES`
 #: names: what construction emitted, what the checks measured and what the reading said.
 #: A trial that is rolled back but keeps the trial's `parts.json` is a candidate whose
-#: plan and whose built evidence describe two different worlds, which is exactly the
-#: defect the neighbourhood round's independent reader found in its frames. **The ledger
-#: is deliberately not in it.** `obligations.json` records what is owed *and what has
-#: been tried on which candidate*; restoring it with the accepted candidate would erase
-#: the record that the rejected trial's action was ever attempted, and the loop would
-#: spend its whole budget applying the same refused action to the same candidate. What a
-#: trial leaves behind is exactly the knowledge that it was tried and failed.
+#: plan and whose built evidence describe two different worlds. **The ledger is
+#: deliberately not in it.** `obligations.json` records what is owed *and what has been
+#: tried on which candidate*; restoring it with the accepted candidate would erase the
+#: record that the rejected trial's action was ever attempted, and the loop would spend
+#: its whole budget applying the same refused action to the same candidate. What a trial
+#: leaves behind is exactly the knowledge that it was tried and failed.
 BUILT_FILES = ("parts.json", "surfaces.json", "usable.json", "section.json",
                "lint.json", "material.json",
                "ground_proposal.json", "paths.json",
@@ -70,13 +64,12 @@ BUILT_FILES = ("parts.json", "surfaces.json", "usable.json", "section.json",
 #: records and the inspection that judged the built world.
 BUILT_DIRS = ("parts", "inspection")
 
-#: **Files the boundary gained after some accepted copies were kept** (the fabric reset
-#: round: `sectors.json`, its `sectors.<district>.laid` markers and
-#: `terrace_levels.json`). An accepted copy whose boundary record does not say it
-#: `covers` them lacks them because it never copied them, not because its candidate did
-#: not have them, so putting it back leaves them where they are rather than deleting a
-#: decision the accepted candidate was in fact made with. A copy kept since is exact
-#: about them either way.
+#: **Files the boundary gained after some accepted copies were kept** (`sectors.json`,
+#: its `sectors.<district>.laid` markers and `terrace_levels.json`). An accepted copy
+#: whose boundary record does not say it `covers` them lacks them because it never
+#: copied them, not because its candidate did not have them, so putting it back leaves
+#: them where they are rather than deleting a decision the accepted candidate was in
+#: fact made with. A copy kept since is exact about them either way.
 LATE_FILES = ("sectors.", "terrace_levels.json")
 
 
@@ -131,10 +124,9 @@ def _put_back(state: str, src: str, covers=None) -> dict:
 
         Anything of the boundary the trial wrote and the accepted candidate does not have is
         **removed**, not left: a district file for a district the accepted plan does not
-        contain is a stale dependency, and carrying one past a rollback is the defect the
-        review's fifth finding named. `covers` is what the accepted copy's boundary covered
-        when it was kept; a copy that does not record it predates `LATE_FILES`, which are
-        then left as they are (see there).
+        contain is a stale dependency, and one must not survive a rollback. `covers` is
+        what the accepted copy's boundary covered when it was kept; a copy that does not
+        record it predates `LATE_FILES`, which are then left as they are (see there).
 
     """
     have = set(os.listdir(src)) if os.path.isdir(src) else set()
@@ -171,15 +163,13 @@ def _put_back(state: str, src: str, covers=None) -> dict:
 
 # ------------------------------------------------------------------ the record
 
-#: **Where a correction to evidence is recorded.** The neighbourhood delivery round, and
-#: the independent reader's own finding about the round before it: after three trials
-#: had established that the crowded ring's missing court was its approved pool and not
-#: its arrangement, the agent reading's attribution of that finding was corrected **by
-#: hand**, in both the live copy and the copy kept inside the accepted snapshot -- a
-#: directory this module's own code calls "kept whole, byte for byte". The reader is
-#: right that a correction to a reading wants a mechanism rather than an editor, and
-#: this is it. Append-only, and deliberately **outside** the rollback boundary for the
-#: same reason the obligations ledger is: restoring it would erase the record that the
+#: **Where a correction to evidence is recorded.** A finding in an agent reading can turn
+#: out to be misattributed once later trials have run, and a correction made **by hand**
+#: -- in the live copy and in the copy kept inside the accepted snapshot, a directory
+#: this module's own code calls "kept whole, byte for byte" -- leaves no record that it
+#: was made. A correction to a reading wants a mechanism rather than an editor, and this
+#: is it. Append-only, and deliberately **outside** the rollback boundary for the same
+#: reason the obligations ledger is: restoring it would erase the record that the
 #: correction was made, and a correction that can be rolled back is a hand edit with
 #: extra steps. A reader of a corrected document applies the rows; the document itself
 #: is never rewritten.
@@ -409,30 +399,29 @@ PROTECTED_HARD = (
     ("courts owed", "courts.owed_n", "down"),
     ("thresholds not walkable", "route.walked.unreached_n", "down"),
     ("thresholds with no stance", "route.walked.no_stance_n", "down"),
-    # **the functions the neighbourhood delivers** (the design resolution round): a home
-    # that stood and was entered, a home that works as the form its use owes, a shop
-    # that works. A revision may replace any of them -- new parts, new ids -- and may
-    # not lose one: a removed working home does not leave the denominator **the ground
-    # between the buildings** (the design resolution round's registered outcome 3): fins
-    # and ridges of open ground. Compared with a tolerance (`RIDGE_TOLERANCE`), since a
-    # rebuild re-cuts a whole scope and moves a few columns either way; a trial that
-    # doubles them has made the ground worse
+    # **the ground between the buildings**: fins and ridges of open ground. Compared
+    # with a tolerance (`RIDGE_TOLERANCE`), since a rebuild re-cuts a whole scope and
+    # moves a few columns either way; a trial that doubles them has made the ground
+    # worse. **The functions the neighbourhood delivers** are the rows after the
+    # ground's: a home that stood and was entered, a home that works as the form its
+    # use owes, a shop that works. A revision may replace any of them -- new parts, new
+    # ids -- and may not lose one: a removed working home does not leave the denominator
     ("ground ridges", "fabric.ground.ridges", "down"),
     # ...and its holes and the water left standing in a piece (the independent reader's
     # n1 and n2, which the ridge count could not see)
     ("ground pits", "fabric.ground.pits", "down"),
     # the section's standing water, owned or not, is the hard row; the water inside
-    # building pieces is accounted below (the parent composition round: a re-cut moved
-    # the lake end out of a piece and the in-piece count fell 83 -> 51 while the water
-    # stood where it was, in channels nobody owned -- the independent reader's n2)
+    # building pieces is accounted below: a re-cut can move a lake's end out of a piece
+    # and drop the in-piece count while the water stands where it was, in channels
+    # nobody owns
     ("ground water standing", "fabric.ground.water", "down"),
     ("homes entered", "functions.homes_entered", "up"),
     ("homes working", "functions.homes_working", "up"),
     ("shops working", "functions.shops_working", "up"),
-    # **...and the role each plays in the place** (the parent composition round): homes
-    # whose gates face each other across their lane, shops that open onto a street. A
-    # replacement elsewhere that keeps the counts and loses the lane or the street
-    # frontage has not replaced what was lost
+    # **...and the role each plays in the place**: homes whose gates face each other
+    # across their lane, shops that open onto a street. A replacement elsewhere that
+    # keeps the counts and loses the lane or the street frontage has not replaced what
+    # was lost
     ("homes facing across their lane", "functions.homes_facing", "up"),
     ("shops on their street", "functions.shops_on_street", "up"),
 )
@@ -673,17 +662,15 @@ def between(want: dict, now_sec: dict, now_stood: dict | None) -> list:
                         "why": (f"the accepted candidate stands {n} `{t}` and this trial "
                                 f"stands none: a form the place had is gone")})
     # **...and the explicit requirements and adopted obligations, which are not
-    # labels.** The delivery round. A required feature that was affirmatively held and
-    # is now owed, a court that held and does not, a threshold that could be walked to
-    # and cannot: each is a thing the place had and lost, whatever the relationship's
-    # label says, and the label may not have moved at all because the relationship was
-    # already failing.
+    # labels.** A required feature that was affirmatively held and is now owed, a court
+    # that held and does not, a threshold that could be walked to and cannot: each is a
+    # thing the place had and lost, whatever the relationship's label says, and the
+    # label may not have moved at all because the relationship was already failing.
     now_q = _quantities(now_sec)
     was_q = want.get("quantities") or {}
-    # **Held and lost, subject by subject** (the fabric reset round). The court and
-    # feature totals compared a count, and a count cannot tell "a court that held and
+    # **Held and lost, subject by subject.** A count cannot tell "a court that held and
     # does not" -- which is what these rows protect -- from "a house the revised design
-    # no longer lays": a revision that took two houses off a hillside lost two held
+    # no longer lays": a revision that takes two houses off a hillside loses two held
     # courts by the count and nothing by the rule. Where both records carry their
     # subjects, a regression is a subject present in both that held and now does not, or
     # a new subject that does not hold; a subject the design removed is a tradeoff
@@ -715,8 +702,7 @@ RIDGE_TOLERANCE = (1.25, 10)
 #: The ground quantities that tolerance applies to.
 GROUND_TOLERATED = ("ground ridges", "ground pits", "ground water in pieces")
 #: ...and the standing water of the whole section, owned or not, held closer: water does
-#: not move a few columns either way with a re-cut, it is either drained or left (the
-#: parent composition round; the independent reader's n2)
+#: not move a few columns either way with a re-cut, it is either drained or left
 WATER_TOLERANCE = (1.0, 3)
 
 
@@ -777,11 +763,10 @@ def _subject_regressions(was: dict | None, now: dict | None) -> dict | None:
         gone = sorted(set(a) - set(b))
         removed += [f"{kind}:{s}" for s in gone]
         # **a removed subject that held is paid for by a replacement that holds, or it
-        # is a loss** (the design resolution round). The fabric reset round's rule made
-        # every removed subject a tradeoff, and its promoted court revision was granted
-        # by deleting the hillside houses -- one of them a court that held. Old ids are
-        # not immutable: a redesign may take a subject away and lay another; what it may
-        # not do is take away a held one and lay nothing that holds in its place.
+        # is a loss.** Were every removed subject a tradeoff, a revision could be granted
+        # by deleting the houses whose courts held. Old ids are not immutable: a redesign
+        # may take a subject away and lay another; what it may not do is take away a held
+        # one and lay nothing that holds in its place.
         lost = [s for s in gone if a.get(s)]
         gained = [s for s in sorted(set(b) - set(a)) if b.get(s)]
         if len(lost) > len(gained):

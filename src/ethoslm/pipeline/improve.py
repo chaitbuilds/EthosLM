@@ -105,8 +105,8 @@ def owner_actions(owner: str) -> tuple:
     # the parent's piece level is this stage's own revision path (`_apply_relevel`)
     if owner == "layout" and "relevel" not in got:
         got = got + ("relevel",)
-    # ...and its extent (`_apply_recut`, the parent composition round), and whether an
-    # open piece is landscape kept as found (`_apply_landscape`)
+    # ...and its extent (`_apply_recut`), and whether an open piece is landscape kept as
+    # found (`_apply_landscape`)
     if owner == "layout" and "recut" not in got:
         got = got + ("recut",)
     if owner == "layout" and "landscape" not in got:
@@ -151,13 +151,12 @@ def is_material(f: dict) -> bool:
 def _tokens_of(word: str) -> set:
     """The emitted-feature token(s) a requirement's own word is about.
 
-        **A word is not a token.** The design review's `market`/`stalls` disagreement, and it
-        is entirely this translation: the sentence's requirement is `feature/market`, so the
-        raw word is `market`; the constraint construction emits is about `stalls`; and
-        `obligation.from_constraint` computed `material = "stalls" in {"market"}` -> False, so
-        the row was never material, never selected, and never acted on. `envelope`'s own
-        vocabulary already maps one to the other (`FEATURE_WORDS`: `stalls` is asked for by
-        `market`, `stalls`, `bazaar`); this reads that table in the direction the ledger needs.
+        **A word is not a token.** The sentence's requirement is `feature/market`, so the raw
+        word is `market`, but the constraint construction emits is about `stalls`; compared
+        word to token, `"stalls" in {"market"}` is False, and the row would never be material,
+        selected or acted on. `envelope`'s own vocabulary already maps one to the other
+        (`FEATURE_WORDS`: `stalls` is asked for by `market`, `stalls`, `bazaar`); this reads
+        that table in the direction the ledger needs.
 
     """
     from .. import envelope
@@ -353,10 +352,9 @@ def _apply_layout(rnd, be, spec: dict, finding: dict, action_hint: str | None) -
         if os.path.exists(rnd.rel(f)):
             os.remove(rnd.rel(f))
     # **A re-solved place regenerates everything the geometry it changed was planned
-    # against**, the neighbourhood round: districts *and* compounds. A compound is
-    # planned against the road that arrives at it (`compound_failures`' gate/road
-    # check), and keeping the palace's plan across a re-solve is what refused every one
-    # of the composition round's eleven layout actions with the same message.
+    # against**: districts *and* compounds. A compound is planned against the road that
+    # arrives at it (`compound_failures`' gate/road check), so keeping a compound's plan
+    # across a re-solve refuses every layout action with the same message.
     # `_stage_arterials` enforces the same rule on the ordinary path; this is the
     # revision's own.
     from .. import local as _local_r
@@ -395,12 +393,10 @@ def _estimate_vs_built(rnd, cycle: dict) -> dict | None:
     touched = list((act.get("refabricated") or {}).keys())
     if not touched:
         # **An action with no fabric estimate says so, rather than carrying nothing.**
-        # The neighbourhood delivery round: `certified.on` is set only for arrangement
-        # actions, so an anchor or a ring action reached this function, returned `None`,
-        # and the cycle carried no comparison at all -- which reads on the record as a
-        # missing measurement rather than as an action of a kind that has no fabric
-        # estimate to compare. It is an honest answer either way; it was not written
-        # down.
+        # `certified.on` is set only for arrangement actions; for an anchor or a ring
+        # action, returning `None` would leave the cycle with no comparison at all, which
+        # reads on the record as a missing measurement rather than as an action of a kind
+        # that has no fabric estimate to compare.
         return {"on": cert.get("on"), "districts": [],
                 "estimate": None,
                 "why": (f"`{cycle.get('action')}` refabricated no district: it is not a "
@@ -461,7 +457,7 @@ def _apply_revision(rnd, be, spec: dict, doc: dict) -> dict:
 
 
 def _apply_relevel(rnd, be, spec: dict, doc: dict) -> dict:
-    """**The parent's level for a piece, revised** (the design resolution round).
+    """**The parent's level for a piece, revised**.
 
         `{"type": "relevel", "levels": {district: level}}`. A ring strip's pieces are cut and
         levelled by the sector decision (`sectors.json`), compiled at their levels and adopted
@@ -560,7 +556,7 @@ def _apply_relevel(rnd, be, spec: dict, doc: dict) -> dict:
 
 
 def _apply_recut(rnd, be, spec: dict, doc: dict) -> dict:
-    """**The parent's extent for a piece, revised** (the parent composition round).
+    """**The parent's extent for a piece, revised**.
 
         `{"type": "recut", "rects": {district: [x0, z0, x1, z1]}}`. A ring strip's pieces are
         cut by the sector decision (`sectors.json`); a reading that finds a piece's extent
@@ -665,8 +661,7 @@ def _apply_recut(rnd, be, spec: dict, doc: dict) -> dict:
 
 
 def _apply_landscape(rnd, be, spec: dict, doc: dict) -> dict:
-    """**An open piece, revised to landscape kept as found** (the parent composition
-        round).
+    """**An open piece, revised to landscape kept as found**.
 
         `{"type": "landscape", "districts": {district: "as_found"}}`. A piece the strip left
         open is still compiled as open land, and its groves and gardens are sited on one
@@ -810,13 +805,12 @@ def _settle_preview(rnd, finding_id) -> None:
 def _findings(rnd) -> tuple:
     """The reading of the built world, **with its recorded corrections applied**.
 
-        The neighbourhood delivery round. A reading is an agent's judgement of a world, and
-        a later trial can establish that one of its attributions was wrong -- the spatial
-        design round spent three actions establishing that the crowded ring's missing court
-        was its approved pool and not its arrangement. That correction was then made with an
-        editor, inside a directory this project calls kept byte for byte, and the independent
-        reader was right to name it. `promote.correct` records a correction; this applies it
-        on the way in and leaves `inspection/views.json` exactly as the reader wrote it.
+        A reading is an agent's judgement of a world, and a later trial can establish that
+        one of its attributions was wrong -- that a missing court came from the approved pool
+        and not from the arrangement, say. The reading's directory is kept byte for byte, so
+        a correction is never made by editing it: `promote.correct` records a correction;
+        this applies it on the way in and leaves `inspection/views.json` exactly as the
+        reader wrote it.
 
     """
     from . import promote
@@ -871,11 +865,10 @@ def _hint_of(findings: list, rid: str):
 def _act_key(hint) -> str | None:
     """A fingerprint of **what an action carries**, or None where a name is all of it.
 
-        The block design round. `obligation.tried_here` refuses the unchanged retry -- the
-        same action on the same candidate -- and for an action that is a name and nothing
-        else the name is the whole of it. A `character` or `voice` revision is a name and a
-        document, and two different documents are two different actions. See
-        `obligation.tried_here` for the measurement that made this necessary.
+        `obligation.tried_here` refuses the unchanged retry -- the same action on the same
+        candidate -- and for an action that is a name and nothing else the name is the whole
+        of it. A `character` or `voice` revision is a name and a document, and two different
+        documents are two different actions.
 
     """
     if not isinstance(hint, dict):
@@ -891,22 +884,20 @@ def _act_key(hint) -> str | None:
 def _routed(rnd, spec: dict, row: dict, finding: dict | None) -> str | None:
     """**Which action this finding is for, asked of the module that owns the actions.**
 
-        The neighbourhood round, found by running the loop on its own built reading. A
-        finding that names no action fell through to `owner_actions(owner)[0]` -- the head of
-        a *declaration* list, which for the layout owner is `shrink_anchor` -- so a reading
-        that said "the crowded ring is six terraces on an empty floor, and the ground between
-        them belongs to nobody" was answered by making the market square smaller. The list is
-        an inventory of what the owner *can* do; it is not, and was never meant to be, an
-        answer to what this finding *asks* for.
+        A finding that names no action must not fall through to `owner_actions(owner)[0]`
+        -- the head of a *declaration* list, which for the layout owner is `shrink_anchor` --
+        or a reading that says "the ring is six terraces on an empty floor, and the ground
+        between them belongs to nobody" is answered by making the market square smaller. The
+        list is an inventory of what the owner *can* do, not an answer to what this finding
+        *asks* for.
 
-        `placesolve._action_for` is that answer and has been since the design round: it reads
-        the finding's own measure, words and subjects and returns the action and the subject,
-        walking `ARRANGEMENT_ACTIONS` one per finding so a refusal leaves the rest available.
-        Two lists about one question, disagreeing, is the defect this whole round is about;
-        the dispatcher asks the module that acts.
+        `placesolve._action_for` is that answer: it reads the finding's own measure, words
+        and subjects and returns the action and the subject, walking `ARRANGEMENT_ACTIONS`
+        one per finding so a refusal leaves the rest available. Two lists answering one
+        question would disagree; the dispatcher asks the module that acts.
 
         Returns `None` where the router has no answer, and the caller falls back to the
-        owner's inventory exactly as it did.
+        owner's inventory.
 
     """
     from .. import placesolve
@@ -952,10 +943,9 @@ def _judge_trial(rnd, rec: dict, here: str) -> dict | None:
                 if c.get("rebuilt_candidate") == here and c.get("applied")), None)
     want = promote.protected(rnd)
     regs = promote.regressions(rnd, want)
-    # **What this trial cost, beside what it bought.** The neighbourhood delivery round:
-    # "account for composition tradeoffs -- including qualities already failing". The
-    # regressions above reject; this is the whole account, both directions, and it is on
-    # the promotion whether or not anything fell.
+    # **What this trial cost, beside what it bought**, including qualities already
+    # failing. The regressions above reject; this is the whole account, both directions,
+    # and it is on the promotion whether or not anything fell.
     trade = promote.tradeoffs(rnd, want)
     measure = (cyc or {}).get("measure") or {}
     observed = bool((cyc or {}).get("closed")) or measure.get("moved") is True
@@ -1076,8 +1066,8 @@ def stage_improve(rnd, be, results: dict) -> dict:
                         f"and the accepted candidate {verdict.get('restored_to')} is "
                         f"restored; the loop continues on it")}
     # **The best retained result exists from the first read candidate onward.** Without
-    # this the first trial would have nothing to fall back to, which is the state the
-    # neighbourhood round was in when its first rebuild stopped at lint.
+    # this the first trial would have nothing to fall back to, if its rebuild stopped at
+    # lint.
     if not promote.accepted(rnd):
         promote.accept(rnd, here, "the first candidate of this lineage to be built, "
                                   "checked and read; the best retained result until a "
@@ -1099,7 +1089,7 @@ def stage_improve(rnd, be, results: dict) -> dict:
     owed = obligation.open_rows(led, material=True)
     chosen = None
     # **A revision whose trial was rejected on a ruler since corrected may be tried
-    # again, once** (the fabric reset round): see the design check below. Its action is
+    # again, once**: see the design check below. Its action is
     # not the unchanged retry `tried_here` refuses, because what judged it has changed.
     _rej = set()
     for t_ in (promote.load(rnd).get("trials") or []):
@@ -1108,13 +1098,11 @@ def stage_improve(rnd, be, results: dict) -> dict:
                 r_.get("what") == "quantity" and r_.get("id") in promote.SUBJECT_LABELS
                 for r_ in regs_):
             _rej.add(str(t_.get("candidate")))
-    # **...and one whose rebuild did not realize the action** (the design resolution
-    # round): the first relevel's rebuild kept the ground cut for the old level -- the
-    # ground stage keyed nothing a relevel moves -- so the trial built shops on ground
-    # it had not cut, measured no step and was rejected for it. That is the pipeline's
-    # defect, not the revision's verdict; a trial the round records as unrealized, with
-    # the correction that fixed it, may be tried once more
-    # (`flags.improve.unrealized_trials`).
+    # **...and one whose rebuild did not realize the action**: e.g. a relevel whose
+    # rebuild kept the ground cut for the old level, so the trial built on ground it had
+    # not cut, measured no step and was rejected for it. That is the pipeline's defect,
+    # not the revision's verdict; a trial the round records as unrealized, with the
+    # correction that fixed it, may be tried once more (`flags.improve.unrealized_trials`).
     _unreal: dict = {}
     for u_ in ((rnd.flags.get("improve") or {}).get("unrealized_trials") or []):
         if isinstance(u_, dict) and u_.get("candidate") and u_.get("fixed_by"):
@@ -1198,8 +1186,8 @@ def stage_improve(rnd, be, results: dict) -> dict:
             # plan.** It has to be a directory and not an in-memory snapshot: the pass
             # that judges this trial is a *later driver invocation* -- the rebuilt world
             # is read by an agent between the two -- so nothing held in this process
-            # survives to roll it back. That is why the neighbourhood round's rollback
-            # could only ever cover replanning.
+            # survives to roll it back; an in-memory rollback could only ever cover
+            # replanning.
             promote.begin(rnd, candidate=here, finding=r["id"],
                           action=str(queue[0] or act_name), measures=before,
                           why=f"acting on {r['id']}: {str(r.get('says'))[:120]}")
@@ -1211,20 +1199,15 @@ def stage_improve(rnd, be, results: dict) -> dict:
                         and not (_k and _k in rejudge_keys):
                     continue
                 tried_any = True
-                # **What an owner is offered, that owner can execute.** The spatial
-                # design round, and it is `owner_actions`' own rule -- *"a list that
-                # cannot be executed is not an inventory"* -- broken one function later.
-                # `OWNER_ACTIONS["fabric"]` lists the arrangement actions, every one of
-                # them is in `placesolve.REALLOCATE_ACTIONS`, so
-                # `owner_actions("fabric")` duly offers them; and this line then routed
-                # a `fabric` owner to `_apply_layout` for `enlarge_lots` **only** and
-                # answered everything else with *"owner `fabric` has no bounded action
-                # for `terrace` in this build"*. `terrace` refused, `compact_bay`
-                # refused, two attempts spent on a row whose owner had been told it
-                # could do both. An arrangement **is** a fabric decision -- it is a
-                # statement about one district's blocks and lots -- and
-                # `placesolve.reallocate` is what executes one, whichever owner the
-                # reading gave it to.
+                # **What an owner is offered, that owner can execute** --
+                # `owner_actions`' own rule, *"a list that cannot be executed is not an
+                # inventory"*. `OWNER_ACTIONS["fabric"]` lists the arrangement actions,
+                # every one of them is in `placesolve.REALLOCATE_ACTIONS`, so
+                # `owner_actions("fabric")` offers them; routing a `fabric` owner to
+                # `_apply_layout` for `enlarge_lots` only would refuse the rest. An
+                # arrangement **is** a fabric decision -- it is a statement about one
+                # district's blocks and lots -- and `placesolve.reallocate` is what
+                # executes one, whichever owner the reading gave it to.
                 from .. import arrange as _arr
                 if act_name == "landscape":
                     _doc = hint if isinstance(hint, dict) else (
@@ -1422,21 +1405,20 @@ def stage_improve(rnd, be, results: dict) -> dict:
     chosen["rebuilt"] = "parts" in got.get("stages", {})
     chosen["rebuild_stopped"] = got.get("stopped")
     chosen["rebuilt_candidate"] = deps.candidate_id(rnd)
-    # **The estimate this action was chosen on, against what the build emitted.** The
-    # neighbourhood round: `arrange.alternatives` ranks on the compiler's pad
-    # arithmetic, which is an estimate of mass and is not construction, and the
-    # controller adopts that ranking -- so the ledger has to carry both numbers on the
-    # same district or the estimate is never held to anything. Written after the
-    # rebuild, per district the action refabricated, and `unmeasured` where construction
-    # reported nothing.
+    # **The estimate this action was chosen on, against what the build emitted.**
+    # `arrange.alternatives` ranks on the compiler's pad arithmetic, which is an estimate
+    # of mass and is not construction, and the controller adopts that ranking -- so the
+    # ledger has to carry both numbers on the same district or the estimate is never held
+    # to anything. Written after the rebuild, per district the action refabricated, and
+    # `unmeasured` where construction reported nothing.
     chosen["estimate_vs_built"] = _estimate_vs_built(rnd, chosen)
     _save(rnd, rec)
     if got.get("stopped"):
-        # **A failed trial is a rejected trial, not a failed round.** The neighbourhood
-        # round returned `blocked` here, twice, and left the failed trial on disk as the
-        # candidate -- so its second failed revision is what it delivered. The trial's
-        # reason is kept, the trial's world is not, and the accepted candidate comes
-        # back; the stage is re-entered on it with the action recorded as tried.
+        # **A failed trial is a rejected trial, not a failed round.** Returning `blocked`
+        # here would leave the failed trial on disk as the candidate, delivering a failed
+        # revision. The trial's reason is kept, the trial's world is not, and the accepted
+        # candidate comes back; the stage is re-entered on it with the action recorded as
+        # tried.
         rej = promote.reject(rnd, evidence={
             "cycle": chosen.get("cycle"), "stopped": got.get("stopped"),
             "stages": sorted((got.get("stages") or {}).keys())},

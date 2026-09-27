@@ -3,11 +3,10 @@
     $PY scripts/terrain_bank.py            # write rounds/terrain-bank.json
     $PY scripts/terrain_bank.py --check    # regenerate and compare, byte for byte
 
-Rounds 12, 13 and 14 each spent a session and a million tokens to find one or two
-library defects about the ground -- water counted as ground, decks that drain a lake,
-propagules that float -- because the only instrument that ever met new ground was a
-model-authored type instantiated on a new site. This is the cheap instrument: every
-piece of ground already on disk, tiled, measured, and reduced by rule to thirty-six
+Library defects about the ground -- water counted as ground, decks that drain a lake,
+propagules that float -- are expensive to find when the only instrument that meets new
+ground is a model-authored type instantiated on a new site. This is the cheap instrument:
+every piece of ground already on disk, tiled, measured, and reduced by rule to thirty-six
 fixtures a hand-written reference type can be stood on in minutes.
 
 The rule, end to end:
@@ -62,7 +61,8 @@ MARGIN = 4          # ...never closer than this to the patch edge, which is the 
 GATE = "lane_head"
 
 #: The blocks that fall when what is under them goes. A pad cut into a bank of these is
-#: a pad with a landslide over it, and no fixture in rounds 13 or 14 had any.
+#: a pad with a landslide over it, and a sample that does not look for them may have
+#: none.
 GRAVITY = ("sand", "red_sand", "gravel", "suspicious_sand", "suspicious_gravel")
 
 #: What counts as a tree for `tree_pct`: the column's top is wood or leaf.

@@ -55,12 +55,12 @@ def resolution_of(spec: dict, place: dict, site: dict,
         Reads the plan that exists rather than laying one out: this is the *record* of a
         resolved design, and the policies are what resolve it.
 
-        **Every region carries the four columns apart**, the design round: the ground the
-        requirement is about, the ground the compiler may develop, the lots it drew and the
-        footprint that stands. `intent.lot_cover` measures over the first and reports the
-        last beside it, so an inferred remainder cannot leave the question and a cover
-        figure improved only by enlarging empty lots shows as what it is. See
-        `placeplan.region_columns`, which answers all four in one call.
+        **Every region carries the four columns apart**: the ground the requirement is
+        about, the ground the compiler may develop, the lots it drew and the footprint that
+        stands. `intent.lot_cover` measures over the first and reports the last beside it,
+        so an inferred remainder cannot leave the question and a cover figure improved only
+        by enlarging empty lots shows as what it is. See `placeplan.region_columns`, which
+        answers all four in one call.
 
     """
     lay = (place or {}).get("layout") or {}

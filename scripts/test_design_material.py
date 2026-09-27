@@ -1,15 +1,14 @@
-"""The design round's material cases: the record against the assembled world, a
-control the random arm is actually matched against, and a display that can show the
-substitution under judgement.
+"""Material cases: the record against the assembled world, a control the random arm is
+actually matched against, and a display that can show the substitution under judgement.
 
-    $PY scripts/test_design_material.py            # these cases and the expression's
+    $PY scripts/test_design_material.py            # these cases and the inherited ones
     $PY scripts/test_design_material.py --only b   # one of them
     $PY scripts/test_design_material.py --no-inherit
 
 **This file extends `scripts/test_expression_material.py`; it does not supersede it.**
 That file already covers ownership at the write, protection, shape-and-state
 preservation, determinism, the maintained/weathered control and the recipe refusals, and
-its eight cases run here by import so one command answers for both.
+its eight cases run here by import so one command answers for both. This file adds
 `surfaces.reconcile`, the per-context matched rate, and `preview`'s textured display
 with its positive control.
 
@@ -346,8 +345,8 @@ def t_l_the_flat_display_is_unchanged_by_the_textured_path():
 
 
 # --------------------------------------------- the clearer against a laid frame
-# `prims.py` is C's, and `scripts/test_prims.py` needs a live backend, so the regression
-# for the design round's `clear_trees` fix lives here with the other prims-level cases.
+# `scripts/test_prims.py` needs a live backend, so the regression for `clear_trees`
+# mistaking a frame post for a trunk lives here with the other prims-level cases.
 # `Builder.site()` calls `clear_trees` for every part with a margin, so the box reaches
 # into whatever a neighbour already built.
 
@@ -540,13 +539,13 @@ def t_r_a_fitting_does_not_shut_a_room_off_from_its_own_door():
 
 @case
 def t_q_every_probe_cottage_lays_a_fire():
-    """The functional number this fix bought, measured on the built blocks rather than
-    on the certificate: 12 seeds at each of one, two and three storeys."""
+    """A fire in every probe cottage, counted on the built blocks rather than on the
+    certificate: four seeds at each of one, two and three storeys."""
     got = {}
     for storeys in (1, 2, 3):
         n = 0
-        for seed in range(1, 5):             # four seeds a storey here; the full
-            b, _s, res = C.probe_build(      # twelve is out/des-work/C/fire_sweep.py
+        for seed in range(1, 5):             # four seeds a storey
+            b, _s, res = C.probe_build(
                 "cottage", 20, 14, {"storeys": storeys}, seed=seed,
                 voice="drystone_and_thatch")
             assert res.get("ok"), (storeys, seed, res)

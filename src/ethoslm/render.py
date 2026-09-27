@@ -98,11 +98,9 @@ def views_for(cx: float, cy: float, cz: float, span: float) -> list[View]:
 BLACK_MEAN = 12.0
 
 #: A frame at or above `BLACK_MEAN` and below this is **dim**: not rock, but deep shade
-#: -- an eye-level camera in an unlit gate passage. Demo-polish, phase 1d (finding 3):
-#: `shot_summary` reported these and enforced nothing, and four of the demo's 210 panels
-#: are on disk at means of 16.3 to 22.4 because of it. Dim climbs the same ladder black
-#: does; only when every rung is dim is the brightest kept, and named. Twice the black
-#: bar, which is where the report's own band already ended.
+#: -- an eye-level camera in an unlit gate passage. Reporting dim frames without
+#: enforcing anything lets them through, so dim climbs the same ladder black does; only
+#: when every rung is dim is the brightest kept, and named. Twice the black bar.
 DIM_MEAN = 2 * BLACK_MEAN
 
 #: How far the view ray must travel before it hits anything. This is what "line of
@@ -401,7 +399,7 @@ def section_shot(name: str, centre, span: float, height: float) -> Shot:
 def eye_shot(name: str, pos, target, fov: float,
              sight: "Sightline | None" = None, **aim_kw) -> Shot:
     """A camera at an explicit position looking at an explicit point. The escape hatch
-    for shots whose geometry is neither an orbit nor a door -- E3's street eyes."""
+    for shots whose geometry is neither an orbit nor a door -- street-level eyes."""
     return aim(name, pos, target, fov, sight, **aim_kw)
 
 
@@ -594,15 +592,14 @@ def plot_subject(plot: dict, cy: float, margin: int = 10):
     return (cx, cy, cz), span
 
 
-#: **A point part on an edge is framed on the edge.** Demo-polish, 1d (finding 2). A
-#: gate is a `point` with a 5x5 pad, so `plot_subject` frames a span of fifteen -- and
-#: the demo's outer gate stands in a wall of forty-eight, so all four of its panels were
-#: close masonry and the eye-level one was inside the passage. When the edge a passage
-#: point stands on rises at least `GATE_WALL_RATIO` times the point's own span above the
-#: point's floor, the subject is the wall at the gate: a span of `GATE_SPAN_MULT` times
-#: that rise, centred at the wall's mid-height, and the eye-level rung stands
-#: `GATE_EYE_BACK` times the rise back on the road **outside** the wall, looking
-#: `GATE_EYE_LIFT` times the rise up it. the demo's is forty-eight.
+#: **A point part on an edge is framed on the edge.** A gate is a `point` with a 5x5
+#: pad, so `plot_subject` frames a span of fifteen -- and a gate in a tall wall then
+#: photographs as close masonry, with the eye-level camera inside the passage. When the
+#: edge a passage point stands on rises at least `GATE_WALL_RATIO` times the point's own
+#: span above the point's floor, the subject is the wall at the gate: a span of
+#: `GATE_SPAN_MULT` times that rise, centred at the wall's mid-height, and the eye-level
+#: rung stands `GATE_EYE_BACK` times the rise back on the road **outside** the wall,
+#: looking `GATE_EYE_LIFT` times the rise up it.
 GATE_WALL_RATIO = 2.0
 GATE_SPAN_MULT = 1.5
 GATE_EYE_BACK = 0.5
@@ -729,14 +726,13 @@ def pass_foliage(rungs: list, sight: "Sightline | None") -> list:
 def merged_plots(state: str) -> list:
     """One rectangle per structure, from a settlement's plot registry.
 
-        **What the registry knows about a part travels with its rectangle.** Demo-polish,
-        phase 4. This returned four numbers and a label, and threw away the `kind`,
-        `passage`, `y0` and `rects` the registry writes down -- so `stage_render`'s
-        `p.get("passage")` was never true and 1d's *a gate is framed on its wall* was dead
-        code in the only pipeline that runs it, while its own case passed on plot dicts
-        built by hand. All three of the demo's gates were photographed as close masonry
-        again. A rule proved on a fixture is not wired until something reads it off what
-        the pipeline actually holds; the case for that is `test_camera`'s
+        **What the registry knows about a part travels with its rectangle.** The `kind`,
+        `passage`, `y0` and `rects` the registry writes down are kept, because the camera
+        rules read them: without `passage`, `stage_render`'s `p.get("passage")` is never
+        true and *a gate is framed on its wall* is dead code in the only pipeline that
+        runs it, while its own case passes on plot dicts built by hand. A rule proved on
+        a fixture is not wired until something reads it off what the pipeline actually
+        holds; the case for that is `test_camera`'s
         `dp4_the_plot_registry_carries_what_the_camera_rules_read`.
 
     """
@@ -854,8 +850,8 @@ def bearing_shots(centre, span: float, bearings=(45, 225), *,
                   sight: "Sightline | None" = None, dist: float = 1.05,
                   height: float = 0.85, lift: float = 0.12, fov: float = 60,
                   pull: float = 0.72, prefix: str = "") -> dict:
-    """A ring of aerials round one subject. E1c's two opposite quarters (a west-face
-    defect is invisible from the northeast) and E3's four are the same recipe."""
+    """A ring of aerials round one subject. Two opposite quarters (a west-face defect is
+    invisible from the northeast) and all four are the same recipe."""
     out = {}
     d = span * dist
     for b in bearings:
@@ -904,28 +900,25 @@ PLACE_SKYLINE_RISE = 18
 PLACE_SKYLINE_SPAN = 16
 
 #: Where the gate's foot sits in the arrival frame **when the stand-back has been
-#: scaled** past its floor: at the boundary of the lower third. Demo-polish, 1d (finding
-#: 7). `place_card_shots` aims at the site's centre from `gate.y + 2`, and at the floor
-#: of sixty that puts a wall of twenty where the validated frame had it; scaled to 173
-#: for a wall of forty-eight the same aim puts the wall's foot at mid-frame and the
-#: ground the city never touched fills the lower half. A person arriving looks at the
-#: wall, not the road under their feet. Gated on `back > PLACE_SKYLINE_BACK`, which no
-#: standing town triggers, so every recorded skyline camera is the float it always was.
+#: scaled** past its floor: at the boundary of the lower third. `place_card_shots` aims
+#: at the site's centre from `gate.y + 2`, which frames a low wall well at the floor
+#: stand-back; scaled back for a tall wall, the same aim puts the wall's foot at
+#: mid-frame and the ground the city never touched fills the lower half. A person
+#: arriving looks at the wall, not the road under their feet. Gated on
+#: `back > PLACE_SKYLINE_BACK`, so a camera at the floor stand-back is unchanged.
 PLACE_SKYLINE_FOOT = 1.0 / 3.0
 
-#: **The arrival camera climbs too.** Demo-polish, phase 4, and the one rule the render
-#: itself found. `skyline_back` scales the stand-back to what stands in front of the
-#: camera, and with the gate built to its wall's crown (2b) that is **216 blocks outside
-#: the site** -- ground no volume this project holds covers, that no plan touched and
-#: that nothing levelled. with `ok: True`, because `Sightline` is built on the site
-#: volume and the camera is nowhere in it. It gets the same ladder: the first rung is
-#: the validated camera and does not move, so every recorded arrival frame is the bytes
-#: it always was, and each rung after it lifts the eye `PLACE_SKYLINE_LIFT` blocks and
-#: re-aims from where it now stands. A rung is only ever reached by a frame that would
-#: otherwise have been thrown away. Sixteen because it is `MAX_RISE`, the lift the
-#: bounded camera search is already allowed inside a volume it can see; three rungs
-#: because 2 x 16 clears any bank a `site()` pass would itself have cut. Registered
-#: before the frame was re-shot.
+#: **The arrival camera climbs too.** `skyline_back` scales the stand-back to what
+#: stands in front of the camera, and for a gate built to a tall wall's crown that can
+#: put the camera far **outside the site** -- ground no volume this project holds
+#: covers, that no plan touched and that nothing levelled -- with `ok: True`, because
+#: `Sightline` is built on the site volume and the camera is nowhere in it. It gets the
+#: same ladder: the first rung is the validated camera and does not move, and each rung
+#: after it lifts the eye `PLACE_SKYLINE_LIFT` blocks and re-aims from where it now
+#: stands. A rung is only ever reached by a frame that would otherwise have been thrown
+#: away. Sixteen because it is `MAX_RISE`, the lift the bounded camera search is already
+#: allowed inside a volume it can see; three rungs because 2 x 16 clears any bank a
+#: `site()` pass would itself have cut.
 PLACE_SKYLINE_LIFT = 16
 PLACE_SKYLINE_RUNGS = 3
 
@@ -1044,11 +1037,11 @@ def place_card_shots(centre, size: float, *, gate=None, bearing: float = 45,
 
 def place_chunks(X: int, Z: int, S: int, shots: dict, margin: int = 16) -> list:
     """The chunks the whole-place frames need: the site, plus every camera's own
-        stand-off outside it, plus a margin. Demo-polish, 1d (finding 9).
+        stand-off outside it, plus a margin.
 
-        `stage_render` loaded the site plus sixteen blocks, and the aerial -- which stands
-        `0.95 * S` off the centre -- showed the site as a floating slab with sheer sides
-        where the world beyond the loaded chunks was nothing. A camera sees what it stands
+        Loading only the site plus a fixed margin leaves an aerial -- which stands
+        `0.95 * S` off the centre -- showing the site as a floating slab with sheer sides
+        where the world beyond the loaded chunks is nothing. A camera sees what it stands
         over; load to where it stands.
 
     """
@@ -1272,10 +1265,8 @@ def shoot(shot: Shot, chunks: list, png: str, *, scene: str | None = None,
           reuse: bool = False, tag: str = "", record_kind: str | None = "frame") -> dict:
     """Render one checked shot to `png`, and say what came back.
 
-        **The only place in this project that writes a Chunky scene and calls the JVM.** It
-        was six places, each with its own idea of what to do when the frame came back wrong,
-        which is how `render_views` came to record `failed: []` for twenty-four shots while
-        two of its frames were a door leaf filling the image edge to edge.
+        **The only place in this project that writes a Chunky scene and calls the JVM**, so
+        there is one idea of what to do when a frame comes back wrong.
 
         The returned record always carries a `status`, and there are only four:
 
@@ -1289,21 +1280,18 @@ def shoot(shot: Shot, chunks: list, png: str, *, scene: str | None = None,
         standing fixture comparable with itself: the panels that were always fine are the
         same bytes.
 
-        **And "its camera did not move" is now read and not asserted.** Demo-polish, phase
-        4. Nothing compared the camera: a frame on disk that was not black and not dim was
-        kept whatever was asked for. So when 1d's *a gate is framed on its wall* was
-        finally wired up and every gate got a new camera on a span four times its own, the
-        render printed `kept` twelve times and would have shipped the old close-masonry
-        panels again. Chunky is a pure function of the scene, so the scene this call asked
-        for is written beside the frame as `<png>.scene.json` and a reuse is allowed only
-        when the scene it would ask for now is that one, byte for byte -- which also
-        catches a changed chunk list, a changed sample count and a changed frame size.
+        **And "its camera did not move" is read, not asserted.** Without a comparison, a
+        frame on disk that is not black and not dim is kept whatever was asked for, so a
+        camera rule that moves every gate's camera would still ship the old panels. Chunky
+        is a pure function of the scene, so the scene this call asked for is written
+        beside the frame as `<png>.scene.json` and a reuse is allowed only when the scene
+        it would ask for now is that one, byte for byte -- which also catches a changed
+        chunk list, a changed sample count and a changed frame size.
 
-        A frame with **no** sidecar is reused as before and the record says
-        `camera_checked: false`. Every cached frame in this project predates the sidecar,
-        and throwing them all away would cost more than it is worth and break the
-        byte-identity the standing fixtures are for; what it may not do is claim they were
-        checked.
+        A frame with **no** sidecar is still reused and the record says
+        `camera_checked: false`. Throwing away every cached frame without one would cost
+        more than it is worth and break the byte-identity the standing fixtures are for;
+        what it may not do is claim they were checked.
 
     """
     rec = shot.as_dict()
@@ -1387,8 +1375,8 @@ def shoot_all(shots: dict, chunks: list, out_dir: str, *, tag: str = "",
         png = os.path.join(out_dir, f"{stem}.png")
         ladder = list(shot) if isinstance(shot, (list, tuple)) else [shot]
         rec = None
-        # **Dim is a rung.** Demo-polish, 1d: a frame in deep shade climbs the ladder
-        # the way a black one does. The rungs share one file, so a dim frame is set
+        # **Dim is a rung.** A frame in deep shade climbs the ladder the way a black
+        # one does. The rungs share one file, so a dim frame is set
         # aside before the next rung overwrites it, and if every rung is dim the
         # brightest is put back and the record says so by name.
         dim_rungs: list = []
@@ -1443,26 +1431,23 @@ def shoot_all(shots: dict, chunks: list, out_dir: str, *, tag: str = "",
 FLY_RISE = 26
 FLY_FOV = 80
 
-#: **The flythrough stops short of its subject.** Demo-polish, 1d (finding 8). The path
-#: ended over the subject's centre, so the last camera looked straight down into the
-#: palace court and the throne hall's roof was the last thing a viewer saw. A camera
-#: move to a thing stops short of it: the path ends `FLY_STANDOFF` blocks before the
-#: subject's near edge -- its half-span along the approach, plus this -- with the look
-#: held on the centre, and the final camera's pitch below `FLY_FINAL_PITCH_MAX` degrees
-#: under level. Registered before the path was recomputed.
+#: **The flythrough stops short of its subject.** A path that ends over the subject's
+#: centre leaves the last camera looking straight down into a court, with a roof as the
+#: last thing a viewer sees. A camera move to a thing stops short of it: the path ends
+#: `FLY_STANDOFF` blocks before the subject's near edge -- its half-span along the
+#: approach, plus this -- with the look held on the centre, and the final camera's
+#: pitch below `FLY_FINAL_PITCH_MAX` degrees under level.
 FLY_STANDOFF = 24
 FLY_FINAL_PITCH_MAX = 40.0
 
 #: The path stops `FLY_STANDOFF` short of the subject's near edge as the rule says, and
-#: when the subject is a *walled* compound its wall stands on that edge: the demo's last
-#: eight frames were the outside of the palace ring wall from nineteen blocks and the
-#: throne hall, which is what the move is for, was never seen. So the tallest column
-#: between the final camera and the look point -- stopping `FLY_STANDOFF` short of the
-#: look point, because the last stretch is the subject itself -- is read off the world,
-#: the final camera stands `FLY_RISE` above it as it stands `FLY_RISE` above the ground
-#: everywhere else, and the move eases up to that over its last `FLY_LIFT_FRAMES`
-#: frames. A move over open ground is the move it was. Registered before the path was
-#: reshot.
+#: when the subject is a *walled* compound its wall stands on that edge, so the last
+#: frames are the outside of the wall and the building the move is for is never seen.
+#: So the tallest column between the final camera and the look point -- stopping
+#: `FLY_STANDOFF` short of the look point, because the last stretch is the subject
+#: itself -- is read off the world, the final camera stands `FLY_RISE` above it as it
+#: stands `FLY_RISE` above the ground everywhere else, and the move eases up to that
+#: over its last `FLY_LIFT_FRAMES` frames. A move over open ground is unchanged.
 FLY_LIFT_FRAMES = 8
 FLY_CORRIDOR = 2
 
@@ -1701,10 +1686,9 @@ def shoot_flythrough(path: list, vol, out_dir: str, *, tag: str = "fly",
 def shot_summary(report: dict) -> dict:
     """Roll a {tag: {key: rec}} shot report up into the counts a caller reports.
 
-        `dim` is above the black bar and still in deep shade. It was reported and never
-        enforced; since demo-polish (1d, finding 3) a dim frame climbs the ladder the way a
-        black one does, so what is reported here is which panels were **repaired** by a
-        further rung and which were **kept** dim because every rung was.
+        `dim` is above the black bar and still in deep shade. A dim frame climbs the ladder
+        the way a black one does, so what is reported here is which panels were
+        **repaired** by a further rung and which were **kept** dim because every rung was.
 
     """
     shots = [(t, k, r) for t, ks in report.items() for k, r in ks.items()]

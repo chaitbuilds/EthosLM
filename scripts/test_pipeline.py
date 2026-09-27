@@ -97,7 +97,7 @@ def c_the_base_volume_is_part_of_the_round():
 
 @case
 def c_a_round_with_no_waves_does_not_need_a_world():
-    """E-craft judges cards that were rendered years of rounds ago and has no site."""
+    """E-craft judges cards that are already rendered, and has no site."""
     r = pipeline.Round.load(os.path.join(ROUNDS, "e_craft.json"))
     assert r.waves == []
     out = pipeline.stage_programs(r, pipeline.OfflineBackend(r), {})
@@ -807,8 +807,8 @@ def c_adaptive_k_inside_a_candidate_is_refused():
 
 @case
 def c_the_tie_rate_survives_a_winners_scored_judgement():
-    """E3 and step 3 are scored by who won, and until now that path dropped the tie
-    count on the floor. For a sibling round-robin the tie rate *is* the headline."""
+    """E3 and step 3 are scored by who won, and that path must keep the tie count. For
+    a sibling round-robin the tie rate *is* the headline."""
     rows = [{"label": "c0_vs_c1", "result": "a"},
             {"label": "c0_vs_c2", "result": "tie"},
             {"label": "c1_vs_c2", "result": "b"}]
@@ -1033,9 +1033,9 @@ def c_the_log_the_project_already_has_is_covered():
 
 
 # The builder gets `check.py` in its own directory and can run it as often as it likes;
-# the acceptance is that the check tells it the truth about the one defect the last two
-# rounds could not close, and stops saying so the moment the library's own `approach()`
-# fixes it.
+# the acceptance is that the check tells it the truth about the on-foot defect (a door a
+# block above the ground you arrive on), and stops saying so the moment the library's
+# own `approach()` fixes it.
 
 
 def _check_round(d):

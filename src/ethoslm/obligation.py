@@ -1,21 +1,19 @@
 """**One ledger of what the place still owes**, across readings and across rebuilds.
 
-The design round's fourth contract. `pipeline/improve.py` dispositions two lists --
-the judge's findings and the emitted construction constraints -- into one document and
-then selects actions out of the first list only. Four escapes follow from that, and the
-review found all four by tracing the control flow:
+Keeping the judge's findings and the emitted construction constraints in two lists, and
+selecting actions out of the first list only, leaves four escapes:
 
-  1. **a reading that omits an old finding closes it.** The cycle is closed with
-     `c["closed"] = c["finding"] in closed_ids`, and the next reading's `closed` list is
-     the reader's. A reader that simply does not mention a finding has closed it.
+  1. **a reading that omits an old finding closes it.** If closure follows the next
+     reading's own `closed` list, a reader that simply does not mention a finding has
+     closed it.
   2. **an applied-but-ineffective action removes the finding from action selection.**
-     `open_material` excludes every finding in `acted`, whether or not the action worked,
-     so one refused move ends the place's chances with that finding for ever.
-  3. **a missing measurement permits closure.** `_measure_moved` answers
-     `toward_target: None` where a measure is absent on either reading, and closure is
-     rejected only on `toward_target is False`.
-  4. **emitted constraints never reach action selection.** They are dispositioned into
-     `disp["constraints"]` and no action is ever chosen from that list.
+     Excluding every finding that was acted on, whether or not the action worked, means
+     one refused move ends the place's chances with that finding for ever.
+  3. **a missing measurement permits closure.** A measure absent on either reading gives
+     `toward_target: None`, and a rule that rejects closure only on
+     `toward_target is False` lets it through.
+  4. **emitted constraints never reach action selection** when they are dispositioned
+     into a list of their own that no action is ever chosen from.
 
 So: one row shape for a judged finding and an emitted constraint, one file
 (`obligations.json`) in the round's state, and four rules that are the negations above.
@@ -32,8 +30,8 @@ So: one row shape for a judged finding and an emitted constraint, one file
 refuses without a measurement of the row's own measure, on the row's own candidate;
 `upsert` moves `last_seen` and leaves `disposition` exactly where it was. Everything a
 row knows about itself -- who owns it, what would settle it, what has been tried on it
-and what that did -- is on the row, because the thing that went wrong before is that
-those four facts lived in four places and only one of them was consulted.
+and what that did -- is on the row, because four facts kept in four places end with
+only one of them consulted.
 """
 from __future__ import annotations
 
@@ -244,16 +242,13 @@ def upsert(ledger: dict, rows, source: str, *, candidate: str | None = None,
         fragmented groups" and "the fragmented groups were fixed".
 
         **...and a row this pass *did* mention, on a candidate other than the one it was
-        closed against, reopens.** The composition round's third evidence connection, and the
-        defect is the mirror of the one above: this function refreshed a closed row's wording
-        and left its `disposition` at `closed`, and wrote `candidate` only on first insert. So
-        a finding closed against candidate A that the reading of candidate B finds again kept
-        `disposition: "closed"` and candidate A's name, was invisible to
-        `open_rows(led, material=True)`, was never selected for an action, and got no
-        `omitted_by` trace either -- the omission loop skips rows that are not open. A
-        repeated failure cannot remain closed. What was closed, against which candidate and
-        why that closure no longer holds is kept on `reopened`, which is the history the
-        round asks for; nothing is deleted.
+        closed against, reopens.** The mirror of the rule above: a finding closed against
+        candidate A that the reading of candidate B finds again, if only its wording were
+        refreshed, would stay `closed` under A's name -- invisible to
+        `open_rows(led, material=True)`, never selected for an action, and with no
+        `omitted_by` trace either, since the omission loop skips rows that are not open.
+        A repeated failure cannot remain closed. What was closed, against which candidate
+        and why that closure no longer holds is kept on `reopened`; nothing is deleted.
 
         The other invariant is untouched: **a reading that merely omits an open row does not
         close it, and a pass that does not mention a closed row does not reopen it.** Only
@@ -442,9 +437,9 @@ def _moved(r: dict, before: dict | None, after: dict | None) -> dict:
     t = r.get("target") if isinstance(r.get("target"), dict) else {}
     value, direction = t.get("value"), str(t.get("direction") or "")
     moved = None
-    # a target with a direction is met by going past it that way (the design resolution
-    # round: a step brought from 7 to 2 against a target of "down to 6" read as "moved
-    # away from its target"); only a target with no direction is a point to approach
+    # a target with a direction is met by going past it that way (a step brought from 7
+    # to 2 against a target of "down to 6" has reached it, not moved away from it); only a
+    # target with no direction is a point to approach
     if value is not None and direction not in ("up", "down"):
         try:
             moved = abs(float(b) - float(value)) < abs(float(a) - float(value))
@@ -485,10 +480,10 @@ def tried_here(ledger: dict, rid: str, candidate: str, action: str | None,
                key: str | None = None) -> bool:
     """Has this exact action been tried on this candidate? The unchanged retry.
 
-        **Exact means the action and what it carries.** The block design round. Some actions
-        are a name and nothing else -- `terrace`, `compact_bay` -- and for those the name is
-        the action. A `character` revision is a name and a document: the reading says which
-        parts and what their characters become. This module refused the second of two
+        **Exact means the action and what it carries.** Some actions are a name and
+        nothing else -- `terrace`, `compact_bay` -- and for those the name is the action.
+        A `character` revision is a name and a document: the reading says which parts and
+        what their characters become. Comparing names alone would refuse the second of two
         different character revisions as a repeat of the first, because both are spelled
         `character`.
 
@@ -542,15 +537,15 @@ def close(ledger: dict, rid: str, evidence: dict, *, candidate: str,
             and "the new reading no longer mentions it" is an absent measure;
           * a measurement that did not reach the row's `acceptance` or its `target`;
           * a cited measure that moved **away** from its target;
-          * **a measurement that is not about this row's subject** (the composition round);
+          * **a measurement that is not about this row's subject**;
           * **an `emitted.<feature>` row offered a view measure instead of feature
-            evidence** (the composition round).
+            evidence**.
 
-        **The row's own measure, on the row's own subject.** This decided relevance by a
-        single string lookup of `measure` in a flat global measures dict, so a finding about
-        `middle_ring_north_west` closed on `undeveloped_share` measured over the whole place:
-        the measure matched by name and nothing asked what it was a measurement *of*. Three
-        shapes are now understood, in this order --
+        **The row's own measure, on the row's own subject.** A single string lookup of
+        `measure` in a flat global measures dict would let a finding about
+        `middle_ring_north_west` close on `undeveloped_share` measured over the whole
+        place: the measure matches by name and nothing asks what it is a measurement
+        *of*. Three shapes are understood, in this order --
 
             evidence["value"]                   the caller has already measured this row
             evidence["by_subject"][s][measure]  measured per district or part
@@ -559,17 +554,17 @@ def close(ledger: dict, rid: str, evidence: dict, *, candidate: str,
         -- and the third one is refused for a row that names subjects whenever the evidence
         says what it is about (`evidence["subject"]`) and that is not one of them, or carries
         `by_subject` for other subjects and not for this row's. Where the evidence names no
-        subject at all the whole-place measure is taken as it always was, and the row records
-        that nothing said what it was a measurement of.
+        subject at all the whole-place measure is taken, and the row records that
+        nothing said what it was a measurement of.
 
-        **An `emitted.<feature>` row closes from post-build feature evidence.** `improve.py`
-        only ever offered these rows `inspect.MEASURES` -- `clusters`, `cluster_gap`,
-        `square_scale`, `open_to_built`, `undeveloped_share`, `plots` -- which contains no
-        `emitted.*` key, so `constraint/stalls/<part>` could not be closed by any evidence
-        that existed and stayed open for ever whatever the world did. What settles it is
-        whether the assembled world carries the feature: `evidence["features"]`, whose answers
-        are `construction.evidence_for`'s. An unknown or unsupported answer does **not** close
-        it, which is the same rule one level up.
+        **An `emitted.<feature>` row closes from post-build feature evidence.**
+        `inspect.MEASURES` -- `clusters`, `cluster_gap`, `square_scale`, `open_to_built`,
+        `undeveloped_share`, `plots` -- contains no `emitted.*` key, so a row such as
+        `constraint/stalls/<part>` offered only those could never close, whatever the
+        world did. What settles it is whether the assembled world carries the feature:
+        `evidence["features"]`, whose answers are `construction.evidence_for`'s. An
+        unknown or unsupported answer does **not** close it, which is the same rule one
+        level up.
 
         `reading` is the whole reading where the caller has one, so the evidence recorded on
         the row names what was read and not merely a number.

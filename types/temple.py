@@ -633,10 +633,9 @@ def build(b, part, seed, **params):
     # No loft to pack. The shell's roof is solid from its eave to its surface, and a
     # tiered roof is filled between its tiers, so there is no room over the ceiling for
     # anyone to be sealed out of; `seal_voids` below is the general answer to any pocket
-    # that is left. This file used to pack "the loft" with a replace-air fill over the
-    # roof's whole volume, and that fill read the world as it stood before the pass
-    # began (demo-polish, 1a), so it overwrote the roof the shell had just laid. A type
-    # does not pack a roof.
+    # that is left. A type does not pack a roof: a replace-air fill over the roof's
+    # whole volume reads the world as it stood before the pass began, so it would
+    # overwrite the roof the shell has just laid.
 
     inside = (foot[0] + 1, foot[1] + 1, foot[2] - 1, foot[3] - 1)
     _furnish_nave(b, part, inside, floor_y + 1, rng)

@@ -8,11 +8,11 @@ A model program's blocks are pending until the pass flushes, so a check that rea
 the world would judge the wall the pass built last time. The pending writes are overlaid
 onto a box cut out of the pass's own volume, and the walk model runs on that.
 
-Cost, measured on the settlement site: the volume is decoded once per pass (0.03 s) and
-each check is a 25x25 slice, an overlay, a Nav build and a 0-jump flood -- a few
-milliseconds. Cheap enough that a program can call it for every door it places, which is
-the only version of this that is worth having. If a pass still learns about frontage
-from a critique afterwards, the ordering change bought nothing."""
+Cost: the volume is decoded once per pass (a few hundredths of a second) and each check
+is a 25x25 slice, an overlay, a Nav build and a 0-jump flood -- a few milliseconds.
+Cheap enough that a program can call it for every door it places, which is the only
+version of this that is worth having: a pass that learns about frontage from a critique
+afterwards has learned it too late."""
 from __future__ import annotations
 
 from . import observe

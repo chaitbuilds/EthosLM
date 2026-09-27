@@ -95,13 +95,11 @@ SECTION_VERSION = 3
 def _section(name: str | None = None) -> dict:
     """The derived section record, from disk where the stage wrote it under this
     runner's own version of the rulers, and re-measured where it did not."""
-    # **`name or CITY`, and not `name = CITY` in the signature.** The neighbourhood
-    # delivery round, found by running this runner on a candidate that is not the
-    # module's own default: a default argument is evaluated **once, at import**, and
-    # `main()` reassigns the global afterwards -- so every gate that called `_section()`
-    # with no argument read `sd-city` whatever `--state` said. Four of them do
-    # (`street_is_inhabited`, `courts_are_courts`, `programme_composed`,
-    # `shown_and_read`), which is four gates answering about the wrong candidate.
+    # **`name or CITY`, and not `name = CITY` in the signature.** A default argument is
+    # evaluated **once, at import**, and `main()` reassigns the global afterwards -- so
+    # every gate that calls `_section()` with no argument (`street_is_inhabited`,
+    # `courts_are_courts`, `programme_composed`, `shown_and_read`) would read the
+    # module's default candidate whatever `--state` said.
     name = name or CITY
     got = _doc(name, "section.json")
     if got and str(got.get("by", "")).startswith("ethoslm.section") \
@@ -414,13 +412,11 @@ def gate_courts_are_courts(g: Gate) -> None:
     per = m.get("per_part") or m.get("parts") or m.get("courts_") or []
     g.check("the answer is per part, not an aggregate count",
             bool(per), f"{len(per)} per-part answer(s)")
-    # **A passing predicate does not settle what a court is.** The neighbourhood round's
-    # independent reader: "every court predicate holds and every court is small" --
-    # three `court_large` courts 3x3, the ten holding courts running 8 to 20 columns, so
-    # the "large" courts were less than half the "small" ones. The predicate answers
-    # whether a court is entered, open and enclosed; the **area** is what says whether
-    # it is worth standing in, and a record that does not carry it cannot be argued
-    # with.
+    # **A passing predicate does not settle what a court is.** Every court predicate can
+    # hold while every court is small -- a `court_large` can be 3x3. The predicate
+    # answers whether a court is entered, open and enclosed; the **area** is what says
+    # whether it is worth standing in, and a record that does not carry it cannot be
+    # argued with.
     areas = [q.get("court_columns") for q in per
              if isinstance(q, dict) and q.get("court_columns") is not None]
     g.check("each court's measured area is on the record, so a passing light well is "
@@ -555,19 +551,14 @@ def gate_programme_composed(g: Gate) -> None:
             "; ".join(f"{k}: {got or 'NONE'}" for k, (got, _w) in sorted(want.items()))
             + (f"; short of {short}" if short else ""))
     # --- and nothing civic that this neighbourhood's programme did not ask for
-    # --------- **Unasked is a fact about a district, not about the place.** The
-    # neighbourhood delivery round, and it is this check's own defect rather than the
-    # compiler's: the unasked sets of every district were unioned and then intersected
-    # with everything standing anywhere in the section, so a type one quarter's
-    # programme *does* ask for was reported as filler because another quarter's does
-    # not. Measured on the delivered candidate: `shop_house` stands twice in
-    # `middle_ring_north_east`, whose own record lists it under `programme` -- the trade
-    # its market street is for -- and the check failed the gate on it because
-    # `upper_ring_east`, which is not in the section and stands nothing, lists it as
-    # unasked. The spatial design report recorded this as an undiagnosed finding of the
-    # repaired runner; this is the diagnosis. So a standing part is matched to the
-    # district it stands in, by the same name-prefix join `section._features` and
-    # `_side_measures` make, and asked of *that* district's own mix.
+    # --------- **Unasked is a fact about a district, not about the place.** Unioning
+    # every district's unasked set and intersecting it with everything standing anywhere
+    # in the section reports a type one quarter's programme *does* ask for as filler
+    # because another quarter's does not -- a `shop_house` on its own market street
+    # failed because a district outside the section lists it as unasked. So a standing
+    # part is matched to the district it stands in, by the same name-prefix join
+    # `section._features` and `_side_measures` make, and asked of *that* district's own
+    # mix.
     by_district = {str(m["district"]): {str(t) for t in (m.get("unasked") or ())}
                    for m in mixes}
     filler, unmatched = [], []
@@ -1040,9 +1031,9 @@ def gate_decision_survives_construction(g: Gate) -> None:
     for p in att:
         em = (rows.get(p["name"]) or {}).get("emitted") or {}
         # `emitted.footprint` is the bounding box of every block a part wrote, which
-        # includes the platform `site()` lays one course wider than the pad all round.
-        # Measured on the delivered candidate, 60 houses "overhang" their lot on that
-        # ruler and **0** on the rectangle the type declares it built.
+        # includes the platform `site()` lays one course wider than the pad all round,
+        # so on that ruler every house "overhangs" its lot; the rectangle the type
+        # declares it built is the one to measure.
         fp = (em.get("rects") or {}).get("main") or em.get("footprint")
         if not fp or len(fp) != 4:
             continue

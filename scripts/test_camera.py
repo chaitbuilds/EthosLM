@@ -533,9 +533,9 @@ def t_bss3_mid_y_answers_for_a_patch_with_nothing_standing_on_it():
             f"places {len(shots)} cameras")
 
 
-# ------------------------------------------------ demo-polish, phase 1d: six camera
-# rules Each gates on a measured condition the standing towns never meet, so
-# `c_not_one_camera _moved_on_either_standing_town` above is the byte-identity half of
+# ------------------------------------------------------------- six camera rules
+# Each gates on a measured condition the standing towns never meet, so
+# `c_not_one_camera_moved_on_either_standing_town` above is the byte-identity half of
 # every case here.
 
 def _wall_world(height: int, z0: int = 30, z1: int = 32, gate_x=(29, 33)):

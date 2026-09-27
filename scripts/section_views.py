@@ -3,14 +3,14 @@
     $PY scripts/section_views.py --state out/comp-a --label before
     $PY scripts/section_views.py --state out/comp-a --label after --cameras out/comp-views/cameras.json
 
-The composition round needs matched before/after views of the *same* subjects across a
-rebuild that moves geometry. `pipeline/inspect.py`'s `_draw_built` cannot give that: it
-recomputes its framing from the current plan every time (the bounding box of every plot,
-the largest area for the street view), so the camera moves with the thing it is
-photographing and the two frames are not comparable. `scripts/material_compare.py` has
-the right model for cached geometry -- a camera is a plain record of
-`(kind, rect, facing, floor, scale)` and drawing it on a second volume gives a matched
-frame -- but it is a material experiment's harness, not a section reader's.
+Judging a rebuild that moves geometry needs matched before/after views of the *same*
+subjects. `pipeline/inspect.py`'s `_draw_built` cannot give that: it recomputes its
+framing from the current plan every time (the bounding box of every plot, the largest
+area for the street view), so the camera moves with the thing it is photographing and
+the two frames are not comparable. `scripts/material_compare.py` has the right model for
+cached geometry -- a camera is a plain record of `(kind, rect, facing, floor, scale)` and
+drawing it on a second volume gives a matched frame -- but it is a material experiment's
+harness, not a section reader's.
 
 So: a camera here is a dict, resolved **once** from the plan and the registered section,
 written to `cameras.json` beside the frames, and re-used verbatim afterwards. The frames
@@ -192,12 +192,11 @@ def resolve(plan, section=None, sample=None, *,
                          "why": f"the {label} side's street frontage, one block deep: "
                                 f"rhythm, spacing, roof line and what stands between "
                                 f"the houses"})
-    # **The frames that show depth and enclosure**, the neighbourhood round's own
-    # requirement: "keep old comparison cameras and add framing that shows depth and
-    # enclosure; thin elevation panoramas alone are inadequate." An elevation is a
-    # section through a street and it answers exactly one question -- what is the rhythm
-    # and the roof line along this face. It cannot answer whether the street is a room:
-    # how far back the far side stands, whether the lane is enclosed on both sides,
+    # **The frames that show depth and enclosure**, added alongside the comparison
+    # cameras above, because thin elevation panoramas alone are inadequate. An elevation
+    # is a section through a street and it answers exactly one question -- what is the
+    # rhythm and the roof line along this face. It cannot answer whether the street is a
+    # room: how far back the far side stands, whether the lane is enclosed on both sides,
     # whether there is anything behind the frontage. An isometric of a short run, close
     # in, is the frame that does, and it is the same cheap draw. Every one of these is
     # derived from the registered boundary and the plan, like the elevations above, so
@@ -317,13 +316,12 @@ def main() -> int:
     state = os.path.abspath(a.state)
     out_dir = os.path.abspath(a.out or os.path.join("out", "comp-views", a.label))
     os.makedirs(out_dir, exist_ok=True)
-    # **Which artifact is being delivered, chosen rather than defaulted.** The spatial
-    # design round, and the neighbourhood review's last paragraph: "current default
-    # views/checks still use `world_built.npz`, while material work writes
-    # `world_finished.npz`. Select and inspect the actual delivered artifact when
-    # finishing is used." `--artifact` names it; with none, the finished world is used
-    # where the round wrote one and the structural world otherwise, and either way the
-    # manifest says which, so a reader never has to infer it from a filename.
+    # **Which artifact is being delivered, chosen rather than defaulted.** Material work
+    # writes `world_finished.npz` beside the structural `world_built.npz`, and the views
+    # must inspect the world actually delivered. `--artifact` names it; with none, the
+    # finished world is used where the round wrote one and the structural world
+    # otherwise, and either way the manifest says which, so a reader never has to infer
+    # it from a filename.
     vol_path = a.volume or os.path.join(state, a.artifact or "")
     if not a.volume and not a.artifact:
         finished = os.path.join(state, "world_finished.npz")

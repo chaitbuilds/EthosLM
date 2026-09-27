@@ -3,10 +3,10 @@
     $PY scripts/test_composition_evidence.py
 
 Cheap production failing cases, each with a positive control. Not a suite: this is the
-set of measurements that would go green again if somebody quietly undid the six evidence
+set of measurements that would go green again if somebody quietly undid the evidence
 connections below.
 
-**E1 -- a function needs affirmative evidence for its applicable required predicates**
+**A function needs affirmative evidence for its applicable required predicates**
 (`construction.confirm`, `construction.evidence_for`, `construction.wants_for`):
 
   1. a required feature with no affirmative evidence cannot report observed success
@@ -16,13 +16,13 @@ connections below.
   2. an `unsupported` or `declared` answer stays `holds: None` and is reported as **owed**,
      with which of `OWED_REASONS` it is.
 
-**E2 -- physical feature identity** (`usable.FEATURE_BLOCKS`, `construction._verify_feature`):
+**Physical feature identity** (`usable.FEATURE_BLOCKS`, `construction._verify_feature`):
 
   3. a hearth rectangle full of the voice's own masonry does not certify a hearth, at
      emission and on the assembled world. The real fire is the control, and the control is
      what `types/cottage.py` actually lays.
 
-**E3/E4 -- the ledger** (`ethoslm.obligation`):
+**The ledger** (`ethoslm.obligation`):
 
   4. a finding that recurs on a new candidate reopens; a closed row on an unchanged
      candidate stays closed, and a pass that merely omits it does not reopen it;
@@ -31,12 +31,12 @@ connections below.
      view measure -- `inspect.MEASURES` carries no `emitted.*` key, which is why these rows
      could not be closed by any evidence that existed.
 
-**E5 -- the per-part binding** (`demand.required_by_part`, `envelope.feature_token`):
+**The per-part binding** (`demand.required_by_part`, `envelope.feature_token`):
 
   7. a `market` want and a `stalls` constraint agree about being required, and the binding
      asks the market leaf for stalls without asking the houses beside it.
 
-**E6 -- prepared ground in reuse** (`ethoslm.deps`):
+**Prepared ground in reuse** (`ethoslm.deps`):
 
   8. a changed prepared ground invalidates the built artifact; an unchanged one stays warm.
 """
@@ -113,7 +113,7 @@ def old_verdict(rec: dict) -> dict:
     return {"ran": ran, "failed": failed, "method": "observed" if ran else "declared"}
 
 
-# --------------------------------------- E1. affirmative evidence, or an owed record
+# ------------------------------------------- affirmative evidence, or an owed record
 
 @case
 def t1_a_required_feature_with_no_evidence_is_not_an_observed_success():
@@ -248,7 +248,7 @@ def t2b_the_predicates_asked_follow_what_the_part_requires():
             f"owing a court is asked {asked} and the courtyard house answers all of them")
 
 
-# ------------------------------------------------- E2. a feature is not an occupied box
+# ----------------------------------------------------- a feature is not an occupied box
 
 @case
 def t3_rubble_in_a_hearth_rectangle_is_not_a_hearth():
@@ -328,7 +328,7 @@ def t3_rubble_in_a_hearth_rectangle_is_not_a_hearth():
             f"a lid {6} courses over a {sky['cells']}-cell court makes it a room")
 
 
-# ------------------------------------------------------------ E3. a recurrence reopens
+# ---------------------------------------------------------------- a recurrence reopens
 
 @case
 def t4_a_finding_that_recurs_on_a_new_candidate_reopens():
@@ -401,7 +401,7 @@ def t4_a_finding_that_recurs_on_a_new_candidate_reopens():
         shutil.rmtree(d, ignore_errors=True)
 
 
-# ------------------------------------------------- E4. the row's measure, on its
+# ----------------------------------------------------- the row's measure, on its
 # subject
 
 @case
@@ -437,7 +437,7 @@ def t5_a_measurement_of_another_subject_cannot_close_a_row():
             "measures": {"undeveloped_share": 0.04}}, candidate=here)
         assert said["closed"] is False and "another subject" in said["why"], said
 
-        # the control: the row's own subject, measured on the current candidate
+        # the control: the row's own subject, measured for the current candidate
         mine = obligation.close(led, f["id"], {
             "candidate": here, "before": 0.33,
             "measures": {"undeveloped_share": 0.19},
@@ -529,7 +529,7 @@ def t6_an_emitted_feature_row_closes_from_feature_evidence_only():
         shutil.rmtree(d, ignore_errors=True)
 
 
-# ------------------------------------------------------------ E5. words against tokens
+# ---------------------------------------------------------------- words against tokens
 
 @case
 def t7_a_market_want_and_a_stalls_constraint_agree():
@@ -589,7 +589,7 @@ def t7_a_market_want_and_a_stalls_constraint_agree():
             "and asks the courtyard house beside it for nothing")
 
 
-# --------------------------------------------------- E6. prepared ground, and warm
+# ------------------------------------------------------- prepared ground, and warm
 # reuse
 
 class _Rnd:

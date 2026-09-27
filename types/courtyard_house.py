@@ -49,18 +49,18 @@ PARAMS = {
     # then the type declares what stands.
     "storeys": ("int", 1, 1),
     "screen": ("choice", ["wall", "planted", "none"]),
-    # **The least court the design asks for** (the fabric reset round): 0 is the type's
-    # own proportion (`_range_depth`); a number is the court's least side, and the
-    # ranges are made shallower -- never under 3 -- until the court is at least that.
+    # **The least court the design asks for**: 0 is the type's own proportion
+    # (`_range_depth`); a number is the court's least side, and the ranges are made
+    # shallower -- never under 3 -- until the court is at least that.
     # Set by the district's character (`court_least`), never drawn at random.
     "court": ("int", 0, 15),
 }
 
 NEEDS = {
-    # measured by scripts/type_needs.py; a yard of 3 inside ranges of 3 is 9 across. The
-    # fabric reset round re-swept it (square pads on the plane and the bank, both seeds,
-    # every parameter): clean 9 to 22, broken from 24 (an E002 door at 24, 28 and 32),
-    # so the ceiling moved from 17 to 22. The square sweep builds no neighbour;
+    # measured by scripts/type_needs.py; a yard of 3 inside ranges of 3 is 9 across.
+    # Swept on square pads on the plane and the bank, both seeds, every parameter: clean
+    # 9 to 22, broken from 24 (an E002 door at 24, 28 and 32), so the ceiling is 22. The
+    # square sweep builds no neighbour;
     # **attached**, `scripts/test_attached_forms.py` and a sweep of 40 runs of four
     # (lots 13-19 wide x 15-21 deep, all four fronts, plane and bank, mixed screens and
     # seeds) stood every house lint-clean with no party-line gap and nothing over the
@@ -1093,14 +1093,13 @@ ENVELOPE = [
 
 OPP = {"north": "south", "south": "north", "east": "west", "west": "east"}
 
-#: **The rooms come first** (the design resolution round). The clear depth, wall to
-#: wall, each range needs for what it is used for: the main hall opposite the gate is
-#: the principal room and is deeper (a bed or a table and a way past it); the wings and
-#: the gate range are rooms of one bay (a bed along the wall and a way beside it). A
-#: range is this plus its outer and its court wall. The fabric reset round's court
-#: revision thinned every range to a clear depth of one -- a corridor -- because the
-#: court was sized first and the rooms took what was left; here the court is what the
-#: rooms leave, and a lot that cannot give both is refused with the lot it would need.
+#: **The rooms come first.** The clear depth, wall to wall, each range needs for what
+#: it is used for: the main hall opposite the gate is the principal room and is deeper
+#: (a bed or a table and a way past it); the wings and the gate range are rooms of one
+#: bay (a bed along the wall and a way beside it). A range is this plus its outer and
+#: its court wall. Sizing the court first and giving the rooms what is left thins every
+#: range to a clear depth of one -- a corridor; here the court is what the rooms leave,
+#: and a lot that cannot give both is refused with the lot it would need.
 ROOM_CLEAR = {"hall": 4, "wing": 3, "gate": 3}
 #: How deep the hall may grow where the pad has depth to spare, and how deep a wing.
 ROOM_CLEAR_MAX = {"hall": 5, "wing": 4, "gate": 3}
@@ -1277,13 +1276,13 @@ def build(b, part, seed, **params):
     dx, dz = (int(door[0]), int(door[2])) if door and len(door) == 3 else (part["door"][0], part["door"][-1])
 
     # ---- blank to the lane and to the neighbours -------------------------------------
-    # The fabric reset round. A siheyuan looks inward: from the hutong one sees a grey
-    # wall and a gate, and the rooms take their light from the court. `building()` lays
-    # windows on a rhythm along every outside face, so the lane face read as a row of
-    # windows, and on a side the plan says is **attached** they were windows in a party
-    # wall looking into the next house's wall a block away. So the openings the shell
-    # cut in the gate's face and in every attached face are closed again with the wall;
-    # the court-side openings, and those on a free flank or the rear, stand.
+    # A siheyuan looks inward: from the hutong one sees a grey wall and a gate, and the
+    # rooms take their light from the court. `building()` lays windows on a rhythm along
+    # every outside face, so the lane face would read as a row of windows, and on a side
+    # the plan says is **attached** they would be windows in a party wall looking into
+    # the next house's wall a block away. So the openings the shell cut in the gate's
+    # face and in every attached face are closed again with the wall; the court-side
+    # openings, and those on a free flank or the rear, stand.
     attached = sorted({str(v).strip().lower() for v in (part.get("attached") or ())}
                       & {"north", "south", "east", "west"})
     blank = set(attached) | {entrance}

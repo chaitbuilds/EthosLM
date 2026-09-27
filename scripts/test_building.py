@@ -563,8 +563,8 @@ def t_a6_nothing_the_lane_pass_builds_stands_on_a_reserved_doorstep():
     return f"{len(rails)} rails laid along the drop, 0 on any of 3 reserved doorsteps"
 
 
-# A2 the between-vocabulary as parameters, A3 water is not ground, A4 a door checks the
-# cell it opens onto.
+# The between-vocabulary as parameters; water is not ground; a door checks the cell it
+# opens onto.
 # ==============================================================================
 
 
@@ -931,21 +931,19 @@ def t_r19_a3_a_courtyard_is_four_ranges_round_a_yard_and_the_yard_is_not_a_room(
             f"outshot all refused by name")
 
 
-# --------------------------------------- demo-polish, phase 1a: a fill sees its own
-# work
+# ----------------------------------------------------- a fill sees its own work
 @case
 def t_dp1a_a_replace_fill_reads_the_pending_set_and_leaves_a_roof_standing():
-    """The library defect under the demo's blank throne hall (demo-polish spec, 1a).
+    """`fill_region(replace="air")` reads the pending set, not the pre-build world.
 
-        `fill_region(replace="air")` tested `replace` against the **pre-build world** and
-        not against the pending set, so a fill queued after a roof read every roof cell as
-        the air that stood there before the pass began and overwrote it. `get_block` reads
-        pending writes first; `fill_region` now has the same precedence. The case is the
-        temple's own sequence in miniature: a roof laid, then a replace-air fill over the
-        roof's whole volume -- every block the roof placed is byte-identical after, and the
-        fill still filled the air the roof left.
+        Tested against the **pre-build world**, a fill queued after a roof would read every
+        roof cell as the air that stood there before the pass began and overwrite it.
+        `get_block` reads pending writes first, and `fill_region` has the same precedence.
+        The case is a temple's sequence in miniature: a roof laid, then a replace-air fill
+        over the roof's whole volume -- every block the roof placed is byte-identical
+        after, and the fill still filled the air the roof left.
 
-        Against the old semantics the roof is overwritten and this fails, which is what a
+        Under pre-build semantics the roof is overwritten and this fails, which is what a
         discriminating case is.
 
     """
@@ -979,14 +977,14 @@ def t_dp1a_a_replace_fill_reads_the_pending_set_and_leaves_a_roof_standing():
 
 @case
 def t_dp1c_a_fitting_into_a_flight_refuses_and_the_flight_stays_walkable():
-    """The library defect under the temple's sealed top storey (demo-polish, 1c).
+    """A fitting into a flight is refused, so the storey above stays walkable.
 
-        A type furnishes its upper storeys without knowing where its own flight is, and
-        the temple stood a barrel on the foot of its stair and another over the well it
-        climbs into: the storey above was reachable only by jumping, E011 on real ground.
-        A flight's cells -- treads, landing, foot and the headroom over each -- are the
-        flight's, held by `flight()` and refused by `fitting()` by name. Against the old
-        code the barrel is placed and this fails.
+        A type furnishes its upper storeys without knowing where its own flight is, so it
+        can stand a barrel on the foot of its stair or over the well it climbs into, and
+        the storey above is then reachable only by jumping (E011). A flight's cells --
+        treads, landing, foot and the headroom over each -- are the flight's, held by
+        `flight()` and refused by `fitting()` by name. Without that hold the barrel is
+        placed and this fails.
 
     """
     vol, b, res = a_building(storeys=2)
@@ -1036,13 +1034,13 @@ def t_dp1c_a_fitting_into_a_flight_refuses_and_the_flight_stays_walkable():
 
 @case
 def t_dp1c_a_yard_wall_opens_where_the_wall_would_stand_not_where_the_building_does():
-    """The library defect under the temple's sealed cloister (demo-polish, 1c).
+    """A yard wall's gap goes where the wall would stand, not where the building does.
 
-        `building(yard=)` put its gap at the perimeter column nearest the doorstep. With a
-        hall pinned to the plot's edge and its door in that edge, the nearest perimeter is
-        the hall's own wall, which the ring skips anyway -- so the yard behind the hall
-        was walled with no gap at all, a court nobody could walk into, E003 on real
-        ground. The gap goes on a perimeter column the wall would actually stand in.
+        With a hall pinned to the plot's edge and its door in that edge, the perimeter
+        column nearest the doorstep is the hall's own wall, which the ring skips anyway --
+        so a gap put there leaves the yard behind the hall walled with no gap at all, a
+        court nobody can walk into (E003). `building(yard=)` puts the gap on a perimeter
+        column the wall would actually stand in.
 
     """
     vol = world()
@@ -1074,11 +1072,11 @@ def t_dp1c_a_yard_wall_opens_where_the_wall_would_stand_not_where_the_building_d
 
 @case
 def t_dp3a_the_way_in_is_held_open_even_where_nothing_had_to_be_laid():
-    """Demo-polish, 3a. Two of the city's doors were walkable when their parts were
-    sited and not when they were built: the approach had found the door reachable
-    over ground as it stood, laid nothing, recorded nothing, and the type then built
-    its footing across the very columns the walk used. The walk is written down as the
-    way in now, and `TypeBuilder` holds it open against the type's own writes."""
+    """A door can be walkable when its part is sited and not when it is built: the
+    approach finds the door reachable over ground as it stands, lays nothing, and the
+    type then builds its footing across the very columns the walk used. The walk is
+    written down as the way in, and `TypeBuilder` holds it open against the type's own
+    writes."""
     net = a_lane()
     vol = world()
     b = builder(vol, net)

@@ -39,17 +39,16 @@ ATTACHED = True
 
 
 PARAMS = {
-    # One storey is admitted since the fabric reset round: a terrace of shops of one
-    # height is a wall, and the shop under the full height of its own roof is what this
-    # file has always built where no flight fits -- now it can also be asked for.
+    # One storey is admitted: a terrace of shops of one height is a wall, and the shop
+    # under the full height of its own roof is what this file builds where no flight
+    # fits -- so it can also be asked for.
     "storeys": ("int", 1, 3),
     "trade": ("choice", ["grain", "cloth", "tea", "smith"]),
 }
 
 NEEDS = {
-    # Cut to the band `scripts/type_needs.py` measured. The fabric reset round re-swept
-    # it with one storey admitted (square pads, plane and bank, both seeds, 12 parameter
-    # sets): clean at every size 3 to 17 -- the old broken sizes 5, 6, 8 and 9 stand --
+    # Cut to the band `scripts/type_needs.py` measured with one storey admitted (square
+    # pads, plane and bank, both seeds, 12 parameter sets): clean at every size 3 to 17,
     # and E010 from 18 up. Attached lots are not squares and the sweep builds no
     # neighbour: `scripts/test_attached_forms.py` and a sweep of 64 runs of four (lots
     # 6-9 wide x 11-15 deep, all four fronts, plane and bank) stood every shop lint-
@@ -1418,11 +1417,10 @@ def _runs(lo, hi, keep_out):
 
 
 def _massing(W, D, ud, part, fr, storeys, seed, rnd):
-    """**The shop's massing and its flights, decided before a block is laid.** The design
-    resolution round: this was the first half of `build()`, and it is what says how many
-    storeys a plot carries. `form_plan` asks it about a pad before the lot is drawn and
-    `build()` lays what it answers, so the storeys the compiler admits are the storeys
-    that stand."""
+    """**The shop's massing and its flights, decided before a block is laid.** This is
+    what says how many storeys a plot carries. `form_plan` asks it about a pad before the
+    lot is drawn and `build()` lays what it answers, so the storeys the compiler admits
+    are the storeys that stand."""
     # ---- massing --------------------------------------------------------- The veranda
     # takes a strip off the flank furthest from the door, so the doorway keeps a jamb on
     # both sides and the eave has something to cover.
@@ -1435,10 +1433,10 @@ def _massing(W, D, ud, part, fr, storeys, seed, rnd):
     if W - inset - 2 < 6 and W - 2 >= 6:
         inset = 0
         eng_axis = "rear"
-    # **The terrace.** The fabric reset round. A flank the plan says is attached has the
-    # next shop against it: the house reaches the plot line there, because a veranda
-    # strip on a party wall is a slot one column wide between two houses, roofed by both
-    # eaves -- the `E003`/`E011` pocket `row_house` measured and closed the same way.
+    # **The terrace.** A flank the plan says is attached has the next shop against it:
+    # the house reaches the plot line there, because a veranda strip on a party wall is
+    # a slot one column wide between two houses, roofed by both eaves -- the
+    # `E003`/`E011` pocket `row_house` closes the same way.
     # Between two party walls the veranda goes to the back, as it already does where the
     # frontage is wanted for the stair; with one, it goes on the free flank whatever
     # side the door is on.
@@ -1536,13 +1534,13 @@ def _massing(W, D, ud, part, fr, storeys, seed, rnd):
             if free([(su + cu * i, sv + cv * i) for i in range(-1, n + 1)]):
                 keep.append(o)
         if not keep and iw >= 3 and idp >= n + 2:
-            # **Along a flank wall, where the frontage is too narrow to climb across.**
-            # The fabric reset round: a terrace shop is seven or eight columns to the
-            # street and deep, and a flight across the plan wants six clear between the
-            # flanks -- so every 7-wide shop stood one storey. The same flight laid
-            # front to back against a flank wall (a party wall, in a terrace) takes one
-            # column of the shop's width and leaves the rest of it open; offered only
-            # where no flight across fits, so a lot that had one keeps it.
+            # **Along a flank wall, where the frontage is too narrow to climb across.** A
+            # terrace shop is seven or eight columns to the street and deep, and a flight
+            # across the plan wants six clear between the flanks -- so without this every
+            # 7-wide shop would stand one storey. The same flight laid front to back
+            # against a flank wall (a party wall, in a terrace) takes one column of the
+            # shop's width and leaves the rest of it open; offered only where no flight
+            # across fits, so a lot that had one keeps it.
             for o in ((iu1, iv1 - n, 0, 1), (iu0, iv1 - n, 0, 1),
                       (iu1, iv0 + n, 0, -1), (iu0, iv0 + n, 0, -1)):
                 su, sv, cu, cv = o
@@ -1798,12 +1796,12 @@ def build(b, part, seed, **params):
             put(u, bv0, y, "air")
         put(u, bv0, fy + 1, trim_full)          # the counter, on the street
 
-    # ---- the shop front is a shopfront and never a void ------------------- The ground
-    # look's sixth finding: a two-storey tea house opens its ground floor to the lane as
-    # a dark hole under the jetty, with nothing lit or built behind it. An opening is a
-    # hole until something is *in* it, so the head of every run carries a shutter hung
-    # out over the counter and a lamp hangs in the bay behind it, which is what a person
-    # sees from the other side of the street.
+    # ---- the shop front is a shopfront and never a void ------------------- Otherwise
+    # a two-storey tea house opens its ground floor to the lane as a dark hole under the
+    # jetty, with nothing lit or built behind it. An opening is a hole until something is
+    # *in* it, so the head of every run carries a shutter hung out over the counter and a
+    # lamp hangs in the bay behind it, which is what a person sees from the other side of
+    # the street.
     shutter = b.joinery(voice, "trapdoor")
     runs = []
     for u in sorted(shop_open):
@@ -2098,10 +2096,10 @@ def build(b, part, seed, **params):
             continue
         px, pz = P(u, v)
         for s in range(storeys):
-            # **Head height too.** The fabric reset round: a tea shop's hearth, offered
-            # the wall cell beside the way in, hung its hood over that cell a course up,
-            # and the shop behind the door read `E003`/`E011` -- a person's head is the
-            # second course of the way, and the mark only held the first.
+            # **Head height too.** A tea shop's hearth, offered the wall cell beside the
+            # way in, can hang its hood over that cell a course up and leave the shop
+            # behind the door reading `E003`/`E011` -- a person's head is the second
+            # course of the way, so the mark holds both.
             for yy in (fy + s * sh + 1, fy + s * sh + 2):
                 if b.get_block(px, yy, pz) == "air":
                     b.place_block(px, yy, pz, wall_full)

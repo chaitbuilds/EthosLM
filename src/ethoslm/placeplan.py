@@ -94,7 +94,7 @@ DENSITY_ROLE = {"sparse": "rural", "low": "urban", "medium": "urban", "dense": "
 
 
 def occupancy_shares() -> dict:
-    """E1).
+    """**What one structure of each density word occupies.**
 
         Three numbers per density word, from the lot the committed types declare
         (`density_lot`) and the ground the compiler lays round it (`fabric`):
@@ -103,17 +103,15 @@ def occupancy_shares() -> dict:
             plot_share        the lots' share of a block and its streets
             ground_cover      the lots, the courts and the open blocks' share of the same
 
-        What this replaced, and why. The shares were `PLOT_CELLS x tiled(plot side)`, where
-        `tiled` charges a **square** plot a five-block lane on all four sides -- a model of
-        a village of freestanding cottages, and not what any compiled district is. A terrace
-        house on a street needs its frontage, its depth and its share of the street: on the
-        old arithmetic a dense house on a 10-square lot was charged 500 columns of its ring
-        and the last city's dense ring came in **under** that at 451 and reads as detached
-        houses on lawns in every frame of the look.
+        Not `PLOT_CELLS x tiled(plot side)`: `tiled` charges a **square** plot a five-block
+        lane on all four sides -- a model of a village of freestanding cottages, and not
+        what any compiled district is. A terrace house on a street needs its frontage, its
+        depth and its share of the street, and charging it more makes a dense ring read as
+        detached houses on lawns.
 
         `AREA_PLOTS` still says how big one piece of open ground is, capped at the largest
         square a committed area type admits; `PLOT_CELLS` is still what a spec call is shown
-        as the word's place on the ladder, and is no longer what charges the ground.
+        as the word's place on the ladder, and is not what charges the ground.
 
     """
     big = largest_area()[0] or 48
@@ -135,7 +133,6 @@ def occupancy_shares() -> dict:
 def fabric_fit(w: int, d: int, density: str, role: str | None = None,
                character: dict | None = None) -> int:
     """**How many structures the compiler's grid fits in a `w` by `d` rectangle.**
-        The craft round, E1, found by a case.
 
         `spec.structures_for` divides ground by what one house of the fabric costs, which is
         right for a rectangle big enough to run a grid on and wrong for a strip: a district
@@ -247,13 +244,12 @@ def count_band(district: dict, part: dict, place: dict | None = None,
         that a sparse quarter is asked for a sparse number of houses and a count the
         sentence stated is spread over districts that can each hold their share.
 
-        **...and of the fabric the district was actually laid with**, the neighbourhood
-        round. This took the *part's* character -- the author's statement about the whole
-        fabric -- and never the arrangement the layout adopted for this rectangle, so a ring
-        that had adopted 6x6 lots was proposed a count computed from 10x10 ones. It is the
-        same correction `plot_share` took two rounds ago for the same reason, at the level
-        above it, and the same restriction applies: the **lot** only, because `open_share`
-        and `courtyard_share` are levers the compiler moves to reach its count and feeding
+        **...and of the fabric the district was actually laid with**: the arrangement the
+        layout adopted for this rectangle overrides the *part's* character (the author's
+        statement about the whole fabric), so a ring that adopted 6x6 lots is not proposed
+        a count computed from 10x10 ones. `plot_share` makes the same correction one level
+        down, with the same restriction: the **lot** only, because `open_share` and
+        `courtyard_share` are levers the compiler moves to reach its count and feeding
         those back into the count is a circle.
 
     """
@@ -420,32 +416,25 @@ def least_footprint(spec: dict, decls: dict | None = None, *,
         ring_insets.append((inset_in, inset_out))
         # **The shallowest district depth the fabric *offers*, which is a lower bound
         # and not the depth the layout will choose.** A ring of one row of houses is a
-        # district, so sizing a site for two rows and then laying one is a real defect
-        # and this closes it. What it does **not** close, and what this comment used to
-        # claim it did ("so the side this refuses below and the side the layout refuses
-        # below are one number"), is the disagreement with `concentric_layout`: that
-        # function takes its depth from `negotiate_ring`, which compiles each
-        # alternative and takes the one it **chose**, and the chosen alternative is not
-        # in general the shallowest one on offer. So this is optimistic by construction,
-        # and a site between the two answers is a site this function admits and the
-        # layout then refuses on `shares`. The neighbourhood round found this by moving
-        # `court_large`'s declared floor and watching the two ends diverge, and did not
-        # unify them. It is recorded as a limit rather than left as a claim.
+        # district, so sizing a site for two rows and then laying one would be a defect.
+        # This is **not** the same number as `concentric_layout`'s: that function takes
+        # its depth from `negotiate_ring`, which compiles each alternative and takes the
+        # one it **chose**, and the chosen alternative is not in general the shallowest
+        # one on offer. So this is optimistic by construction, and a site between the
+        # two answers is a site this function admits and the layout then refuses on
+        # `shares` -- a known limit, not a claim that the two agree.
         depth = dmin
         if not wanted and not (spec.get("explicit_count") or {}).get("n"):
             # **...and only where the ring's width is not negotiated.** A ring whose
             # count is the sentence's own goes through `negotiate_ring`, which compiles
             # every alternative and takes the one it **chose**; the shallowest on offer
-            # is not in general the one chosen, and this branch was asserting that it
-            # was. The neighbourhood round measured the two ends apart on the ringed
-            # fixture: the enumerated minimum is a district 18 deep (`compact_bay`) and
-            # the negotiation chooses one 26 or 28 deep, because the shallower
-            # arrangements are refused by the validator on cover. A refusal threshold
-            # that assumes the best case admits sites the layout then refuses, which is
-            # worse than being conservative: a site too small is found at the search and
-            # not at the plan. For a ring whose count is inferred there is no
-            # negotiation to disagree with -- `concentric_layout` keeps `dmin` for it --
-            # so the optimistic branch is kept there, where it is true.
+            # is not in general the one chosen, because the validator refuses the
+            # shallower arrangements on cover. A refusal threshold that assumes the best
+            # case admits sites the layout then refuses, which is worse than being
+            # conservative: a site too small is found at the search and not at the plan.
+            # For a ring whose count is inferred there is no negotiation to disagree
+            # with -- `concentric_layout` keeps `dmin` for it -- so the optimistic branch
+            # is kept there, where it is true.
             with contextlib.suppress(Exception):
                 from . import arrange as _arrange
                 alts = [a for a in _arrange.arrangements(r, decls, spec=spec)
@@ -712,9 +701,8 @@ def admitted_plot_sides(role: str | None = None) -> list:
 
         In plot columns -- the pad plus `site()`'s inset on four sides -- which is the unit
         a plan is drawn in and the unit `Builder.pad_extent` converts. `role` of `None` is
-        every plot type on disk. The craft round, E1: a lot the library cannot build on is
-        not a lot, and until this the only place on the ladder that was read off the files
-        was its dense end (`dense_plot`).
+        every plot type on disk. A lot the library cannot build on is not a lot, so the
+        whole ladder is read off the files, as its dense end is (`dense_plot`).
 
     """
     d = os.path.join(ROOT, "types")
@@ -744,7 +732,7 @@ def admitted_plot_sides(role: str | None = None) -> list:
 def _demanded_shape(density: str, role: str | None, columns: int, side: int,
                     character: dict | None) -> dict:
     """**(frontage, depth) a district of this density and character asks its houses
-        for**, inside `columns` of ground. The spatial-design round.
+        for**, inside `columns` of ground.
 
         A square side is an answer to "how much ground"; it is not an answer to any of the
         questions a building form actually poses. This resolves the four together:
@@ -846,27 +834,23 @@ def _demanded_shape(density: str, role: str | None, columns: int, side: int,
 def density_lot(density: str, role: str | None = None,
                 character: dict | None = None) -> dict:
     """**The lot one structure of a district of this density stands on**, off the
-        committed types. The craft round, E1.
+        committed types.
 
-        `dense_plot()` measured the dense end of this ladder off the files -- the urban plot
-        type whose band tops out soonest, at its top, plus `site()`'s inset on four sides --
-        and the other three words were `spec.COLUMNS_PER_PLOT`, a townhouse's 15x15 written
-        for a village, times `spec.DENSITIES`. One end of the ladder was the
-        library's and the other three were a constant nothing had ever measured.
+        The whole ladder is the library's, not a constant like `spec.COLUMNS_PER_PLOT` (a
+        townhouse's 15x15 written for a village). The dense lot is the **anchor** --
+        `dense_plot()`, the urban plot type whose band tops out soonest, at its top, plus
+        `site()`'s inset on four sides -- a density word is its place on `spec.DENSITIES`
+        **in area**, and the side that comes out is clamped to one the role's own plot
+        types declare (`admitted_plot_sides`: nearest, the larger on a tie). A word asking
+        for more ground never gets a smaller lot than one asking for less, because
+        `DENSITIES` is monotone and the clamp is nearest.
 
-        The whole ladder is the library's now: the dense lot is the **anchor**, a density
-        word is its place on `spec.DENSITIES` **in area**, and the side that comes out is
-        clamped to one the role's own plot types declare (`admitted_plot_sides`: nearest,
-        the larger on a tie). A word asking for more ground never gets a smaller lot than
-        one asking for less, because `DENSITIES` is monotone and the clamp is nearest.
-
-        **And the shape, since the spatial-design round.** `side` and `columns` are exactly
-        what they were and every caller that reads them is unmoved; beside them the answer
-        now carries a `width` and a `depth`, because a single side cannot tell a narrow deep
-        terrace from a large square plot and the layout was making that distinction by
-        accident, out of a type's footprint ceiling. See `_demanded_shape`. Where nothing
-        asks for a shape -- no attached house type, no storey band it can answer -- the width
-        and the depth are the side, and the record says why.
+        **And the shape.** Beside `side` and `columns` the answer carries a `width` and a
+        `depth`, because a single side cannot tell a narrow deep terrace from a large square
+        plot, and without them the layout makes that distinction by accident, out of a
+        type's footprint ceiling. See `_demanded_shape`. Where nothing asks for a shape --
+        no attached house type, no storey band it can answer -- the width and the depth are
+        the side, and the record says why.
 
     """
     anchor = dense_plot()
@@ -895,14 +879,13 @@ def density_lot(density: str, role: str | None = None,
 
 def fabric(density: str, role: str | None = None, character: dict | None = None) -> dict:
     """**What a district of this density is made of, and what one structure of it costs
-        in ground.** The craft round, E1.
+        in ground.**
 
         A terrace house on a street needs its frontage, its depth and its share of the
-        street, and nothing else. What charged it before was a **square** plot with a
-        five-block lane on all four sides (`_tiled`) over `spec.PLOT_CELLS`: a dense house
-        on a ten-square lot was charged 500 columns of its ring for 100 columns of plot, and
-        the last city's dense ring came in at 451 a house -- **under** that ceiling -- and
-        reads in every frame as detached houses on lawns.
+        street, and nothing else. A **square** plot with a five-block lane on all four sides
+        (`_tiled`) over `spec.PLOT_CELLS` charges a dense house on a ten-square lot 500
+        columns of its ring for 100 columns of plot, and a ring held to that reads as
+        detached houses on lawns.
 
         This is the compiler's own arithmetic (`ethoslm.district_compile`), which is what
         actually lays the ground: lots `w` by `ld` along a street, `gap` between flanks,
@@ -933,15 +916,14 @@ def fabric(density: str, role: str | None = None, character: dict | None = None)
         for n, d in dc.terrace_order(dc.house_types(every, role)):
             if not d.get("attached"):
                 continue
-            # **The ground a house of this density gets, not the side of it.** The
-            # neighbourhood round: `_attached_lot` ranked candidate lots by nearness to
-            # the density's own *side*, so it returned the squarest admitted lot and a
-            # type whose declared sentence is "narrow to the street, deep into the plot"
-            # could never be given its own shape -- widening such a type's band made the
-            # dense lot **bigger** and the ring **emptier**, which is why a correct re-
-            # measurement of `row_house` could not be adopted. Ranked by area, a house
-            # still gets its hundred columns and gets them in the shape its own file
-            # declares. `district_compile._compile_once` calls the same function with
+            # **The ground a house of this density gets, not the side of it.**
+            # `_attached_lot` ranks candidate lots by area, not by nearness to the
+            # density's own *side*: ranked by side it returns the squarest admitted lot,
+            # a type whose declared sentence is "narrow to the street, deep into the
+            # plot" can never be given its own shape, and widening such a type's band
+            # makes the dense lot **bigger** and the ring **emptier**. Ranked by area, a
+            # house still gets its hundred columns and gets them in the shape its own
+            # file declares. `district_compile._compile_once` calls the same function with
             # the same goal, so the fabric this arithmetic charges for and the fabric
             # the compiler lays are one decision.
             got = dc._attached_lot(d, w, ("west", "east"),
@@ -1560,50 +1542,40 @@ def district_brief(spec: dict, site: dict, district: dict, place: dict,
         types=table, needs=pipeline.needs_table(decls), out=out_path)
 
 
-#: **How far a district's own terrace may step off its ring's**, in terrace steps. The
-#: spatial design round, and it is registered before the numbers that test it. A ring is
-#: one band of ground and the layout gave it one level. Measured on the retained
-#: section's observed baseline, at the ring levels the design itself computed (lower 67,
-#: middle 79), that single level is what makes most of the ring unbuildable:
-#: lower_ring_north_3 25.8% of its rectangle feasible at the ring's 67 92.7% at its own
-#: median bed of 63 lower_ring_north_2 67.5% at 67, 75.9% at its own 66
-#: middle_ring_north_west 2.1% at 79, 4.5% at its own 87 -- a hillside, either way So
-#: the ring's level is the *reference* -- the wall stands on it and the ring reads as
-#: one terrace from the air -- and each district of it is brought to a level of its own
-#: within this many steps of that reference. The step between two neighbouring districts
-#: is a seam the ground resolver already names and builds (`ground.seam_kind`: a kerb, a
-#: bank or a retaining face). Two steps is eight blocks, which is a retaining face and a
-#: flight of stairs; more than that and the ring has stopped being a terrace.
+#: **How far a district's own terrace may step off its ring's**, in terrace steps. A ring
+#: is one band of ground, and one level for all of it can leave most of the ring
+#: unbuildable on sloping ground, where a district's own median bed sits a few blocks off
+#: the ring's. So the ring's level is the *reference* -- the wall stands on it and the
+#: ring reads as one terrace from the air -- and each district of it is brought to a
+#: level of its own within this many steps of that reference. The step between two
+#: neighbouring districts is a seam the ground resolver already names and builds
+#: (`ground.seam_kind`: a kerb, a bank or a retaining face). Two steps is eight blocks,
+#: which is a retaining face and a flight of stairs; more than that and the ring has
+#: stopped being a terrace.
 DISTRICT_TERRACE_STEPS = 2
 
-#: **The most a district's terrace may move the ground, up or down.** The spatial design
-#: round, and getting this number's *meaning* right is the whole of the model:
-#: `ground.RELIEF` (3) is how far a **footprint** platform may stand from its own ground
-#: as found, because `ground._held_level` clamps one that asks for more. It is not the
-#: bound on a terrace. A terrace is `designed` ground: the resolver does not hold it,
-#: the builder cuts and fills it, and a house standing on a laid terrace finds its bed
-#: *at* the terrace's level. So asking `RELIEF` of a district's terrace asks the wrong
-#: question, and answers it far too harshly -- the crowded ring measures 59.9% buildable
-#: under that rule and 94.2% under this one, on the same ground at nearly the same
-#: level. What does bound a terrace is how much earth it moves. Beyond this, the ground
-#: leaves the developable set: the district's count falls to what its ground can carry,
-#: and the design steps again rather than cutting a mountain down or damming a lake.
-#: Registered at two terrace steps, which is the retaining face and the flight of stairs
-#: a person can still walk; the reclamation clause takes the same number, because
+#: **The most a district's terrace may move the ground, up or down.** Getting this
+#: number's *meaning* right is the whole of the model: `ground.RELIEF` (3) is how far a
+#: **footprint** platform may stand from its own ground as found, because
+#: `ground._held_level` clamps one that asks for more. It is not the bound on a terrace.
+#: A terrace is `designed` ground: the resolver does not hold it, the builder cuts and
+#: fills it, and a house standing on a laid terrace finds its bed *at* the terrace's
+#: level. So asking `RELIEF` of a district's terrace asks the wrong question, and answers
+#: it far too harshly. What does bound a terrace is how much earth it moves. Beyond this,
+#: the ground leaves the developable set: the district's count falls to what its ground
+#: can carry, and the design steps again rather than cutting a mountain down or damming a
+#: lake. Registered at two terrace steps, which is the retaining face and the flight of
+#: stairs a person can still walk; the reclamation clause takes the same number, because
 #: filling eight blocks of water and cutting eight blocks of hill are the same earthwork
-#: from two sides. Measured on the retained section's baseline, best level within two
-#: steps of the ring: lower_ring_north_1 98.1% lower_ring_north_3 97.9%
-#: lower_ring_north_2 94.2% middle_ring_north_east 57.1% (a lake) middle_ring_north_west
-#: 36.5% (a mesa, bed 58..127)
+#: from two sides.
 DISTRICT_TERRACE_REACH = 8
 
 #: **How much ground a district's own step has to buy before it is worth building.** A
 #: share of the district's own rectangle. Without it, ranking levels on feasible columns
-#: alone made 33 of this city's 34 districts step one or two blocks off their ring -- a
-#: kerb apiece, no architectural content, and a second terrace laid over the whole city
-#: to get it. A step between two quarters is a retaining face and a flight of stairs; it
-#: is built where it buys real ground. A tenth of a district is about 1,270 columns on
-#: this section's rectangles, which is thirteen houses' worth of lot.
+#: alone makes nearly every district step one or two blocks off its ring -- a kerb
+#: apiece, no architectural content, and a second terrace laid over the whole city to get
+#: it. A step between two quarters is a retaining face and a flight of stairs; it is
+#: built where it buys real ground.
 DISTRICT_TERRACE_GAIN = 0.10
 
 
@@ -1728,12 +1700,11 @@ def district_ground(district: dict, vol, *, ring_level: int | None = None,
     return got
 
 
-#: **When a ring strip's cut is negotiated with its ground.** The quarter design round.
-#: `regions.ring_sectors` cuts a strip into equal lengths before any ground is read, and
-#: `district_ground` then gives each piece one level. Where a piece founds less than
-#: this share of its rectangle at the best level it is offered, the strip is re-cut.
-#: Measured on the retained section: `middle_ring_north_west` 26%, `_east` 66% at y=64
-#: while its gate-side hundred columns are 95% feasible at y=72.
+#: **When a ring strip's cut is negotiated with its ground.** `regions.ring_sectors` cuts
+#: a strip into equal lengths before any ground is read, and `district_ground` then gives
+#: each piece one level. Where a piece founds less than this share of its rectangle at
+#: the best level it is offered, the strip is re-cut: an equal piece can straddle a slope
+#: whose one end is nearly all feasible at a level the rest of the piece cannot take.
 SECTOR_NEGOTIATE_SHARE = 0.7
 
 #: **What one more cut costs beyond the lane it gives up**, in columns: a retaining face
@@ -1817,13 +1788,12 @@ def _segment(profile: dict, n: int, *, most: int, least: int, gap: int, cost: in
 
 def _fronted(alt: dict, districts: list, rects: list, profs: dict, *, along_x: bool,
              gap: int, routes, front_depth: int, ref: int) -> dict | None:
-    """**A street is fronted on both sides, or the ground beside it says why not.** The
-    design resolution round's parent alternative.
+    """**A street is fronted on both sides, or the ground beside it says why not.**
 
     Column counts cut a strip where its ground breaks, and a hill piece is one piece at
     the one level most of its feasible ground prefers -- so the toe of a hill beside a
-    street, at its own level, is never offered, and a quarter's main street stands with
-    fronts on one side (fr reader r2). This takes an alternative and, for each piece whose
+    street, at its own level, is never offered, and a quarter's main street can stand with
+    fronts on one side. This takes an alternative and, for each piece whose
     end meets a routed street across the strip and which founds under
     `SECTOR_NEGOTIATE_SHARE` of itself, cuts a frontage piece `front_depth` deep off that
     end at its own best level; the rest of the piece keeps its own. Whether that realizes
@@ -1912,8 +1882,7 @@ def _fronted(alt: dict, districts: list, rects: list, profs: dict, *, along_x: b
 def negotiate_strip(vol, districts: list, *, ring_level: int, depth_min: int,
                     gap: int = None, routes=None, access=None,
                     front_depth: int | None = None, forms: dict | None = None) -> dict:
-    """**A ring strip's cut, negotiated with the ground it cuts.** The quarter design
-        round's parent decision.
+    """**A ring strip's cut, negotiated with the ground it cuts.**
 
         `districts` are the pieces `regions.ring_sectors` cut one strip into, in order along
         it. Their lanes stay where they are -- the gate axis runs down one -- and each piece
@@ -1983,14 +1952,13 @@ def negotiate_strip(vol, districts: list, *, ring_level: int, depth_min: int,
             if got and key not in seen:
                 seen.add(key)
                 alts.append(got)
-    # **...and cut again where the fabric's modules need it** (the parent composition
-    # round). The cuts above know the ground and nothing of what stands on it; where the
-    # strip's dwelling publishes a form plan, each arrangement is revised so that a
-    # piece past the arrival holds whole modules of the street arrangement its depth
-    # admits (`parentdemand.refit`), with the programme those modules hold and the
-    # ground they leave as landscape. The section each arrangement needs -- and what the
-    # strip is short of where one does not fit -- is recorded whether or not a module is
-    # cut.
+    # **...and cut again where the fabric's modules need it.** The cuts above know the
+    # ground and nothing of what stands on it; where the strip's dwelling publishes a
+    # form plan, each arrangement is revised so that a piece past the arrival holds whole
+    # modules of the street arrangement its depth admits (`parentdemand.refit`), with the
+    # programme those modules hold and the ground they leave as landscape. The section
+    # each arrangement needs -- and what the strip is short of where one does not fit --
+    # is recorded whether or not a module is cut.
     demand = None
     if forms:
         from . import parentdemand as _pd
@@ -2028,15 +1996,13 @@ def terrace_ground(vol, rect, level: int, *, reach: int = DISTRICT_TERRACE_REACH
     """**The ground decision for one piece of designed ground**, which the builder
         executes and the record publishes.
 
-        The neighbourhood delivery round's subject, in one function: `district_ground`
-        above measures a *district's* ground through `feasible.record(..., relief=REACH,
-        fill=REACH)` and every count, band and cover clause in the place divides by what
-        survives it -- and `Builder.terrace_annulus` levelled every column of the rectangle
-        it was handed, so housing was excluded from a hillside because that hillside should
-        not be cut and construction cut it anyway. Measured on the retained section's
-        observed baseline, its four rings' strips at their settled levels move 2,130,842
-        blocks of fill and 3,767,160 of cut unbounded, and 935,325 and 320,604 inside this
-        reach: the disagreement is 4.6 million blocks, on one city.
+        `district_ground` above measures a *district's* ground through
+        `feasible.record(..., relief=REACH, fill=REACH)` and every count, band and cover
+        clause in the place divides by what survives it. A builder that levels every column
+        of the rectangle it is handed would exclude housing from a hillside because that
+        hillside should not be cut and then cut it anyway -- and on a whole city the
+        unbounded and the bounded earthwork differ by millions of blocks. So the plan and
+        the builder share this one decision.
 
         `vol` is the ground **as observed** -- not the working world, which on any pass
         after the first is the terraced one, and measuring a district's cut against the
@@ -2061,25 +2027,17 @@ def terrace_ground(vol, rect, level: int, *, reach: int = DISTRICT_TERRACE_REACH
 
 
 #: **How much of the envelope a district's grid is laid over has to be ground a building
-#: can stand on.** The neighbourhood delivery round, registered before the numbers.
-#: `district_compile.GROUND_FOUNDED` is 0.5 and it is a bar on **one lot**: half a lot's
-#: columns feasible and the plinth absorbs the rest. That bar is right and it does not
-#: answer the district's question, which is where to lay the grid at all. On
-#: `middle_ring_north_west` -- a mesa, bed y=58..127, 2,969 of 11,400 columns feasible
-#: at the middle ring's y=72 -- the compiler laid a regular block grid over the whole
-#: rectangle and then refused lot after lot for ground: **19 houses proposed, 1
-#: realized**, and the district was recorded as "open ground with an owner". A
-#: fragmented feasible set yields nothing anywhere. So the grid is offered a rectangle
-#: of the district that is at least this share feasible -- and the objective is **the
-#: most feasible ground**, not the highest share of it, which is the correction the
-#: first form of this function needed and got wrong. Measured with
-#: `arrange.compile_once` on the real plan, asking for the ground cap of 11 houses: the
-#: whole 190x60 rectangle, 26% feasible 1 lot (grid 2x1, 7 dropped for ground) the
-#: largest all-feasible rectangle, 23x37 0 lots the largest closed rectangle, 41x31 at
-#: 90% 0 lots a 60x60 at 65%, holding 2,332 of its 2,861 **4 lots** (grid 1x1, 1
-#: dropped) A rectangle at 100% cover that a block does not fit in lays nothing, and the
-#: highest share is reliably the smallest rectangle. What the compiler needs is room for
-#: its blocks *where the ground is*, so the envelope maximises the feasible columns it
+#: can stand on.** `district_compile.GROUND_FOUNDED` is 0.5 and it is a bar on **one
+#: lot**: half a lot's columns feasible and the plinth absorbs the rest. That bar is
+#: right and it does not answer the district's question, which is where to lay the grid
+#: at all. Over a fragmented feasible set -- a mesa with a quarter of its rectangle
+#: feasible at the ring's level, say -- a regular block grid laid over the whole
+#: rectangle is refused lot after lot for ground and realizes almost nothing. So the
+#: grid is offered a rectangle of the district that is at least this share feasible,
+#: and the objective is **the most feasible ground**, not the highest share of it: a
+#: rectangle at 100% cover that a block does not fit in lays nothing, and the highest
+#: share is reliably the smallest rectangle. What the compiler needs is room for its
+#: blocks *where the ground is*, so the envelope maximises the feasible columns it
 #: contains and the share is the constraint. Sixty percent, over
 #: `district_compile.GROUND_FOUNDED`'s per-lot half with enough margin that most lots of
 #: a block laid across it clear the bar, and low enough to admit a rectangle a block
@@ -2466,12 +2424,11 @@ def emitted_for(rows: dict, district_name, leaf_name):
 def emitted_columns(parts_record: dict | None) -> dict:
     """`{part name: columns the world actually holds}`, off `parts.json`.
 
-        **Read at the shape the record really has.** `region_columns` looked for
-        `occupied_columns` or `footprint_columns` on `parts_record["parts"][name]`, and
-        `parts.json` is `{"waves": [{"parts": [ ... ]}]}` with the rectangle under
-        `emitted.footprint` -- so the emitted branch never fired on a real record and every
-        built figure in the project has silently been the plan's own pads. Found by reading
-        `out/des-city/parts.json`: 922 built leaves, none of them matched.
+        **Read at the shape the record really has.** `parts.json` is
+        `{"waves": [{"parts": [ ... ]}]}` with the rectangle under `emitted.footprint`, not
+        `occupied_columns` or `footprint_columns` on `parts_record["parts"][name]`; a reader
+        that looks only for the latter never fires on a real record and silently reports
+        the plan's own pads as the built figure. Every one of those shapes is read here.
 
         A part that reported no rectangle is **absent from this dict**, never zero: zero
         columns of building is a measurement and an unreported part is not one.
@@ -2561,16 +2518,11 @@ def street_enclosure(district: dict, place: dict | None, leaves: list | None, *,
         nothing measured the *street*: the thing a person walking down it sees is frontage, and
         frontage is a length and not an area.
 
-        **What the street is, corrected** (the neighbourhood round). This called every column
-        of the district that no leaf stood on and no arterial was "street" -- so a district
-        holding 69 houses on 12,696 columns at 22.7% allocated cover was measured against
-        nearly ten thousand columns of *field*, and any arrangement whatever scored a few per
-        cent of enclosure. The round's words: "`placeplan.street_enclosure` treats all
-        non-building, non-arterial ground as street; use actual circulation geometry and built
-        fronts to assess frontage, setbacks and continuity along the street being judged."
-
-        So the street is the circulation space, and it is the union of three things a reader
-        can check:
+        **What the street is.** Not every column of the district that no leaf stands on and
+        no arterial crosses: counted that way, a district at an ordinary allocated cover is
+        measured against thousands of columns of *field*, and any arrangement whatever
+        scores a few per cent of enclosure. The street is the circulation space, and it is
+        the union of three things a reader can check:
 
           - the **arterial** where one runs through this district (`place.arterials.cells`),
             and the lanes of the circulation record where one is handed in -- actual routed
@@ -2793,7 +2745,7 @@ def district_target(district: dict, part: dict, place: dict | None = None,
                     decls: dict | None = None) -> dict:
     """What one district is asked for: a count **and** a cover, with the floors.
 
-        The craft round: the cover is over the ground the district can **develop**
+        The cover is over the ground the district can **develop**
         (`developable_columns`) and not over its whole rectangle, where the caller knows the
         place well enough to say. The count is untouched: it is the layout's own ask and the
         compiler's retry is what answers it.
@@ -3390,12 +3342,11 @@ def arterial_nodes(place: dict, decls: dict) -> list:
         z0, z1 = min(d["z0"], d["z1"]), max(d["z0"], d["z1"])
         cx, cz = (x0 + x1) // 2, (z0 + z1) // 2
         # **A piece of a re-cut sector is joined where it is entered, not through its
-        # middle.** The quarter design round: a node at the centre routes the arterial
-        # straight across the district, and on a piece one block wide that took 1,717 of
-        # its 3,480 columns as road -- the market's own quarter spent on a through
-        # route. Such a piece carries `access` (its ring's gate) and its node is the
-        # point of its own rectangle nearest that, one column in. The centre rule is
-        # unchanged for every other district, whose plans were compiled against it.
+        # middle.** A node at the centre routes the arterial straight across the
+        # district, and on a piece one block wide that can take half its columns as road
+        # -- a quarter spent on a through route. Such a piece carries `access` (its
+        # ring's gate) and its node is the point of its own rectangle nearest that, one
+        # column in. Every other district keeps the centre rule.
         acc = d.get("access") if d.get("sector") else None
         edge = section_street_node(d, (place.get("layout") or {}).get("centre"))
         if edge is not None:
@@ -3476,10 +3427,10 @@ def plan_arterials(place: dict, decls: dict, heights, x0: int, z0: int,
         r = pipeline.part_rect({**p, "name": p.get("name")})
         avoid[max(0, r[0] - x0):max(0, r[2] - x0) + 1,
               max(0, r[1] - z0):max(0, r[3] - z0) + 1] = np.inf
-    # **...and a ring's section says where its principal street runs** (the city attempt
-    # round): across a strip whose width was set for a street along its inner edge, the
-    # rest of the strip is dearer to cross than that band, so the ring street is laid
-    # where the section's frontage faces it rather than wherever the tree is shortest.
+    # **...and a ring's section says where its principal street runs**: across a strip
+    # whose width was set for a street along its inner edge, the rest of the strip is
+    # dearer to cross than that band, so the ring street is laid where the section's
+    # frontage faces it rather than wherever the tree is shortest.
     for d in (place.get("districts") or []):
         band = section_street_band(d)
         if not band:
@@ -3641,7 +3592,7 @@ def occupancy_failures(district: dict, plots: list, part: dict,
                        decls: dict | None = None) -> list:
     """A district that came back under the count or under the cover it was asked for.
 
-        The craft round: the cover floor is over the ground the district can develop
+        The cover floor is over the ground the district can develop
         (`developable_columns`), where the caller passes the place. The road across it is
         not the district's to cover.
 
@@ -3759,14 +3710,12 @@ ARRANGEMENT_LOT_SLACK = 1
 def arrangement_failures(district: dict, got: dict, plots: list) -> list:
     """**Did the compiler lay the arrangement that was adopted?** Named where it did not.
 
-        The neighbourhood round's first requirement, last clause: "Construction must consume
-        the certified result, or reproduce it under the same inputs and establish agreement."
         The comparison certifies an arrangement on a district's own rectangle, the controller
-        adopts it, the allocation persists it and the layout writes it onto the district --
-        and until this, nothing ever asked whether what came out of the compiler was the thing
-        that was chosen. The composition round is the case: the arrangement was written to the
-        allocation, no layer read it, the ring rebuilt at its old lot, and the only way anyone
-        found out was by reading the compiled record by hand afterwards.
+        adopts it, the allocation persists it and the layout writes it onto the district; the
+        construction must consume that certified result, or reproduce it under the same
+        inputs and establish agreement. Without this check an arrangement can be written to
+        the allocation, read by no layer, and the ring rebuilt at its old lot, with nothing
+        but a hand reading of the compiled record to show it.
 
         So the adopted arrangement is compared with the lots actually laid. The **median** lot
         is the subject, not every lot: a type clamps a side into what it admits, a required
@@ -3803,13 +3752,12 @@ def arrangement_failures(district: dict, got: dict, plots: list) -> list:
     # **A recorded override is not a silent mismatch, and this check is about silence.**
     # A district whose *required* features need a bigger lot than the arrangement
     # proposed has that lot raised (`district.lot_min`, or the resolved demand's own
-    # least lot), and `_compile_once` has stood that over a declared lot since the
-    # expression round on the stated grounds that a lot under it is asked of the ground
-    # twice. Refusing the district for honouring its own requirements would be this
-    # check inverting the rule it exists to enforce: the layout chose an arrangement,
-    # the requirement overrode part of it, and the record says so in `lot_min`,
-    # `lot_asked`, `lot_laid` and `lot_refused`. What is refused here is a compiler that
-    # laid something else and said nothing.
+    # least lot), and `_compile_once` stands that over a declared lot on the stated
+    # grounds that a lot under it is asked of the ground twice. Refusing the district for
+    # honouring its own requirements would be this check inverting the rule it exists to
+    # enforce: the layout chose an arrangement, the requirement overrode part of it, and
+    # the record says so in `lot_min`, `lot_asked`, `lot_laid` and `lot_refused`. What is
+    # refused here is a compiler that laid something else and said nothing.
     floor = [int(v) for v in (district.get("lot_min")
                               or ((district.get("demand") or {}).get("lot") or []))][:2]
     if len(floor) == 2:
@@ -3834,10 +3782,9 @@ def reservation_failures(district: dict, got: dict, plots: list,
                          part: dict | None = None) -> list:
     """**A district that lost a reservation the request requires is refused**, by name.
 
-        The composition round's first change, at the level that makes it binding. "Markets,
-        courts, streets and working land made necessary by the programme must reserve usable
-        space before ordinary housing consumes it" -- and until now nothing refused a district
-        that had done the opposite. Two readings, because a plan reaches here two ways:
+        Markets, courts, streets and working land made necessary by the programme must
+        reserve usable space before ordinary housing consumes it, and this is the check that
+        makes that binding. Two readings, because a plan reaches here two ways:
 
           * the plan's **own statement**: `district_compile` writes `demand_short` into the
             file when a reservation it sized could not claim its ground. A required row is a
@@ -4042,10 +3989,10 @@ def district_failures(district: dict, got: dict, place: dict, decls: dict,
                     "leaves": len(off), "of": len(plots)})
     out += reservation_failures(district, got, plots, decls, part)
     out += arrangement_failures(district, got, plots)
-    # ...for a district that holds houses. An open remainder sector of a ring (the
-    # expression round: `surface: open`, no structures) is the ring's gardens and groves
-    # beside its rows; holding it to the dense word's cover refused the lower ring's own
-    # revision for the ground its word had already put beside the houses.
+    # ...for a district that holds houses. An open remainder sector of a ring
+    # (`surface: open`, no structures) is the ring's gardens and groves beside its rows;
+    # holding it to the dense word's cover would refuse the ring for the ground its word
+    # had already put beside the houses.
     if part is not None and plots and int(district.get("structures") or 0) > 0 \
             and str(district.get("surface") or "built") != "open":
         out += occupancy_failures(district, plots, part, role, place, decls)
@@ -4548,11 +4495,11 @@ def compound_failures(comp: dict, got: dict, place: dict, decls: dict,
              f"thing is a composition, and at this size {t['min_count']} plot(s) is the "
              f"least it can be (the floor for a {t['family']} is {t['floor']} and "
              f"{t['courts']} court(s))")
-    # **An axial compound is a sequence and not a set**, the craft round (E5): a family
-    # whose composition declares an axis is an *approach* -- the gate, a forecourt, a
-    # hall, an inner court and the greatest hall at the far end -- and a plan that holds
-    # the right parts in the wrong order is five buildings on a plaza, which is what the
-    # ground look saw. Refused by name so a compound a model drew is held to it too.
+    # **An axial compound is a sequence and not a set**: a family whose composition
+    # declares an axis is an *approach* -- the gate, a forecourt, a hall, an inner court
+    # and the greatest hall at the far end -- and a plan that holds the right parts in
+    # the wrong order is five buildings on a plaza. Refused by name so a compound a model
+    # drew is held to it too.
     if compound_composition(part, spec=spec).get("axis") and halls and courts:
         why = _axis_failure(comp, place, halls, courts)
         if why:
@@ -4594,10 +4541,10 @@ def assemble(place: dict, districts: dict, spec: dict,
     """
     children = []
     defining = [dict(p) for p in (place.get("parts") or [])]
-    # **A leaf carries the family of the defining part it answers.** The expression
-    # round's orchard hamlet: the chapel was built as the adopted `worship` type and the
-    # leaf carried no family, so `intent.select(parts, "hall")` found no hall and the
-    # `around` relation could not be measured on the plan it held.
+    # **A leaf carries the family of the defining part it answers.** A leaf built as an
+    # adopted type (a chapel as `worship`, say) carries no family of its own, and without
+    # this `intent.select(parts, "hall")` finds no hall and the `around` relation cannot
+    # be checked on the plan it holds.
     by_name = {d.get("name"): d for d in (spec.get("defining_parts") or [])}
     for p in defining:
         d = by_name.get(p.get("defines") or p.get("name"))
@@ -4751,9 +4698,9 @@ RING_COVERAGE = 0.6
 #: the tallest thing in the place: 48 -> 36 -> 27 -> 20.
 WALL_STEP = 0.75
 
-#: How much taller each ring wall stands than the ring wall inside it (the city attempt
-#: round): one storey's pitch, so the walls between the classes step up outward over the
-#: fabric and stay far under the great wall.
+#: How much taller each ring wall stands than the ring wall inside it: one storey's
+#: pitch, so the walls between the classes step up outward over the fabric and stay far
+#: under the great wall.
 RING_WALL_RISE = 4
 
 #: A terrace step of four blocks. The outermost ring stands at the site's median ground,
@@ -4953,12 +4900,11 @@ def gate_approach_pieces(h, x0: int, z0: int, layout: dict, gate: dict, *,
     if not inside_map(ix, iz):
         return None
     inside = int(h[ix - x0, iz - z0])
-    # **a gate in the centre compound's wall opens off the podium** (the city attempt
-    # round): the map read at the column inside it is the podium's own edge, which its
-    # retaining and feathering had already lowered, so the approach was laid from 75 and
-    # the podium at 83 was an island of 1,993 lane stances no way in reached. Where the
-    # layout designs a podium and the gate stands inside the compound's rectangle, the
-    # level run starts at the podium's level.
+    # **a gate in the centre compound's wall opens off the podium**: the map read at the
+    # column inside it is the podium's own edge, which its retaining and feathering have
+    # already lowered, so an approach laid from there leaves the podium an island no way
+    # in reaches. Where the layout designs a podium and the gate stands inside the
+    # compound's rectangle, the level run starts at the podium's level.
     cr = layout.get("compound_rect")
     pod = (layout.get("terrace") or {}).get("podium")
     if cr and pod is not None and cr[0] <= gx <= cr[2] and cr[1] <= gz <= cr[3]:
@@ -5112,11 +5058,11 @@ CENTRED_TOLERANCE = 4
 
 #: How far inside the site's edge the outermost boundary's wall line runs: the wall's
 #: swept half-width plus the margin `place_failures` needs to see it inside the site.
-#: **Four was a three-thick wall's**, the craft round (E4 and E7): a place now declares
-#: the *mass* its wall carries and a rampart of nine reached a column outside the site,
-#: which `place_failures` refuses by name. `ring_edge_inset()` is the half-width of the
-#: mass the place actually declared plus this margin, so the constant is the margin and
-#: the arithmetic is the wall's.
+#: **Four is a three-thick wall's**: a place declares the *mass* its wall carries, and a
+#: rampart of nine at a fixed four would reach a column outside the site, which
+#: `place_failures` refuses by name. `ring_edge_inset()` is the half-width of the mass
+#: the place actually declared plus this margin, so the constant is the margin and the
+#: arithmetic is the wall's.
 RING_EDGE_INSET = 4
 
 
@@ -5219,19 +5165,17 @@ def _square_path(cx: int, cz: int, h: int, max_run: int) -> list:
 
 
 #: An octagon whose diagonal sides are half the axial ones reads as round from the air
-#: and costs the districts their corner pockets only. Every hand-built copy of the
-#: demo's place on record draws its rings as circles; ours were squares because an
-#: edge's segments ran along x or z. **A regular octagon is what a round ring should be
-#: and is not what this draws**, the craft round (E4), measured and not delivered. A
-#: regular octagon has its eight sides equal -- `c = 2R / (2 + sqrt(2))`, 0.5858 of the
-#: half-side -- and reads as a curve where a quarter reads as a square with its corners
-#: cut. What stops it is not the wall type: `great_wall` draws the diagonal run at any
-#: depth and its sweep stands it. It is the **districts**, which tile a ring as
-#: rectangles laid in the square annulus and know nothing about the diagonal: at 0.5858
-#: the outermost ring's districts overlap their own wall and the ring falls to 57%
-#: covered against `RING_COVERAGE` 0.6. The number of sides a lattice can carry is
-#: eight; making them equal needs the ring's own tiling to follow the octagon, which is
-#: a layout change and not a constant.
+#: and costs the districts their corner pockets only; a ring whose edge segments run
+#: only along x or z is a square. **A regular octagon is what a round ring should be and
+#: is not what this draws.** A regular octagon has its eight sides equal -- `c = 2R /
+#: (2 + sqrt(2))`, 0.5858 of the half-side -- and reads as a curve where a quarter reads
+#: as a square with its corners cut. What stops it is not the wall type: `great_wall`
+#: draws the diagonal run at any depth and its sweep stands it. It is the **districts**,
+#: which tile a ring as rectangles laid in the square annulus and know nothing about the
+#: diagonal: at 0.5858 the outermost ring's districts overlap their own wall and the ring
+#: falls under `RING_COVERAGE`. The number of sides a lattice can carry is eight; making
+#: them equal needs the ring's own tiling to follow the octagon, which is a layout change
+#: and not a constant.
 RING_CHAMFER = 0.25
 
 #: The words in a spec's invariants or a wall part's notes that say the place's rings
@@ -5364,11 +5308,10 @@ WALL_FACE_WORDS = (("plain", ("earth", "rammed", "monolith", "solid", "unbroken"
                    ("banded", ("banded", "coursed", "ashlar", "masonry", "dressed")))
 
 
-#: **The mass a wall carries**, the craft round (E4), registered before the numbers that
-#: test it: the width in columns each word means. `great_wall` declared `width` as three
-#: and only three because three is all its sweep had ever tried, so a city's outer wall
-#: was forty-eight high and three thick -- a screen. What a curtain wall, a rampart and
-#: a levee differ by is their mass, and it is the **place** that says which it has.
+#: **The mass a wall carries**: the width in columns each word means. One width for
+#: every wall makes a city's outer wall forty-eight high and three thick -- a screen.
+#: What a curtain wall, a rampart and a levee differ by is their mass, and it is the
+#: **place** that says which it has.
 #: screen 3 -- a boundary, not a thing you walk along. curtain 5 --
 #: `great_wall.CROWN_ROAD_MIN`: the crown is a road between two parapets, one on each
 #: edge. rampart 9 -- an earthwork: wide enough that its ways up stand in its own
@@ -5954,9 +5897,8 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
 
     rings = spec_mod.rings(spec)
     place_voice = voice
-    # **The outermost wall's own mass, before the boundaries are drawn.** The craft
-    # round: a rampart of nine reaches four columns further than a screen of three and
-    # the site's edge does not move.
+    # **The outermost wall's own mass, before the boundaries are drawn.** A rampart of
+    # nine reaches further than a screen of three and the site's edge does not move.
     _wall_part = next((p for p in spec.get("defining_parts") or []
                        if p.get("family") == "wall"), None)
     edge_inset = ring_edge_inset(_wall_part, spec,
@@ -6345,12 +6287,11 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                             gate_decl[1]["needs"]["footprint"] if gate_decl else None)
     # **The gate axis, measured -- or asked for.** `_axis_side` chooses the side whose
     # ground under every gate is driest and flattest, which is right and is also decided
-    # by a few columns: the composition round's section was registered on the north axis
-    # and a fabric change that moved the ring widths by a handful of columns flipped the
-    # whole city's gates to the south, so a before/after pair of the same ground became
-    # a pair of different ground. An allocation may pin it -- the same seam that pins a
-    # ring's width or a district's arrangement -- and the record says which answer this
-    # is and what the measurement would have said.
+    # by a few columns: a fabric change that moves the ring widths by a handful of
+    # columns can flip the whole city's gates to the opposite side, so a before/after
+    # pair of the same ground becomes a pair of different ground. An allocation may pin
+    # it -- the same seam that pins a ring's width or a district's arrangement -- and the
+    # record says which answer this is and what the measurement would have said.
     asked = str((allocation or {}).get("axis_side") or "").lower() or None
     measured = _axis_side(vol, cx, cz, walled_hs, pad)
     side = asked if asked in ("north", "south", "east", "west") else measured
@@ -6372,10 +6313,9 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                                       f"square: {tname} draws no diagonal run")
         if octagon:
             chamfers[k] = max(2, int(round(hs[k] * RING_CHAMFER)))
-        # **The mass the place declared**, the craft round (E4). The part's `width` is
-        # the swept line siting hands the type and is what the wall actually is; the
-        # `width` *parameter* stays at the one value the sweep runs every combination
-        # at.
+        # **The mass the place declared.** The part's `width` is the swept line siting
+        # hands the type and is what the wall actually is; the `width` *parameter* stays
+        # at the one value the sweep runs every combination at.
         mass_word = wall_mass_for(wall_part, spec) if wall_part is not None else "screen"
         # the same number the districts were budgeted against, above: one wall width per
         # ring, read once and used by both sides
@@ -6388,11 +6328,10 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
             face_word = wall_face_for(wall_part, spec)
             if "face" in (tdecl.get("params") or {}):
                 choices = list(tdecl["params"]["face"][1])
-                # **A wall the spec calls unbroken is dressed masonry**, the craft round
-                # (E4): `plain` is forty-eight blocks of one flat plane and reads as a
-                # render, and `masonry` carries the ways up at the corners and the gates
-                # as `unbroken` did. `unbroken` was the word for the two together and
-                # says nothing this does not.
+                # **A wall the spec calls unbroken is dressed masonry**: `plain` is
+                # forty-eight blocks of one flat plane and reads as a render, and
+                # `masonry` carries the ways up at the corners and the gates, which is
+                # all an `unbroken` face would add.
                 params["face"] = ("masonry" if face_word == "plain"
                                   and wall_stairs_for(wall_part, spec) == "sparse"
                                   and "masonry" in choices else face_word)
@@ -6617,10 +6556,9 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                 return st, en, ((st, _z0, en, _z1) if _ax else (_x0, st, _x1, en))
 
             # **The kept piece is as long as the compiler certifies, not as long as the
-            # arithmetic hoped.** The design round, found by running the hill town: the
-            # south sector was cut to what four houses need, the compiler laid three in
-            # it, and the two remainders **beside** it -- 48 columns each, cut from the
-            # same strip -- held nothing and nothing offered them. A sector short of its
+            # arithmetic hoped.** A sector cut to what its houses need can hold fewer
+            # when the compiler lays it, while the remainders **beside** it, cut from the
+            # same strip, hold nothing and nothing offers them. A sector short of its
             # count takes from the ground it was cut from, by a block of its own fabric
             # at a time, until the compiler says it holds the count or the strip runs
             # out; the remainder keeps whatever is left and stays inside
@@ -6853,10 +6791,10 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
 
     # 6. the centre
     compounds = []
-    # **The centre is inside the innermost ring and carries its palette**, the craft
-    # round, found by running it: a compound part may not name a voice -- a voice is a
-    # ring's -- so a palace stood in the place's own voice while every ring round it was
-    # in its class's, and the brightest end of the axis had nothing at its centre.
+    # **The centre is inside the innermost ring and carries its palette**: a compound
+    # part may not name a voice -- a voice is a ring's -- so without this a palace stands
+    # in the place's own voice while every ring round it is in its class's, and the
+    # brightest end of the axis has nothing at its centre.
     centre_voice = next((r.get("voice") or place_voice
                          for r in rings if r.get("ring") == 0), place_voice)
     if core is not None and spec_mod.compound(core):
@@ -7126,8 +7064,8 @@ def _lay_court_city(*, plot, admit, rect, plot_t, area_t, temple_t, inner_u, inn
     return {"bands": bands}
 
 #: **How deep the forecourt and the inner court are**, as a share of the axial run each.
-#: The craft round, E5: an approach is a sequence and the courts are the pauses in it.
-#: The greatest hall takes what is left after them and the flanking ranges' band.
+#: An approach is a sequence and the courts are the pauses in it. The greatest hall
+#: takes what is left after them and the flanking ranges' band.
 COMPOUND_COURT_SHARE = 0.22
 
 #: How much of the axial run the greatest hall takes, at the least: it is the end of the
@@ -7139,16 +7077,16 @@ COMPOUND_GREAT_SHARE = 0.28
 def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
                    spec: dict | None = None, seed: int = 1,
                    caps: dict | None = None) -> tuple:
-    """**A compound of a family that declares an axis, laid as a sequence.** The craft
-        round, E5, and the same seam the district compiler writes at.
+    """**A compound of a family that declares an axis, laid as a sequence**, at the same
+        seam the district compiler writes at.
 
-        A composition says what a great thing *holds* -- so many halls, so many courts -- and
-        said nothing about the order, so a palace precinct a quarter of a city wide came out
-        as halls and courts arranged to fit and read as five buildings on a plaza. An
-        approach is an order: the gate, then a forecourt, then a hall, then an inner court,
-        then **the greatest hall at the far end**, with the flanking ranges paired down the
-        axis either side of the inner court. The greatest hall is the largest plot inside the
-        wall, which is what makes it the thing the sequence is for.
+        A composition says what a great thing *holds* -- so many halls, so many courts --
+        and nothing about the order, so halls and courts arranged only to fit read as five
+        buildings on a plaza. An approach is an order: the gate, then a forecourt, then a
+        hall, then an inner court, then **the greatest hall at the far end**, with the
+        flanking ranges paired down the axis either side of the inner court. The greatest
+        hall is the largest plot inside the wall, which is what makes it the thing the
+        sequence is for.
 
         Returns `(got, record)` in the shape a model's answer has, or `(None, why)` where the
         rectangle is too small to lay a sequence in and the compound is asked for as before.
@@ -7288,8 +7226,8 @@ def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
                 d -= 1
         return None
 
-    # **A precinct large enough to be a city of courts is laid as one** (the city
-    # attempt round). The spine-and-grid below lays the greatest hall at the end of an
+    # **A precinct large enough to be a city of courts is laid as one.** The
+    # spine-and-grid below lays the greatest hall at the end of an
     # axis and fills the wings with a grid of identical ranges -- sixty halls in rows,
     # which from the air read as barracks round a plaza, not as a palace. The sourced
     # organisation (`claim/palace-precinct-axis-gate`, `claim/palace-axis-and-grounds`)
@@ -7328,12 +7266,11 @@ def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
         # **The spine, and the wings either side of it.** The sequence is the middle
         # strip: the forecourt inside the gate, the inner court, and the greatest hall
         # across the far end. What a great thing holds beyond those is its **ranges**,
-        # and on a precinct a hundred and eighty-eight square a composition asks for
-        # fifty of them -- so the ground either side of the spine is a grid of halls
-        # with lanes between, paired across the axis, and not a single file. The craft
-        # round, E5 and E7. the spine's own width: the court an area type will take, at
-        # most a third of the span, so the wings either side of it are the greater part
-        # of the precinct
+        # and on a large precinct a composition asks for dozens of them -- so the ground
+        # either side of the spine is a grid of halls with lanes between, paired across
+        # the axis, and not a single file. The spine's own width: the court an area type
+        # will take, at most a third of the span, so the wings either side of it are the
+        # greater part of the precinct
         spine_w = max(lo_a, min(hi_a, max(span // 3, lo_a)))
         wing_w = max(0, (span - spine_w - 2 * gap) // 2)
         court_w = span - 2 * (wing_w + gap) if wing_w >= lo_p else span
@@ -7538,10 +7475,10 @@ def _axis_failure(comp: dict, place: dict, halls: list, courts: list) -> str | N
 
         Two things, and both are what a person walking in would notice missing: the
         **greatest hall** -- the largest plot inside the wall -- is the **last** thing on the
-        axis, and there is a **court** between the gate and it. The craft round, E5. The
-        fuller sequence -- forecourt, ranges, inner court, the greatest hall -- is what
-        `compound_axial` lays and what its own case holds it to; a compound a model drew is
-        held to the two a person sees.
+        axis, and there is a **court** between the gate and it. The fuller sequence --
+        forecourt, ranges, inner court, the greatest hall -- is what `compound_axial` lays
+        and what its own case holds it to; a compound a model drew is held to the two a
+        person sees.
 
     """
     x0, z0 = min(comp["x0"], comp["x1"]), min(comp["z0"], comp["z1"])
@@ -7586,9 +7523,9 @@ def _axial_band(decl: dict | None, kind: str = "plot") -> tuple:
         A plot is drawn as a plot and built on the pad `site()`'s inset leaves of it, so its
         band is the footprint plus the inset on both sides -- the same conversion
         `district_compile._plot_range` makes and `Builder.pad_extent` is the one place of.
-        An edge, a point and an area are drawn as they are built. The craft round: without
-        it an axial compound on a 188-square podium divided its flanking strips into cells
-        of 32x3, which the footprint check then refused one by one.
+        An edge, a point and an area are drawn as they are built. Without this an axial
+        compound divides its flanking strips into cells too thin for any pad, which the
+        footprint check then refuses one by one.
 
     """
     from .buildlib import Builder

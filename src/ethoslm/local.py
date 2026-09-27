@@ -201,10 +201,10 @@ def outside_names(rnd, place: dict | None = None) -> set:
 def retire_plans(rnd, *, compounds: bool = False, lanes: bool = False,
                  place: dict | None = None) -> dict:
     """**Retire the compiled district (and compound) plans a replan re-derives -- except,
-    under a local scope, those outside it**, which are the scope's boundary condition
-    (the fabric reset round: every re-plan path deleted every plan, so a scale repair or
-    a character revision re-compiled the crowded ring this revision must keep). `lanes`
-    retires the network too, and only where there is no scope."""
+    under a local scope, those outside it**, which are the scope's boundary condition: a
+    re-plan path that deleted every plan would make a scale repair or a character
+    revision re-compile districts the revision must keep. `lanes` retires the network
+    too, and only where there is no scope."""
     import os
     keep = outside_names(rnd, place)
     pre = ("plan.district.", "district_") + (("plan.compound.", "compound_")

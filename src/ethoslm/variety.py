@@ -2,14 +2,14 @@
 
 **Report this to a human and never to a builder.** A pass told its buildings are too
 similar will add variation for its own sake, which is worse than the disease -- and an
-aesthetic score is the one thing this project has refused to build for six rounds, on
-the grounds that nine years of GDMC say it does not exist. Nothing here is a judgement.
-Every row is a fact about geometry of the same kind as every other measurement in the
-project: how tall, how long, how many floors, what shape the roof is, how many holes are
-in the walls. What it is *for* is the risk that comes with the library owning more:
-adding primitives is how this project got better and it is also how it could get worse,
-and if a new primitive collapses a town toward one form, that should show up in a report
-next to everything else rather than being discovered on foot three rounds later.
+aesthetic score is the one thing this project refuses to build, on the grounds that
+nine years of GDMC say it does not exist. Nothing here is a judgement. Every row is a
+fact about geometry of the same kind as every other measurement in the project: how
+tall, how long, how many floors, what shape the roof is, how many holes are in the
+walls. What it is *for* is the risk that comes with the library owning more: adding
+primitives is how this project gets better and it is also how it could get worse, and
+if a new primitive collapses a town toward one form, that should show up in a report
+next to everything else rather than being discovered on foot much later.
 
 So it measures **spread**, not quality. A town of fourteen identical huts and a town of
 fourteen identical cathedrals both score zero.

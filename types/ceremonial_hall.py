@@ -56,9 +56,9 @@ PARAMS = {
     "platform": ("int", 0, 3),
     "roof": ("choice", ["hip", "hip_gable", "gable", "pavilion"]),
     "use": ("choice", ["principal", "gate", "side", "rear", "pavilion"]),
-    # the composition round: a principal mass as the show's palace has it -- a tall
-    # faced base under the stone tiers, several eave tiers stacked and stepping in, and
-    # projecting gabled roofs over the entrance. Unset, the hall is what it was.
+    # a principal mass as a palace has it -- a tall faced base under the stone tiers,
+    # several eave tiers stacked and stepping in, and projecting gabled roofs over the
+    # entrance. Unset, the hall is built without them.
     "tiers": ("int", 1, 5),
     "base": ("int", 0, 14),
     "entrance": ("choice", ["plain", "porch"]),

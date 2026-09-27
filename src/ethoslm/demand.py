@@ -1,23 +1,20 @@
 """**What a part is required to deliver, resolved before its lot is drawn.**
 
-The design round's first contract, and the defect it closes, measured on the imported
-code through the real entry point:
+Why the features belong in the question:
 
     envelope.lot_for("cottage", {"storeys": 2})                        -> lot_min [5, 5]
     envelope.lot_for("cottage", {"storeys": 2}, features=("storeys",)) -> lot_min [15, 17]
 
-`placesolve.fabric_lot` and `district_compile._storeys_fit` both asked the first form.
 With an empty feature set `envelope._stands` checks no requested feature at all, so a
 standing one-storey shell answers a two-storey query and a required second storey costs
-the layout nothing: a 5x5 lot is a correct answer to a question nobody asked.
+the layout nothing: a 5x5 lot is a correct answer to a question nobody asked. That is
+why `placesolve.fabric_lot` and `district_compile._storeys_fit` ask through a demand.
 
-The question was never only "how big is this type". It is **what does this part owe, and
-to which requirement**, and that has five parts that were resolved in five different
-places at three different times:
+The question is not only "how big is this type". It is **what does this part owe, and
+to which requirement**, and that has five parts, resolved here together:
 
     the approved pool     which types the capability record admitted for this fabric,
-                          in its order -- not the general library, which is what
-                          `fabric_lot` fell back to while the record said otherwise
+                          in its order -- not the general library
     the parameters        the storeys band the character and the type agree on, and the
                           floor of it, which is what every building of the part must
                           reach -- with a parameter a requirement fixes outright
@@ -26,9 +23,7 @@ places at three different times:
     required features     the tokens a requirement makes mandatory **of this part**,
                           with the requirement ids behind them and the spatial scope
     optional features     the tokens the type declares it *may* deliver. An optional
-                          band may be revised down; a required floor may not, and the
-                          difference between those two sentences is the whole of what
-                          separates the farm case from its control
+                          band may be revised down; a required floor may not
     the physical context  the voice, the ground, the clearance, whether the house is
                           attached, which way it fronts and at which seed -- what the
                           answer is an answer *about*
@@ -48,14 +43,13 @@ still a refusal, with `binding: False`: the caller may `relax` the demand and as
 which is a decision on the record rather than a default substituted underneath one.
 
 **Which requirement reaches which part is `capability.requirements_for`'s answer** and
-not `envelope.required_by`'s. The distinction has a measurement behind it: this module
-first asked `envelope.required_by`, which filters on `scope` alone, and the farm
-sentence's `feature/market` carries no scope while its feature word maps to `stalls` --
-so every cottage, every field and the hall were asked to deliver market stalls, every
-one of them refused honestly, and the refusal was for a capability gap that does not
-exist. `envelope.required_by` is right for the question it answers (which tokens does
-this set of requirements name); it is the wrong question to ask **of a part**. See
-`_asks`.
+not `envelope.required_by`'s. `envelope.required_by` filters on `scope` alone, and a
+requirement like `feature/market` can carry no scope while its feature word maps to
+`stalls` -- asked that way, every cottage, every field and the hall would be asked to
+deliver market stalls, every one of them would refuse honestly, and the refusal would be
+for a capability gap that does not exist. `envelope.required_by` is right for the
+question it answers (which tokens does this set of requirements name); it is the wrong
+question to ask **of a part**. See `_asks`.
 """
 from __future__ import annotations
 
@@ -67,10 +61,10 @@ STOREYS = envelope.STOREYS
 #: The context a demand carries and an envelope answer is keyed on. `ground` and
 #: `clearance` are what the probe was run against; a probe builds on flat ground and
 #: says so, and the day one can be run on a slope the certificates measured on a plane
-#: will not be mistaken for it. `attached` is no longer in that waiting room: since the
-#: neighbourhood delivery round `envelope.flanks` resolves it to a party-wall count and
-#: the probe builds the lot that way. A bare `attached: true` off a character resolves
-#: to **0** -- see `envelope.flanks` for why a fabric's word is not a lot's.
+#: will not be mistaken for it. `attached` is not only recorded: `envelope.flanks`
+#: resolves it to a party-wall count and the probe builds the lot that way. A bare
+#: `attached: true` off a character resolves to **0** -- see `envelope.flanks` for why a
+#: fabric's word is not a lot's.
 CONTEXT_DEFAULT = {"voice": None, "ground": "flat", "clearance": None,
                    "attached": None, "frontage": None, "seed": 1}
 
@@ -104,10 +98,10 @@ def resolve(spec: dict | None, intent: dict | None, part: dict | None,
     band, band_from = _storeys_band(part, decls, types, allocation,
                                     fixed=asks["params"])
     params = _params(part, band, allocation, fixed=asks["params"])
-    # **...and each approved type's own band** (the design resolution round). The band
-    # above is the leading type's, which is what the part's *lot* is sized for; asked of
-    # a leaf of another type -- a shop house in a quarter whose leading type is a one-
-    # storey courtyard house -- it certified the shop against the house's `[1, 1]`. A
+    # **...and each approved type's own band.** The band above is the leading type's,
+    # which is what the part's *lot* is sized for; asked of a leaf of another type -- a
+    # shop house in a quarter whose leading type is a one-storey courtyard house -- it
+    # would certify the shop against the house's `[1, 1]`. A
     # leaf is answered in its own type's band (`storeys_admitted(type_name=)`).
     bands = {}
     for t in types:
@@ -188,15 +182,14 @@ def court_obligation(node: dict | None) -> dict | None:
         at, the number of courts its compile record laid where it has one, and which of them
         the answer came from.
 
-        **Why this exists.** The neighbourhood review, finding 4: `required_by_part` binds
-        what the *sentence* required, and "a district adopted a courtyard-block arrangement"
-        is not something any sentence said. So the crowded district could ask its compiler for
-        twenty-four courtyard blocks, get them, and publish **no court subject at all** -- and
-        `section._courts` then took its denominator from the parts that *stood* and happened
-        to be of a court type, which is how four standing courts out of nine attempted
-        subjects was reported as "the courts are demonstrated". An adopted form owes its court
-        whether or not any leaf of it is a courtyard-house type, and this is where that
-        obligation is published.
+        **Why this exists.** `required_by_part` binds what the *sentence* required, and "a
+        district adopted a courtyard-block arrangement" is not something any sentence said.
+        Without this a district could ask its compiler for two dozen courtyard blocks, get
+        them, and publish **no court subject at all** -- and `section._courts` would take
+        its denominator from the parts that *stood* and happened to be of a court type, so
+        a few standing courts out of many attempted would read as "the courts are
+        demonstrated". An adopted form owes its court whether or not any leaf of it is a
+        courtyard-house type, and this is where that obligation is published.
 
         Read in the order a district's own record is authoritative in
         (`district_compile.character_of`): an explicit character, then the arrangement the
@@ -208,9 +201,9 @@ def court_obligation(node: dict | None) -> dict | None:
     """
     if not isinstance(node, dict):
         return None
-    # **landscape the parent keeps as found adopted no form** (the parent composition
-    # round): it lays nothing, so it owes no court -- read at its density's default it
-    # was charged one, and a hill kept as found was a failed court subject
+    # **landscape the parent keeps as found adopted no form**: it lays nothing, so it
+    # owes no court -- read at its density's default it would be charged one, and a
+    # hill kept as found would be a failed court subject
     if (((node.get("sector") or {}).get("module") or {}).get("role")) == "landscape":
         return None
     kind = str(node.get("kind") or "")
@@ -345,11 +338,11 @@ def required_by_part(spec: dict | None, intent: dict | None, place: dict | None 
                 if t in can or t in claimed:
                     for rid in ids or [None]:
                         add(name, t, rid)
-    # **A district that adopted a courtyard block owes its court.** The neighbourhood
-    # review's fourth finding, and the one clause of this function that is not about the
-    # sentence: everything above binds what a requirement asked of a part, and a form
-    # the layout adopted asked nothing of anybody -- so a district could request twenty-
-    # four courtyard blocks and publish no court subject at all. The obligation is the
+    # **A district that adopted a courtyard block owes its court.** The one clause of
+    # this function that is not about the sentence: everything above binds what a
+    # requirement asked of a part, and a form the layout adopted asked nothing of anybody
+    # -- so a district could request two dozen courtyard blocks and publish no court
+    # subject at all. The obligation is the
     # district's own and is published under `COURT_FORM_ID`, which no requirement
     # carries, so a reader of the binding can tell the two apart. See
     # `court_obligation`.

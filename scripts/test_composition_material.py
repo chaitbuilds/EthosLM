@@ -92,7 +92,7 @@ _ANY = {"wall": [{"family": "andesite", "weight": 1.0, "when": "any"}],
 _DAMP = {"wall": [{"family": "andesite", "weight": 1.0, "when": "damp"}]}
 
 
-# ------------------------------------------------------- Q1: the exact block state
+# ----------------------------------------------------------- the exact block state
 
 @case
 def t_a_a_cell_whose_state_moved_is_stale_and_is_left_alone():
@@ -171,11 +171,11 @@ def t_c_a_world_that_names_more_properties_than_the_record_is_not_stale():
             f"substitute keeps the world's own suffix: {got}")
 
 
-# ----------------------------------------------------------- Q2: declared figures
+# --------------------------------------------------------------- declared figures
 
 @case
 def t_d_a_declared_figure_survives_a_pass_an_identical_ordinary_cell_does_not():
-    """The case the design round's result asked for, as an A/B on one world.
+    """A declared figure against an ordinary cell, as an A/B on one world.
 
         Two cells of the **same role**, the **same block**, the **same flags** and the same
         part. One is declared part of a figure and one is not. The recipe would take both.
@@ -235,8 +235,8 @@ def t_e_the_figure_bit_survives_reconciliation_and_is_counted():
 
 @case
 def t_f_the_types_that_lay_the_named_patterns_declare_them():
-    """The three patterns the design round's result named, declared by the types that
-    draw them -- read off a real build, not off the source."""
+    """The named patterns (a square's chequered paving, a market's floor), declared by
+    the types that draw them -- read off a real build, not off the source."""
     got = {}
     b, sited, res = C.probe_build("square", 24, 24, {"paving": "checker"}, seed=3,
                                   voice="pale_quartz_and_gilt")
@@ -292,13 +292,13 @@ def t_g_the_figure_register_is_of_the_last_write_and_a_refusal_gives_it_back():
             f"{sorted(b.figure_cells)}")
 
 
-# ------------------------------------- Q3: the conditions, and what did not change
+# ----------------------------------------- the conditions, and what did not change
 
 @case
 def t_h_damp_wants_a_side_face_so_a_paved_floor_is_not_damp():
-    """The design round's cause 2. A floor is in ground contact by definition, so
-    `damp` selected every cell of a paved court at the variant's full weight. Damp is
-    what wicks out of the ground into a vertical surface, so it wants a side face."""
+    """A floor is in ground contact by definition, so `damp` keyed on ground contact
+    alone selects every cell of a paved court at the variant's full weight. Damp is what
+    wicks out of the ground into a vertical surface, so it wants a side face."""
     F = S.FLAGS
     inside = F["open_up"] | F["ground_contact"]              # paving, seen from above
     edge = F["open_up"] | F["open_north"] | F["ground_contact"]

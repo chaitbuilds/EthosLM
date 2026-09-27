@@ -16,26 +16,21 @@ FORM = "east_asian"
 #: and a shop-house are both east Asian.
 ROLE = "urban"
 
-#: **What this building is for.** The neighbourhood round, found by reading a built
-#: section: this type declared no `FUNCTION`, so `district_compile.type_use` fell back
-#: to its `ROLE` and recorded its use as `unstated` -- an inference, said to be one on
-#: the record. A quarter's own fabric is drawn from the types whose *declared* function
-#: is the quarter's use, so an inferred `unstated` ranked below `row_house`'s declared
-#: `dwelling`, and the traders' ring of a city whose sources say in as many words that
-#: "its houses are courtyard houses" came out as thirty row houses and no courtyard
-#: house at all. A courtyard house is a dwelling; the file says so now, and the
-#: inference is retired for this type.
+#: **What this building is for.** A courtyard house is a dwelling. Without a declared
+#: `FUNCTION`, `district_compile.type_use` falls back to the type's `ROLE` and records
+#: its use as `unstated` -- an inference, said to be one on the record. A quarter's own
+#: fabric is drawn from the types whose *declared* function is the quarter's use, so an
+#: inferred `unstated` ranks below `row_house`'s declared `dwelling`, and a quarter
+#: whose sources say "its houses are courtyard houses" would come out as row houses and
+#: no courtyard house at all.
 FUNCTION = "dwelling"
 
-#: **What this type delivers, by name.** The neighbourhood round, and the plainest
-#: instance of the gap it was sent to close: this file has laid three ranges and a wall
-#: round a paved yard since it was written, published nothing about it, and so
-#: `usable.court_accessible` answered `unsupported` on **fourteen of the retained
-#: section's twenty-five courts** -- more than half the courts in the section could not
-#: be asked whether they were courts at all. A feature nothing can be asked about is not
-#: a feature that holds; it is a feature nobody measured. The rectangle is published
-#: with it (`emitted.rects.courtyard`), because a declaration with no rectangle is the
-#: same escape one step along.
+#: **What this type delivers, by name.** This file lays three ranges and a wall round a
+#: paved yard; unless it publishes that, `usable.court_accessible` answers `unsupported`
+#: on every court it builds. A feature nothing can be asked about is not a feature that
+#: holds; it is a feature nobody measured. The rectangle is published with it
+#: (`emitted.rects.courtyard`), because a declaration with no rectangle is the same
+#: escape one step along.
 FEATURES = ("courtyard",)
 
 PARAMS = {
@@ -62,11 +57,11 @@ NEEDS = {
     # sweep; declared to 24 by its author. **The floor is what the court needs, not what
     # the shell needs.** The sweep asks whether the type stands and reads 4x4 clean; a
     # 4x4 pad has two wings of two against a hall of three and no ground between them at
-    # all. The neighbourhood round measured the smallest pad on which the yard is
-    # `COURT_WIDE` x `COURT_DEEP` and `COURT_CELLS`, on flat ground at three seeds, both
-    # frontages and all six parameter sets: 8 across and 9 along, where 8x8 leaves a 4x2
-    # court of eight cells. A band that admits a lot the type cannot deliver its
-    # declared feature on is the same defect as a declared feature with no rectangle.
+    # all. The smallest pad on which the yard is `COURT_WIDE` x `COURT_DEEP` and
+    # `COURT_CELLS`, on flat ground at three seeds, both frontages and all six parameter
+    # sets, is 8 across and 9 along, where 8x8 leaves a 4x2 court of eight cells. A band
+    # that admits a lot the type cannot deliver its declared feature on is the same
+    # defect as a declared feature with no rectangle.
     "footprint": (8, 9, 32, 32),
     "frontage": "lane",
     "ground": "any",
@@ -221,8 +216,8 @@ def build(b, part, seed, **params):
     # what leaves a court of `COURT_WIDE` x `COURT_DEEP`, and the house gives up its
     # upper storey before the court gives up its ground: `two` below already asks for
     # `db >= 4`, so a hall capped to three on a shallow pad stands single and low, which
-    # is the right house for a tight lot. Before the neighbourhood round nothing here
-    # knew the court existed -- the yard was whatever the ranges happened to leave.
+    # is the right house for a tight lot, and the yard is never merely whatever the
+    # ranges happen to leave.
     db_cap = max(3, D - COURT_DEEP - 2)            # what the court leaves the hall
     db_lo = max(3, min(4, D // 5))                 # depth of the back range
     if storeys >= 2:
@@ -422,13 +417,12 @@ def build(b, part, seed, **params):
             hall_eave = fy + WALL_H + 1
 
     # ---- roofs: the biggest thing about the building ---------------------- **The wing
-    # eave comes down over the gallery, not over the court.** The neighbourhood round,
-    # and the same repair `court_large` needed: each wing roof was drawn over the whole
-    # wing and then thrown a block of overhang on top of that, so the first column of
-    # the court on each side stood under a roof. On a court five across that is two
-    # fifths of its sky. Drawn one column short, the eave lands on the gallery's own
-    # yard-facing post row -- which is what a deep eave over an open gallery is for --
-    # and the court keeps its own sky.
+    # eave comes down over the gallery, not over the court.** As in `court_large`: a
+    # wing roof drawn over the whole wing and then thrown a block of overhang on top of
+    # that puts the first column of the court on each side under a roof -- on a court
+    # five across, two fifths of its sky. Drawn one column short, the eave lands on the
+    # gallery's own yard-facing post row -- which is what a deep eave over an open
+    # gallery is for -- and the court keeps its own sky.
     for side, wt0, wt1, yard_t, mode in wing_specs:
         rt0 = wt0 + 1 if (side != "low" and wt1 > wt0) else wt0
         rt1 = wt1 - 1 if (side == "low" and wt1 > wt0) else wt1
@@ -652,12 +646,10 @@ def build(b, part, seed, **params):
     b.check_walkable(part["label"])
     b.check_attached()
     # **The court is declared, with the rectangle it actually occupies.** See
-    # `FEATURES`: until the neighbourhood round this type published nothing at all about
-    # the yard its three ranges stand round, and fourteen of the retained section's
-    # twenty-five courts were therefore `unsupported` -- not failing, not holding,
-    # simply never asked. The rectangle is the open ground between the wings' eaves and
-    # in front of the hall's engawa, which is the court as this house is designed, and
-    # it is what `usable` re-reads on the assembled world.
+    # `FEATURES`: a yard the type does not declare is `unsupported` -- not failing, not
+    # holding, simply never asked. The rectangle is the open ground between the wings'
+    # eaves and in front of the hall's engawa, which is the court as this house is
+    # designed, and it is what `usable` re-reads on the assembled world.
     cx0, cz0, cx1, cz1 = _box(part, facing, cw0, cf0, cw1, cf1)
     return {"kind": "court_small", "storeys": storeys, "wings": wings_mode,
             "yard": (cx0, cz0, cx1, cz1),

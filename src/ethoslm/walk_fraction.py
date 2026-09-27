@@ -36,13 +36,10 @@ def measure(name, show_rooms=False, context=None):
     rows = ctx.interior_walk()
     on_plot = [r for r in ctx.rooms if r.get("plot")]
 
-    # on a cut volume the perimeter reaches nothing -- and this, the third reader of the
-    # same question, never got it. It cost nothing for six rounds because **no wall this
-    # project built was ever closed**. The town read 0.0% walkable and 94.7% with a jump
-    # allowed, which is not a town nobody can enter, it is a seed that never gets
-    # through the gate. Seeded from the lane too it reads 88.2%. Both readings are on
-    # the record and **both miss the bar of 90**, so nothing here turns a miss into a
-    # pass.
+    # Seeded from the lanes as well as the perimeter. Behind a closed wall, or on a cut
+    # volume, the perimeter reaches nothing, and a town that reads 0% walkable from it
+    # is not a town nobody can enter -- it is a seed that never gets through the gate.
+    # The extra seeds change where the walk starts, not what counts as walkable.
     walk = set(ctx.nav.flood(
         list(ctx.nav.perimeter_seeds(inset=2, step=3)) + lint.lane_stances(ctx.nav, net),
         max_jumps=0))

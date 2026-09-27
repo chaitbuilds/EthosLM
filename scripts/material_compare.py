@@ -1,8 +1,8 @@
 """The controlled three-way material comparison, on production-owned surfaces.
 
-    $PY scripts/material_compare.py --context farm=out/expr-farm --context city=out/expr-city
-    $PY scripts/material_compare.py --context farm=out/expr-farm --controls-only
-    $PY scripts/material_compare.py --context farm=out/closure-farm --reconstruct
+    $PY scripts/material_compare.py --context farm=out/<farm> --context city=out/<city>
+    $PY scripts/material_compare.py --context farm=out/<farm> --controls-only
+    $PY scripts/material_compare.py --context farm=out/<farm> --reconstruct
 
 **What this answers that a naive comparison cannot.** A `leave_off` verdict read off
 generic cameras and flat shading is inconclusive rather than negative, for two reasons,
@@ -48,7 +48,7 @@ over the finished volume with the same plots, network and base as `stage_lint`, 
 solid occupancy of every cell is compared with the built world's.
 
 The judgment is left `null`: a reader reads the images and writes the decision into
-`out/des-material/comparison.json`. The pass stays off until that says otherwise.
+`comparison.json` in the `--out` directory. The pass stays off until that says otherwise.
 """
 from __future__ import annotations
 
@@ -376,10 +376,10 @@ def nearest_by_colour(block: str) -> str | None:
 def dominant(prec: dict, role: str | None = None) -> tuple:
     """The editable role a part shows most of, and the block it is laid in.
 
-        `role` names one instead. The composition round: the dominant role of a courtyard
-        house's street face is its roof, and the restrained recipe under judgement edits
-        walls -- so the display is asked about the substitution that is actually being made
-        as well as about the biggest one on the camera.
+        `role` names one instead. The dominant role of a courtyard house's street face is
+        its roof, and the restrained recipe under judgement edits walls -- so the display
+        is asked about the substitution that is actually being made as well as about the
+        biggest one on the camera.
 
     """
     cells = prec.get("cells") or {}
@@ -533,8 +533,8 @@ def reconstruct(state: str, work: str, rebuild: bool = False) -> dict:
         sp = os.path.join(copy, "surfaces.json")
         own = S.read(sp)
         # ...and the copy is only reusable if its record carries what this comparison
-        # reads. A copy made before `FLAGS["figure"]` existed is a stale record, not a
-        # cache, and reusing it would silently answer with the design round's record.
+        # reads. A copy whose record lacks any of `S.FLAGS` (such as `figure`) is a
+        # stale record, not a cache, and reusing it would silently answer with it.
         if own and S.owned_cells(own) and set(S.FLAGS) <= set(own.get("flags") or {}):
             return {"copy": copy, "reused": True, "surfaces_source": "driver",
                     "rebuilt_matches_state": _matches(state, copy)}
@@ -618,12 +618,12 @@ def re_record_state(state: str, work: str, *, rebuild: bool = False) -> dict:
     """Make a retained candidate's surface record again, off its **own stored programs**,
         without rebuilding it.
 
-        Composition round. The figure declarations (`Primitives.figure`) are in the type
-        programs, so a `surfaces.json` written before they existed carries no `figure` bit
-        and cannot answer this comparison; and `--reconstruct`, which re-runs the parts
-        *stage*, is refused on `out/des-city` because that candidate's own ground stamp is
-        stale (`deps.check(rnd, "ground")` says so of the retained directory itself, not
-        only of a copy). Neither is a reason to rebuild a city.
+        The figure declarations (`Primitives.figure`) are in the type programs, so a
+        `surfaces.json` written before they existed carries no `figure` bit and cannot
+        answer this comparison; and `--reconstruct`, which re-runs the parts *stage*, is
+        refused on a candidate whose own ground stamp is stale (`deps.check(rnd, "ground")`
+        says so of the retained directory itself, not only of a copy). Neither is a reason
+        to rebuild a city.
 
         So the programs are replayed exactly the way `stage_parts` ran them -- the `walls`
         and `squares` waves in order on `world.npz`, then each quarter wave on its own copy
@@ -858,10 +858,10 @@ def run_context(name: str, state: str, out_dir: str, work: str, seed: int,
                  "settings": list(settings_list), "seed": seed, "images": {}}
     sp = os.path.join(state, "surfaces.json")
     src_state = state
-    # **A record that predates a record change has to be made again.** Composition
-    # round: the figure declarations (`Primitives.figure`) are in the type programs, so
-    # a `surfaces.json` cached before they existed carries no `figure` bit and would
-    # answer this comparison with the design round's record. `--re-record` re-runs the
+    # **A record that predates a record change has to be made again.** The figure
+    # declarations (`Primitives.figure`) are in the type programs, so a `surfaces.json`
+    # cached before they existed carries no `figure` bit and would answer this
+    # comparison with a stale record. `--re-record` re-runs the
     # stored programs in a copy, exactly as `--reconstruct` does for a candidate that
     # never had a record, and `rebuilt_matches_state` says whether the world came out
     # byte for byte the retained one -- which it must, since declaring a figure places
@@ -891,7 +891,7 @@ def run_context(name: str, state: str, out_dir: str, work: str, seed: int,
     ctx["editable_cells"] = {"recorded": S.editable_cells(raw),
                              "after_reconciliation": S.editable_cells(sdoc)}
     # what the types declared they drew on purpose, and how much of it survived to the
-    # record a pass reads: the composition round's Q2
+    # record a pass reads
     ctx["figures"] = {"declared": rec_report.get("figures") or {},
                       "cells_recorded": rec_report.get("figure_cells_recorded"),
                       "cells_kept": rec_report.get("figure_cells_kept"),
@@ -934,7 +934,7 @@ def run_context(name: str, state: str, out_dir: str, work: str, seed: int,
         ctx["positive_control"] = controls(built, sdoc, close,
                                            os.path.join(out_dir, name, "control"), seed)
         # ...and the same question about the role the recipe under judgement edits, not
-        # only about the face's dominant one (composition round)
+        # only about the face's dominant one
         roles_edited = sorted({r for rec in (recipe.get("by_voice") or {"": recipe}).values()
                                for r in (rec or {})})
         ctx["positive_control_by_role"] = [

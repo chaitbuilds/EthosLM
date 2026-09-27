@@ -1,11 +1,11 @@
 """A build linter: deterministic checks for *broken*, never for *ugly*.
 
-Correctness is not taste and this project conflated them for four rounds. Backwards
-stairs and unreachable doors are bugs; they want checks that run on every pass, cost no
-model calls, and give the same answer twice. Whether a town is beautiful is not in here
-and must not get in here -- nine years of GDMC say that scorer does not exist.
+Correctness is not taste, and the two must not be conflated. Backwards stairs and
+unreachable doors are bugs; they want checks that run on every pass, cost no model calls,
+and give the same answer twice. Whether a town is beautiful is not in here and must not
+get in here -- nine years of GDMC say that scorer does not exist.
 
-**Shape borrowed from compilers**, per the spec's "worth stealing from":
+**Shape borrowed from compilers**:
 
     ERROR    the build is broken. Something cannot be entered, reached, or placed.
              A pass with errors has failed, whatever it looks like.
@@ -448,8 +448,8 @@ class Context:
             if r.get("enclosure", 1.0) < self.ENCLOSED:
                 continue
             # The threshold is not floor. A stance in the doorway itself is part of the
-            # room component, and counting it made "you cannot walk in at all" come back
-            # as one cell out of thirty-seven rather than as zero. ...and neither is the
+            # room component, and counting it would make "you cannot walk in at all"
+            # come back as a single cell rather than as zero. ...and neither is the
             # top of a barrel the library placed. But the top of a dais is.
             # `observe.floor_stances` is the one definition of what a room's floor is
             # and every measure of walkability in this project reads it -- this call,
@@ -989,7 +989,7 @@ def s001_palette(ctx: Context):
 
     Still STYLE, never enforced. A builder that needs a sixth material for a reason is
     not broken, and a linter that ruled on that would be the aesthetic scorer this
-    project has refused to build for six rounds."""
+    project refuses to build."""
     if not ctx.placed:
         return
     from .buildlib import _families
