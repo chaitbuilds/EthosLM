@@ -54,7 +54,7 @@ def _atomic(path, write) -> None:
         empty file and raised `JSONDecodeError`, which is how a whole swept check run dies
         at eight jobs and survives at one. A rename is atomic on one filesystem; a truncate
         is not, and a checker that fails on how many processes it was given is not a checker.
-        
+
     """
     # The suffix is kept: `np.savez_compressed` appends `.npz` to a path that has not
     # got one, and would write somewhere this call never renames.
@@ -81,7 +81,7 @@ def descriptors(declaration) -> list:
         same fixture and the list is deduplicated, which is right -- there is one piece of
         ground to test -- but the pair is never a duplicate of either: what it tests is the
         neighbour.
-        
+
     """
     needs = declaration.get("needs", {})
     a, b, c, d = needs.get("footprint", (3, 3, 64, 64))

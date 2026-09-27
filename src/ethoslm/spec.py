@@ -147,7 +147,8 @@ def composition(part_or_family) -> dict:
 #: filters on it, so a place says which building tradition it is in and the palette is a
 #: separate question answered against the ground. Two are regional and two are
 #: functional -- see `pipeline.form_ok`.
-FORMS = ("european_vernacular", "east_asian", "fortification", "civic")
+FORMS = ("european_vernacular", "east_asian", "dryland_vernacular", "fortification",
+         "civic")
 
 #: How a defining part sits in the place. Free text is refused: a relation nothing can
 #: act on is a comment, and A5 plans the place level off exactly these words.
@@ -339,7 +340,7 @@ class SpecError(ValueError):
         `field` and `part` name what was refused where the refusal is about one field of
         one part (or one top-level field), so a hand-back can take that field alone from
         the next answer (`merge_hand_back`). None where the refusal is about the whole.
-        
+
     """
 
     def __init__(self, msg: str, field: str | None = None, part: str | None = None):
@@ -412,7 +413,7 @@ def structures_ceiling(kind: str | None) -> int:
         the old fabric clips the count the new arithmetic gives -- a city of four rings on
         768 asks for about a thousand structures against a ceiling of 900 -- and a ceiling
         that clips an honest count is a ceiling deciding the answer.
-        
+
     """
     return int(round(CEILING["structures"] * _ground_ratio(kind) * fabric_ratio()))
 
@@ -444,7 +445,7 @@ def fabric_ratio() -> float:
         actually lays -- a
         frontage, a depth and a share of the street -- and a medium district comes out at
         323. Read off the files, so a type added or a band closed moves it.
-        
+
     """
     from .placeplan import fabric, DENSITY_ROLE
     w = FABRIC_REFERENCE_DENSITY
@@ -461,7 +462,7 @@ def size_band_for(kind: str | None) -> tuple:
         columns a house refuses at 900 a city whose own arithmetic, at the fabric the
         compiler lays, asks for a thousand. Every kind's band moves under it, because the
         fabric is the library's and not the kind's.
-        
+
     """
     lo, hi = SIZE_BANDS[kind]
     r = _ground_ratio(kind) * fabric_ratio()
@@ -582,7 +583,7 @@ def read_setting(got, where: str = "setting") -> dict:
 
         Refuses by name: a surface word the search cannot measure is a comment, and the
         whole reason this field exists is that the setting was a comment before.
-        
+
     """
     from .groundread import SURFACES
     out = dict(SETTING_DEFAULT, notes="")
@@ -635,7 +636,7 @@ def relief_cap(setting: dict | None, footprint: int) -> float | None:
         `relief_for` rounds, so the two caps a place carries are in the same unit and the
         tighter one wins in `read_spec`. A `steep` word caps at `STEEP_CAP`, which is the
         world's height and not a preference.
-        
+
     """
     word = (setting or {}).get("relief") or "any"
     g = RELIEF_WORDS.get(word)
@@ -657,7 +658,7 @@ def relief_for(footprint: int) -> float:
         prepares each part's own ground, and what a *place* needs is a level centre -- which
         is the plateau measure -- and to be one place rather than the two sides of a
         mountain, which is this.
-        
+
     """
     return round(MAX_GRADIENT * int(footprint), 1)
 
@@ -694,7 +695,7 @@ def count_in(sentence: str) -> dict | None:
         Read here and not by the model, because "about sixty houses" has to become the same
         band every time it is asked. Returns `{"n": int, "about": bool, "phrase": str}` or
         None where the sentence names no count.
-        
+
     """
     s = (sentence or "").lower()
     # ...of *structures*, and nothing else a place has numbers of. "three concentric
@@ -726,7 +727,7 @@ def band_for(kind: str, count: dict | None) -> tuple:
         `+/- ABOUT` where the sentence hedged and exactly where it did not. The kind's band
         is **not** re-applied afterwards: a sentence that asks for a town of twelve houses
         is asking for twelve houses and the number is what it said.
-        
+
     """
     if kind not in SIZE_BANDS:
         raise SpecError(f"kind is one of {list(KINDS)}, not {kind!r}")
@@ -753,7 +754,7 @@ def size_from(declared: int, lo: int, hi: int) -> int:
 
         Either way what the model is answerable for is the *ratio* between its districts,
         which is the thing it actually knows, and the size is the library's.
-        
+
     """
     if not declared or int(declared) < int(lo):
         return int(round((lo + hi) / 2))
@@ -767,7 +768,7 @@ def apportion(parts: list, declared: int, target: int) -> list:
         counts keeps them exactly. Largest-remainder, so the parts add up to the target and
         the rounding goes to the parts that lost most of it -- and never to nothing, because
         a district that accounted for structures still accounts for at least one.
-        
+
     """
     groups = [p for p in parts if district(p) and p["structures"]]
     if not groups:
@@ -888,7 +889,7 @@ def read_ring_fields(d: dict, out: dict, where: str) -> None:
         comment, and the whole of why these fields exist is that a ring's proportion was
         a comment before. An authored voice lands on `out["authored_voice"]` beside the
         name, for `read_spec` to collect.
-        
+
     """
     present = [k for k in RING_FIELDS if d.get(k) is not None]
     if not present:
@@ -942,7 +943,7 @@ def read_character(got, out: dict, where: str) -> None:
         Absent means the district is planned as it always was; present -- even empty --
         means the compiler plans it. Refused by name on a part that is not a district, on
         a field that is not one of `CHARACTER_FIELDS`, and on a value out of its range.
-        
+
     """
     if got is None:
         return
@@ -1196,7 +1197,7 @@ def plot_share(part: dict) -> float:
         The craft round: the lots' share of a block and its streets, off the compiler's own
         fabric (`placeplan.fabric`), so `structures_for` below is `columns` over what one
         house of that fabric actually costs.
-        
+
     """
     from .placeplan import fabric, DENSITY_ROLE
     d = part.get("density") or "medium"
@@ -1254,7 +1255,7 @@ def read_spec(doc: dict, sentence: str | None = None, count: dict | None = None)
         What the model is answerable for is `kind`, `defining_parts` and `voice`. The band,
         the structure count, the footprint and the ceiling are computed here from the
         sentence and the kind, so the same sentence is the same place every time.
-        
+
     """
     if not isinstance(doc, dict):
         raise SpecError(f"a place spec is an object, not {type(doc).__name__}")
@@ -1460,7 +1461,7 @@ def read_voice(got) -> tuple:
         literal. A voice the model authors is validated here, before a plan exists and long
         before a block is placed -- so a palette naming a family with no stairs is a refusal
         about a JSON file rather than a chimney that quietly failed to be built sixty times.
-        
+
     """
     from .voices import VoiceError, validate
     if got is None:
@@ -1492,7 +1493,7 @@ def _read_needs(got, structures: int, kind: str | None = None,
         size a place with. A footprint that *does* match is accepted, because reading a spec
         that has already been read has to give the same spec -- `Round.place_spec()` is
         called by five stages.
-        
+
     """
     out = dict(NEEDS_DEFAULT)
     want = footprint_for(structures, kind)
@@ -1541,7 +1542,7 @@ def scale_to_ceiling(spec: dict) -> dict:
 
         The footprint is capped in the same act and re-derived from the reduced count, so a
         scaled spec asks for the ground it now needs and not the ground it wanted.
-        
+
     """
     cap = structures_ceiling(spec.get("kind"))
     want = int(spec["structures"])
@@ -1619,7 +1620,7 @@ def compound(part: dict) -> bool:
         parts -- and yes for a `COMPOUND_FAMILIES` family whatever kind the spec guessed,
         for `placeplan._kind_ok`'s reason: a spec is written before any type exists and
         cannot know that a palace is built as a compound of halls and not as a house.
-        
+
     """
     fam = part.get("family")
     if fam in COMPOUND_FAMILIES:
@@ -1779,7 +1780,7 @@ def land_use(part: dict | None) -> str:
         part's prose because that is where a spec that means a farm belt says it does, and
         it reads nothing else: a *role* is what the buildings are for and never implies what
         lies between them.
-        
+
     """
     said = str((part or {}).get("land_use") or "").strip().lower()
     if said in LAND_USES:
@@ -1805,7 +1806,7 @@ def core(spec: dict) -> dict | None:
         relation is `centre`, and where two are, the one that is not a group -- lifted here
         because A1 gives that part a *say*: its own `needs` are what the core of the site is
         scored against, and the search reads them from this one answer.
-        
+
     """
     at_centre = [p for p in spec["defining_parts"] if p["relation"] == "centre"]
     solid = [p for p in at_centre if p["kind"] != "group"]
@@ -1821,7 +1822,7 @@ def core_needs(spec: dict) -> dict:
         the number that matters most -- how level the middle is -- belongs to the part that
         stands on it, and a spec that says so is a spec whose outer rings are free to be a
         hillside.
-        
+
     """
     out = {k: v for k, v in spec["needs"].items()}
     p = core(spec) or {}
@@ -1841,7 +1842,7 @@ def district_role(spec: dict, district: dict) -> str | None:
 
         None where a district defines nothing the spec knows, in which case no role check is
         made: a rule nobody can obey is not one to refuse a plan on.
-        
+
     """
     if not district:
         return None

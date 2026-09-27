@@ -48,7 +48,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 ROLES = ("spec", "plan", "type", "build", "revise", "judge", "research")
 
 TIER_OF = {"spec": "small", "plan": "frontier", "type": "frontier", "build": "frontier",
-           "revise": "small", "judge": "vision"}
+           "revise": "small", "judge": "vision", "research": "frontier"}
 
 #: Roles whose request always carries images. `build` and `revise` sometimes do, and are
 #: checked per job.
@@ -57,7 +57,7 @@ IMAGE_ROLES = ("judge",)
 #: Output ceilings per role. A program is written in chunks and a plan level is one JSON
 #: document, so nothing here needs the long tail.
 MAX_TOKENS = {"spec": 8192, "plan": 16384, "type": 8192, "build": 8192,
-              "revise": 8192, "judge": 512}
+              "revise": 8192, "judge": 512, "research": 8192}
 
 APIS = ("anthropic", "openai")
 
@@ -368,7 +368,7 @@ class Router:
         overrides one role whatever the switch says, which is how a per-role provider is
         done. `ETHOSLM_MODEL_NAME` with `ETHOSLM_MODEL_API` is the older knob and still means
         "that model for every role".
-        
+
     """
 
     def __init__(self, doc: dict | None = None, env=None, http=None):
@@ -556,7 +556,7 @@ class Router:
                 what is counted here is the record saying the API ran -- `api_usage` on the
                 blinded job -- and never the mere presence of `done`, which would re-count an
                 answer the stage has not yet adopted and loop for ever.
-                
+
         """
         n = 0
         text_asks = []
@@ -610,7 +610,7 @@ class Router:
                 every answer writes its own file, so a batch of thirteen in which one refuses
                 has twelve answers on disk and nothing is thrown away. The judge is not here
                 on purpose: its branch shares `last_usage` and its cache, and it is warm.
-                
+
         """
         if not asks:
             return 0
@@ -710,7 +710,7 @@ class ApiBuilder:
         this module speak the Anthropic and the OpenAI wire. Checker results are
         observations, including reported defects; finishing requires a completed check of
         the current bytes, not a claim by the model that it checked.
-        
+
     """
 
     def __init__(self, transport=None, *, model=None, max_turns=128,

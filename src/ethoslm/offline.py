@@ -97,7 +97,7 @@ def surface_heights(vol: observe.Volume) -> np.ndarray:
         Matches MOTION_BLOCKING_NO_LEAVES, which is what `Site.height` reads from the server
         -- including tree trunks, because that heightmap includes them and a dry run that
         disagreed with the live one would be worse than useless.
-        
+
     """
     t = vol.tables()
     c = vol.codes
@@ -137,7 +137,7 @@ def run_program(path: str, vol: observe.Volume, network=None, plots=None,
         function is what keeps a type and an ordinary program the same thing to everything
         downstream -- the measures, the render and the lint all replay a type by executing
         a file, because that is all it is.
-        
+
     """
     from .buildlib import Builder
     from .frontage import Frontage

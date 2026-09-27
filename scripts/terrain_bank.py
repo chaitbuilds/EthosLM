@@ -157,7 +157,7 @@ def _plot(b: Builder, patch: dict) -> dict:
 
         Never closer than `MARGIN` to a patch edge, because the edge is where the lane
         goes and a building laid over its own lane is a fixture asking the wrong question.
-        
+
     """
     w, d = PLOT
     x0, z0 = patch["x0"] + MARGIN, patch["z0"] + MARGIN
@@ -199,7 +199,7 @@ def _lane(vol: observe.Volume, h, wet, patch: dict, plot: dict) -> dict:
 
         Returns `Network.to_json()`'s shape, so what the bank stores is a circulation
         network and `test_ground.py` hands the library the object a round hands it.
-        
+
     """
     size = patch["size"]
     i0, j0 = patch["x0"] - vol.x0, patch["z0"] - vol.z0

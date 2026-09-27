@@ -252,7 +252,7 @@ def _ground_proposal_print(rnd, plan=None) -> str:
         work proportional to the record rather than to the change. A round with no proposal
         document falls back to the plan's own fingerprint, which is what `DEPENDS["ground"]`
         named before this kind existed.
-        
+
     """
     p = rnd.rel(GROUND_PROPOSAL_FILE)
     if os.path.exists(p):
@@ -286,7 +286,7 @@ def content_print(path: str) -> str | None:
         the same (`HEIGHT = 10` -> `HEIGHT = 90`), and a terrain volume was keyed by its
         file size. Both are "the cheap thing that is usually right", and the whole purpose
         of this module is to be right when it matters rather than usually.
-        
+
     """
     if not os.path.exists(path):
         return None
@@ -475,7 +475,7 @@ def stamp(rnd, artifact: str, *, outputs=(), plan=None, note: str = "") -> dict:
 
         `outputs` are the files the artifact claims to have produced; `check` refuses a
         stamp whose outputs are gone, which is what an interrupted run leaves behind.
-        
+
     """
     rec = _load(rnd)
     kinds = DEPENDS.get(artifact, KINDS)
@@ -526,7 +526,7 @@ def _unusable(rnd, outputs) -> list:
         truncating `plan.json` to nothing and `check` called the artifact warm, because the
         test was `os.path.exists`. A zero-byte plan and a half-written one are exactly what
         an interrupted run leaves, which is the state this whole module exists to notice.
-        
+
     """
     bad = []
     for o in outputs or []:
@@ -566,7 +566,7 @@ def check(rnd, artifact: str, *, plan=None) -> tuple:
         invalidated, when an output named by the stamp is missing or unreadable, or when any
         dependency's fingerprint has moved. `why` names the kind that moved, which is the
         difference between "rerun it" and "rerun everything".
-        
+
     """
     doc = _load(rnd)
     rec = doc.get(artifact)
@@ -613,7 +613,7 @@ def invalidate(rnd, artifact: str, why: str = "") -> list:
         the contract, reuse it as a legacy fixture" -- so invalidating an artifact *made it
         reusable*. Removing a stamp cannot be how a known-bad artifact becomes a
         grandfathered one, so an invalidation writes a tombstone and `legacy` asks for it.
-        
+
     """
     rec = _load(rnd)
     # the kinds this artifact is an input of, so a row keyed on a narrow kind is
@@ -649,7 +649,7 @@ def import_legacy(state: str, why: str, files=()) -> dict:
 
         Takes the directory rather than the round because `Round.state` is what calls it,
         while it is deciding what that directory holds.
-        
+
     """
     import time as _time
     rec = {"why": why, "files": sorted(files),
@@ -677,7 +677,7 @@ def legacy(rnd, artifact: str) -> bool:
         before it could stamp anything" and from "somebody dropped a file in the directory".
         A fixture is a deliberate import and now says so; anything else is made again, which
         costs a run and cannot be wrong.
-        
+
     """
     doc = _load(rnd)
     if artifact in doc or artifact in (doc.get(INVALID) or {}):
@@ -726,7 +726,7 @@ def recorded(rnd, artifact: str) -> bool:
         The question "was any ground work done here" is not the question "may this
         unstamped document be reused", and conflating them made a round that never touched
         its terrain look like one whose terrain was prepared for another candidate.
-        
+
     """
     doc = _load(rnd)
     return artifact in doc or artifact in (doc.get(INVALID) or {})
@@ -738,7 +738,7 @@ def candidate_id(rnd, plan=None) -> str:
         records that belong to one -- the inspections, the repair passes -- so that a
         budget spent on a withdrawn candidate and a reading of a plan that no longer exists
         are both things a reader can see rather than infer.
-        
+
     """
     got = fingerprint(rnd, ("intent", "spec", "plan"), plan=plan)
     return contracts.digest(got)[:16]

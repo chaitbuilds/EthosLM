@@ -230,7 +230,7 @@ class World:
         plus the **provenance** the contract asks for -- which parts stood, what the built
         volume's digest was, and which state directory the answer is about. A predicate that
         cannot say which world it looked at is a predicate that can be quoted about another.
-        
+
     """
 
     def __init__(self, ctx, rows: list, digest: str | None = None,
@@ -258,7 +258,7 @@ class World:
                 Reads `world_built.npz` (the world **after every wave**), the plot registry with
                 its floors, the lane network and `parts.json`. Everything is overridable so a
                 probe or a fixture can be checked with the same predicates as a town.
-                
+
         """
         from . import circulate, lint, offline, settlement
         vol = volume if volume is not None else _load(offline, state, "world_built.npz")
@@ -292,7 +292,7 @@ class World:
                 stall, wall off a court -- and hand the changed world back. Asking a predicate
                 about a world somebody has damaged on purpose is how the predicate is shown to
                 be answering the world and not the record.
-                
+
         """
         vol = getattr(builder, "_vol", None)
         if vol is None:
@@ -310,7 +310,7 @@ class World:
                 exactly as answerable on the flat probe volume as on a town. `volume` is the
                 **assembled** world where a caller has one of its own (see `assembled`); with
                 none, the builder's ground plus its pending blocks is it.
-                
+
         """
         from . import lint
         base = getattr(builder, "_vol", None)
@@ -348,7 +348,7 @@ class World:
                 the filter this predicate answered `unsupported` for all sixteen of them. Same
                 seeds, same flood, same bounds -- the `enclosure` each room measured is on every
                 row, so a reader can still tell a hall from a lean-to.
-                
+
         """
         if self._walk is not None:
             return self._walk
@@ -486,7 +486,7 @@ def entrance_connected(world: "World", name: str, row: dict, prov: dict) -> dict
         volume, a person has to be able to stand at it, and that stance has to be in the
         walk-only flood from the lane. `lint.e002_door_unreachable` asks this of every door
         in a town; this asks it of one part and answers in this module's shape.
-        
+
     """
     doors = _doors_of(world, name)
     if not doors:
@@ -534,7 +534,7 @@ def passage_connected(world: "World", name: str, row: dict, prov: dict) -> dict:
         plot; a room under `PASSAGE_FRACTION` is one a person gets into and cannot get
         round. A part with no enclosed room is `unsupported` -- a square has no passages and
         is not thereby badly connected.
-        
+
     """
     rooms = world.walk().get(name) or []
     if not rooms:
@@ -564,7 +564,7 @@ def _claimed_rects(row: dict, among) -> dict:
         A **list** per feature, because a feature can stand in several places: a market
         square's stalls are four corner booths, and the box round all four is most of the
         square. `construction.rects_of` is the one normaliser; see the defect it records.
-        
+
     """
     from . import construction
     em = row.get("emitted") if isinstance(row.get("emitted"), dict) else {}
@@ -603,7 +603,7 @@ def _stands_in(world: "World", rect, fy: int) -> tuple:
 
         **A count is not a verdict.** One block left in a razed booth is not a booth, and
         the caller compares against `STANDS` rather than against zero.
-        
+
     """
     from . import construction
     vol = world.ctx.vol
@@ -623,7 +623,7 @@ def identifies(feature: str) -> tuple:
 
         `()` is not "no blocks": it is **this build lays nothing that identifies it**, and
         every caller reports that rather than falling back to the mass. See `FEATURE_BLOCKS`.
-        
+
     """
     return tuple(FEATURE_BLOCKS.get(str(feature)) or ())
 
@@ -633,7 +633,7 @@ def _identity_in(world: "World", rect, fy: int, words) -> list:
 
         The same window `_stands_in` counts mass in, so a feature whose mass stands and whose
         identity does not is one fact about one rectangle and not two instruments disagreeing.
-        
+
     """
     from . import construction
     vol = world.ctx.vol
@@ -678,7 +678,7 @@ def _inside_reach(world: "World", name: str) -> dict:
         The union, because a market's stalls stand in the open and a forge stands in a
         room: "can a person get to it" is one question and the two floods are two ways in
         to it, not two different standards.
-        
+
     """
     ctx = world.ctx
     seeds = []
@@ -702,7 +702,7 @@ def equipment_reachable(world: "World", name: str, row: dict, prov: dict) -> dic
         and gives no rectangle is `declared` and `holds: None` -- the growth brief already
         says a declared feature with no rectangle is not evidence, and this is that rule
         asked of the world instead of of the return value.
-        
+
     """
     rects = _claimed_rects(row, EQUIPMENT)
     em = row.get("emitted") if isinstance(row.get("emitted"), dict) else {}
@@ -788,7 +788,7 @@ def circulation_clear(world: "World", name: str, row: dict, prov: dict) -> dict:
     """A part whose apron a later terrace buried, or which ended up on an island of its
         own, is one nobody walks past. `lint.Context.circulation` is the largest walk-only
         outdoor component and is the thing to be on; being merely walkable somewhere is not.
-        
+
     """
     if not world.ctx.circulation:
         return answer(None, "unsupported",
@@ -844,7 +844,7 @@ def court_accessible(world: "World", name: str, row: dict, prov: dict) -> dict:
         a court by this measurement. `SKY_COURSES` above the headroom have to be clear over
         `construction.OPEN_STANDS` of its cells -- the same share the paving is held to, so a
         portico along one side is not a filled court and a roof over it is.
-        
+
     """
     rects = _claimed_rects(row, COURTS)
     fy = _floor_of(world, name, row)
@@ -961,7 +961,7 @@ def _range_depth(world: "World", name: str, x: int, z: int, dx: int, dz: int,
         so a neighbour's wall two columns beyond the plot edge is never a range of this
         court. The **count**, not the distance: a room is a wall, air, and a wall, and it is
         the two walls that make it a range. See `RANGE_DEPTH`.
-        
+
     """
     vol, got = world.ctx.vol, 0
     for k in range(1, reach + 1):
@@ -986,7 +986,7 @@ def range_relation(world: "World", name: str, row: dict, prov: dict) -> dict:
 
         **The band and not the first column, and closed is not ranged.** See `RANGE_DEPTH`
         for both halves, and for what each of them was measured to fix.
-        
+
     """
     rects = _claimed_rects(row, COURTS)
     fy = _floor_of(world, name, row)
@@ -1064,7 +1064,7 @@ def _touches(bbox, rect, reach: int = ROOM_REACH) -> bool:
     """Is a room's bounding box on the court -- its own edge, or across a veranda?
 
         `reach` is `ROOM_REACH`; see it for the measurement that moved it off one.
-        
+
     """
     if not bbox or len(bbox) != 6:
         return False
@@ -1100,7 +1100,7 @@ def court_enclosed(world: "World", name: str, row: dict, prov: dict) -> dict:
         `inapplicable` where the part claims no enclosure: a verge, a garden and a market
         floor are open ground and are not claiming to be a court somebody's building
         encloses.
-        
+
     """
     claim = row.get("enclosure") or next(
         (p.get("enclosure") for p in _plot_rows(world, name) if p.get("enclosure")),
@@ -1347,7 +1347,7 @@ def features_for(world: "World", part, *, wants=WANTS, plan=None) -> dict:
         What `construction.confirm` and `growth.gate` consume, and what a caller reporting
         coverage reads: the answers carry their own method, so a part with three observed
         predicates and three unsupported ones is not a part that scored a half.
-        
+
     """
     return {w: check(world, part, w, plan=plan) for w in wants}
 

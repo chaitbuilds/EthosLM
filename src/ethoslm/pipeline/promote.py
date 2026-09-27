@@ -102,7 +102,7 @@ def boundary(rnd) -> dict:
 
         Published rather than implied: a rollback that silently covers less than it claims is
         the defect, so the set it covers is a value.
-        
+
     """
     fs, ds = _files(rnd.state), _dirs(rnd.state)
     return {"files": fs, "dirs": ds,
@@ -135,7 +135,7 @@ def _put_back(state: str, src: str, covers=None) -> dict:
         review's fifth finding named. `covers` is what the accepted copy's boundary covered
         when it was kept; a copy that does not record it predates `LATE_FILES`, which are
         then left as they are (see there).
-        
+
     """
     have = set(os.listdir(src)) if os.path.isdir(src) else set()
     gone, left = [], []
@@ -205,7 +205,7 @@ def correct(rnd, *, of: str, path: str, was, now, why: str,
         (`"reading.findings[b1].owner"`), `was`/`now` the values and `why` the reason. The
         row carries the candidate it is about, so a correction cannot silently travel to a
         reading of another world.
-        
+
     """
     p = os.path.join(rnd.state, CORRECTIONS)
     doc = {"record": "corrections", "rows": []}
@@ -227,7 +227,7 @@ def apply_corrections(rows: list, findings: list) -> list:
 
         `path` is `reading.findings[<id>].<field>`; anything else is recorded and not
         applied here, because this function only knows about findings.
-        
+
     """
     out = [dict(f) for f in findings]
     by_id = {str(f.get("id")): f for f in out}
@@ -286,7 +286,7 @@ def begin(rnd, *, candidate: str, finding: str, action: str, measures: dict | No
         the rollback does not depend on this process surviving: the re-entry that closes the
         cycle is a **different driver invocation**, which is why an in-memory snapshot could
         never have covered the rebuild.
-        
+
     """
     rec = load(rnd)
     if not accepted(rnd):
@@ -344,7 +344,7 @@ def reject(rnd, *, why: str, evidence: dict | None = None,
 
         The world the trial built is not kept -- it is tens of megabytes of a world nobody
         will look at again -- and everything that says *why* it was rejected is.
-        
+
     """
     rec = load(rnd)
     t = _open_trial(rec)
@@ -422,10 +422,20 @@ PROTECTED_HARD = (
     # ...and its holes and the water left standing in a piece (the independent reader's
     # n1 and n2, which the ridge count could not see)
     ("ground pits", "fabric.ground.pits", "down"),
-    ("ground water in pieces", "fabric.ground.water_in_pieces", "down"),
+    # the section's standing water, owned or not, is the hard row; the water inside
+    # building pieces is accounted below (the parent composition round: a re-cut moved
+    # the lake end out of a piece and the in-piece count fell 83 -> 51 while the water
+    # stood where it was, in channels nobody owned -- the independent reader's n2)
+    ("ground water standing", "fabric.ground.water", "down"),
     ("homes entered", "functions.homes_entered", "up"),
     ("homes working", "functions.homes_working", "up"),
     ("shops working", "functions.shops_working", "up"),
+    # **...and the role each plays in the place** (the parent composition round): homes
+    # whose gates face each other across their lane, shops that open onto a street. A
+    # replacement elsewhere that keeps the counts and loses the lane or the street
+    # frontage has not replaced what was lost
+    ("homes facing across their lane", "functions.homes_facing", "up"),
+    ("shops on their street", "functions.shops_on_street", "up"),
 )
 
 PROTECTED_ACCOUNTED = (
@@ -443,6 +453,7 @@ PROTECTED_ACCOUNTED = (
     ("shops", "functions.shops", "up"),
     # the step between the pieces as built.
     ("ground step", "fabric.ground.step_max", "down"),
+    ("ground water in pieces", "fabric.ground.water_in_pieces", "down"),
 )
 
 
@@ -452,7 +463,7 @@ def _dig(sec: dict, path: str):
         `<relationship>.<dotted key under `measured`>`, with two conveniences the paths above
         rely on: a key ending `_n` is the **length** of the list at the key without it, and a
         missing step answers None rather than raising -- an absent measurement is not a zero.
-        
+
     """
     parts = str(path).split(".")
     rid, rest = parts[0], parts[1:]
@@ -525,7 +536,7 @@ def tradeoffs(rnd, want: dict | None = None) -> dict:
         check rather than one scalar improving while three others fall. A quality already
         failing on the accepted candidate is in here on the same terms as one that was
         passing: the round's own words are "including qualities already failing".
-        
+
     """
     want = want or protected(rnd)
     if not want.get("measured"):
@@ -542,13 +553,13 @@ def tradeoffs(rnd, want: dict | None = None) -> dict:
         row_ = {"what": label, "path": path, "better": way,
                 "was": a, "now": b, "moved": how,
                 "hard": any(label == h[0] for h in PROTECTED_HARD)}
-        if label in GROUND_TOLERATED and how == "worse" and a is not None \
-                and b is not None \
-                and float(b) <= float(a) * RIDGE_TOLERANCE[0] + RIDGE_TOLERANCE[1]:
+        tol = _tolerance(label)
+        if tol and how == "worse" and a is not None and b is not None \
+                and float(b) <= float(a) * tol[0] + tol[1]:
             # said on the row, not left to the reader to infer from `regressions: []`
             row_["tolerated"] = (f"within the guard's tolerance for a re-cut scope: at "
-                                 f"most {RIDGE_TOLERANCE[0]}x the accepted count plus "
-                                 f"{RIDGE_TOLERANCE[1]} columns")
+                                 f"most {tol[0]}x the accepted count plus "
+                                 f"{tol[1]} columns")
         rows.append(row_)
     worse = [r for r in rows if r["moved"] == "worse"]
     better = [r for r in rows if r["moved"] == "better"]
@@ -597,7 +608,7 @@ def protected(rnd) -> dict:
 
         Measured off the kept copy, so it is a fact about the candidate on disk and not about
         whatever the state directory happens to contain when this is asked.
-        
+
     """
     src = os.path.join(rnd.state, ACCEPTED)
     if not os.path.isdir(src):
@@ -625,7 +636,7 @@ def regressions(rnd, want: dict | None = None) -> list:
         Empty is the answer that lets a promotion happen, and it is never returned from an
         absence: a trial whose section record is missing regresses every protected
         relationship, because nothing measured them.
-        
+
     """
     want = want or protected(rnd)
     if not want.get("measured"):
@@ -684,8 +695,9 @@ def between(want: dict, now_sec: dict, now_stood: dict | None) -> list:
             continue
         a = (was_q.get(label) or {}).get("value")
         b = (now_q.get(label) or {}).get("value")
-        if label in GROUND_TOLERATED and a is not None and b is not None \
-                and float(b) <= float(a) * RIDGE_TOLERANCE[0] + RIDGE_TOLERANCE[1]:
+        tol = _tolerance(label)
+        if tol and a is not None and b is not None \
+                and float(b) <= float(a) * tol[0] + tol[1]:
             continue
         if _moved(a, b, way) == "worse":
             out.append({"what": "quantity", "id": label, "was": a, "now": b,
@@ -703,6 +715,19 @@ def between(want: dict, now_sec: dict, now_stood: dict | None) -> list:
 RIDGE_TOLERANCE = (1.25, 10)
 #: The ground quantities that tolerance applies to.
 GROUND_TOLERATED = ("ground ridges", "ground pits", "ground water in pieces")
+#: ...and the standing water of the whole section, owned or not, held closer: water does
+#: not move a few columns either way with a re-cut, it is either drained or left (the
+#: parent composition round; the independent reader's n2)
+WATER_TOLERANCE = (1.0, 3)
+
+
+def _tolerance(label: str):
+    """`(factor, columns)` a trial may exceed the accepted value of `label` by, or None."""
+    if label == "ground water standing":
+        return WATER_TOLERANCE
+    if label in GROUND_TOLERATED:
+        return RIDGE_TOLERANCE
+    return None
 
 #: The protected totals the subject rule answers instead, where it can.
 SUBJECT_LABELS = ("features held", "features owed", "courts held", "courts owed")

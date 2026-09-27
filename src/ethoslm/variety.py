@@ -68,7 +68,7 @@ def _spread(values: list) -> dict:
         sample of one. CV is reported alongside because a stdev of 3 means one thing on
         ridge heights of 5 and another on ridge heights of 40, and the towns being compared
         are not the same size.
-        
+
     """
     vs = [v for v in values if v is not None]
     if not vs:
@@ -86,7 +86,7 @@ def _diversity(values: list) -> dict:
         1.0 is every plot a different roof; 0.0 is every plot the same one. Normalising by
         log(n_plots) rather than log(n_kinds) is deliberate -- five styles spread evenly
         over fourteen buildings should not score the same as fourteen.
-        
+
     """
     vs = [v for v in values if v is not None]
     if not vs:
@@ -106,7 +106,7 @@ def _roof_form(tops: dict) -> tuple[str, float]:
         Geometry, not taxonomy: where the highest cells are, and how the surface falls away
         from them. "ridged" covers gable, gambrel and mansard, which are not distinguishable
         from a height field alone and are not claimed to be.
-        
+
     """
     if not tops:
         return "none", 0.0

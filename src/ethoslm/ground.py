@@ -192,7 +192,7 @@ class Contract:
                 `decision["waterline"]`), and where `bed` is given it is the authority. `surface`
                 is the heightmap the build then reads, fixed here: an object with `.x0`,
                 `.z0` and a 2-D array `.h`, or None.
-                
+
         """
         order = sorted(range(len(self._decls)),
                        key=lambda i: (PRECEDENCE.index(self._decls[i].cls), i))
@@ -651,7 +651,7 @@ def _type_occupied(decl: dict | None):
         so (`types/great_wall.occupied`), and planning, terrain, routing, emission and the
         checks all read that one answer rather than four guesses. Loaded from the file the
         declaration names, cached on its identity, so an edited type is re-read.
-        
+
     """
     path = (decl or {}).get("path")
     if not path or not os.path.exists(path):
@@ -689,7 +689,7 @@ def occupied_envelope(part: dict, decls: dict | None = None) -> dict:
         whatever the type says projects past them, `envelope` the bounding rectangle of
         `solid` grown by the clearance, and `from` the sentence that says where each number
         came from.
-        
+
     """
     from . import pipeline
     name = part.get("name")
@@ -783,7 +783,7 @@ def propose(spec: dict, site: dict, place: dict, baseline, *,
 
         Returns the proposal. Nothing here touches the world; `apply` does, from the
         baseline.
-        
+
     """
     from . import contracts
     lay = (place or {}).get("layout") or {}
@@ -804,6 +804,25 @@ def propose(spec: dict, site: dict, place: dict, baseline, *,
         rect = (int(min(anchor["x0"], anchor["x1"])), int(min(anchor["z0"], anchor["z1"])),
                 int(max(anchor["x0"], anchor["x1"])), int(max(anchor["z0"], anchor["z1"])))
         grown, apron, why = apron_for(rect)
+        # **...and never more than one plateau may be** (the city attempt round): the
+        # palace's 192-square rectangle grown by an 18-column apron asked for a
+        # 228-square cut, `Builder.plateau` refused anything over 192, and the refusal
+        # was recorded while the build went on -- the whole city stood without its
+        # podium and the palace's halls on the river's own banks. The apron is what
+        # gives way: it is narrowed to what the bound leaves round the anchor, to
+        # nothing if need be.
+        try:
+            from .buildlib import Builder as _B
+            most = int(_B.plateau_max(S or None))
+        except Exception:                        # noqa: BLE001 -- no bound to read
+            most = 0
+        side = max(rect[2] - rect[0] + 1, rect[3] - rect[1] + 1)
+        if most and side + 2 * apron > most:
+            a2 = max(0, (most - side) // 2)
+            grown = (rect[0] - a2, rect[1] - a2, rect[2] + a2, rect[3] + a2)
+            why = (f"{why}; narrowed to {a2} so that the podium stays inside the "
+                   f"{most}-column plateau bound")
+            apron = a2
         grown = (max(X, grown[0]), max(Z, grown[1]),
                  min(X + S - 1, grown[2]), min(Z + S - 1, grown[3]))
         # **The level the anchor's ground stands at.** A concentric place has a podium
@@ -915,7 +934,7 @@ def evaluate(proposal: dict, place: dict, baseline=None) -> dict:
 
         `{"ok", "why", "conflicts"}`. `why` is the list of sentences; `conflicts` the
         pieces and subjects that disagree.
-        
+
     """
     why, conflicts, around = [], [], []
     site = proposal.get("site") or {}
@@ -1056,7 +1075,7 @@ class _ProtectedRoutes:
         so they are handed over through the same seam rather than through a second one.
         `surface()` is empty because these are cells to keep off and not a network to
         arrive from; `_plateau_landing` falls back to `cells` for the way on.
-        
+
     """
 
     __slots__ = ("cells", "thresholds")
@@ -1093,7 +1112,7 @@ def apply(proposal: dict, baseline_volume):
         and records what it laid on `proposal["applied"]`.
 
         The caller keeps the baseline. Nothing here writes to the world.
-        
+
     """
     from .buildlib import Builder
     from . import offline

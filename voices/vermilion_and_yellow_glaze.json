@@ -1,0 +1,51 @@
+{
+ "name": "vermilion_and_yellow_glaze",
+ "notes": {
+  "blurb": "The court's ring and the palace, the brightest end of the axis: vermilion walls and gold-yellow roof tiles on white stone terraces.",
+  "construction": "Red (mangrove) walls between dark posts on pale diorite footings; a white second stone among the red.",
+  "ground": "White paving where the ground is made.",
+  "roofs": "Yellow (bamboo) tile, the nearest Minecraft stair-and-slab family to glazed gold-yellow: 'gold-yellow ones were reserved for nobility, temples, the Palace' (claim/roof-colour-by-rank). Irimoya, upturned eaves, the civic halls in two tiers.",
+  "signature": "Yellow roofs over red walls on white terraces, the one gold thing in the city."
+ },
+ "roles": {
+  "floor": "smooth_quartz",
+  "footing": "diorite",
+  "frame": "dark_oak",
+  "roof": "bamboo",
+  "trim": "quartz",
+  "wall": "mangrove",
+  "wall_alt": "quartz"
+ },
+ "roof": {
+  "eave": "upturned",
+  "ends": "irimoya",
+  "overhang": null,
+  "profile": [
+   [
+    1,
+    2
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "tiers": 1
+ },
+ "roof_civic": {
+  "eave": "upturned",
+  "ends": "irimoya",
+  "overhang": null,
+  "profile": [
+   [
+    1,
+    2
+   ],
+   [
+    2,
+    1
+   ]
+  ],
+  "tiers": 2
+ }
+}

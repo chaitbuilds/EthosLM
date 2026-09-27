@@ -143,7 +143,7 @@ def generated_regions(directory: str | None = None) -> set:
         generated whatever was missing without a word, and a scan past 2,048 -- where this
         world's generated terrain ends -- would have quietly created terrain and reported a
         site on it as though it had found one.
-        
+
     """
     import re
     d = directory or REGIONS
@@ -176,7 +176,7 @@ def finished_square(regs, x0: int, z0: int, size: int) -> bool:
         `field_from_regions` parses for fifteen seconds and then refuses. Five chunk reads
         at three milliseconds each say so first. The ground run's first live session
         counted 166 such squares as file reads and estimated them at an hour and a half.
-        
+
     """
     from ethoslm import regions as _regions
     pts = [(x0, z0), (x0 + size - 1, z0), (x0, z0 + size - 1),
@@ -341,7 +341,7 @@ def surface_codes(vol) -> tuple:
 
         `groundread.surface_names` answers by name; this is the same answer indexed, which
         is the shape a cache file and a `Field` carry it in.
-        
+
     """
     names = groundread.surface_names(vol)
     palette, codes = np.unique(names.astype(str), return_inverse=True)
@@ -361,7 +361,7 @@ def biome_codes(ws, x0: int, z0: int, w: int, d: int, h: np.ndarray) -> tuple:
         cell's first column. Recorded and never scored: a biome is the world's own word for
         a setting and the record of a chosen site should carry it, but what a rendered
         place stands on is its **surface**, and that is what a setting is held to.
-        
+
     """
     cw, cd = -(-w // BIOME_CELL), -(-d // BIOME_CELL)
     codes = np.zeros((cw, cd), np.int32)
@@ -387,7 +387,7 @@ def field_from_server(ed, x0, z0, w, d, *, cache: str | None = None,
         reads as its floor and a site is not scored on the surface of one. The block
         volume of each tile is built once and read for the man-made census, the surface
         and the biome, and only the per-column answers are kept.
-        
+
     """
     from gdpc.vector_tools import Rect
 
@@ -406,7 +406,7 @@ def field_from_regions(regs, x0, z0, w, d, *, cache: str | None = None,
         read this way is byte-identical to one read through a session. **None** where any
         chunk of it is not finished ground: a file cannot make ground, and the square is
         reported unread rather than generated.
-        
+
     """
     from ethoslm import regions as _regions
     try:
@@ -506,7 +506,7 @@ def _window_relief(h: np.ndarray, p: int) -> np.ndarray:
 
         Written with a sliding view rather than a filter so it is exact and has no boundary
         convention to get wrong: a window is a window and there are `(n - p + 1)` of them.
-        
+
     """
     if p > h.shape[0] or p > h.shape[1]:
         return np.array([[h.max() - h.min()]], np.int32)
@@ -521,7 +521,7 @@ def core_window(size: int, core: int) -> tuple:
         is the best level ground anywhere in this candidate" and that is a different
         question. A city's core is where the palace goes, the rings are drawn round it, and
         a core measured off a flat corner would be a core the plan cannot use.
-        
+
     """
     c = max(1, min(int(core), int(size)))
     o = (int(size) - c) // 2
@@ -537,7 +537,7 @@ def measure(field: Field, x0: int, z0: int, size: int, plateau: int,
         stands -- and the relief of everything outside it. One number over 512x512 says
         nothing a plan can act on; these two say "level in the middle, hillside at the edge",
         which is what a city on real ground is.
-        
+
     """
     got = field.sub(x0, z0, size, size)
     if got is None:
@@ -620,7 +620,7 @@ def excess(m: dict, needs: dict, *, plateau_relief: int,
         Zero on a measure means the candidate meets it. The sum is the score and lower is
         better; a candidate whose sum is zero **meets the needs** and the ranking among
         those is by how much room it has left, not by the score.
-        
+
     """
     def over(got, cap):
         if got is None or cap in (None, 0):
@@ -760,7 +760,7 @@ def rank_key(row: dict) -> tuple:
         Meeting the needs first, then the score, then the flatness of the centre, then the
         ground itself, then **nearness to the origin** -- so of two equally good sites the
         search takes the one it found first -- and then x and z, which cannot tie.
-        
+
     """
     m, e = row["measures"], row["excess"]
     # The setting before the relief band: of two squares that both meet a green need,
@@ -805,7 +805,7 @@ def search_needs(spec: dict) -> dict:
         One place, so the three searches -- the live scan, the cached scan and the fresh
         grid walk -- read the same answer, and so that a spec whose parts say nothing
         produces exactly the dictionary this file scored against before A1.
-        
+
     """
     needs = dict(spec["needs"])
     needs["relief_band"] = groundread.RELIEF_BANDS.get(spec["kind"])
@@ -904,7 +904,7 @@ def _plateau_size(spec: dict) -> int:
 
         ...and never less than a **compound** at the centre needs (`_compound_plateau`),
         because that number is the library's and the spec's is a guess about a building.
-        
+
     """
     # A1: the part at the centre may say how much level ground it needs, and it is the
     # one that knows -- a palace compound is not a market square. The place's own
@@ -925,7 +925,7 @@ def innermost(spec: dict) -> dict | None:
         the centre is what the ground is levelled for and the districts round it follow the
         hill. Deterministic, and it names the part in the record rather than saying "the
         middle".
-        
+
     """
     at_centre = [p for p in spec["defining_parts"] if p["relation"] == "centre"]
     solid = [p for p in at_centre if p["kind"] != "group"]
@@ -940,7 +940,7 @@ def search(spec: dict, field_for, *, radii=RADII, stride: int = STRIDE,
 
         Returns the answer: the site chosen, the top `RECORDED` with their scores, which
         escape (if any) fired, and every radius that was scanned and what it found.
-        
+
     """
     size = int(spec["needs"]["footprint"])
     plateau = _plateau_size(spec)
@@ -1010,7 +1010,7 @@ def _flat_at_footprint(needs: dict) -> int:
         `Builder.SITE_RELIEF` is what a plinth absorbs and a platform is what `site()` lays
         above it, so a place's centre that is flatter than a platform's threshold needs no
         plateau at all. That is the line the first attempt is held to.
-        
+
     """
     return int(Builder.SITE_RELIEF)
 
@@ -1020,7 +1020,7 @@ def _drop_band(spec: dict) -> dict | None:
 
         The last escape, and it is a real loss: a town that becomes a village is not the
         place that was asked for. It is recorded as such and the readout reports it.
-        
+
     """
     # v2, C0: the order is the spec's one table (`SIZE_BANDS`) and is not declared here.
     lower = spec_mod.kind_below(spec["kind"])
@@ -1040,7 +1040,7 @@ def _compound_ground_record(spec: dict) -> dict | None:
 
         `None` where the part at the centre is not a compound, which is every place that has
         no great thing in it -- so the record of a plain settlement's search is unchanged.
-        
+
     """
     core = spec_mod.core(spec)
     if not core or not spec_mod.compound(core):
@@ -1102,7 +1102,7 @@ def add_gravity(ed, rows: list, log=print) -> list:
         The one place this file reads the world twice, and it is bounded: `SHORTLIST`
         candidates, a lattice of surface blocks each. A heightmap cannot answer what the
         ground is *made of* and a site of dune sand is a site every pad slides out of.
-        
+
     """
     from gdpc.vector_tools import Rect
     from ethoslm import world
@@ -1166,7 +1166,7 @@ def search_cached(spec: dict, stride: int = 32, log=print) -> dict:
         A stride of 32 rather than 256, because a cached site is 288 blocks square and a
         256 lattice puts one candidate in it. The rule is the same and so is the order; what
         changes is how finely the same ground is offered.
-        
+
     """
     fields = cached_fields(log)
     size = int(spec["needs"]["footprint"])
@@ -1208,7 +1208,7 @@ def _score(rows: list, needs: dict, attempts, force: bool = False) -> str | None
         Returns the label of the attempt that produced a candidate, or None. `force` scores
         under the last attempt anyway, so a failed search still has a ranked list to report
         rather than a list with no scores in it.
-        
+
     """
     for label, plateau_relief, core in attempts:
         for r in rows:
@@ -1295,7 +1295,7 @@ def composable(x: int, z: int, size: int, directory: str | None = None,
         A 768 square on the 256 lattice is four cached 512 squares -- (x, z), (x+256, z),
         (x, z+256), (x+256, z+256) -- and every one of them is ground the search has read
         before. Returns `[(sx, sz, s), ...]` for the first cached size that tiles it.
-        
+
     """
     for s in cached_sizes(directory):
         if s > size or (size - s) % stride:
@@ -1316,7 +1316,7 @@ def compose_from_cache(x: int, z: int, size: int, directory: str | None = None,
         per sub-square; biome cells are 4x4 and the lattice is a multiple of 4, so they
         align. None where nothing tiles it, or where a sub-square is stale (no surface or
         no biomes): a composed square carries everything a read one does or it is not made.
-        
+
     """
     subs = composable(x, z, size, directory, stride)
     if not subs:
@@ -1406,7 +1406,7 @@ def chunk_surface_biomes(tag) -> list:
         index per 4x4x4 cell -- says what it is. No block is decoded. This is the read
         the biome prefilter is made of: three milliseconds a chunk against the fifteen
         seconds a square costs to parse into a field.
-        
+
     """
     hm = tag["Heightmaps"]["MOTION_BLOCKING"]
     heights = _unpack([v for v in hm.value], 9, 256)   # value = y - minY + 1
@@ -1576,7 +1576,7 @@ def search_fresh(spec: dict, *, editor=None, radii=None, stride: int = STRIDE,
         many ungenerated squares this session may ask the server for and defaults to none:
         making ground is a change to the world save it cannot undo. `regions` is an
         `ethoslm.regions.Regions`, the save's own files; None reads them from `REGIONS`.
-        
+
     """
     from ethoslm import regions as _regions
     size = int(spec["needs"]["footprint"])

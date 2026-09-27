@@ -40,7 +40,7 @@ class Session:
         and no model was supplied, in which case the request is held in `needed` and the
         caller carries on. Nothing raises: a run that cannot finish should still tell you
         *everything* it is missing.
-        
+
     """
 
     def __init__(self, question: str, *, stage_name: str = "judge", ask=None,
@@ -83,7 +83,7 @@ def tally(results, *, correct="a") -> dict:
         whose correct side is not the same on every pair: E-craft's blind picks were
         recorded per structure before any judgement, and three of its four are the
         no-library arm. A tie counts against, as pre-registered in E1a and never moved.
-        
+
     """
     sides = ([correct] * len(results) if isinstance(correct, str)
              else list(correct))
@@ -113,7 +113,7 @@ def preregistration(path: str, default: dict) -> dict:
         Moving a threshold after seeing a number is the failure this project exists to
         avoid, so the first write wins forever and every experiment reads its floor back
         off disk rather than out of its own source.
-        
+
     """
     if os.path.exists(path):
         try:

@@ -46,7 +46,7 @@ def par_map(fn, items, *, n: int | None = None, chunk: int = 1) -> list:
         Falls back to the plain list comprehension for one worker, for fewer items than
         workers, or where a pool cannot be made -- so a caller never has two code paths and
         the serial answer is always available by one environment variable.
-        
+
     """
     items = list(items)
     k = workers(n)

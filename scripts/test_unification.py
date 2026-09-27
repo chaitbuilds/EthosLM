@@ -104,7 +104,7 @@ def t_negation_scopes_over_any_feature():
         `ABSENT` held one entry, for walls, so every other feature word was read straight
         through its own negation. The sentence asks for a village that has no temple and the
         reading asked for a temple.
-        
+
     """
     rec = intent.read("Build a village without a temple.")
     assert _req(rec, "absent/temple"), _ids(rec)
@@ -130,7 +130,7 @@ def t_setting_is_checked_against_the_site():
 
         It was soft and permanently `unresolved`, so `holds()` was true while the place
         stood on flat ground. A site record carries its own relief; that is the measurement.
-        
+
     """
     rec = intent.read("Build a village on a cliff.")
     r = _req(rec, "setting/cliff")
@@ -179,7 +179,7 @@ def t_source_needs_content_identity():
         The review: a reading was accepted whose only source was `{"id": "invented"}`. The
         referenced-id check is real and it checks that a citation points *somewhere*; it did
         not check that the somewhere is a source.
-        
+
     """
     claim = {"id": "claim", "says": "Three rings", "source": "s1", "inferred": False}
     try:
@@ -216,7 +216,7 @@ def t_reading_stages_a_research_job():
         no sources and no claims, and the agent job that extracts claims only runs once
         sources exist -- so a terminal agent, which is a supported runtime, had no route to
         do the research at all. That is a missing state, not a missing API key.
-        
+
     """
     with tempfile.TemporaryDirectory(prefix="ethoslm-unify-reading-") as tmp:
         rnd = pipeline.Round(name="u", sentence="Build Ringed City.", state_dir=tmp)
@@ -239,7 +239,7 @@ def t_capability_reaches_the_solver():
         called with `names` alone and solving with `vol` and `seed` alone, so the record
         naming each part's type was written and then not consulted by the thing that chooses
         each part's type.
-        
+
     """
     with tempfile.TemporaryDirectory(prefix="ethoslm-unify-caps-") as tmp:
         rnd = pipeline.Round(name="u", sentence="Build a village.", state_dir=tmp,
@@ -280,7 +280,7 @@ def t_fabric_types_come_from_the_record():
         The record matched a `fabric` want per district and the compiler then selected from
         the whole library by role, so the two could disagree about what a district is built
         of and nothing compared them.
-        
+
     """
     decls = {"cottage": {"kind": "plot", "form": "timber", "role": "rural",
                          "needs": {"footprint": [5, 5, 12, 12], "ground": "any",
@@ -311,7 +311,7 @@ def t_agreement_reads_every_realized_leaf():
         fabric and compound wants entirely, and skipped rechecking whenever the name already
         agreed -- so a district whose second half was built out of a type the capability
         rules refuse produced no finding.
-        
+
     """
     decls = {"cottage": {"kind": "plot", "form": "timber", "role": "rural",
                          "needs": {"footprint": [5, 5, 12, 12], "ground": "any",
@@ -349,7 +349,7 @@ def t_pending_agent_work_stops_the_round():
         followed by `parts`, because `wait=0` skips the wait loop entirely and nothing after
         it asks whether the stage is still pending. A terminal runtime must get a resumable
         pending state, not a person remembering to restrict the stage list.
-        
+
     """
     with tempfile.TemporaryDirectory(prefix="ethoslm-unify-driver-") as tmp:
         rnd = pipeline.Round(name="u", state_dir=tmp)
@@ -412,7 +412,7 @@ def t_open_feasibility_is_not_planned():
         nothing, and the caller wrote the registry and reported `planned` either way. The
         city's two district shortfalls were `blocks: feasibility` in the record and the run
         called itself planned.
-        
+
     """
     found = {"findings": [
         {"id": "find/capacity/realized/upper_ring_east", "owner": "layout",
@@ -437,7 +437,7 @@ def t_stale_preview_is_redrawn():
         The review reproduced the bypass in the actual stage: the dependency check noticed
         the changed plan, the stamp was invalidated, and the early `done` branch returned
         the original drawing and `reading_1.md` without redrawing anything.
-        
+
     """
     home = {"name": "home", "kind": "plot", "type": "cottage", "x0": 10, "x1": 20,
             "z0": 5, "z1": 15, "front": "north"}
@@ -529,7 +529,7 @@ def t_baseline_and_prepared_ground_are_two_grounds():
         invalidated the plan that decided on the preparation, and the report records exactly
         that happening to the shoreline case. The baseline is an input and the prepared
         volume is an output of the same design.
-        
+
     """
     with tempfile.TemporaryDirectory(prefix="ethoslm-unify-ground-") as tmp:
         rnd = pipeline.Round(name="u", state_dir=tmp)
@@ -602,7 +602,7 @@ def t_rollback_restores_one_candidate():
         It restored findings and resolution and left the rejected `layout_repairs.json`,
         `plan_repairs.json` and terrain behind, so the accepted candidate was mixed with the
         rejected one's decisions.
-        
+
     """
     files = ("findings.json", "resolution.json", "layout_repairs.json",
              "plan_repairs.json")
@@ -634,7 +634,7 @@ def t_scale_is_bound_to_the_original_interpretation():
         Each call measured its bound against the *current* band, which the previous call had
         already moved, so the registered 25% minimum was re-applied to a floor it had
         produced. The bound belongs to the interpretation that was accepted.
-        
+
     """
     spec = {"kind": "village", "size_band": [24, 81]}
     first = repair._band_repair(spec, {"evidence": {"promised": 6}})
@@ -669,7 +669,7 @@ def t_recovery_tries_ground_and_types_before_promising_less():
         district that could not hold its promise was to promise less -- and a district that
         laid its promised one house could become zero-target open ground, taking the
         residential demand with it.
-        
+
     """
     site = {"origin": [0, 0], "size": 400}
     d = {"name": "homes", "defines": "homes", "x0": 10, "z0": 10, "x1": 90, "z1": 60,
@@ -711,7 +711,7 @@ def t_growth_is_bound_to_the_rectangle_first_laid_out():
         other direction: a bound re-applied to its own output is a growth rate. Found by
         running the held-out village, whose shore districts went 2,581 -> 3,870 -> 5,805
         columns inside a bound of "half as much again".
-        
+
     """
     site = {"origin": [0, 0], "size": 400}
     d = {"name": "homes", "x0": 10, "z0": 10, "x1": 90, "z1": 60, "structures": 12}
@@ -755,7 +755,7 @@ def t_counts_stay_distinct_and_count_descendants():
         `with_realized` overwrote `structures_promised` with the realized total and counted
         district plots only, so the city's resolution reported 583 against an assembled plan
         of 634: the palace's 51 plots were descendants nobody counted.
-        
+
     """
     res = contracts.make(
         "resolution", policy="relations",
@@ -789,7 +789,7 @@ def t_rural_is_a_land_use_not_farmland():
         validator demanded farms and fields over 60% of it, so a shore village of houses
         failed a cover clause it had never been asked to meet. The demand belongs to a
         declared land use, not to the coarse role word.
-        
+
     """
     d = {"name": "shore", "x0": 0, "z0": 0, "x1": 60, "z1": 60,
          "structures": 6, "defines": "shore"}
@@ -822,7 +822,7 @@ def t_water_frontage_needs_homes_facing_water():
 
         The check read "none faces away" as "they face it", which is the weaker statement
         and not the one the sentence makes. Unknown frontage is not evidence either.
-        
+
     """
     anchor = {"kind": "shoreline", "path": [[0, 10]], "water_side": "west"}
     res = {"bounds": {"anchor": anchor},
@@ -921,7 +921,7 @@ def t_identity_has_a_route_to_close():
         It could only ever read `unresolved`, so a run that did the research and made the
         judgment had no way to record that it had: an obligation with no completion route is
         as much a broken contract as one with a false-pass route.
-        
+
     """
     rec = intent.read("Build Ringed City.")
     rid = next(r["id"] for r in rec["requirements"] if r["kind"] == "identity")
@@ -976,7 +976,7 @@ def t_access_is_measured_from_justified_entries():
         The sample reported zero unreachable doors while the same run reported a
         disconnected component of 5,922 stances, because the walk was seeded from *every*
         lane stance in every component. One network with two islands is not connected.
-        
+
     """
     from ethoslm import lint
     reach = lint.reachable_from({"a": ["b"], "b": ["a"], "c": ["d"], "d": ["c"]},

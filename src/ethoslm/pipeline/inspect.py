@@ -383,7 +383,7 @@ def stage_section(rnd, be, results: dict) -> dict:
         rebuild list and not only in the main order.
 
         A round with no `flags.section` skips: there is no registered section to measure.
-        
+
     """
     from .. import section as section_mod
     reg = (rnd.flags.get("section") or {})
@@ -448,7 +448,7 @@ def section_measures(rnd) -> dict:
         finding may name has to exist in this dict, because `obligation.close` looks the
         row's own measure up in it -- which is why an `emitted.<feature>` row could never
         close and a per-district finding closed on a whole-place number.
-        
+
     """
     from .. import section as section_mod
     reg = rnd.flags.get("section") or {}
@@ -503,7 +503,7 @@ def stage_material(rnd, be, results: dict) -> dict:
         record every check is taken against -- the construction check, the predicates, the
         occupancy, the section's own measurements -- so enabling this cannot make a physical
         check pass. A view may read the finished volume; nothing else does.
-        
+
     """
     if not rnd.flags.get("material"):
         return {"skipped": "this round does not ask for the material pass"}
@@ -535,7 +535,14 @@ def stage_material(rnd, be, results: dict) -> dict:
           f"{len(recipes)} voice(s), {rec.get('figure_refused')} declared figure "
           f"cell(s) refused, {rec.get('stale_skipped')} stale cell(s) left alone "
           f"-> {os.path.basename(out_p)}", flush=True)
-    return {"written": out_p, "voices": voices,
+    # **The finished volume is what this state delivers**, recorded rather than implied
+    # by its file name: the write and the views read `artifact.adopted`.
+    from .. import artifact as artifact_mod
+    adoption = artifact_mod.adopt(
+        rnd.state, out_p, kind="finished",
+        why=f"the material pass ({setting['condition']}, contextual) over "
+            f"{len(recipes)} voice recipe(s) finished {os.path.basename(bp)}")
+    return {"written": out_p, "voices": voices, "adopted": adoption,
             "substituted": rec.get("substituted"),
             "figure_refused": rec.get("figure_refused"),
             "stale_skipped": rec.get("stale_skipped"),

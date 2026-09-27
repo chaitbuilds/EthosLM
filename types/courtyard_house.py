@@ -1124,7 +1124,7 @@ def form_plan(pad_w: int, pad_d: int, *, params: dict | None = None,
         round the asked court. The one calculation admission (`ethoslm.formplan`) and
         construction (`build`) both read, so a lot the compiler admits is the house the
         builder lays.
-        
+
     """
     params = dict(params or {})
     court = max(COURT_LEAST, int(params.get("court") or 0))

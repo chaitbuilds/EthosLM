@@ -36,7 +36,7 @@ def box(*, pilasters=False, recess=False, jetty=False, gable=False, windows=Fals
 
         Every variant keeps the same footprint and the same wall height, so any difference
         in the number is the alteration and not the size of the thing.
-        
+
     """
     b = {}
     for x in range(21):

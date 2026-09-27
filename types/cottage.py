@@ -746,7 +746,7 @@ def _furnish_outshot(b, rect, y, blocked, rng, use, way=()):
         `storeys=1, outshot="store"` on a 28x12 lot, and never with a scullery, whose pieces
         are one cell each. A candidate list that filters the anchor and not the length is a
         filter with the piece's own size missing from it.
-        
+
     """
     x0, _, z0, x1, z1 = rect
     edge = _room_cells(x0, z0, x1, z1, blocked, rng, True)

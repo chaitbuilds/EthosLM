@@ -67,7 +67,7 @@ def region(name: str, mask, x0: int, z0: int, *, policy: str = "", role=None,
         Held as an array on the live record and dropped when the record is written to
         disk -- `serialise` keeps the boundary, the rectangles and the counts, which is
         what a reader of `resolution.json` wants and a 512x512 bitmap is not.
-        
+
     """
     mask = np.asarray(mask, bool)
     xs, zs = np.nonzero(mask)
@@ -135,7 +135,7 @@ def column_record(rect, *, developable=None, allocated=None, built=None,
         decision and is not independent justification for removing it from the requested
         scope. Ground an explicit requirement asks to be open leaves the scope and the
         record says how much left and on whose authority.
-        
+
     """
     total = rect_columns(rect)
     src = list(why)
@@ -163,7 +163,7 @@ def denominator(regions) -> dict:
         build on an arterial's band and a floor asked of ground nobody may build on is a
         floor about somebody else's decision -- and `scope_columns` otherwise. Regions an
         explicit requirement asked to be open are already out, by their own record.
-        
+
     """
     scope = dev = 0
     n, all_dev = 0, True
@@ -193,7 +193,7 @@ def _largest_rect(grid) -> tuple:
 
         The histogram method, per row, with the usual stack. Returns
         `(i0, j0, i1, j1, area)` in grid indices, or `None` where the grid is empty.
-        
+
     """
     rows, cols = grid.shape
     heights = np.zeros(cols, int)
@@ -225,7 +225,7 @@ def tile(r: dict, *, step: int = TILE_STEP, minimum: int = TILE_MIN,
 
         Deterministic: the same mask gives the same rectangles in the same order, which is
         what lets a plan be replayed.
-        
+
     """
     mask = np.asarray(r["mask"], bool)
     x0, z0 = r["origin"]
@@ -295,7 +295,7 @@ def annulus_mask(x0: int, z0: int, S: int, cx: int, cz: int, inner: int, outer: 
         boundaries: a ring inside a round wall is round on its outside, and a ring outside a
         round wall is round on its inside. That second half is the one the strip layout
         never had, and it is why an octagonal place had square districts in a round wall.
-        
+
     """
     xs = np.arange(x0, x0 + S)[:, None] - cx
     zs = np.arange(z0, z0 + S)[None, :] - cz
@@ -323,7 +323,7 @@ def ring_sectors(cx: int, cz: int, inner: int, outer: int, lo: int, hi: int,
         bar was short of.
 
         Returns `[(label, (x0, z0, x1, z1))]`.
-        
+
     """
     cc = int(chamfer or 0)
     strips = {
@@ -397,7 +397,7 @@ def water_mask(vol, x0: int, z0: int, S: int):
         the ground, or the water surface where that is higher, and a flag for which. Reading
         it here rather than re-deriving it is deliberate: a shoreline the layout believes in
         and the lanes do not is worse than no shoreline.
-        
+
     """
     from . import observe
     h, wet = observe.ground_heights(vol)
@@ -416,7 +416,7 @@ def shore_anchor(wet, x0: int, z0: int, *, step: int = 8) -> dict | None:
 
         None where the site has too little water to have a shore (`SHORE_MIN_WATER`), which
         is a refusal a shoreline request has to be able to get.
-        
+
     """
     wet = np.asarray(wet, bool)
     if wet.mean() < SHORE_MIN_WATER or (~wet).mean() < SHORE_MIN_WATER:
@@ -483,7 +483,7 @@ def shore_band(anchor: dict, wet, x0: int, z0: int, depth: int):
 
         A band and not a rectangle: the mask follows the path, so a bay is a bay and the
         ground behind a headland is not claimed.
-        
+
     """
     wet = np.asarray(wet, bool)
     S = wet.shape

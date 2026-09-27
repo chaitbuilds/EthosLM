@@ -66,7 +66,7 @@ def check_facing(label, blocks):
         column both neighbours are lower, so no facing is up-slope there and the apex is
         not a defect. Inverted facing on a real slope makes top[down] > top[up], which this
         catches on every course.
-        
+
     """
     top = surface(blocks)
     bad = []
@@ -85,7 +85,7 @@ def check_pitch(label, blocks, limit=2):
 
         The ridge column is excluded: gable caps it with a slab one above the ridge, which
         is a ridge tile, not a course.
-        
+
     """
     top = surface(blocks)
     ridge = max(top.values())

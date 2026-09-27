@@ -114,7 +114,7 @@ def _pave(b, rect, y, pattern, cx, cz, rng):
         result names both (`out/des-material/comparison.json`, criterion 5). The pattern
         exists nowhere but the arithmetic below, so this function is the only thing that
         can say so.
-        
+
     """
     x0, z0, x1, z1 = rect
     with b.figure(f"square_paving_{pattern}"):
@@ -254,7 +254,7 @@ def _stall(b, rect, fy, back, opts, rng):
 
         `back` is the side the solid wall stands on; the counter faces the
         opposite way, into the square.
-        
+
     """
     x0, z0, x1, z1 = rect
     front = OPP[back]

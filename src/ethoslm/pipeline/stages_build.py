@@ -24,7 +24,7 @@ def stage_programs(rnd: Round, be, results: dict) -> dict:
         `test_stages`' control arm asserts is identical to `stages.run` with every flag off.
         Reports the pending block set size per wave, which is what the round's own
         `dryrun_<wave>.json` recorded when it was built.
-        
+
     """
     if not rnd.waves:
         return {"waves": 0, "note": "this round has no build waves"}
@@ -60,7 +60,7 @@ def _gate_threshold(rnd: Round, net):
         type declares `PASSAGE`. One rule, shared with the flythrough (demo-polish, 1d).
         With no such part -- an open village, which is every round up to 11 -- there is no
         arrival to photograph and the skyline frame is absent.
-        
+
     """
     if net is None:
         return None
@@ -79,7 +79,7 @@ def _dry_circulation(rnd: Round, be) -> dict:
         and where the ground was read from. It is deliberately not a second implementation
         of the routing: a second answer to "where do the lanes go" is the thing this project
         has twice paid for.
-        
+
     """
     import numpy as np
     from .. import circulate, lint, observe, prims, settlement
@@ -603,7 +603,7 @@ def stage_briefs(rnd: Round, be, results: dict) -> dict:
         uses, so they cannot drift.
 
         Never overwrites: a brief on disk is what a builder was actually shown.
-        
+
     """
     import subprocess
     out = {}
@@ -639,7 +639,7 @@ def _reconcile_surfaces(rnd: Round, path: str, built_path: str) -> dict:
         Reported and never raised: a record that could not be reconciled stays exactly as
         emission left it, which is the weaker evidence it always was, and says so. See
         `ethoslm.surfaces.reconcile` for what is taken out and why.
-        
+
     """
     from .. import offline as offline_mod, surfaces as surfaces_mod
     try:
@@ -669,7 +669,7 @@ def stage_finish(rnd: Round, be, results: dict) -> dict:
         round touched, and lints afterwards because a pass that moves ground can sever a
         network. Then `world_built.npz`, which is what `lint`, `render` and every card are
         read off.
-        
+
     """
     import subprocess
     if not be.live and getattr(be, "dry_run", False):
@@ -706,7 +706,8 @@ def stage_finish(rnd: Round, be, results: dict) -> dict:
                           plan=rnd.plan(), note="the dry run's built volume")
         rows = [r for w in (results.get("parts") or {}).get("waves", [])
                 for r in w["parts"]]
-        return {"dry_run": True, "world_built": built,
+        adoption = _adopt_structural(rnd)
+        return {"dry_run": True, "world_built": built, "adopted": adoption,
                 "mb": round(os.path.getsize(built) / 1e6, 1),
                 "parts_built": sum(1 for r in rows if r["status"] == "built"),
                 "parts_not_built": [r["part"] for r in rows
@@ -744,7 +745,7 @@ def stage_finish(rnd: Round, be, results: dict) -> dict:
         built = rnd.rel("world_built.npz")
         return {"refused": "these waves are not built, so there is no seam to finish "
                            "and the world is left as it stands",
-                "waves": unbuilt,
+                "waves": unbuilt, "adopted": _adopt_structural(rnd),
                 "world_built": built if os.path.exists(built) else "NOT CACHED"}
     r = subprocess.run(
         [os.path.join(_pipeline.ROOT, ".venv", "bin", "python"),
@@ -763,7 +764,29 @@ def stage_finish(rnd: Round, be, results: dict) -> dict:
     render.cache_built(rnd.state)
     built = rnd.rel("world_built.npz")
     out["world_built"] = built if os.path.exists(built) else "NOT CACHED"
+    out["adopted"] = _adopt_structural(rnd)
     return out
+
+
+def _adopt_structural(rnd: Round) -> dict | None:
+    """Adopt `world_built.npz` as what this state delivers (`ethoslm.artifact`).
+
+    Every build adopts its structural world, so a `delivered.json` left by an earlier
+    build never outlives it; a finishing pass that runs after this (`stage_material`,
+    `flags.material`) adopts its own volume over it. Nothing here when there is no
+    built world to adopt."""
+    from .. import artifact as artifact_mod
+    built = rnd.rel("world_built.npz")
+    if not os.path.exists(built):
+        return None
+    why = ("the structural world as built; "
+           + ("a finishing pass is asked for and adopts its own volume if it writes one"
+              if rnd.flags.get("material") else "no finishing pass is on"))
+    try:
+        return artifact_mod.adopt(rnd.state, built, kind="structural", why=why)
+    except artifact_mod.ArtifactError as e:
+        print(f"   artifact: not adopted -- {e}", flush=True)
+        return None
 
 
 def _wave_brief(rnd: Round, w: dict) -> dict:
@@ -789,7 +812,7 @@ def _wave_check_runs(rnd: Round, sub: str, builds: str) -> list:
         Reported with no bar registered against it. It is the first number that says
         whether a builder that missed had looked once or looked ten times, and the spec
         says to read it before anything else if walkability misses.
-        
+
     """
     out = []
     for f in sorted(os.listdir(builds)) if os.path.isdir(builds) else []:
@@ -994,7 +1017,7 @@ def instantiated_source(type_src: str, instances: list, mat=None, roof=None) -> 
         the palette the ground work is faced in, which is the type's own voice: a stone
         platform under a building whose footing is stone is a plinth, and under one whose
         footing is something else it is somebody else's building.
-        
+
     """
     out = [type_src.rstrip("\n"), _TYPE_HEADER]
     for plot, seed, params in instances:
@@ -1021,7 +1044,7 @@ def voice_palette(voice: str | None) -> dict | None:
         authored is here on the same terms as a hand-written one -- and all six roles are
         named, because the voice file is validated and a role that defaults to the wall is a
         decision nobody made.
-        
+
     """
     from .. import styles
     v = styles.VOICES.get(voice or "")
@@ -1061,7 +1084,7 @@ def check_voices(voice: str | None, place: str | None = None) -> list:
         stands in a silent voice exactly as it stands in that one, and a silent partner
         tests nothing of a type that carries its own roof. With no voice and no place the
         first is the plainest voice on disk (`styles.silent_voice`).
-        
+
     """
     from .. import styles
     first = voice or place or styles.silent_voice()
@@ -1081,7 +1104,7 @@ def instantiate(type_program: str, plot, vol, *, seed: int = 0, network=None,
         It is on by default and off for the one caller that has already checked them --
         `stage_types`, which checks once per instance and reports the refusal rather than
         raising it.
-        
+
     """
     from .. import offline
     if check:
@@ -1099,7 +1122,7 @@ def _type_instances(rnd: Round, spec: dict) -> list:
 
         An instance is `[plot_label, params]` and `seed` is a key of `params`, because a
         seed *is* a parameter -- the one the type is required to vary on.
-        
+
     """
     plots = {p["label"]: p for p in json.load(open(rnd.rel("plots.json")))}
     out = []
@@ -1137,7 +1160,7 @@ def _type_rows(rnd: Round, spec: dict) -> list:
 
         The plots come from the settlement's own registry: a type's instances build on
         ground the round did not invent, exactly as a wave's plots are its assignment.
-        
+
     """
     plots = {p["label"]: p for p in json.load(open(rnd.rel("plots.json")))}
     out = []
@@ -1523,7 +1546,7 @@ def _sited_part_block(b, p: dict, mat) -> str:
         segments and their levels, a gate gets a cell and a facing, a square gets a
         rectangle at one level -- and none of them gets a heightmap, for the reason none of
         them gets one: a heightmap in a brief is an invitation to level it.
-        
+
     """
     part = b.site(_pipeline.fixture_part(p, {}), mat=mat)
     kind = part["kind"]
@@ -1588,7 +1611,7 @@ def stage_types(rnd: Round, be, results: dict) -> dict:
         Each instance is then composed into an ordinary program and measured by
         `measure_program`, so the lint, the walk model, the render and the replay all see a
         program and none of them needs to know what a type is.
-        
+
     """
     from .. import lint, stages
     if not rnd.types:
@@ -1728,7 +1751,7 @@ def _watching_refusals():
         back as it was -- a wrapper left behind would follow every later stage in the
         process, and an inherited method restored as an *own* attribute is a wrapper left
         behind that looks like a restore.
-        
+
     """
     from .. import buildlib
     got: dict = {n: [] for n in _REFUSING_CALLS}
@@ -1802,7 +1825,7 @@ def stage_candidates(rnd: Round, be, results: dict) -> dict:
         `build_<i>.py` when it is on disk, otherwise stages the request and this candidate
         reports `needs_model`. Answer the requests, re-run, and everything already built
         replays without a model call.
-        
+
     """
     from .. import stages
     c = rnd.candidates
@@ -1875,7 +1898,7 @@ def _type_candidate(rnd: Round, be, c: dict, cid: str, sub: str, builds: str,
         it is composed with the calls that instantiate it and written to the candidate's own
         program path, so `stage_measures`, `stage_candidate_render`, the lint and the
         replay all see an ordinary program and none of them needs to know what a type is.
-        
+
     """
     from .. import lint, stages
     os.makedirs(builds, exist_ok=True)
@@ -1984,7 +2007,7 @@ def _draft_row(rnd: Round, be, subj: dict, n: int, prog: str) -> dict:
 
         `measure_program` itself is untouched. Drafts 0, 1 and 2 go through identical code,
         which is the only reason the three columns can be put beside each other at all.
-        
+
     """
     import hashlib
     from .. import lint
@@ -2056,7 +2079,7 @@ def _record_call(rnd: Round, subj: dict, n: int, prog: str, sha: str,
         a cost far under what it spent. The log is the thing being appended to, so the log
         is the thing that says whether this call is already on it -- and a builder bounced
         and rewritten has different bytes and is correctly a second row.
-        
+
     """
     req = os.path.join(builds, f"build_request_{n}.json")
     if not os.path.exists(req):
@@ -2122,7 +2145,7 @@ def stage_revise(rnd: Round, be, results: dict) -> dict:
 
         Nothing that reaches a builder says there are sixteen of these, that drafts are
         compared, or what is measured; the scratch directory is hash-named for that reason.
-        
+
     """
     import shutil
     cfg = rnd.revise
@@ -2239,7 +2262,7 @@ def _arm_program(rnd: Round, sub: str) -> str:
         `run_cycles` writes one file per cycle rather than overwriting a single program,
         because the sequence *is* the evidence -- what the loop did on each pass is the
         thing under test, and a single file would keep only the answer.
-        
+
     """
     d = rnd.rel("arms", sub)
     rep = os.path.join(d, "report.json")
@@ -2261,7 +2284,7 @@ def stage_arms(rnd: Round, be, results: dict) -> dict:
 
         Answer the staged requests, re-run, and every cycle already built replays with no
         model call.
-        
+
     """
     from .. import stages
     a = rnd.arms
@@ -2344,7 +2367,7 @@ def sample_parts(parts: list, sample: dict) -> tuple:
 
         `sample` is `{"quarters": n, "margin": m}` off the round's flags. Returns
         `(parts, record)`; the record is what the readout and the report quote.
-        
+
     """
     from .. import pipeline as _pipeline
     n = max(1, int((sample or {}).get("quarters") or 2))
@@ -2501,7 +2524,7 @@ def _clip_runs(path: list, rect: tuple, *, half: int = 0) -> list:
         is kept only where it lies wholly inside, because half a staircase is not a wall
         somebody would build. Consecutive pieces that still meet are one run, so a clipped
         corner stays one part rather than two abutting ones.
-        
+
     """
     x0, z0, x1, z1 = (min(rect[0], rect[2]), min(rect[1], rect[3]),
                       max(rect[0], rect[2]), max(rect[1], rect[3]))
@@ -2589,7 +2612,7 @@ def section_parts(parts: list, section: dict) -> tuple:
         `intent.sample_scope`, `placeread`'s `limits.sample`, the lint's region -- already
         keys on that name, and a section is exactly a partial build: **its clauses qualify
         its own scope and nothing outside it.**
-        
+
     """
     from .. import pipeline as _pipeline
     rect = [int(v) for v in (section or {}).get("rect") or []]
@@ -2748,7 +2771,7 @@ def annotate_gates(parts: list) -> list:
         wall type leaves the opening to the gate standing in it rather than cutting one of
         its own somewhere else. Neither the planner nor the type is told a height by hand;
         this is the layer that knows both. Returns the names annotated.
-        
+
     """
     from ..buildlib import Builder
     from ..placeplan import _edge_cells
@@ -2801,7 +2824,7 @@ def preflight_parts(parts: list, voices: list, workers: int = 1,
         cheaper than a crash on the thirtieth part. Then the estimate: the leaves by kind,
         the blocks and the seconds they will cost by the registered per-part numbers,
         the seconds divided by the workers. Refused over `bound`, by name.
-        
+
     """
     from .. import pipeline, voices as _voices
     from ..prims import shape, solid
@@ -2859,7 +2882,7 @@ def settle_ground(rnd, be, parts: list, mat_of) -> tuple:
         `ground.npz` for a wave's worker and `ground.json` for a reader.
 
         Returns `(resolved, record)`; `mat_of(part)` is the palette a part is composed in.
-        
+
     """
     from .. import ground as _ground, pipeline, stages
     from ..buildlib import Builder
@@ -2914,7 +2937,7 @@ def instantiate_part(rnd, be, part: dict, mat, roof=None, paths_sink=None,
         built. A type is a committed file, a part is a leaf of the plan, and this composes
         the one with the other and executes it. There is no branch here for "and if that
         does not work, write a program": a part that cannot be instantiated is reported.
-        
+
     """
     from .. import pipeline, stages
     from ..lint import preflight
@@ -3150,7 +3173,7 @@ def record_part_floors(rnd, rows: list, plots: list) -> list:
 
         Re-read from disk rather than written from the caller's copy, because `reserve()`
         may have added rows while the wave ran. Returns the registry as it now stands.
-        
+
     """
     path = rnd.rel("plots.json")
     if not os.path.exists(path):
@@ -3180,7 +3203,7 @@ def stage_parts(rnd, be, results: dict) -> dict:
 
         No builder call and no hand-written program: that is the bar, and it is a bar about
         this function's own source as much as about the run.
-        
+
     """
     from .. import lint, pipeline, stages
     from . import stages_measure
@@ -3213,6 +3236,17 @@ def stage_parts(rnd, be, results: dict) -> dict:
                           f"candidate: {why}. Run the ground stages again before "
                           f"building on it")}
     fresh, why = _deps_w.check(rnd, "built", plan=rnd.plan())
+    # **...and of the extent it was asked for** (the city attempt round): a build of a
+    # registered section is not the build of the whole place, nor of another section,
+    # and the warm return handed a section's world back when the section was widened to
+    # the whole city
+    if fresh and os.path.exists(rnd.rel("parts.json")):
+        _was_s = (json.load(open(rnd.rel("parts.json"))).get("sample") or {})
+        _want_s = rnd.flags.get("section") or {}
+        if (_was_s.get("rect") or None) != ((_want_s.get("rect") or None)
+                                            if _want_s else None):
+            fresh, why = False, ("the built extent differs from the registered one: "
+                                 f"{_was_s.get('rect')} -> {_want_s.get('rect')}")
     if fresh and os.path.exists(rnd.rel("parts.json")) \
             and os.path.exists(rnd.rel("world_built.npz")):
         was = json.load(open(rnd.rel("parts.json")))

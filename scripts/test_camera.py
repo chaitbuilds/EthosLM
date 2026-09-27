@@ -283,7 +283,7 @@ def c_no_module_outside_render_builds_a_camera():
         Eight files constructed a `View`, and the camera-inside-rock defect had to be fixed
         in four of them. Nothing outside `render.py` may build one now -- ask for a subject
         and get a checked `Shot`, or use `render.raw_shot` and say why.
-        
+
     """
     import ast
     offenders = []
@@ -359,7 +359,7 @@ def c_a7_the_two_whole_place_frames_are_placeable_on_round_11():
         "Not black" is `render.check_frames` over the rendered PNGs and it needs Chunky, so
         what is asserted here is the half that can be: both cameras stand in open air, both
         have a clear line to the place, and neither is looking at rock.
-        
+
     """
     from ethoslm import offline
     from ethoslm.circulate import Network
@@ -447,7 +447,7 @@ def c_every_card_is_the_same_bytes():
         One card function replaced five. The judge keys on `sha256(image_a)`, so a gutter
         one pixel wide in the wrong place would invalidate every cached verdict in the
         project. Digests frozen in `rounds/card-digests.json` from the old composers.
-        
+
     """
     import hashlib
     root = os.path.abspath(os.path.join(SCRIPTS, ".."))
@@ -516,7 +516,7 @@ def t_bss3_mid_y_answers_for_a_patch_with_nothing_standing_on_it():
         its palace crosses open ground, and the first step over it killed the whole
         flythrough with `zero-size array to reduction operation minimum` after 123 frames
         had already been shot.
-        
+
     """
     empty = Volume.from_blocks(solid_ground(), X0, Y0, Z0, SX, SY, SZ)
     bare = {"x0": 4, "z0": 4, "x1": 12, "z1": 12}

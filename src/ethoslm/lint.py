@@ -97,7 +97,7 @@ def lane_stances(nav: observe.Nav, network) -> list:
         there, and seeding from it would call somebody's plinth the street.
 
         Empty where there is no network, or where nothing on it can be stood on.
-        
+
     """
     if network is None:
         return []
@@ -118,7 +118,7 @@ def reachable_from(graph: dict, entries) -> set:
         *every* lane stance -- so each island seeded itself and proved that it reaches
         itself. Connected access is reachability from the entries a place actually has, and
         a seed set that is the whole graph cannot express that.
-        
+
     """
     seen, stack = set(), [e for e in entries if e in graph]
     seen.update(stack)
@@ -171,7 +171,7 @@ class Context:
         Building this is the expensive part (a second or two on a 192x192 settlement) and
         every check after it is essentially free, which is what lets the whole suite run on
         every pass.
-        
+
     """
 
     vol: observe.Volume
@@ -330,7 +330,7 @@ class Context:
                 flood did not reach, and so on. One piece is the answer; anything else is a
                 settlement with a cliff through the middle of it, which is precisely the failure
                 the spec says no check we had would have reported.
-                
+
         """
         todo = [(x, z, s) for (x, z), s in self.lane_stances() if s is not None]
         pieces = []
@@ -354,7 +354,7 @@ class Context:
                 This is the **ground** question -- which part is answerable for this column --
                 and it is what E009, E010, S002 and W008 ask. Which part a *room* belongs to is
                 `room_owner`, and it is a different question with a third dimension in it.
-                
+
         """
         for p in self.plots:
             if plot_covers(p, x, z):
@@ -380,7 +380,7 @@ class Context:
                 A row with no `y0` is a part built before this was recorded, and gets test 3
                 waived rather than guessed at, which is why no earlier round's number moves.
                 The rooms it lets through are still checked by tests 1 and 2.
-                
+
         """
         if room.get("made", 1.0) < self.MADE:
             return None
@@ -538,7 +538,7 @@ def e011_interior_not_walkable(ctx: Context):
         is a linter that deforms designs -- so anything short of nothing is a WARNING that
         reports the fraction and nothing more. There is deliberately no rule here about
         where furniture may go, no minimum fraction that fails a build, and no second check.
-        
+
     """
     for r in ctx.interior_walk():
         if r["enclosure"] < Context.ENCLOSED:
@@ -621,7 +621,7 @@ def e007_network_split(ctx: Context):
         A circulation pass that produces two networks with a cliff between them has failed,
         and every other check would call it fine: each half is walkable, every door on it is
         reachable, every plot on it fronts something.
-        
+
     """
     if not ctx.network:
         return
@@ -651,7 +651,7 @@ def e008_threshold_obstructed(ctx: Context):
         each as a position and an approach direction. Nothing the world can be asked will
         recover that intent later -- reading a wall does not tell you which side was meant
         to be the front -- so a later pass building over one has to be caught here.
-        
+
     """
     if not ctx.network:
         return
@@ -694,7 +694,7 @@ def e009_network_regression(ctx: Context):
         Compares like with like. A stance the pass *built over* is not a regression -- a
         wall is allowed to occupy ground. A stance that is still standable and is no longer
         reachable is one, and it is the only thing counted here.
-        
+
     """
     if not ctx.before:
         return
@@ -939,7 +939,7 @@ def w010_massing_conformance(ctx: Context):
         translation moves every top by the translation, while a thickened wall, a carved
         opening or a chimney leaves the band full. Canopy is excluded -- a tree over the
         plot is not a ridge.
-        
+
     """
     if not ctx.massing:
         return
@@ -1426,7 +1426,7 @@ def snapshot(nav: observe.Nav, network=None, seeds: list | None = None) -> dict:
         Takes a Nav rather than a Context on purpose -- a pass wants this before it runs,
         and building a whole Context (rooms, light, shelter) to answer it would cost several
         seconds a pass for nothing.
-        
+
     """
     if seeds is None:
         seeds = lane_stances(nav, network)
@@ -1510,7 +1510,7 @@ def palette_literal(text: str) -> str | None:
         every voice, and a check that flagged them would be a check about vocabulary rather
         than about the palette. What A1 is undoing is a type welded to a *voice*, and a
         voice is six material families.
-        
+
     """
     from .prims import MATERIALS, family
     s = str(text).split("[")[0].split(":")[-1]

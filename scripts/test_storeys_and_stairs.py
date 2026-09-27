@@ -106,7 +106,7 @@ def t_f1_a_storey_is_only_built_when_the_stair_that_reaches_it_stands():
         Before the fix this instance read `E003` -- "a room of 119 cells cannot be walked
         into" -- and `E011` beside it, because the flight had been refused with "a tread
         would replace the spruce_planks you placed", and the floor went on over it.
-        
+
     """
     rows = []
     for voice in ("japanese_minka", "ochre_stone_green_tile"):
@@ -130,7 +130,7 @@ def t_f2_a_storey_two_stairs_would_cut_in_two_is_not_built():
         one voice; whatever it decides to build, no room it leaves may be unreachable and
         no floor cell may be off the walk from outdoors. What it is allowed to decide is to
         stop lower: a range it cannot cross upstairs stands single and low.
-        
+
     """
     seen = []
     for plot in ("pair_uphill", "pair_downhill"):
@@ -149,7 +149,7 @@ def _roofy(kinds: dict, base: int = 68, size: int = 24) -> observe.Volume:
     """A plane of stone with air over it, and whatever `kinds` puts in it.
 
         `kinds` is {(x, y, z): block state}; everything at or below `base` is stone.
-        
+
     """
     palette = ["air", "stone",
                "stone_brick_stairs[facing=east,half=bottom]",
@@ -176,7 +176,7 @@ def t_f3_a_slab_ahead_at_the_stairs_own_level_is_the_course_carrying_on():
         and a bottom slab ahead at the stair's own level is the roof going on at that
         level -- the same rule as "a stair whose facing side stands at or above its own
         level faces up", read on the half block `local_top` was blind to.
-        
+
     """
     st = "stone_brick_stairs[facing=east,half=bottom]"
     wall = {(9, 70, 10): "stone", (9, 71, 10): "stone"}
@@ -196,7 +196,7 @@ def t_f4_a_stair_higher_than_both_its_neighbours_is_not_on_a_slope():
         And the control, which is what stops this being a hole in the check: a tread whose
         flight keeps climbing **behind** it -- a reversed flight, a serrated roof -- has a
         surface above its own level behind it and is reported exactly as before.
-        
+
     """
     st = "stone_brick_stairs[facing=east,half=bottom]"
     top = _roofy({(9, 69, 10): "stone", (10, 70, 10): st})

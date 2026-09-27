@@ -129,7 +129,7 @@ def _band_repair(spec: dict, f: dict) -> dict | None:
         Returns the change to make, or None where it may not be made. Refuses outright
         where the sentence named a count: `find/capacity/explicit` is a different finding
         and this is not its repair.
-        
+
     """
     if spec.get("explicit_count"):
         return {"refused": True,
@@ -179,7 +179,7 @@ def accepted_band(spec: dict) -> list | None:
         The first `negotiated` entry records what the band was before anything moved it;
         with no negotiation on record the current band is the original one. This is the one
         reader of that history, so "what was this place agreed to be" has one answer.
-        
+
     """
     for n in (spec or {}).get("negotiated") or []:
         if n.get("what") != "size_band":
@@ -206,7 +206,7 @@ def _relation_repair(rnd, spec: dict, f: dict, place: dict | None) -> dict | Non
         region. Where no such position exists the action refuses by name: a village strung
         along a shore may genuinely have nowhere to put a square its houses can stand round,
         and that is a finding about the request and the ground rather than a repair.
-        
+
     """
     from .pipeline import stages_plan
     from . import intent as intent_mod, pipeline as _pipeline
@@ -501,7 +501,7 @@ def _frontage_repair(rnd, spec: dict, f: dict, place: dict | None) -> dict | Non
         follows is the scale owner's, and the two are separate findings on purpose.
 
         Returns the change to make, or None where this build may not make it.
-        
+
     """
     from . import placeshore
     if place is None:
@@ -553,7 +553,7 @@ def _extent_repair(rnd, spec: dict, f: dict, place: dict | None) -> dict | None:
         measures it and this makes it: the district's rectangle grows into ground that is
         inside the site and touches no other region. The programme is untouched -- nothing
         here changes what the place must hold, only how much ground it has to hold it in.
-        
+
     """
     from .pipeline import stages_plan
     if place is None or rnd is None:
@@ -652,7 +652,7 @@ def _fits_in(spec: dict, d: dict, place: dict | None = None) -> int:
         So the question is put to `arrange`, which compiles the grown rectangle and returns
         the houses that stand in it. A repair that claims ground now claims what can be
         built on it.
-        
+
     """
     from . import arrange as arrange_mod, placeplan
     part = next((p for p in (spec or {}).get("defining_parts") or []
@@ -690,7 +690,7 @@ def _allocation_repair(spec: dict, f: dict, place: dict | None) -> dict | None:
         ground; the measurement wins, and the *place's* obligation does not move -- what
         falls out is a capacity finding for the scale owner, who is bound by the originally
         accepted floor and refuses below it. Two owners, two bounds, one direction.
-        
+
     """
     if place is None:
         return None
@@ -732,7 +732,7 @@ def apply(rnd, spec: dict, findings: dict, *, budget: int = REPAIR_BUDGET,
         spec stage reads -- because a change of scale is a change to the **programme**, and
         a repair that left the programme alone and patched the plan would be a repair
         nothing downstream could see.
-        
+
     """
     by = route(findings)
     rec = {"budget": int(budget), "applied": [], "refused": [], "routed": {},

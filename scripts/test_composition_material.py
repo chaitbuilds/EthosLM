@@ -104,7 +104,7 @@ def t_a_a_cell_whose_state_moved_is_stale_and_is_left_alone():
         name-only test called both fresh and the pass wrote `andesite_stairs[facing=north]`
         over the turned one, keeping the family *and putting the tread back the way the
         record remembered it*. Orientation is physics here: that is a different block.
-        
+
     """
     up = S.FLAGS["open_up"]
     rec = _part("a", {"wall": [(2, 1, 2, 0, up), (2, 1, 3, 0, up)]},
@@ -180,7 +180,7 @@ def t_d_a_declared_figure_survives_a_pass_an_identical_ordinary_cell_does_not():
 
         Two cells of the **same role**, the **same block**, the **same flags** and the same
         part. One is declared part of a figure and one is not. The recipe would take both.
-        
+
     """
     up = S.FLAGS["open_up"]
     fig = up | S.FLAGS["figure"]

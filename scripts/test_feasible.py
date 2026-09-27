@@ -67,7 +67,7 @@ def world(bed, water=None, y0: int = 30, x0: int = 0, z0: int = 0):
         Synthetic on purpose and labelled so wherever it is reported: these are unit
         fixtures for the four clauses, and F9 is the case that runs on recorded terrain.
         `water[i, j] <= bed[i, j]` is a dry column.
-        
+
     """
     bed = np.asarray(bed, int)
     water = np.full(bed.shape, -10_000, int) if water is None else np.asarray(water, int)
@@ -385,7 +385,7 @@ def ring_levels(vol, plan: dict, spec: dict, site: dict) -> tuple:
         here the way `pipeline.stages_plan.terrace_for` computes it -- the site's median
         land, `TERRACE_STEP` a ring, ordered by the rings' own elevation words -- and the
         reported figure says which of the two it used.
-        
+
     """
     from ethoslm import placeplan, spec as spec_mod
     rings = spec_mod.rings(spec)
@@ -414,7 +414,7 @@ def t_f9_the_sections_own_districts_measured_at_their_ring_level():
         and the record persists. Reported and not asserted: the figures themselves. This
         case measures the retained plan; it does not judge it, and a bar on any of these
         numbers belongs to the acceptance runner and not here.
-        
+
     """
     vol = baseline()
     d = os.path.join(ROOT, "out", "nb-city")

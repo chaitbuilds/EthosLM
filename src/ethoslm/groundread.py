@@ -61,7 +61,7 @@ def made(name: str) -> bool:
         which the explicit reservations exist to cover. What it must never do is call the
         world's own trees, reefs and lava a build, because a filter that refuses every
         forest is a filter for deserts.
-        
+
     """
     if observe._is_natural(name) or observe.is_growing(name):
         return False
@@ -78,7 +78,7 @@ def occupancy(vol):
         contribute; unmodified stone constructions can be invisible. Explicit site
         reservations cover known builds independently of material. Vegetation, liquids and
         the rest of what the generator grows are **not** counted: see `made`.
-        
+
     """
     table = vol.tables()
     occupied = table["lower"].astype(bool) | table["upper"].astype(bool)
@@ -171,7 +171,7 @@ def surface_names(vol) -> np.ndarray:
         with the one exception `SURFACE_COVER` names: a layer of snow on that ground is
         what the ground reads as. A column with no ground reads `""`; a column under water
         reads the bed, which the census then leaves out of the land it is a share of.
-        
+
     """
     names = np.array([s.split("[")[0] for s in vol.palette], dtype=object)
     t = vol.tables()
@@ -197,7 +197,7 @@ def surface_census(codes: np.ndarray, palette, wet: np.ndarray, top: int = 8) ->
         are not land and count towards no class -- a lake in a plain is a plain with a lake
         in it, not a plain that is a fifth less green. Shares are of the land columns and
         sum to at most one; `land_pct` says how much of the footprint that was.
-        
+
     """
     codes = np.asarray(codes)
     wet = np.asarray(wet, bool)
@@ -267,7 +267,7 @@ def biome_census(codes: np.ndarray, palette, top: int = 8) -> dict:
         Over every cell, water included: a river is a biome of its own and a plain with a
         river across it is less of a plain, which is the one thing the surface census -- a
         share of the land -- cannot say and the reason this census exists beside it.
-        
+
     """
     codes = np.asarray(codes)
     counts = np.bincount(codes.ravel(), minlength=len(palette))

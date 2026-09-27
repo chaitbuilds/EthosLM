@@ -38,7 +38,7 @@ class Threshold:
         The spec's one addition to shared state, and deliberately the only one: the world is
         readable, so nothing that can be measured needs declaring. Intent cannot be measured.
         A later pass may not obstruct this, and lint E008 enforces it.
-        
+
     """
 
     id: str
@@ -147,7 +147,7 @@ def _approach_candidates(h: np.ndarray, x0: int, z0: int, rect, per_site: int = 
         depends on, because its flanks have a neighbour against them -- offers that side
         and no other; the way in is held on the street. Where that side has no cell in
         the volume, every side, as before.
-        
+
     """
     sx, sz = h.shape
     ax0, az0, ax1, az1 = rect
@@ -212,7 +212,7 @@ def _grid_graph(h: np.ndarray, avoid: np.ndarray, max_step: int):
         Steps steeper than `max_step` get no edge at all: the router must find a way round a
         cliff rather than price its way up one. Route is the scarce resource at 91 blocks of
         relief -- that is the spec's second reason for allocating it first.
-        
+
     """
     from scipy.sparse import coo_matrix
 
@@ -256,7 +256,7 @@ def _lipschitz_from(seed: dict, adj: dict, sign: int) -> dict:
         Dijkstra seeded with the terrain itself. Averaging the two gives a field that is
         1-Lipschitz -- the average of two 1-Lipschitz functions is 1-Lipschitz -- and splits
         the difference between cutting and filling, which is what earthwork does.
-        
+
     """
     best = {c: sign * v for c, v in seed.items()}
     heap = [(sign * v, c) for c, v in seed.items()]
@@ -304,7 +304,7 @@ def _landings(y: dict, adj: dict, rounds: int = 60) -> tuple[dict, int]:
 
         Only ever lowers, and the cut-side Lipschitz clamp is reapplied after, so the field
         stays 1-Lipschitz.
-        
+
     """
     def unbuildable(c):
         f = _needed_facings(c, y, adj)
@@ -339,7 +339,7 @@ def stamp_occupation(parts: list, decls: dict | None = None) -> list:
         over 134 lane cells of the expression city. Stamped rather than looked up inside
         the router because the router is given parts and not the type table, and a part
         stamped once is a part four consumers can read.
-        
+
     """
     from . import ground as _ground
     for p in parts or []:
@@ -843,7 +843,7 @@ def _widen(cell_rank: dict, spine_width: int, lane_width: int,
         Width is hierarchy made visible: a main way you can walk two abreast, branches you
         cannot. That is not a legibility *score* -- there is no such thing and the spec
         forbids inventing one -- it is the only thing a person walking has to steer by.
-        
+
     """
     sx, sz = avoid.shape
     out = dict(cell_rank)
@@ -911,7 +911,7 @@ def _threshold_for(sid: str, cands: list, cells: dict, ground=None):
         the lane is preferred, then one whose door cell is a lane **landing** at the same
         level -- a flat cell, which a doorstep can be -- and only then whatever is left, so
         a structure with one way in still gets it and the check still says what is wrong.
-        
+
     """
     def door_of(c):
         dx, dz = {v: k for k, v in FACING.items()}[c["face"]]
@@ -1002,7 +1002,7 @@ def walk_check(net: Network, within=None) -> dict:
         Deliberately does not trust the construction. A rise of one block is passable only
         onto a stair facing the way you are going; anything else the planner emits is a
         defect, and this is where it shows before a single block is written.
-        
+
     """
     y = {c: r["y"] for c, r in net.cells.items()}
     face = {c: r["face"] for c, r in net.cells.items()}
@@ -1081,7 +1081,7 @@ def emit(builder, net: Network, mat: str = "cobblestone", *,
         Filling up from `get_height` instead would measure from the top of whatever tree is
         standing there. The cut still uses `get_height`, because the tree is exactly what has
         to come out.
-        
+
     """
     full, stairs, slab = material(mat)
     kerb = kerb or full

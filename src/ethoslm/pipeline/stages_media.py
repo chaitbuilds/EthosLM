@@ -95,7 +95,7 @@ def budget_frames(plan: dict, spec: dict | None, budget: dict) -> list:
         One row per frame, each saying *why* it is being taken, so the readout can report
         what was rendered and what was not rather than leaving "we did not photograph 376
         buildings" to be inferred from a directory listing.
-        
+
     """
     parts = _pipeline.plan_parts(plan)
     named = _defines(spec)
@@ -170,7 +170,7 @@ def arrival_gate(plan: dict, spec: dict | None, parts: list | None = None):
         invariant "at most one way in", which is a walled town's and not a city's, while
         `flythrough_path` preferred the outermost ring's gate: the demo's arrival frame
         stood outside whichever gate sorted first. Returns the plan leaf, or None.
-        
+
     """
     from .. import placeread
     parts = _pipeline.plan_parts(plan) if parts is None else parts
@@ -193,7 +193,7 @@ def flythrough_path(plan: dict, spec: dict | None, site: dict,
         Deterministic, from the plan's own geometry and no camera list. A place read that can
         say which ring is outermost (`placeread.rings`) can say which gate a person arrives
         at, and the centre is the defining part the spec centres the place on.
-        
+
     """
     from .. import placeread, render
     parts = _pipeline.plan_parts(plan)
@@ -288,7 +288,7 @@ def stage_judge(rnd: Round, be, results: dict) -> dict:
         was registered before anything was rendered. Warm, this makes zero model calls and
         returns the identical verdicts; cold, it stages every missing judgement to one file
         so an agent answers them in a single fan-out.
-        
+
     """
     import hashlib
     sha = lambda p: hashlib.sha256(open(p, "rb").read()).hexdigest()  # noqa: E731
@@ -407,16 +407,25 @@ def stage_write(rnd: Round, be, results: dict) -> dict:
 
         This is the live write when the bars hold and a rehearsal when they do not. It
         decides neither; it writes what it is given and says how much.
-        
+
     """
     from .. import offline, stages, world as world_mod
     from ..buildlib import Builder
     if not be.live:
         return {"skipped": "stage_write writes blocks; run it on a live backend, "
                            "inside scripts/mcrun.sh"}
-    built_p = rnd.rel("world_built.npz")
+    # **What is written is the adopted artifact** (`ethoslm.artifact`): the finished
+    # volume where a finishing pass adopted one, the structural world otherwise, and the
+    # rule and any adoption mismatch are in the result -- so the world a person walks is
+    # the volume that was judged, and says which it is.
+    from .. import artifact as artifact_mod
+    art = artifact_mod.resolve(rnd.state)
+    print(f"   artifact: {os.path.basename(art['path'])} ({art['kind']}, "
+          f"{art['source']}) -- {art['note']}", flush=True)
+    built_p = art["path"]
     if not os.path.exists(built_p):
-        return {"error": f"no {built_p} -- there is nothing built to write"}
+        return {"error": f"no {built_p} -- there is nothing built to write",
+                "artifact": art}
     spec = dict(rnd.shots or {})
     # **The world as the server has it, which is not the round's base volume.** A dry
     # run cuts its plateau into the cached volume and emits its lanes into it, and saves
@@ -440,8 +449,8 @@ def stage_write(rnd: Round, be, results: dict) -> dict:
     print(f"  region ({x0},{z0})..({x1},{z1}), {len(diff)} cells to write "
           f"({time.perf_counter() - t0:.0f}s to read)", flush=True)
     if not diff:
-        return {"written": 0, "note": "the built volume and the pre-build cache agree; "
-                                      "nothing to write"}
+        return {"written": 0, "artifact": art,
+                "note": "the built volume and the pre-build cache agree; nothing to write"}
 
     import numpy as np
     ed = be.editor
@@ -474,7 +483,7 @@ def stage_write(rnd: Round, be, results: dict) -> dict:
     secs = round(time.perf_counter() - t1, 1)
     print(f"  {placed.get('placed')} placed, {placed.get('failed')} failed in {secs}s",
           flush=True)
-    return {"written": len(diff), "placed": placed.get("placed"),
+    return {"written": len(diff), "artifact": art, "placed": placed.get("placed"),
             "failed": placed.get("failed"), "seconds": secs,
             "region": [x0, z0, x1, z1], "snapshot": snap,
             "from": os.path.basename(base_p if os.path.exists(base_p)
@@ -491,7 +500,7 @@ def stage_map(rnd: Round, be, results: dict) -> dict:
         Deterministic, offline, under a second, and it needs nothing but the plan -- so it
         can be asked for the moment `plan` has run and long before a block is placed, which
         is the point of it. `preview.plan_map` is the drawing; this is the stage.
-        
+
     """
     import cv2
     from .. import preview as preview_mod
@@ -524,7 +533,7 @@ def stage_sheet(rnd: Round, be, results: dict) -> dict:
         `_seeds_for`) -- a wall is not stood on a house's plot. A type is authored blind and
         read as a table of numbers; this is the first way to *look* at one that does not
         cost a town.
-        
+
     """
     import cv2
     from .. import preview as preview_mod
@@ -1013,7 +1022,7 @@ def stage_selection(rnd: Round, be, results: dict) -> dict:
         Nothing here computes a threshold. Every bar is read off the round's own
         pre-registration, which is written to `round.<config>.json` on the first run and
         never rewritten.
-        
+
     """
     c = rnd.candidates
     if not c:
@@ -1127,7 +1136,7 @@ def _stage_human_look(rnd: Round, winner: str, ids: list) -> dict:
         registered seed rather than picked, the sides are assigned by the same generator,
         and the key is written where a person can check it *after* writing a verdict --
         the same discipline `judge.py` applies to a model, applied to a human.
-        
+
     """
     import shutil
 
@@ -1507,7 +1516,7 @@ def _replan(rnd, be):
         that state as a result and decides the revision failed. Plan, preview and revision
         have to use the same control path or they are three different systems that look
         alike.
-        
+
     """
     from . import round as driver, stages_plan
     res = stages_plan.stage_plan(rnd, be, {})
@@ -1524,7 +1533,7 @@ def _finish_preview(rnd: Round, rec: dict, rec_p: str, plan: dict | None) -> dic
         drawings and the reading, and asked the judge to read the same candidate again. A
         completion that does not record what it completed is not a completion, and an
         inspection loop that re-opens itself on the next invocation is not bounded.
-        
+
     """
     from .. import deps
     rec["done"] = True
@@ -1545,7 +1554,7 @@ def _withdraw_preview(rnd: Round, d: str, rec: dict, why: str) -> dict:
         two copies of "withdraw the evidence" would be two answers. Invalidating the stamp of
         an artifact whose contents are still reused is not invalidating anything, so the
         drawings, the reading and the revision go with it.
-        
+
     """
     from .. import deps
     rec = dict(rec)
@@ -1576,7 +1585,7 @@ def _new_repair_lineage(rnd: Round, why: str) -> int:
         The passes already spent stay in the record and are marked with the lineage they
         were spent in, so "this run has made eleven repair passes" remains true and
         readable; what the run-wide cap counts is the passes of the lineage in hand.
-        
+
     """
     from . import stages_plan
     p = rnd.rel(stages_plan.PLAN_REPAIR_RECORD)
@@ -1742,7 +1751,7 @@ def _repair_pass(rnd: Round, be, spec: dict, rec: dict, site) -> dict:
         and -- where a planning decision changed -- the findings that stand *after* the plan
         was laid out again. A pass that changes nothing is recorded too, because "the
         findings were read and none of them was this layer's to fix" is a result.
-        
+
     """
     from .. import contracts, repair as repair_mod
     from . import stages_plan
@@ -1859,7 +1868,7 @@ def stage_preview(rnd: Round, be, results: dict) -> dict:
         voice -- applied, the plan laid out again and redrawn -- and then the build. Each
         ask is a `needs_model` the driver answers as it answers the spec's; a round with
         no place spec (a recorded plan) is drawn and read, and has nothing to revise.
-        
+
     """
     from .. import spec as spec_mod, styles
     plan = rnd.plan()

@@ -139,7 +139,7 @@ def t_f1a_the_declared_band_carries_depth_and_is_inside_the_measured_one():
         requirement is eight columns of depth, which is what `top` needs for a longitudinal
         flight -- and the second is that taking it must not move the dense lot. This case
         holds the first; `t_f1b` and `t_f1c` hold the second.
-        
+
     """
     mod = row_house()
     lo_w, lo_d, hi_w, hi_d = mod.NEEDS["footprint"]
@@ -181,7 +181,7 @@ def t_f1b_the_dense_terrace_keeps_its_shape_and_does_not_become_a_square_plot():
           * and the ground per house **does** rise against the retained 111.5, because a
             block of deeper lots is a deeper block. The rise is measured and named here
             rather than hidden: what is bought with it is in `t_f1e`.
-        
+
     """
     f = dense_terrace()
     w, ld = f["lot"]
@@ -234,7 +234,7 @@ def t_f1c_widening_one_types_depth_does_not_redefine_dense_for_the_library():
         `row_house`'s *depth* touches none of it, and this is the case that says so with the
         retained numbers beside the measured ones -- the farm, the hamlet and the hill-town
         fixtures are sized off exactly these.
-        
+
     """
     d = placeplan.dense_plot()
     for k, v in RETAINED["dense_plot"].items():
@@ -280,7 +280,7 @@ def t_f1d_a_narrow_terrace_and_a_square_plot_are_different_decisions():
         terrace from a large square plot: both are a hundred columns. The proof is the
         ranking itself -- asked for the same ground with no shape, the library returns the
         square; asked for the same ground with the terrace's shape, it returns the terrace.
-        
+
     """
     mod = row_house()
     decl = {"needs": dict(mod.NEEDS), "path": os.path.join(ROOT, "types", "row_house.py")}
@@ -326,7 +326,7 @@ def t_f1e_the_lot_the_crowded_ring_now_gets_stands_more_than_one_height():
         the new dense terrace gives it, and on the two pads the section gave it as the
         control. Nothing here is decoration or substitution: one type, one voice, one seed
         set, and the only thing that changed is the lot.
-        
+
     """
     f = dense_terrace()
     w, ld = int(f["lot"][0]), int(f["lot"][1])
@@ -390,7 +390,7 @@ def t_f2_an_adopted_courtyard_block_publishes_a_court_with_no_courtyard_leaf():
         The positive control is in the same case: give the district one court that holds and
         one that failed to stand, and the record still fails, because the failed one is a
         subject and is in the denominator by name.
-        
+
     """
     place = {"kind": "city", "form": None, "voice": None,
              "defining_parts": [{"name": "lower_ring", "kind": "group",
@@ -512,7 +512,7 @@ def t_f3_the_compiler_lays_its_lots_on_ground_that_can_carry_a_building():
             of the rectangle can carry a building; a bar of "every column" lays nothing at
             all and turns a district that should come out smaller into one that comes out
             refused.
-        
+
     """
     x, part, decls, place, spec, g = hard_district()
     share = float(g["feasible_columns"]) / float(g["columns"])

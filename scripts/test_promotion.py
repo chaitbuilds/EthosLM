@@ -98,7 +98,7 @@ def t1_a_rejected_trial_puts_the_accepted_candidate_back_whole():
         neighbourhood round's rollback covered none of them. That is how its final frames
         identified `829fb25adb7b6b84` while `inspection/views.json` identified
         `90b26d9c3f075492`.
-        
+
     """
     tmp = tempfile.mkdtemp(prefix="promote-t1-")
     try:
@@ -144,7 +144,7 @@ def t2_a_regression_is_measured_against_what_the_accepted_candidate_had():
         relationship: a baseline that failed `route` is not protected on `route` and a trial
         that also fails it has regressed nothing; a baseline that demonstrated it is, and a
         trial that loses it has.
-        
+
     """
     tmp = tempfile.mkdtemp(prefix="promote-t2-")
     try:
@@ -189,7 +189,7 @@ def t3_a_completed_build_is_not_an_improvement():
         improvement observed (the row closed, or its cited measure moved the way the row
         asked); or neither. This case is the third: a trial that regresses nothing, builds
         cleanly, and buys nothing measurable is rejected and the accepted candidate stands.
-        
+
     """
     tmp = tempfile.mkdtemp(prefix="promote-t3-")
     try:
@@ -265,7 +265,7 @@ def t5_the_boundary_says_what_it_covers_and_leaves_the_ledger_out():
         the record that the rejected trial's action was ever attempted, and the loop would
         spend its whole budget re-applying the same refused action. What a failed trial leaves
         behind is exactly the knowledge that it failed.
-        
+
     """
     tmp = tempfile.mkdtemp(prefix="promote-t5-")
     try:
@@ -319,7 +319,7 @@ def t6_a_revision_carries_the_ground_it_is_not_revising():
 
         The retained plans are the evidence, and the guard that would have caught it is
         exercised here on them.
-        
+
     """
     base = os.path.join(ROOT, "out", "nb-city", "plan.place.stale.json")
     now = os.path.join(ROOT, "out", "nb-city", "plan.place.json")
@@ -358,7 +358,7 @@ def t7_a_ring_wide_decision_is_qualified_ring_wide():
         that the scope is declared, that every rectangle in it is qualified, and that a
         refusal anywhere in the scope refuses the action -- and that a re-solve taking
         structures from a district the action is not about is refused by name.
-        
+
     """
     import inspect
     from ethoslm import placesolve

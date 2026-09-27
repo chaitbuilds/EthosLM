@@ -31,7 +31,7 @@ def serving() -> str | None:
         like four broken suites to anybody who has not been told that a backend is a
         separate thing you start. A suite that needs one asks here first and says it is
         skipping.
-        
+
     """
     import urllib.error
     import urllib.request

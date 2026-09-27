@@ -37,7 +37,7 @@ def observe_now(ed):
         starts there includes the cave systems under the town: `rooms()` finds them, they
         are sheltered and enclosed, `plot_at` is two-dimensional and attributes anything
         under a plot to it, and wave 1 was accused of eighteen unreachable rooms at y=1.
-        
+
     """
     ed.loadWorldSlice(Rect((X - PAD, Z - PAD), (S + 2 * PAD, S + 2 * PAD)), cache=True)
     h = ed.worldSlice.heightmaps[world.HEIGHTMAP].astype(int) - 1

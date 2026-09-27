@@ -322,7 +322,7 @@ def t_tables_updated_not_rebuilt():
         recomputed over the whole palette -- and the test of that is the two answers being
         the same array, not merely the faster one arriving. A settlement's palette only
         grows, so the old behaviour re-classified every entry once per part.
-        
+
     """
     v = world({})
     before = v.tables()

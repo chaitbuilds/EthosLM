@@ -135,7 +135,7 @@ def compare(a: str, b: str, question: str, ask=None, stage_name: str = "judge",
 
         Two model calls (or cache hits), one per orientation. The orientations must agree
         on a *candidate* -- not a letter -- or the pair is tied.
-        
+
     """
     cache = load_cache(cache_path) if cache is None else cache
     verdicts, missing = [], []
@@ -168,7 +168,7 @@ def judge(candidates: list, question: str, ask=None, stage_name: str = "judge",
         the tie rate; a tie advances the earlier-listed candidate and is marked. With no
         `ask` and a cold cache, raises JudgementNeeded carrying *every* staged judgement
         the current round needs, so the caller can answer them in one fan-out.
-        
+
     """
     if not candidates:
         raise ValueError("no candidates")

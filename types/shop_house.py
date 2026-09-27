@@ -1366,7 +1366,7 @@ def _frame(part):
         (u=0, v=0) is a front corner of the pad and v grows the way a person walks
         coming in off the lane, so v=0 is always the street face whichever way the
         pad is turned.
-        
+
     """
     f = _key(part, "facing", "north")
     x0, z0, x1, z1 = part["x0"], part["z0"], part["x1"], part["z1"]

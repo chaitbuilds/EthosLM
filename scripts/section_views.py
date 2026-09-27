@@ -49,7 +49,7 @@ def _above(vol, keep_below: int = 2):
 
         `pipeline/inspect.py:_above`, kept here rather than imported because that one is
         private to a stage and this script must not depend on a stage running.
-        
+
     """
     heights = offline.surface_heights(vol)
     floor = int(np.percentile(heights, 5)) - keep_below
@@ -138,7 +138,7 @@ def resolve(plan, section=None, sample=None, *,
 
         Resolved from the plan once. Every camera is a plain record, so the same set drawn
         on a later volume is the same camera and the frames are comparable.
-        
+
     """
     leaves = _walk(plan)
     cams = []

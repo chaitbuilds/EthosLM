@@ -289,7 +289,7 @@ def entity_of(part: dict, spec: dict | None = None) -> dict:
 
         Prefers `spec.entity_of` where the meaning module states it (the coordinator's
         binding record); this is the same rule as the layout's own fallback.
-        
+
     """
     fn = getattr(spec_mod, "entity_of", None)
     if fn is not None:
@@ -371,7 +371,7 @@ def adopted_arrangement(allocation: dict | None, *names) -> dict | None:
         in order so a caller can ask for a district's own row before its defining part's --
         a local fabric decision is the district's where one was recorded, and the part's
         otherwise.
-        
+
     """
     arr = (allocation or {}).get("arrangement") or {}
     if not isinstance(arr, dict):
@@ -412,7 +412,7 @@ def _lot_min_for(tname: str | None, params: dict | None, features=(), *,
         `lot_for("cottage", {"storeys": 2}, features=("storeys",))` answers 15x17, because
         with an empty feature list `_stands` checks no requested feature and a standing
         shell answers a multi-storey query. Every caller here names what it is asking for.
-        
+
     """
     if not tname:
         return None
@@ -460,7 +460,7 @@ class Refused(Exception):
         envelope becoming a smaller default" is the defect, so this is an exception and not
         a return value -- a caller has to decide between an honest stop and an alternative
         arrangement, and cannot accidentally carry on with a smaller lot.
-        
+
     """
 
     def __init__(self, why: str, *, part=None, demand=None, lot=None):
@@ -482,7 +482,7 @@ def fabric_lot(part: dict, decls: dict, spec: dict | None = None, *,
         and the requirement ids that made them required. Where one is given, the lot comes
         from `demand.lot` -- with the required features in the envelope query -- and a
         refusal is raised (`Refused`), never quietly answered with a smaller lot.
-        
+
     """
     from . import district_compile as dc
     ch = {**(part.get("character") or {}),
@@ -545,6 +545,26 @@ def fabric_lot(part: dict, decls: dict, spec: dict | None = None, *,
     lm, why = _demand_lot(part, house, ch, demand, voice=voice)
     if why:
         src.append(why)
+    # **the form the use owes, not the envelope's shell** (the parent composition
+    # round). `demand.lot` asks whether a shell with the required features stands, which
+    # for a courtyard house owing a court of seven answered 13x13 while the form plan
+    # the compiler and the builder read needs 17x20 between party walls: the parent
+    # budgeted the ring on one estimate and the pieces were compiled on another. Where
+    # the character states what each use owes and the dwelling publishes its plan, the
+    # least lot is that plan's (`formplan.least_lot`, as the compiler asks it).
+    if house is not None and (ch.get("forms") or {}).get("dwelling") is not None:
+        from . import formplan as _fp
+        dw = dict((ch.get("forms") or {}).get("dwelling") or {})
+        if ch.get("court_least") and "court" not in dw:
+            dw["court"] = int(ch["court_least"])
+        if _fp.plan_fn(house[0]) is not None:
+            got_f = _fp.least_lot(house[0], dw, attached=_fp.FLANKS["north"]) or {}
+            if got_f.get("lot"):
+                fw, fd = (int(v) for v in got_f["lot"])
+                if fw > (lm or [0, 0])[0] or fd > (lm or [0, 0])[1]:
+                    lm = [max(fw, (lm or [0, 0])[0]), max(fd, (lm or [0, 0])[1])]
+                    src.append(f"form `{house[0]}` with {dw}: lot at least {fw}x{fd} "
+                               f"between party walls (`formplan.least_lot`)")
     if lm and house is not None and (lm[0] > w or lm[1] > ld):
         w = dc._side_at_least(house[1], max(w, lm[0]))
         ld = dc._side_at_least(house[1], max(ld, lm[1]))
@@ -563,7 +583,7 @@ def _demand_lot(part: dict, house, ch: dict, demand: dict | None, *,
           * no resolved demand -- the pre-contract path, which now at least names what it
             is asking for (`features=("storeys",)`), so an empty feature set cannot answer
             a storey question.
-        
+
     """
     if demand is not None:
         mod = _demand_module()
@@ -647,7 +667,7 @@ def land_need(part: dict, n: int, decls: dict, spec: dict | None = None, *,
         `LAND_FILL`, plus whatever houses stand in it. Returns the columns, the cover, the lot,
         the least length and depth of a rectangle that lays it, and `from` -- every input by
         name, which is what the resolution's `target` records.
-        
+
     """
     from . import district_compile as dc
     band = placeplan.density_target(part.get("density"), part.get("role"))
@@ -743,7 +763,7 @@ def anchor_size(spec: dict, decls: dict, part: dict, decl: dict | None, kind: st
         root, clamped into the type's band and under `cap` (the plateau cut for it). Returns
         `{"side", "columns", "share", "from"}`; `allocation.anchor` overrides the share or
         the side outright, and the override is on the `from` list.
-        
+
     """
     fam = str(part.get("family") or "").lower()
     alloc = (allocation or {}).get("anchor") or {}
@@ -881,7 +901,7 @@ class Solver:
                 The capability record's answer where it has one and the declarations back it:
                 an approved type this checkout cannot load is not silently used, because a
                 record naming a type that is not there is worse than no record.
-                
+
         """
         chosen = self.caps.get(d.get("name"))
         if chosen and self.decls.get(chosen) is not None:
@@ -2810,7 +2830,7 @@ def _clear_of(rect, others, horiz: bool, *, free_high: bool, gap: int):
         because moving the anchored end is moving the thing `beside` is measured from.
         Returns None where the free end cannot clear the obstacle -- the caller then leaves
         the region where the tiling put it rather than promising ground it cannot keep.
-        
+
     """
     x0, z0, x1, z1 = (int(v) for v in rect)
     for o in others:
@@ -2868,7 +2888,7 @@ def policy_for(spec: dict) -> str:
         A policy is a **choice recorded on the plan**, which is what lets `intent.coverage`
         check "the sentence asked for a shoreline place" against what was actually laid out
         instead of against a word in a brief.
-        
+
     """
     from . import placeshore
     if spec_mod.rings(spec):
@@ -2883,7 +2903,7 @@ def approved_types(caps: dict | None) -> dict:
 
         The one translation between the capability record and the layouts, so that "which
         type is this part?" has a single answer and a reader can find where it was made.
-        
+
     """
     out = {}
     for e in (caps or {}).get("entries") or []:
@@ -2899,7 +2919,7 @@ def approved_fabric(caps: dict | None) -> dict:
         The fabric want is the one the compiler answers, and it is answered out of a *pool*
         rather than one type -- so the entry's lead type and its runners-up together are the
         approval, which is exactly what `ALTERNATIVES` was recorded for.
-        
+
     """
     out = {}
     for e in (caps or {}).get("entries") or []:
@@ -2927,7 +2947,7 @@ def approved_from_place(place: dict | None) -> tuple:
         So a revision does not depend on its caller to hand it the record again. The place
         it is revising carries `fabric_types` and `demand` on every district
         (`_write_fabric`, `_write_demand`), and that is where they are read from.
-        
+
     """
     pools, demands = {}, {}
     for d in (place or {}).get("districts") or []:
@@ -2951,7 +2971,7 @@ def _write_fabric(place: dict | None, caps: dict | None,
         was that a capability record was written and then not consulted; for a district that
         is not a missing keyword argument but a missing field, because the compiler is
         reached one level down through the district document rather than through this call.
-        
+
     """
     pools = {**(approved or {}), **approved_fabric(caps)}
     for d in (place or {}).get("districts") or []:
@@ -2967,7 +2987,7 @@ def _write_demand(place: dict | None, spec: dict) -> None:
         that stayed on the defining part would be a demand the envelope queries never saw
         -- which is the same shape of defect `_write_fabric` exists to close. A district
         whose part resolved none is untouched and behaves as it did.
-        
+
     """
     by = {p.get("name"): p for p in (spec or {}).get("defining_parts") or []}
     for d in (place or {}).get("districts") or []:
@@ -2996,7 +3016,7 @@ def resolved_spec(spec: dict, caps: dict | None, intent: dict | None = None, *,
         never a smaller default.
 
         A call with no capability record behaves exactly as it did.
-        
+
     """
     # the capability record where the caller has one, and otherwise what the place being
     # revised already records as approved (`approved_from_place`): a re-solve never
@@ -3054,7 +3074,7 @@ def solve_place(spec: dict, site: dict, plateau: dict | None, decls: dict, voice
         -- "gathered around a market square" puts the houses on at least three sides of the
         square before any rectangle is filled -- and its explicit count is laid exactly. A
         call that passes none lays the place as it always did.
-        
+
     """
     from . import placeshore
     global ENVELOPE_CACHE
@@ -3140,7 +3160,7 @@ def _apply_structures(place, allocation: dict | None, spec: dict) -> None:
         the record on the place says so by name. A district marked `exact` is never moved --
         `redistribute` refuses itself in that case, and this refuses again, because an
         invariant checked in one place is a convention.
-        
+
     """
     over = ((allocation or {}).get("structures") or {})
     if place is None or not isinstance(over, dict) or not over:
@@ -3376,7 +3396,7 @@ def _fabric_of(place: dict) -> dict:
 
         Read off the re-solved place itself and not off the comparison that proposed it, so
         this measures what the layout actually did.
-        
+
     """
     out = {}
     for d in place.get("districts") or []:
@@ -3420,7 +3440,7 @@ def reallocate(place: dict, spec: dict, finding: dict, *, site: dict | None = No
         out again from the spec is this place. It never touches an explicit requirement:
         the count, the relations and an absent feature are the sentence's, and the solver
         is what lays them, whatever the allocation says.
-        
+
     """
     rec = {"finding": finding.get("id"), "owner": "layout", "applied": False,
            "changed": False, "action": None, "subject": None, "refused": None,
@@ -3450,7 +3470,7 @@ def _qualify_scope(scope, on, row, cpart, place, decls, spec, seed, _arrange):
         and one sentence. One compile per rectangle, which is what makes it affordable to
         ask of more than one row (`_reallocate`): the *comparison* stays local and the
         *qualification* is as wide as the decision.
-        
+
     """
     want = dict(row["arrangement"])
     qualified, short = [], []

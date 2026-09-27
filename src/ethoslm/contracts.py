@@ -338,7 +338,7 @@ def read(kind: str, doc: dict) -> dict:
         A document with no `record`/`version` is a **legacy** document and is adapted by
         `adapt()` first, explicitly, so "this came from before the contract" is a thing on
         the record rather than a guess.
-        
+
     """
     if kind not in VERSIONS:
         raise ContractError(f"{kind!r} is not a record; the records are "
@@ -538,7 +538,7 @@ def adapt(kind: str, doc: dict) -> dict:
         into and is **marked** `legacy`, so nothing downstream can mistake an old plan's
         prose for a reading somebody verified. The one thing this never does is relabel:
         an adapted reading has no sources, and a claim with no source is `inferred`.
-        
+
     """
     version, fields = VERSIONS[kind]
     out = {"record": kind, "version": version,

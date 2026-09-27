@@ -50,7 +50,7 @@ def type_gaps(spec: dict, names=None, intent: dict | None = None) -> list:
 
         `names` is the round's own list of types where it has one; `intent` the checked
         intent record, where the caller has one (without it only defining-part gaps open).
-        
+
     """
     from . import capability
     out = list(capability.gaps(spec, names=names))
@@ -82,7 +82,7 @@ def function_gaps(spec: dict, intent: dict | None, names=None) -> list:
         names as the feature contract and the gate checks on the answer: a type adopted for
         a function gap declares the function, or it is not adopted. Unsupported
         requirements open nothing -- they were refused by name upstream and stay refused.
-        
+
     """
     from . import envelope
     if not intent:
@@ -298,7 +298,7 @@ def _usable_for(tspec: dict, src_path: str) -> dict:
         world through `ethoslm.usable`. An `unsupported` answer refuses nothing: a type with
         no court has no court to be inaccessible, and this gate is not the place to invent
         a requirement the brief did not make. What it refuses is a predicate that **fails**.
-        
+
     """
     from . import construction, usable
     name = tspec.get("name") or os.path.splitext(os.path.basename(src_path))[0]
@@ -368,7 +368,7 @@ def stage(rnd, be, spec: dict, gaps: list, *, types=None, site=None,
         Returns the plan stage's answer where the run has to wait or stop -- a
         `needs_model` for the author, an error where an answer fails the gate or the cap
         is reached -- and None where every gap is closed and planning may go on.
-        
+
     """
     from .pipeline import blind
     from .pipeline.stages_build import type_brief

@@ -116,7 +116,7 @@ def d1_the_plans_attachment_and_frontage_reach_the_generated_production_call():
         of its neighbours'.
 
         The counterexample and its control are the same lot, sited both ways.
-        
+
     """
     for f in ("attached", "front", "wall_alt"):
         assert f in pipeline.PART_GEOMETRY, f"PART_GEOMETRY drops `{f}`"
@@ -162,7 +162,7 @@ def d2_no_leaf_asks_for_more_storeys_than_its_own_flanks_admit():
         a lot dropped for the road frees its neighbour's flank and an end of a terrace has
         one free flank whatever the fabric intended, so the question has to be asked again
         once the row is complete (`district_compile.settle_storeys`).
-        
+
     """
     got, ch, d, place, decls = _compile(_part(character={"attached": True}))
     rec = got[1] if isinstance(got, tuple) else {}
@@ -204,7 +204,7 @@ def d3_a_court_the_form_owes_is_composed_and_entered():
 
         The control is the same district compiled with the share at zero: nothing is owed and
         nothing is laid.
-        
+
     """
     from ethoslm import demand as demand_mod
     got, ch, d, place, decls = _compile(
@@ -247,7 +247,7 @@ def d4_alternatives_are_generated_from_the_adopted_design():
 
         And a proposal has to be able to move the number the finding is about: naming an
         owner and an action does not establish that the action can affect the subject.
-        
+
     """
     part = _part(character={"attached": True})
     decls = _decls()
@@ -293,7 +293,7 @@ def d5_the_section_measures_its_own_scope_and_walks_its_own_world():
         reachability over the **planned lane graph** -- the right check at planning time and
         a different question afterwards, because it cannot see a pad laid over a lane or a
         wall closed across a threshold.
-        
+
     """
     inside = {"name": "a", "x0": 0, "z0": 0, "x1": 50, "z1": 50}
     outside = {"name": "b", "x0": 400, "z0": 400, "x1": 450, "z1": 450}
@@ -342,7 +342,7 @@ def d6_promotion_protects_the_requirements_and_accounts_for_the_tradeoffs():
         was met and is not any more, and it could not see a quality worsening inside a
         relationship that was already failing -- so a trial could lose a required feature, or
         make an already-failed court verdict worse, and promote on one scalar.
-        
+
     """
     def sec(features_held, features_owed, unreached, crowded_cover):
         return {"by": "ethoslm.section.record", "relationships": [

@@ -92,7 +92,7 @@ def resolve(spec: dict | None, intent: dict | None, part: dict | None,
         declarations the run is working from (`placeplan.types_card`). `context` carries the
         physical context and, under `capabilities`, the capability record -- which is the
         authority on the approved pool where the part does not already carry one.
-        
+
     """
     part = dict(part or {})
     spec = dict(spec or {})
@@ -204,9 +204,14 @@ def court_obligation(node: dict | None) -> dict | None:
         the character a district that declared nothing is actually compiled with. A compiled
         `courts` count establishes the obligation on its own and at any share: ground that was
         laid as court is court that was adopted.
-        
+
     """
     if not isinstance(node, dict):
+        return None
+    # **landscape the parent keeps as found adopted no form** (the parent composition
+    # round): it lays nothing, so it owes no court -- read at its density's default it
+    # was charged one, and a hill kept as found was a failed court subject
+    if (((node.get("sector") or {}).get("module") or {}).get("role")) == "landscape":
         return None
     kind = str(node.get("kind") or "")
     looks_like = (kind in _DISTRICT_KINDS or node.get("density")
@@ -247,7 +252,7 @@ def court_districts(place: dict | None) -> dict:
 
         The same three shapes `section._districts` reads, because the same design is written
         down three ways and only one of them is the one a stage happens to have loaded.
-        
+
     """
     out: dict = {}
 
@@ -292,7 +297,7 @@ def required_by_part(spec: dict | None, intent: dict | None, place: dict | None 
         lookup (`{type: (token, ...)}`) so a probe or a fixture is not made to execute the
         library. A part with nothing required is absent from the answer rather than present
         and empty: "this part owes nothing" is the ordinary case and does not need a row.
-        
+
     """
     from . import capability
     doc = dict(place or spec or {})
@@ -381,7 +386,7 @@ def required_for(binding: dict, part) -> tuple:
     """`(token, ...)` -- what one part owes, out of `required_by_part`'s answer.
 
         The shape `construction.confirm(..., required=...)` takes per part, in token order.
-        
+
     """
     name = str(part if not isinstance(part, dict)
                else (part.get("part") or part.get("name")))
@@ -402,7 +407,7 @@ def _asks(spec: dict, intent: dict | None, part: dict) -> dict:
 
         Returns `{"ids", "required", "params", "why"}`. `optional` is not taken from there:
         what a type may choose is the type's business and is read off its `FEATURES` below.
-        
+
     """
     from . import capability
     fn = getattr(capability, "requirements_for", None)
@@ -430,7 +435,7 @@ def _pool(part: dict, spec: dict, decls: dict | None, caps: dict | None,
         the review's first finding is that `fabric_lot` estimated a parent from a type the
         record had not approved, and a pool nothing approved should be visible rather than
         indistinguishable.
-        
+
     """
     got = [str(t) for t in (part.get("fabric_types") or []) if t]
     if got:
@@ -478,7 +483,7 @@ def _storeys_band(part: dict, decls: dict | None, types, allocation,
         requirement fixes the number the band is that number, and `band_from` says which
         requirement made it so. A number the approved type cannot build is left where it is
         and refused by the envelope, which is the honest answer and not a smaller one.
-        
+
     """
     ch = part.get("character") or {}
     over = ((allocation or {}).get("characters") or {}).get(part.get("name")) or {}
@@ -517,7 +522,7 @@ def _params(part: dict, band, allocation: dict | None,
         parameter wins over a band**: the farm's fields district carries a `[1, 2]` character
         band and holds counted cottages of the sixteen the sentence asked for, and those
         cottages still stand two storeys.
-        
+
     """
     out: dict = {}
     if band:
@@ -557,7 +562,7 @@ def features_asked(d: dict) -> tuple:
         parameter means "build this many" and a query that does not ask for them to stand is
         answered by a shell that did not. This is why no production query here can have an
         empty feature set while a storeys parameter is on the demand.
-        
+
     """
     got = list(d.get("required") or ())
     if isinstance((d.get("params") or {}).get(STOREYS), int) and STOREYS not in got:
@@ -588,7 +593,7 @@ def lot(d: dict, *, cache: str | None = None) -> dict:
         type, the tokens asked and whether a refusal is `binding`. **A refusal carries
         `lot_min: None`**; there is no smaller default in this function and a caller that
         substitutes one has undone the contract.
-        
+
     """
     asked = features_asked(d)
     params = dict(d.get("params") or {})
@@ -644,7 +649,7 @@ def relax(d: dict) -> dict | None:
         density word's, or the type's own -- may be revised down, and this is the only way
         down: it returns a new demand whose floor is lower and whose record says so, so the
         revision is on the demand a caller acts from rather than inside a sizing rule.
-        
+
     """
     band = d.get("storeys_band")
     floor = (d.get("params") or {}).get(STOREYS)
@@ -704,7 +709,7 @@ def storeys_admitted(d: dict, w: int, depth: int, *, flanks: int = 0,
         A capability answer is about **one** building on **one** lot: where the caller knows
         which leaf it selected, that is the type the envelope is asked about, and a name the
         demand does not approve is refused rather than silently swapped.
-        
+
     """
     band = d.get("storeys_band")
     floor = (d.get("params") or {}).get(STOREYS)
@@ -780,7 +785,7 @@ def validate_lot(d: dict, lot_wd, *, cache: str | None = None) -> dict:
         asked about it, and a twelve-column frontage declared for a part that owes two
         storeys was simply built one storey high. This is the same query `lot` makes, asked
         of a lot somebody already chose.
-        
+
     """
     need = lot(d, cache=cache)
     if need.get("refused"):

@@ -151,7 +151,7 @@ class Reading:
         resolver. On the retained baseline the two disagree about no column's wetness
         (both 14.18%), which is the check that says composing them is safe; they disagree
         about the height of every wet column, which is the reason to be careful.
-        
+
     """
 
     __slots__ = ("x0", "z0", "shape", "bed", "water", "wet")
@@ -176,7 +176,7 @@ def reading(vol) -> Reading:
 
         Accepts a `Reading` and hands it straight back, so a caller with many rectangles can
         read once and pass the reading everywhere `vol` is taken.
-        
+
     """
     if isinstance(vol, Reading):
         return vol
@@ -204,7 +204,7 @@ def _span(bed, window: int, valid=None):
         that decides whether one platform covers it is the ground inside the rectangle.
         Columns the volume never read are excluded from both filters rather than counted as
         y=0, which would make every rectangle that leaves the baseline look broken.
-        
+
     """
     if window <= 0:
         return np.zeros(bed.shape, int)
@@ -253,7 +253,7 @@ def terrain(vol, rect, *, level=None, relief: int = RELIEF, routes=None,
         Returns the record described in this module's docstring. `mask[i, j]` is the column
         `(x0 + i, z0 + j)` and is True where a building may be founded -- including where
         clause 4 found it unreached, which is counted and never silently removed.
-        
+
     """
     if vol is None:
         return _unmeasured(rect, "no volume")
@@ -542,7 +542,7 @@ def dispositions(vol, rect, *, level, relief: int = RELIEF, fill: int | None = N
             keep_water                    == terrain.wet_columns
             unread                        == terrain.outside_columns
             keep_high + keep_low          == the rest, which clauses 2 and 3 refused
-        
+
     """
     if level is None:
         raise ValueError("dispositions() needs the level this design brings the ground "
@@ -652,7 +652,7 @@ def unpack(rec: dict) -> tuple:
 
         Both, so a caller holding a district record does not have to know the field the
         bitmap is under: it is the same answer either way.
-        
+
     """
     rec = rec.get("mask_bits") or rec
     w, d = int(rec["shape"][0]), int(rec["shape"][1])
@@ -667,7 +667,7 @@ def record(vol, rect, **kw) -> dict:
 
         Plain ints, strings and lists throughout, so it round-trips exactly through
         `json.dumps`/`json.loads` and back to a mask through `mask_of`.
-        
+
     """
     got = terrain(vol, rect, **kw)
     mask = got.pop("mask")
@@ -680,7 +680,7 @@ def mask_of(rec: dict):
 
         None and not an all-true mask: a record without a bitmap is a record whose ground
         nobody measured, and answering "all of it" would be the `ground=None` defect again.
-        
+
     """
     if not rec or not rec.get("mask_bits"):
         return None
@@ -693,7 +693,7 @@ def cover(rec: dict, sub_rect) -> dict:
         What a lot, a block or a quarter asks of the district's answer. `feasible_columns`
         is None where the record was never measured or does not cover this ground, which the
         caller has to handle rather than read as zero.
-        
+
     """
     x0, z0, x1, z1 = _rect(sub_rect)
     w, d = x1 - x0 + 1, z1 - z0 + 1

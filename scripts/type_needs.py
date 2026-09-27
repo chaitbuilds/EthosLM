@@ -131,7 +131,7 @@ def slope(size: int, x0: int, x1: int, y: int = FLAT_Y,
         Level either side on purpose: what is under test is the **part** on relief, and a
         gradient carried across the whole working area would put the far end of a 128-block
         edge's approach a hundred blocks down a mountain and measure the volume's depth.
-        
+
     """
     y0, y1 = y - fall - 14, y + 46
     palette = ["air", "grass_block", "dirt", "stone"]
@@ -169,7 +169,7 @@ def bank(span: int, plot: dict) -> tuple:
         an arrival on the **downhill** side, a network planned between them and emitted, and
         the thresholds cut down to this part's own. An edge and a point get no lane, because
         a wall is not entered and a gate is a hole in one.
-        
+
     """
     key = (int(span), plot["x0"], plot["z0"], plot["x1"], plot["z1"])
     if key not in _BANKS:
@@ -235,7 +235,7 @@ def param_combinations(name: str) -> list:
         to one of them. The sweep asks for the whole of an int range whatever its width,
         which is what it has always done and what a *size* sweep can afford; the checker
         samples a long one, and says so.
-        
+
     """
     return pipeline.param_combinations(declaration(name)["PARAMS"], most=1 << 30)
 
@@ -285,7 +285,7 @@ def instance(name: str, kind: str, size: tuple, seed: int, params: dict,
         Returns {"pass", "why"}: `pass` is the type standing and the build family of the
         linter reporting no error against the plot it stands on. `ground` is one of
         `GROUNDS` -- the plane, or the bank that falls `SLOPE_FALL` across the part.
-        
+
     """
     part, plot, span = _part(name, kind, size)
     net = None
@@ -404,7 +404,7 @@ def band(kind: str, rows: list) -> dict:
         to is the envelope of all of them with the failing sizes between them named. A run
         of one size counts: it passed at both seeds and every parameter combination, which
         is the same evidence any other size has.
-        
+
     """
     if kind == "edge":
         # An edge's band is a **box** in (width x run) and every pair inside it has to
@@ -475,7 +475,7 @@ def _bands(values: list, swept: tuple | None = None) -> list:
         A run is now a maximal stretch of **adjacent entries of the swept sequence**, so a
         gap in the band means a size that was tried and failed rather than one nobody asked
         about.
-        
+
     """
     order = list(swept) if swept else None
     out: list = []
@@ -553,7 +553,7 @@ def transcribe(bank: dict, names=None) -> dict:
         the two lines this rewrites are the two the sweep is the instrument for. A type
         whose file does not carry a `"footprint":` line inside `NEEDS` is left alone and
         named.
-        
+
     """
     import re
     moved: dict = {}

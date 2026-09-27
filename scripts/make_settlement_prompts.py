@@ -169,7 +169,7 @@ def types_card(names=None) -> str:
         type's parameters is a second chance for a plan to ask for one that does not exist.
         A type's kind is what its `KIND` says, and a plot where it does not say -- which is
         every type written before A3.
-        
+
     """
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     sys.path.insert(0, os.path.join(root, "src"))
@@ -476,7 +476,7 @@ def plan_brief(ids: list, near: int = 48) -> str:
         building. The intent is what makes the town cohere and stays in full; a neighbour's
         notes matter because you can see it from your plot; the far side of the site is a
         line each.
-        
+
     """
     plan = json.load(open(os.path.join(settlement.STATE, "plan.json")))
     mine = [p for p in plan["structures"] if p["id"] in ids]
@@ -522,7 +522,7 @@ def spaces_brief(ids: list) -> str:
         terrain-following outdoor rooms rather than as a street grid. This is that, at brief
         level: the space comes first, and the footprint is derived from the edge it has to
         make.
-        
+
     """
     plan = json.load(open(os.path.join(settlement.STATE, "plan.json")))
     spaces = plan.get("spaces") or []
@@ -680,7 +680,7 @@ def form_line(s: dict) -> str:
         other" spends its reply on the instruction, and a builder told "this one is a
         longhouse under a shallow gable" builds a longhouse. The variety is the planner's
         decision and it has already been made by the time this is read.
-        
+
     """
     parts = [f"**{v}**" for v in (s.get("form"), s.get("roof")) if v]
     return f"    Form: {', '.join(parts)}.\n" if parts else ""

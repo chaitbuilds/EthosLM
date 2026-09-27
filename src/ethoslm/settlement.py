@@ -151,7 +151,7 @@ def _note_conflict(want: tuple, label: str, blocker: dict) -> None:
         plots cannot overlap in 2-D?" as a question to be answered with evidence, and this
         is the evidence. Deliberately not a lint check and not a failure: overlapping claims
         are legal and expected on a cliff, where two dwellings share one column of ground.
-        
+
     """
     try:
         p = os.path.join(STATE, "plot_conflicts.json")

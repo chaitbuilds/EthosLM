@@ -61,7 +61,7 @@ def resolution_of(spec: dict, place: dict, site: dict,
         last beside it, so an inferred remainder cannot leave the question and a cover
         figure improved only by enlarging empty lots shows as what it is. See
         `placeplan.region_columns`, which answers all four in one call.
-        
+
     """
     lay = (place or {}).get("layout") or {}
     policy = lay.get("policy") or ("concentric" if lay.get("rings") else "relations")
@@ -196,7 +196,7 @@ def plan_structures(plan: dict | None) -> int:
         compiled lots, and the palace's 51 plots are descendants of a compound rather than
         of a district, so they were in the plan and in no total. A building is a building
         whichever parent laid it.
-        
+
     """
     from . import pipeline as _pipeline
     return sum(1 for p in _pipeline.plan_parts(plan or {})
@@ -219,7 +219,7 @@ def with_realized(resolution: dict, realized: dict, plan: dict | None = None,
         beat its promise is recorded and is not a finding: more houses than budgeted is a
         fact about the ground, and the count the sentence asked for is checked elsewhere and
         by a rule that does not read this one.
-        
+
     """
     out, rows = dict(resolution), []
     regions, promised, laid = [], 0, 0
@@ -288,7 +288,7 @@ def capacity_findings(spec: dict, place: dict, resolution: dict,
         explicit count is a `fidelity` failure that no repair may negotiate away; short of
         the kind's own band is a `feasibility` finding routed to `scale`, because the band
         is the library's own inference and is the thing a repair is allowed to revise.
-        
+
     """
     out = []
     # **What the place holds, once anything has been laid.** Before compilation the
@@ -348,7 +348,7 @@ def unclaimed_ground(spec: dict, place: dict, site: dict, short: list) -> list:
 
         Emitted only when the place is actually short: a design that holds what it promised
         and leaves ground over has chosen to, and that is not a defect.
-        
+
     """
     from .pipeline import stages_plan
     # **Short, and not merely off.** The closure round's proof: an explicit count of 16
@@ -401,7 +401,7 @@ def findings_for(spec: dict, place: dict, site: dict, intent: dict,
         geometry (which way a home fronts, whether an undeclared wall was drawn) can only
         answer from the leaves that exist, and before the districts compile there are none;
         that is a true "not yet" and it is recorded as `open`, never as satisfied.
-        
+
     """
     resolution = resolution_of(spec, place, site, intent, decls=decls,
                                parts_record=parts_record, plan=plan)
@@ -445,7 +445,7 @@ def _as_plan_parts(place: dict) -> list:
         The place level is not the assembled plan -- the districts have not been compiled --
         and coverage has to be checkable **before** that, or a wall omitted from the spec is
         found after four hundred buildings rather than before them.
-        
+
     """
     out = [dict(p) for p in (place.get("parts") or [])]
     for c in place.get("compounds") or []:

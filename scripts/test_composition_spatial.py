@@ -64,7 +64,7 @@ def city():
         `out/des-city` is immutable input -- read and never written. The round forbids
         re-running interpretation, the site search or whole-city leaf compilation for a local
         architectural edit, so the section's own districts are what these cases re-decide.
-        
+
     """
     if "city" in _LOADED:
         return _LOADED["city"]
@@ -87,7 +87,7 @@ def village():
         `regroup` and `redistribute` are admissible on the first two and refused on the third,
         and the third is where the anchor action's arithmetic is not clamped by the ground
         levelled for it.
-        
+
     """
     if "village" in _LOADED:
         return _LOADED["village"]
@@ -138,7 +138,7 @@ def _probe(district, part, place, decls, spec, **over):
 
         The production path: `capacity_of` -> `compile_once` -> `district_compile`, plus the
         certificate `district_failures` gives the arrangement it compiled.
-        
+
     """
     d = dict(district, **over)
     for k in ("rect_columns", "scope_columns", "developable_columns",
@@ -185,7 +185,7 @@ def t_s1a_a_required_landmark_that_cannot_fit_returns_unmet_demand():
         The counterexample is a real middle-ring arrangement: one row of houses along a
         street (`row_depth`, which the design round built) on a band 22 columns deep. The
         houses fit; the market does not.
-        
+
     """
     spec, place, part, decls, _d = city()
     src = next(x for x in place["districts"] if x["name"] == "middle_ring_north_west")
@@ -270,7 +270,7 @@ def t_s1c_an_arrangement_that_keeps_the_market_outranks_one_that_loses_it():
         requirement taken out. Nothing else differs. The required reading gives up a house to
         keep the market; the optional reading keeps the house -- which is why a score without
         the clause preferred it.
-        
+
     """
     spec, place, part, decls, _d = city()
     src = next(x for x in place["districts"] if x["name"] == "middle_ring_north_west")
@@ -312,7 +312,7 @@ def t_s1e_a_plan_cannot_pass_by_leaving_the_field_out():
 
         Run on the retained city's own middle-ring plan with its market leaf taken out and no
         `demand_short` added: the shape of exactly that escape.
-        
+
     """
     spec, place, part, decls, d = city()
     p = os.path.join(d, "plan.district.middle_ring_north_west.json")
@@ -370,7 +370,7 @@ def t_s1d_a_court_share_spent_to_meet_a_lot_count_is_on_the_record():
         One middle-ring rectangle, asked for far more houses than its ground fits at its own
         lot, so the lever fires; and the positive control, the same rectangle at the count its
         ground actually holds, where no share is spent.
-        
+
     """
     spec, place, part, decls, _d = city()
     src = next(x for x in place["districts"] if x["name"] == "middle_ring_north_west")
@@ -418,7 +418,7 @@ def t_s1f_district_uses_govern_type_selection():
         of the fabric, the market must still be laid as the landmark it is, and the quarter's
         own use must still be what its streets are drawn from -- those three are this case,
         and they are checked here on the same two districts as before.
-        
+
     """
     spec, place, part, decls, _d = city()
     said = []
@@ -486,7 +486,7 @@ def t_s2a_an_alternative_the_validator_would_refuse_is_not_offered():
         `district_failures` ran later, at the plan stage, after the width had been adopted. So
         the thin band above, whose compiler return is a perfectly good count of houses, is
         exactly the alternative that could be selected and then refused.
-        
+
     """
     spec, place, part, decls, _d = city()
     src = next(x for x in place["districts"] if x["name"] == "middle_ring_north_west")
@@ -550,7 +550,7 @@ def t_s2b_a_rings_alternatives_carry_the_verdict_and_both_occupations():
 
         Run on the retained hill town through `concentric_layout`, which is how production
         calls it.
-        
+
     """
     d = os.path.join(ROOT, "out", "expr-rings")
     if not os.path.exists(os.path.join(d, "place.json")):
@@ -622,7 +622,7 @@ def t_s2c_three_certified_arrangements_for_the_sections_own_districts():
         stripes with grass voids between them. The alternative that answers it is not a paving
         trick: it is **more, smaller houses** -- and the case checks that its built mass and its
         frontage both rise with its cover, which a relabelling cannot do.
-        
+
     """
     spec, place, part_of, decls, _d = city()
     by = {p["name"]: p for p in spec["defining_parts"]}
@@ -733,7 +733,7 @@ def t_s3a_two_probes_differing_only_in_demand_do_not_share_an_answer():
         approved pool, or a demand that raised its least lot, was answered from the old
         certificate. Checked on `probe_key` itself and then on the cache through
         `_arrange_capacity`, which is the function that reads it.
-        
+
     """
     spec, place, part, decls, _d = city()
     src = next(x for x in place["districts"] if x["name"] == "middle_ring_north_west")
@@ -808,7 +808,7 @@ def t_s4a_built_occupation_reads_what_construction_emitted():
         `<district>_<leaf>`. So the emitted branch never fired on a real record and every
         built figure in the project was the plan's own pads under the name `built_columns`.
         Read on the retained city's own `parts.json`, which was built.
-        
+
     """
     spec, place, part, decls, d = city()
     pr_path = os.path.join(d, "parts.json")
@@ -864,7 +864,7 @@ def t_s4b_street_enclosure_measures_frontage_and_never_invents_a_score():
         The dense lower ring and the medium middle ring, read off the retained plans. The
         contrast is the point: a terrace of party walls encloses more of its streets than
         courtyard houses on a looser grain, and this says so in columns rather than in a word.
-        
+
     """
     spec, place, part, decls, d = city()
     pr = (json.load(open(os.path.join(d, "parts.json")))
@@ -914,7 +914,7 @@ def t_s5a_the_anchor_action_moves_in_both_directions():
         sentence's count (where the anchor's arithmetic is inside both the type's band and the
         ground levelled for it, so a share that moves moves the geometry), and the count
         invariant read on both results.
-        
+
     """
     v, place = solved("exact")
     spec = v["exact"]
@@ -1081,7 +1081,7 @@ def t_s5d_a_resolve_that_would_lose_a_counted_structure_is_refused():
 
         Driven through `solve_place` with the allocation a redistribution writes, which is the
         only route by which a district's count can change at all.
-        
+
     """
     v, place = solved("about")
     counted = {x["name"]: int(x["structures"]) for x in place["districts"]}

@@ -99,7 +99,7 @@ def gate_demand_before_size(g: Gate, probes: bool = True) -> None:
         `lot_for("cottage", {"storeys": 2})` answered `[5, 5]` and
         `lot_for(..., features=("storeys",))` answered `[15, 17]`, and both production
         callers used the first form.
-        
+
     """
     if probes:
         from ethoslm import demand, envelope

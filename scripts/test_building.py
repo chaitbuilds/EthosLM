@@ -78,7 +78,7 @@ def world(slope: int = 0, axis: str = "z") -> Volume:
         doorstep, `building()` puts its door in the north wall, and a door in the uphill
         wall of a bank is a door into the bank. A round never has that problem, because a
         round has lanes; a fixture without one has to put the fall where the door is not.
-        
+
     """
     b = {}
     for x in range(SX):
@@ -168,7 +168,7 @@ def t_a1_the_same_call_on_a_six_block_slope_is_still_enterable():
         other two: an outshot's roof overhang drove solid blocks through the room above,
         and a lone tread on a descending path was demoted to a slab and left the door a
         two-block climb away.
-        
+
     """
     vol, b, res = a_building(6, chimney=True, outshot={"side": "west", "depth": 3})
     assert res["ok"], res["reason"]
@@ -291,7 +291,7 @@ def two_storey_shell(b: Builder, ceiling: int) -> None:
 
         Deliberately hand-built rather than built with `building()`: the case is about what
         the walk model says, and a fixture made by the thing under test proves nothing.
-        
+
     """
     for x in range(LOFT_X0, LOFT_X1 + 1):
         for z in range(LOFT_Z0, LOFT_Z1 + 1):
@@ -451,7 +451,7 @@ def t_a4_a_light_is_chosen_by_what_the_room_is_for():
         to sit on -- because a light that cannot be hung falls back to the one that only
         needs a floor, which is deliberate: a room with no light in it is worse than a room
         lit the ordinary way.
-        
+
     """
     lights = {"lantern", "candle", "wall_torch", "glowstone", "torch"}
     got = {}
@@ -590,7 +590,7 @@ class LiveSite(offline.OfflineSite):
         a *body collides with* instead, and a body does not collide with water -- so a dry
         run has never been able to exhibit this defect and a fixture that used one would
         prove nothing. This is the live rule, in a fixture.
-        
+
     """
 
     def height(self, wx: int, wz: int) -> int:
@@ -731,7 +731,7 @@ def a_lane(z: int = 14, wall_z: int = 16, x_from: int = 8, x_to: int = 48):
 
         `Threshold` is (id, x, z, y, facing, door): the lane cell, its surface, the way you
         face walking in off it, and where the building pass must hang the leaf.
-        
+
     """
     mid = 20
     cells = {(x, z): {"y": GROUND, "rank": 0, "face": None}
@@ -749,7 +749,7 @@ def t_a2_every_word_of_the_between_vocabulary_at_once():
         is the jetty clearing the wall the oriel projects from, the yard wall standing in
         front of the door `doorway()` has just refused to hang against a fence, the flashing
         laid where the dormer already is.
-        
+
     """
     net = a_lane()
     vol = a_wet_world(2)
@@ -839,7 +839,7 @@ def t_r19_a3_a_courtyard_is_four_ranges_round_a_yard_and_the_yard_is_not_a_room(
 
         Plus the two refusals, because a refusal a caller can act on is worth more than a
         courtyard house with a two-block light well in it.
-        
+
     """
     got = []
     for ground in ("flat", "relief"):
@@ -948,7 +948,7 @@ def t_dp1a_a_replace_fill_reads_the_pending_set_and_leaves_a_roof_standing():
 
         Against the old semantics the roof is overwritten and this fails, which is what a
         discriminating case is.
-        
+
     """
     vol = world()
     b = builder(vol)
@@ -988,7 +988,7 @@ def t_dp1c_a_fitting_into_a_flight_refuses_and_the_flight_stays_walkable():
         A flight's cells -- treads, landing, foot and the headroom over each -- are the
         flight's, held by `flight()` and refused by `fitting()` by name. Against the old
         code the barrel is placed and this fails.
-        
+
     """
     vol, b, res = a_building(storeys=2)
     assert res["ok"], res["reason"]
@@ -1044,7 +1044,7 @@ def t_dp1c_a_yard_wall_opens_where_the_wall_would_stand_not_where_the_building_d
         the hall's own wall, which the ring skips anyway -- so the yard behind the hall
         was walled with no gap at all, a court nobody could walk into, E003 on real
         ground. The gap goes on a perimeter column the wall would actually stand in.
-        
+
     """
     vol = world()
     b = builder(vol)

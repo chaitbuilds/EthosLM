@@ -74,7 +74,7 @@ def views_for(cx: float, cy: float, cz: float, span: float) -> list[View]:
 
         Kept as the unchecked form because `render()` frames a build on ground it has just
         made and has no cached volume to check against. `fixed_three` is the aimed version.
-        
+
     """
     d = span * 1.1
     # 45 degrees below horizontal: shallower angles run out of loaded chunks and fill
@@ -140,7 +140,7 @@ class Sightline:
         Cells outside the cached volume read as **air**. Nothing is known about them, and a
         camera that has to leave the box to see a building at the edge of one is a camera
         this class must not veto on no evidence.
-        
+
     """
 
     def __init__(self, vol):
@@ -185,7 +185,7 @@ class Sightline:
                 The cell above matters because a camera wedged under a slab renders the
                 underside of the slab across the top of the frame, which is not black and is
                 still not a photograph of a building.
-                
+
         """
         x, y, z = (int(math.floor(c)) for c in pos)
         return not any(self.solid(x, y + d, z) for d in range(clearance + 1))
@@ -274,7 +274,7 @@ def _candidates(pos, target, max_rise=MAX_RISE, max_dolly=MAX_DOLLY_OUT,
 
         A caller whose shot *means* a direction -- looking down a lane -- passes
         `max_orbit=0` and gets only the moves that keep the shot the shot it asked for.
-        
+
     """
     tx, ty, tz = target
     dx, dz = pos[0] - tx, pos[2] - tz
@@ -313,7 +313,7 @@ def aim(name: str, pos, target, fov: float, sight: "Sightline | None" = None,
         comparable. With one, the requested position is tested and, if it is inside a block
         or has rock against the lens, the bounded search above runs and the cheapest working
         camera wins. If none does, `ok` is False and `reason` names which test failed.
-        
+
     """
     def view_at(p):
         yaw, pitch = _look(p, target)
@@ -370,7 +370,7 @@ def orbit_shot(name: str, centre, *, bearing: float, dist: float, rise: float,
         odd-looking `d * sin(a) * 0.72` in the aerial recipes -- it pulls the camera in
         without lowering it, so the shot looks down more steeply. It defaults to 1.0, and
         multiplying by 1.0 is exact, so the close-quarter callers are unaffected.
-        
+
     """
     cx, cy, cz = centre
     a = math.radians(bearing)
@@ -383,7 +383,7 @@ def overhead_shot(name: str, centre, span: float) -> Shot:
 
         Never aimed, and the reason is not laziness: there is nothing above a town, and a
         parallel projection has no single view ray to test -- every pixel is its own.
-        
+
     """
     cx, cy, cz = centre
     v = View(name, (cx, cy + span * 2.5, cz), -math.pi / 2, DOWN, "PARALLEL", span * 1.4)
@@ -413,7 +413,7 @@ def raw_shot(name: str, pos, yaw: float, pitch: float,
         sweeps angles against coloured axis markers to find out what Chunky's orientation
         convention actually is, and it cannot aim at anything because what "aim" means is
         the thing being measured. Everything else should be asking for a subject.
-        
+
     """
     return Shot(name, View(name, tuple(pos), yaw, pitch, projection, fov),
                 tuple(pos), True)
@@ -434,7 +434,7 @@ def door_shot(name: str, threshold, *, back: int = 9, eye: int = 3,
         the lane how high it is there. That is what E1d measured and what step 3 and step 4
         were judged on, so it is kept exactly. `lane_door_shot` is the form that follows
         the ground.
-        
+
     """
     dx, dz = FACE[threshold.facing]
     door = threshold.door
@@ -451,7 +451,7 @@ def lane_door_shot(name: str, threshold, cells: dict, *, back: int = 9, eye: int
         Returns (Shot, subject_centre). Different from `door_shot` in that the camera
         stands on the ground a person would actually walk in on rather than floating at a
         fixed height above the threshold, which matters where the lane is in a cutting.
-        
+
     """
     dx, dz = FACE[threshold.facing]
     px, pz, py = threshold.x, threshold.z, threshold.y
@@ -476,7 +476,7 @@ def lane_shot(name: str, a, b, cells: dict, *, eye: int = 2, fov: float = 85,
         Aimed with `max_orbit=0, max_dolly=0`: a shot that *means* a direction is no longer
         that shot if the search orbits it round to find air, so only standing up out of a
         cutting is allowed to repair it.
-        
+
     """
     ya = cells[a]["y"] if a in cells else default_y
     yb = cells[b]["y"] if b in cells else ya
@@ -495,7 +495,7 @@ class CardGeometry:
         each other: E1d's list is the one that was validated and judged, step 3 stood its
         cameras slightly further back. Nothing reconciles them, because reconciling them
         would move a camera.
-        
+
     """
     close_dist: float          # x span
     close_rise: float          # x span
@@ -532,7 +532,7 @@ def building_card_shots(centre, span: float, *, threshold=None,
         both computed by `plot_subject` for a plot rectangle. Returns {key: Shot}; the
         `eye` key is absent when the structure has no reserved threshold, which is what
         the composer's blank panel is for.
-        
+
     """
     views = {}
     if threshold is not None:
@@ -645,7 +645,7 @@ def gate_subject(plot: dict, edge: dict, built, base_y: int, margin: int = 10,
 
         `outward` is the unit step (dx, dz) from the gate to the side of the wall away
         from the wall's own middle, which is where the road in stands.
-        
+
     """
     if not plot.get("passage") or edge is None:
         return None
@@ -742,7 +742,7 @@ def merged_plots(state: str) -> list:
         again. A rule proved on a fixture is not wired until something reads it off what
         the pipeline actually holds; the case for that is `test_camera`'s
         `dp4_the_plot_registry_carries_what_the_camera_rules_read`.
-        
+
     """
     out: dict = {}
     for p in json.load(open(os.path.join(state, "plots.json"))):
@@ -808,7 +808,7 @@ def mid_y(vol, plot: dict) -> float:
         placed mass on it gave `built_cells` an empty array, and the move died on the first
         such step with `zero-size array to reduction operation minimum`. Found by shooting
         one.
-        
+
     """
     c = built_cells(vol, plot)
     if len(c) == 0:
@@ -822,7 +822,7 @@ def cache_built(state: str) -> str:
         Read-only, and deliberately never touches `world.npz` or `world_prebuild.npz` --
         those are the fixtures every dry run and every built-mass diff is taken against.
         Needs a live server: it is a read of the world through GDMC-HTTP.
-        
+
     """
     from gdpc.vector_tools import Rect
 
@@ -943,7 +943,7 @@ def skyline_pitch(back: float, fov: float, foot: float = PLACE_SKYLINE_FOOT,
         half-height to tan(fov/2). A point at elevation e over the axis lands at
         0.5 + e / fov of the way up (small angles), so the foot at `foot` is `fov * (foot -
         0.5)` below the axis, and the axis is that far above the line to the foot.
-        
+
     """
     half = math.radians(fov) / 2.0
     below_axis = half * (1.0 - 2.0 * foot)          # the foot, this far under the axis
@@ -957,7 +957,7 @@ def skyline_back(rise: float | None) -> float:
         `rise` is the height of the tallest thing on the approach above the gate's own
         level. `None` -- nothing measured it -- is the floor, which is what every recorded
         frame in this project was shot at.
-        
+
     """
     if not rise:
         return float(PLACE_SKYLINE_BACK)
@@ -972,7 +972,7 @@ def approach_rise(built, gate, span: int = PLACE_SKYLINE_SPAN) -> int:
         Read off the built volume rather than the plan, because what stands in front of the
         camera is a fact about the world: a wall, its gate tower, and a bank the ground pass
         left. 0 where nothing near the gate rises above it, which is a place with no wall.
-        
+
     """
     if built is None or gate is None:
         return 0
@@ -1001,7 +1001,7 @@ def place_card_shots(centre, size: float, *, gate=None, bearing: float = 45,
         `rise` is the height of what stands in front of the camera, over the gate's own
         level (`approach_rise`); without it the stand-back is the constant it has always
         been.
-        
+
     """
     cx, cy, cz = centre
     out = {}
@@ -1054,7 +1054,7 @@ def place_chunks(X: int, Z: int, S: int, shots: dict, margin: int = 16) -> list:
         `0.95 * S` off the centre -- showed the site as a floating slab with sheer sides
         where the world beyond the loaded chunks was nothing. A camera sees what it stands
         over; load to where it stands.
-        
+
     """
     pad = 0.0
     for shot in shots.values():
@@ -1074,7 +1074,7 @@ def approach_bearing(net, centre) -> float:
         in has to end somewhere and that somewhere is the edge of the site -- and the
         aerial stands over that quarter. Rounded to the nearest 45 so the answer is one of
         the eight compass points and two runs of the same town give the same camera.
-        
+
     """
     if net is None or not net.cells:
         return 45.0
@@ -1091,7 +1091,7 @@ def fixed_three(centre, span: float, *, sight: "Sightline | None" = None) -> dic
         written out here instead of going through `orbit_shot`: no bearing reproduces
         `(-0.62d, +0.62d)` in floating point, and a camera that lands on a different float
         is a camera that moved.
-        
+
     """
     cx, cy, cz = centre
     d = span * 1.1
@@ -1127,7 +1127,7 @@ def check_frames(paths: dict, threshold: float = BLACK_MEAN) -> dict:
     """{key: png} -> {"ok": bool, "black": [key], "means": {key: mean}}.
 
         The thing a card composer is required to call before it composes.
-        
+
     """
     means = {k: frame_mean(p) for k, p in paths.items()}
     black = sorted(k for k, m in means.items() if m < threshold)
@@ -1265,7 +1265,7 @@ def frame_margin(span: float) -> int:
 
         The margin has to stop growing with span or a settlement-scale render asks for
         thousands of chunks and the JVM dies.
-        
+
     """
     return int(min(span * 2.2, span * 1.15 + 60))
 
@@ -1308,7 +1308,7 @@ def shoot(shot: Shot, chunks: list, png: str, *, scene: str | None = None,
         and throwing them all away would cost more than it is worth and break the
         byte-identity the standing fixtures are for; what it may not do is claim they were
         checked.
-        
+
     """
     rec = shot.as_dict()
     rec["png"] = png
@@ -1382,7 +1382,7 @@ def shoot_all(shots: dict, chunks: list, out_dir: str, *, tag: str = "",
         first frame that is actually a frame is the one kept. `tried` on the record says how
         far down the list it had to go, and it is 1 for every shot that has ever worked --
         so a card made of first-choice cameras is the same bytes it always was.
-        
+
     """
     out = {}
     pre = f"{tag}_" if png_prefix is None and tag else (png_prefix or "")
@@ -1567,7 +1567,7 @@ def flythrough_shots(path: list, vol, *, sight: "Sightline | None" = None,
         the move follows the ground up to the palace rather than through it. The final
         camera stands above the tallest thing between it and the look point, and the last
         `FLY_LIFT_FRAMES` frames ease up to it; see `FLY_LIFT_FRAMES`.
-        
+
     """
     steps = list(path)
     ys = []
@@ -1648,7 +1648,7 @@ def crown_lift(ys: list, steps: list, vol, *, ahead: int = FLY_LIFT_FRAMES,
         `settle` a frame. A step over open ground whose crowns are all under its own
         ground height is untouched, so a move that crosses nothing is the move it was.
         Returns `{"ys": [...], "lifted": {i: {...}}}`.
-        
+
     """
     n = len(steps)
     if n < 2:
@@ -1685,7 +1685,7 @@ def shoot_flythrough(path: list, vol, out_dir: str, *, tag: str = "fly",
         The path and the cameras are arithmetic over the plan and cost nothing; the frames
         are thirteen seconds apiece. So a round that wants the record without the hour asks
         for `skip` and still has, on disk, exactly which cameras it did not shoot.
-        
+
     """
     shots = flythrough_shots(path, vol, sight=sight)
     if skip:
@@ -1709,7 +1709,7 @@ def shot_summary(report: dict) -> dict:
         enforced; since demo-polish (1d, finding 3) a dim frame climbs the ladder the way a
         black one does, so what is reported here is which panels were **repaired** by a
         further rung and which were **kept** dim because every rung was.
-        
+
     """
     shots = [(t, k, r) for t, ks in report.items() for k, r in ks.items()]
     return {

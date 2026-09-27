@@ -107,7 +107,7 @@ def compile_once(district: dict, part: dict, place: dict, decls: dict, *,
         that will be built -- not a description of one -- and `lots` is how many houses are
         in it. A rectangle the compiler cannot lay at all is `ok: False` with the reason it
         gave, which is a reasoned failure and not a zero.
-        
+
     """
     from . import district_compile, placeplan
     try:
@@ -195,7 +195,7 @@ def _lot_for(decl: dict, side: int, depth: int | None, *, attached: bool,
         the incumbent and every alternative offered against it were fabrics of two different
         lot models, and a nominal row-count change silently changed the building's geometry
         as well. Two rules about one question, on the two sides of one comparison.
-        
+
     """
     from . import district_compile as dc
     atts = (("west", "east"), ("west",), ("east",), ())
@@ -253,7 +253,7 @@ def _tight_lot(decl: dict, side: int, *, attached: bool) -> tuple | None:
         the most houses on a rectangle is the narrowest *and* the shallowest the type stands
         on, which for `row_house` is 6x6 -- the arrangement the composition round certified
         and could not get into blocks.
-        
+
     """
     from . import district_compile as dc
     got = _lot_for(decl, int(side), None, attached=attached)
@@ -290,7 +290,7 @@ def arrangements(part: dict, decls: dict, *, spec: dict | None = None,
         `district` carries the adopted arrangement (`character_of` puts it over the brief and
         says that it did); `allocation` answers the same question for a caller that has the
         spec's allocation and not the district record.
-        
+
     """
     from . import district_compile as dc, placeplan, spec as spec_mod
     role = part.get("role") or placeplan.DENSITY_ROLE.get(part.get("density") or "medium")
@@ -630,7 +630,7 @@ def certificate_for(district: dict, got: dict, place: dict, decls: dict,
         ineligible rather than merely short of the band it is being chosen against
         (`NEGOTIABLE_CHECKS`). `"unavailable"` where the compile itself failed, which is not the
         same as a refusal and is not recorded as one.
-        
+
     """
     from . import placeplan
     if not got.get("ok") or got.get("plan") is None:
@@ -670,7 +670,7 @@ def capacity_of(district: dict, part: dict, place: dict, decls: dict, arrangemen
         same compiled result (A4). `certify=False` is for a caller that only wants the count
         -- `placeplan._arrange_capacity`, which is asking a width question and not offering an
         alternative for selection -- and it says so in the record it returns.
-        
+
     """
     trial = dict(district, arrangement=dict(arrangement or {}))
     if ceiling is not None:
@@ -719,7 +719,7 @@ def finding_measure(finding: dict | None) -> tuple:
 
         The measure name is the reading's, and a section measure carries its side with it
         (`section.crowded.court_share`); only the last word names the quantity.
-        
+
     """
     if not isinstance(finding, dict):
         return None, None
@@ -832,7 +832,7 @@ def alternatives(district: dict, part: dict, place: dict, decls: dict, *,
         voids"), and this is a judgement about which half a *comparison* should lead with.
 
         `most` bounds the list; the default is the whole of `arrangements`.
-        
+
     """
     # **imported here, and it was a latent `NameError`.** `want_front` below reads
     # `dc.character_of` and nothing in this module bound `dc` at all -- every other
@@ -1038,7 +1038,7 @@ def alternatives(district: dict, part: dict, place: dict, decls: dict, *,
                 declaration is still the principal's and an arrangement is still an inference
                 about one rectangle, in that order; `revises` says which word was overruled
                 wherever a caller chooses one anyway.
-                
+
         """
         arr = r.get("arrangement") or {}
         if str(arr.get("frontage") or want_front) != want_front:
@@ -1104,7 +1104,7 @@ def _ceiling(district: dict, part: dict) -> int:
         to be generous rather than right: the compiler sizes its blocks from the ask, so
         asking it for the number a previous probe *returned* gets fewer than that number
         back, and a rung that asks for the capacity it measured never reaches it.
-        
+
     """
     from . import placeplan, spec as spec_mod
     rect = _rect_of(district)
@@ -1132,7 +1132,7 @@ def capacity(district: dict, part: dict, place: dict, decls: dict, *,
 
         This is what replaced `placeplan.fabric_fit` at every point where a number was being
         treated as capacity. `fabric_fit` is still what proposes; it no longer certifies.
-        
+
     """
     # **The most it lays over a few asks, not the one ask.** The compiler sizes its lots
     # and its blocks *from* the ask, so a single probe measures one arrangement rather
@@ -1162,7 +1162,7 @@ def _grown(place: dict, d: dict, site: dict | None) -> list | None:
         A ring sector is **not** grown: its rectangle is a chord of an annulus and moving it
         is the ring arithmetic's decision, which is a different action from this one and is
         named unavailable rather than attempted badly.
-        
+
     """
     from . import pipeline as _pipeline
     if not site:
@@ -1230,7 +1230,7 @@ def _smaller_fabric(d: dict, decls: dict) -> list | None:
         never reached the compiler. The order is now honoured there (`preferred`), and this
         returns None where re-ordering would change nothing -- a repair that cannot move its
         consumer reports that it cannot, instead of being counted as an action tried.
-        
+
     """
     from .district_compile import _plot_range
     pool = list(d.get("fabric_types") or [])
@@ -1259,7 +1259,7 @@ def _covers(got: dict, floor: int) -> bool:
         and covered a fifth of its rectangle went to the validator with no action taken, was
         refused there, and the revision that produced it was rolled back. Both numbers are
         what the district is held to, so both are what the ladder answers.
-        
+
     """
     if not floor or not got.get("ok"):
         return True
@@ -1282,7 +1282,7 @@ def arrange(district: dict, part: dict, place: dict, decls: dict, *,
         The promise moves last and only to what the ground gave. Where it still falls short,
         `short` says so and by how much: that is a capacity finding for the scale owner and
         never a quiet reduction.
-        
+
     """
     want = int(proposed if proposed is not None else (district.get("structures") or 0))
     # **Compiled from the proposal, never from the adopted count.** The review's second
@@ -1412,7 +1412,7 @@ def why_short(got: dict, want: int) -> str | None:
         region that cannot hold its count is a finding; what it must never be is silence.
         The record has the reason in it -- no block fitted, the road took the band, the
         ceiling capped it -- and this is where it is said.
-        
+
     """
     if not got.get("ok"):
         return str(got.get("why") or "the construction logic cannot lay this district")

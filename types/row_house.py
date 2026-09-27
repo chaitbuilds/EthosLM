@@ -150,7 +150,7 @@ def _sizes(rng, pad_d, pad_w, att_lo=False, att_hi=False):
 
         `att_lo`/`att_hi` say whether a party wall stands on the pad's low and high lateral
         edge. They are not decoration: see the width below.
-        
+
     """
     if pad_d >= 12:
         rear = rng.choice([1, 2])
@@ -235,7 +235,7 @@ def _front_edge(part):
         doorstep on the south edge whatever `front` it is handed, so every
         `construction.probe_build(front=...)` is a part whose two answers differ. That is a
         gap in siting rather than in the plan, and it is why this keeps both.
-        
+
     """
     px0, pz0, px1, pz1 = part["x0"], part["z0"], part["x1"], part["z1"]
     dx, dz = part["door"]
@@ -258,7 +258,7 @@ def _partitions(rng, house_d):
 
         Every room they leave is at least two rows deep, so that a chest against
         one wall can never cut the room it stands in in half.
-        
+
     """
     back = house_d - 2
     lo, hi = 3, back - 2
@@ -367,7 +367,7 @@ def build(b, part, seed, storeys=None, front=None, **kw):
                 up to the whole pad for a doorstep strictly inside the wall, then again for one
                 merely in it, and the pin itself is never given up -- a hole in a terrace is not
                 the alternative to a door.
-                
+
         """
         for strict in (True, False):
             for cand in range(ww, max(ww, pad_w) + 1):

@@ -203,7 +203,7 @@ def partner_voice(name: str) -> str:
         its author's stands in a silent voice exactly as it stands in that one. Where no
         other explicit voice is on disk, the voice at the greatest distance of any, and
         where `name` is the only voice, `name` itself.
-        
+
     """
     others = [v for v in sorted(VOICES) if v != name]
     if not others:
@@ -323,7 +323,7 @@ def fittings_for(kind: str) -> str:
 
         Empty string where nothing is known: a check that fires on a barrow because nobody
         wrote down what is inside a barrow would be the checker inventing a craft rule again.
-        
+
     """
     k = (kind or "").lower()
     for key, text in FITTINGS.items():
@@ -342,7 +342,7 @@ def _colour_note(material: str) -> str:
         along. A family with no reading is named **without** a colour rather than with a
         guessed one, which is the rule the family list already follows: a wrong colour is
         worse than none, and magenta is what "nobody has met this block" looks like.
-        
+
     """
     from .preview import UNKNOWN, block_colour
     try:

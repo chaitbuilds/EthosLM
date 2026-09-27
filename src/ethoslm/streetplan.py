@@ -444,6 +444,24 @@ def _propose(X0, Z0, ok, road, access, house, shop, anchor, fam, rng, site_ok):
         z += d0
         facing_lane = True
     Dlo = int(house.get("depth_lo") or D)
+    # **Rows that face each other across their lane** (the parent composition round).
+    # Where no principal street bounds the near side, the sweep above starts with a lane
+    # at the ground's edge, so the first row faces outward and the next backs onto it:
+    # every lane then carries doors on one side only and the quarter's houses turn their
+    # backs to one another. `lanes: between` starts with a row backing onto the ground's
+    # own edge (a retaining face, a garden wall), so the first lane has houses on both
+    # sides of it -- the residential lane of a courtyard quarter.
+    at_edge = False
+    if fam.get("lanes") == "between" and not north:
+        facing_lane, at_edge = True, True
+        # the row backs onto the ground's edge where the edge is whole: a ragged first
+        # few lines (a bank, a verge the mask trims) would refuse every lot of the row
+        lo_a = max(0, x_lo - X0)
+        hi_a = min(P.W - 1, (east["line"] - flank_depth["east"] if east else gx1) - X0)
+        cover = ok[lo_a:hi_a + 1, :].sum(axis=0)
+        full = int(cover.max()) if cover.size else 0
+        while z <= zend and full and cover[z - Z0] < full:
+            z += 1
     while True:
         left = zend - z + 1
         if facing_lane:
@@ -453,12 +471,14 @@ def _propose(X0, Z0, ok, road, access, house, shop, anchor, fam, rng, site_ok):
             # both rows of it are made shallower -- down to the least the house stands
             # on -- before the lane is given up; and where only one row fits, it faces a
             # lane laid along the ground's own far edge.
-            need_pair = CLEAR + LANE + (0 if south else 1) * 1
+            back = 0 if at_edge else CLEAR
+            need_pair = back + LANE + (0 if south else 1) * 1
             D2 = D if left >= need_pair + D + (0 if south else D) else \
-                (left - CLEAR - LANE) // (1 if south else 2)
+                (left - back - LANE) // (1 if south else 2)
             if D2 >= Dlo:
                 D2 = min(D, D2)
-                z += CLEAR
+                z += back
+                at_edge = False
                 rows.append((z, z + D2 - 1, "south"))
                 lanes.append((z + D2, z + D2 + LANE - 1))
                 z += D2 + LANE
@@ -502,7 +522,11 @@ def _propose(X0, Z0, ok, road, access, house, shop, anchor, fam, rng, site_ok):
     for (r, w_ok, e_ok) in lane_ends:
         if not w_ok:
             cross.append((r[0], r[3]))
-        if not e_ok and (r[2] - r[0] + 1) > RUN_MAX // 2:
+        # a lane between facing rows is closed at its far end by the ground's edge (a
+        # garden wall, a terrace face): a cross lane there would run through the row it
+        # serves to reach no street, so it stays a closed lane up to `RUN_MAX`
+        closed_ok = fam.get("lanes") == "between" and (r[2] - r[0] + 1) <= RUN_MAX
+        if not e_ok and (r[2] - r[0] + 1) > RUN_MAX // 2 and not closed_ok:
             cross.append((r[2] - LANE + 1, r[3]))
         span = r[2] - x_lo + 1
         n_mid = max(0, int(span // RUN_MAX))
@@ -577,7 +601,43 @@ def _propose(X0, Z0, ok, road, access, house, shop, anchor, fam, rng, site_ok):
                             "street": "principal" if is_principal else "lane",
                             "id": f"row{r0}_{k}"}, {**spec, "depth": dep}, rng, site_ok)
     party_walls(P.lots)
+    _prune_lanes(P)
     return P
+
+
+def _prune_lanes(P: _Plan) -> None:
+    """**A lane whose rows did not stand is not laid** (the parent composition round).
+
+    The sweep decides lanes before lots, and a row whose ground is refused leaves its lane
+    with no front on either side. The judge used to exempt such a lane as "a footway
+    through open ground", so the proposal kept a blank lane and passed. The judge now
+    fails any lane it is shown without fronts; the proposal instead withdraws that lane
+    (and a cross lane that served only it), gives its ground back to open ground, and
+    says so in its notes. The proposal is then ranked on the houses it actually holds."""
+    keep, dropped = [], []
+    for st in P.streets:
+        if st.get("kind") == "lane" and "rect" in st:
+            if not any(v > 0 for v in lane_fronts(st["rect"], P.lots).values()):
+                dropped.append(st)
+                continue
+        keep.append(st)
+    if not dropped:
+        return
+    lanes = [s for s in keep if s.get("kind") == "lane"]
+    out = []
+    for st in keep:
+        if st.get("kind") == "cross" and not any(_touch(st["rect"], l["rect"])
+                                                 for l in lanes):
+            dropped.append(st)
+            continue
+        out.append(st)
+    P.streets = out
+    P.street[:, :] = False
+    for st in out:
+        if "rect" in st:
+            P.take(st["rect"], street=True)
+    P.notes.append(f"{len(dropped)} lane(s) withdrawn: no row facing them stood "
+                   f"({', '.join(str(s['rect']) for s in dropped[:4])})")
 
 
 def _depths(spec: dict) -> list:
@@ -781,6 +841,36 @@ def _faces(lot, rect=None):
     return {(x1 + 1, z) for z in range(z0, z1 + 1)}
 
 
+def lane_fronts(rect, lots) -> dict:
+    """The share of a lane's length faced by fronts, per side: `{side: share}` for the
+    two long sides of `rect`. A lot fronts the lane where the columns just outside its
+    building's front (`_faces` of its pad) lie in the lane or on the lot's own edge
+    beside it -- the building stands `FRONT_INSET` in from its lot line, so its door
+    opens onto the lot's apron and then the lane. Measured on the frontage a person
+    walking the lane passes, in whatever frame the lots are in."""
+    x0, z0, x1, z1 = rect
+    along_x = (x1 - x0) >= (z1 - z0)
+    length = max(1, (x1 - x0 + 1) if along_x else (z1 - z0 + 1))
+    got = {"north": set(), "south": set()} if along_x else {"west": set(), "east": set()}
+    for lot in lots:
+        f = lot["front"]
+        if along_x and f not in ("north", "south"):
+            continue
+        if not along_x and f not in ("west", "east"):
+            continue
+        dx, dz = SIDES[f]
+        faced = _faces(lot, pad_of(lot))
+        for k in range(0, FRONT_INSET + 2):
+            hit = [(x + dx * k, z + dz * k) for (x, z) in faced
+                   if x0 <= x + dx * k <= x1 and z0 <= z + dz * k <= z1]
+            if hit:
+                # a lot facing north stands on the lane's south side
+                side = OPP[f]
+                got[side] |= {(x if along_x else z) for (x, z) in hit}
+                break
+    return {s: len(v) / float(length) for s, v in got.items()}
+
+
 def judge(P: _Plan, house_needed: bool = True, anchor_needed: bool = False,
           defer_roads: bool = False) -> dict:
     """**Required relationships first, preferences second.** Each relationship is
@@ -863,11 +953,11 @@ def judge(P: _Plan, house_needed: bool = True, anchor_needed: bool = False,
                              if lot["rect"][0] <= x <= lot["rect"][2]
                              and lot["rect"][1] <= z <= lot["rect"][3]), None)
             if lot_here is not None:
-                # a front on this street -- or a front on the market that opens onto it:
-                # the market and the shops facing it are one frontage on its street
-                marks.append("door" if (lot_here["front"] == side
-                                        or lot_here.get("street") == "anchor")
-                             else "wall")
+                # **a front on this street**, and only that (the parent composition
+                # round): a shop facing the market lines the street with its flank and
+                # is reached through the market, which is not a door on this street. The
+                # market's own open side (above) is the street's active edge there.
+                marks.append("door" if lot_here["front"] == side else "wall")
             elif P.inside(x, z) and P.street[x - P.X0, z - P.Z0]:
                 marks.append("open")    # a lane's mouth
             else:
@@ -919,27 +1009,24 @@ def judge(P: _Plan, house_needed: bool = True, anchor_needed: bool = False,
     for i, st in enumerate(P.streets):
         if st["kind"] != "lane":
             continue
-        x0, z0, x1, z1 = st["rect"]
-        n_up = sum((min(x1, lot["rect"][2]) - max(x0, lot["rect"][0]) + 1)
-                   for lot in P.lots
-                   if lot["front"] == "south" and lot["rect"][3] + 1 == z0)
-        n_dn = sum((min(x1, lot["rect"][2]) - max(x0, lot["rect"][0]) + 1)
-                   for lot in P.lots
-                   if lot["front"] == "north" and lot["rect"][1] - 1 == z1)
-        length = max(1, x1 - x0 + 1)
-        share = max(n_up, n_dn) / float(length)
-        if n_up == 0 and n_dn == 0:
-            # **no lot fronts it at all**: its rows did not stand (their ground was
-            # refused), so it is a footway through the open ground and not a lane of the
-            # quarter -- recorded, and not a relationship this composition claims
-            rel.append({"name": f"lane_{i}_unfronted", "required": False, "held": True,
-                        "measure": 0.0,
-                        "why": "no lot fronts this way on either side: a footway "
-                               "through open ground, not a lane the quarter claims"})
-            continue
+        sides_ = lane_fronts(st["rect"], P.lots)
+        share = max(sides_.values()) if sides_ else 0.0
+        both = min(sides_.values()) if sides_ else 0.0
+        # **A lane the composition laid is a lane it owes** (the parent composition
+        # round). This was exempted where no lot fronted it -- "a footway through open
+        # ground, not a lane the quarter claims" -- so a lane whose rows failed became a
+        # successful path and the proposal stayed admissible with blank walls both
+        # sides. A lane with no fronts is now a failed lane; a design that wants a path
+        # through a garden has to lay one as open ground, not inherit one from a lane.
         rel.append({"name": f"lane_{i}_fronted", "required": True,
-                    "held": share >= LANE_FRONTED, "measure": round(share, 3),
-                    "why": f"{share:.0%} of the lane's length has doors on one side"})
+                    "held": share >= LANE_FRONTED,
+                    "measure": round(share, 3),
+                    "sides": {k: round(v, 3) for k, v in sides_.items()},
+                    "why": (f"{share:.0%} of the lane's length has fronts facing it on its "
+                            f"better side and {both:.0%} on its other"
+                            + ("" if share > 0 else
+                               ": no front faces it at all, so it is a lane whose rows "
+                               "did not stand, not a path the quarter designed"))})
         rel.append({"name": f"lane_{i}_reaches_street", "required": near_road,
                     "held": i in reach_road, "measure": i in reach_road,
                     "why": ("the lane meets a street, directly or by a cross lane"
@@ -957,8 +1044,11 @@ def judge(P: _Plan, house_needed: bool = True, anchor_needed: bool = False,
                             f"{DWELLINGS_LEAST} dwellings is a quarter")})
     attached = sum(1 for lot in P.lots if lot["attached"])
     joined = attached / float(max(1, len(P.lots)))
+    # a lane is measured by both its sides: doors facing each other across it make a
+    # street, doors on one side and a blank wall on the other a service way
     frontage = [(r["measure"]["fronts"] if r["name"].startswith("principal_")
-                 else r["measure"]) for r in rel
+                 else (sum(r["sides"].values()) / float(max(1, len(r["sides"])))
+                       if r.get("sides") else r["measure"])) for r in rel
                 if r["name"].endswith("_fronted") and not r["name"].startswith("anchor")
                 and isinstance(r["measure"], (float, dict))]
     open_cols = sum(_rect_cells(o["rect"]) for o in P.open)
@@ -982,8 +1072,77 @@ def _transpose_rect(r):
     return [r[1], r[0], r[3], r[2]]
 
 
+class _Mirror:
+    """A district's columns mirrored across one axis (`along` is the coordinate that is
+    flipped), and everything a proposal says mapped back: rectangles, fronts, attached
+    sides, principal streets' lines and runs, and the side names in relationship ids."""
+    SWAP = {"z": {"north": "south", "south": "north"},
+            "x": {"west": "east", "east": "west"}}
+
+    def __init__(self, rect, along):
+        self.X0, self.Z0, self.X1, self.Z1 = rect
+        self.along = along
+
+    def cell(self, c):
+        x, z = int(c[0]), int(c[-1])
+        return ((x, self.Z0 + self.Z1 - z) if self.along == "z"
+                else (self.X0 + self.X1 - x, z))
+
+    def rect(self, r):
+        x0, z0, x1, z1 = r
+        if self.along == "z":
+            return [x0, self.Z0 + self.Z1 - z1, x1, self.Z0 + self.Z1 - z0]
+        return [self.X0 + self.X1 - x1, z0, self.X0 + self.X1 - x0, z1]
+
+    def side(self, s):
+        return self.SWAP[self.along].get(s, s)
+
+    def lot(self, lot):
+        return {**lot, "rect": self.rect(lot["rect"]), "front": self.side(lot["front"]),
+                "attached": [self.side(s) for s in lot.get("attached") or []],
+                **({"street": self._name(lot["street"])}
+                   if isinstance(lot.get("street"), str) else {})}
+
+    def _name(self, name):
+        for a, b in self.SWAP[self.along].items():
+            if name.endswith("_" + a):
+                return name[: -len(a)] + b
+        return name
+
+    def street(self, st):
+        if "rect" in st:
+            return {**st, "rect": self.rect(st["rect"])}
+        out = {**st, "side": self.side(st["side"])}
+        line_is_flipped = ((self.along == "z" and st["side"] in ("north", "south"))
+                           or (self.along == "x" and st["side"] in ("west", "east")))
+        lo, hi = (self.Z0, self.Z1) if self.along == "z" else (self.X0, self.X1)
+        if line_is_flipped and "line" in st:
+            out["line"] = lo + hi - int(st["line"])
+        elif "a0" in st:
+            out["a0"], out["a1"] = lo + hi - int(st["a1"]), lo + hi - int(st["a0"])
+        return out
+
+    def verdict(self, v):
+        v = dict(v)
+        for key in ("relationships",):
+            v[key] = [{**r, "name": self._rel(r.get("name", "")),
+                       **({"sides": {self.side(k): x for k, x in r["sides"].items()}}
+                          if isinstance(r.get("sides"), dict) else {})}
+                      for r in v.get(key) or []]
+        v["failed"] = [self._rel(f) for f in v.get("failed") or []]
+        return v
+
+    def _rel(self, name):
+        for a, b in self.SWAP[self.along].items():
+            tag = f"_{a}_"
+            if tag in name:
+                return name.replace(tag, f"_{b}_")
+        return name
+
+
 def compose(rect, ok, road, *, access=None, house=None, shop=None, anchor=None,
-            seed=1, site_ok=None, families=None, defer_roads=False) -> dict:
+            seed=1, site_ok=None, families=None, defer_roads=False,
+            prefer: dict | None = None) -> dict:
     """Every proposal of the family, judged, and the one to adopt.
 
     `rect` is the district `(X0, Z0, X1, Z1)`; `ok` its buildable columns, `[x - X0,
@@ -995,60 +1154,115 @@ def compose(rect, ok, road, *, access=None, house=None, shop=None, anchor=None,
     X0, Z0, X1, Z1 = rect
     fams = families or default_families(house, shop, anchor)
     out = []
+
+    def one(fam, ok_, road_, access_, site_ok_, rng):
+        """One proposal in world columns (of whatever world it is handed)."""
+        if fam["axis"] == "x":
+            P = _propose(X0, Z0, ok_, road_, access_, house, shop, anchor, fam, rng,
+                         site_ok_)
+            _open_ground(P)
+            verdict = judge(P, house_needed=house is not None,
+                            anchor_needed=bool(anchor), defer_roads=defer_roads)
+            return P.lots, P.streets, P.anchor, P.open, verdict
+        okT = ok_.T.copy()
+        roadT = {(z, x) for (x, z) in road_}
+        accT = (access_[1], access_[0]) if access_ else None
+
+        def site_T(r, front, spec):
+            return site_ok_(_transpose_rect(r), _T[front], spec) if site_ok_ else True
+        P = _propose(Z0, X0, okT, roadT, accT, house, shop, anchor, fam, rng,
+                     site_T if site_ok_ else None)
+        _open_ground(P)
+        verdict = judge(P, house_needed=house is not None,
+                        anchor_needed=bool(anchor), defer_roads=defer_roads)
+        lots = [_transpose_lot(lot) for lot in P.lots]
+        streets = []
+        for st in P.streets:
+            if "rect" in st:
+                streets.append({**st, "rect": _transpose_rect(st["rect"]),
+                                "axis": "z" if st.get("axis") == "x" else "x"})
+            else:
+                streets.append({**st, "side": _T[st["side"]]})
+        anch = None
+        if P.anchor:
+            anch = {"rect": _transpose_rect(P.anchor["rect"]),
+                    "street_sides": [_T[s] for s in P.anchor["street_sides"]],
+                    "front": _T[P.anchor["front"]]}
+        opens = [{**o, "rect": _transpose_rect(o["rect"])} for o in P.open]
+        return lots, streets, anch, opens, verdict
+
     for k, fam in enumerate(fams):
         rng = random.Random(f"{seed}/streetplan/{k}")
-        if fam["axis"] == "x":
-            P = _propose(X0, Z0, ok, road, access, house, shop, anchor, fam, rng, site_ok)
-            _open_ground(P)
-            verdict = judge(P, house_needed=house is not None,
-                            anchor_needed=bool(anchor), defer_roads=defer_roads)
-            lots = P.lots
-            streets = P.streets
-            anch = P.anchor
-            opens = P.open
+        if not fam.get("mirror"):
+            lots, streets, anch, opens, verdict = one(fam, ok, road, access, site_ok, rng)
         else:
-            okT = ok.T.copy()
-            roadT = {(z, x) for (x, z) in road}
-            accT = (access[1], access[0]) if access else None
+            # **the same sweep from the other side** (the city attempt round): the sweep
+            # lays its principal street's frontage row only on the street at the low
+            # side of its frame, so a quarter whose street runs along its high side -- a
+            # ring strip whose section faces the centre on its south or east -- had its
+            # lanes laid from the wrong edge. The ground is mirrored across the lane
+            # grain, swept, and mirrored back.
+            m = _Mirror(rect, "z" if fam["axis"] == "x" else "x")
+            okm = ok[:, ::-1].copy() if m.along == "z" else ok[::-1, :].copy()
+            roadm = {m.cell(c) for c in road}
+            accm = m.cell(access) if access else None
 
-            def site_T(r, front, spec):
-                return site_ok(_transpose_rect(r), _T[front], spec) if site_ok else True
-            P = _propose(Z0, X0, okT, roadT, accT, house, shop, anchor, fam, rng,
-                         site_T if site_ok else None)
-            _open_ground(P)
-            verdict = judge(P, house_needed=house is not None,
-                            anchor_needed=bool(anchor), defer_roads=defer_roads)
-            lots = [_transpose_lot(lot) for lot in P.lots]
-            streets = []
-            for st in P.streets:
-                if "rect" in st:
-                    streets.append({**st, "rect": _transpose_rect(st["rect"]),
-                                    "axis": "z" if st.get("axis") == "x" else "x"})
-                else:
-                    streets.append({**st, "side": _T[st["side"]]})
-            anch = None
-            if P.anchor:
-                anch = {"rect": _transpose_rect(P.anchor["rect"]),
-                        "street_sides": [_T[s] for s in P.anchor["street_sides"]],
-                        "front": _T[P.anchor["front"]]}
-            opens = [{**o, "rect": _transpose_rect(o["rect"])} for o in P.open]
+            def site_m(r, front, spec, _m=m):
+                return site_ok(_m.rect(r), _m.side(front), spec) if site_ok else True
+            lots, streets, anch, opens, verdict = one(
+                fam, okm, roadm, accm, site_m if site_ok else None, rng)
+            lots = [m.lot(lot) for lot in lots]
+            streets = [m.street(st) for st in streets]
+            if anch:
+                anch = {"rect": m.rect(anch["rect"]),
+                        "street_sides": [m.side(s_) for s_ in anch["street_sides"]],
+                        "front": m.side(anch["front"])}
+            opens = [{**o, "rect": m.rect(o["rect"])} for o in opens]
+            verdict = m.verdict(verdict)
         out.append({"family": fam, "lots": lots, "streets": streets, "anchor": anch,
                     "open": opens, **verdict})
     admissible = [p for p in out if p["admissible"]]
     adopted = max(admissible, key=lambda p: p["preference"]) if admissible else None
-    return {"adopted": adopted, "proposals": out,
+    # **The parent's arrangement, where it decided one** (the parent composition round):
+    # a piece cut to hold modules of one street arrangement is composed in it where any
+    # proposal of that arrangement is admissible, and the record says when none was --
+    # the decision reaches the lots, or its failure reaches the parent.
+    asked = None
+    if prefer:
+        match = [p for p in admissible
+                 if all(p["family"].get(k) == v for k, v in prefer.items())]
+        asked = {"asked": dict(prefer), "realized": bool(match),
+                 "why": (f"{len(match)} admissible proposal(s) of the parent's "
+                         f"arrangement" if match else
+                         "no admissible proposal of the parent's arrangement: "
+                         + "; ".join(sorted({", ".join(p["failed"]) or "-"
+                                             for p in out
+                                             if all(p["family"].get(k) == v
+                                                    for k, v in prefer.items())}))[:300])}
+        if match:
+            adopted = max(match, key=lambda p: p["preference"])
+    return {"adopted": adopted, "proposals": out, "module": asked,
             "why": (f"{len(admissible)} of {len(out)} proposals hold every required "
                     f"relationship" + (f"; adopted the one preferred among them "
                                        f"({_fam_name(adopted['family'])})" if adopted else
-                                       "; none does, so none is adopted"))}
+                                       "; none does, so none is adopted")
+                    + (f"; the parent's arrangement {'held' if asked['realized'] else 'did not hold'}"
+                       if asked else ""))}
+
+
+#: A shop reach longer than any street: the whole principal street's run is shops.
+SHOP_ALL = 4096
 
 
 def _fam_name(f) -> str:
+    reach = f.get("shop_reach") or 0
     return (f"lanes along {f['axis']}, lots {f['depth']} deep, shops "
-            f"{f.get('shop_reach') or 0} along the principal street"
+            f"{'all' if reach >= SHOP_ALL else reach} along the principal street"
             + (f", market {f['anchor_side']} across" if f.get("anchor_side") else "")
             + (", market a lot in from the corner" if f.get("anchor_at") == "street"
-               else ""))
+               else "")
+            + (", rows facing across their lanes" if f.get("lanes") == "between" else "")
+            + (", swept from the far side" if f.get("mirror") else ""))
 
 
 def default_families(house, shop, anchor=None) -> list:
@@ -1058,7 +1272,10 @@ def default_families(house, shop, anchor=None) -> list:
     d0 = int(house["depth"])
     depths = sorted({d0, max(house.get("depth_lo", d0), d0 - 2),
                      min(house.get("depth_hi", d0), d0 + 2)})
-    reaches = [0] if not shop else [48, 96]
+    # ...and a principal street lined with shops its whole run (the city attempt round):
+    # a ring's high street, where the section the parent sized the ring for puts the
+    # trade form's shallow row on the street and the houses behind it
+    reaches = [0] if not shop else [48, 96, SHOP_ALL]
     # the anchor at the side it wants and at one between that and its least: a market
     # floor is sized inside its requirement's band, and a smaller one can be the one
     # whose edges its neighbours front
@@ -1069,14 +1286,20 @@ def default_families(house, shop, anchor=None) -> list:
     # ...and at the corner of two principal streets or on one of them a lot in
     ats = ["corner"] + (["street"] if anchor else [])
     fams = []
-    for axis in ("x", "z"):
-        for d in depths:
-            for r in reaches:
-                for sd in sides:
-                    for at in ats:
-                        fams.append({"axis": axis, "depth": d, "shop_reach": r,
-                                     **({"anchor_side": sd} if sd else {}),
-                                     **({"anchor_at": at} if at != "corner" else {})})
+    # ...and the lane grain's two sweeps: a lane at the ground's edge first (each lane
+    # fronted on one side), or a row backing onto the edge so that houses face each
+    # other across the lane (`lanes: between`, the parent composition round)
+    for axis, mirror in (("x", False), ("z", False), ("x", True), ("z", True)):
+        for lanes in (None, "between"):
+            for d in depths:
+                for r in reaches:
+                    for sd in sides:
+                        for at in ats:
+                            fams.append({"axis": axis, "depth": d, "shop_reach": r,
+                                         **({"anchor_side": sd} if sd else {}),
+                                         **({"anchor_at": at} if at != "corner" else {}),
+                                         **({"lanes": lanes} if lanes else {}),
+                                         **({"mirror": True} if mirror else {})})
     return fams
 
 

@@ -43,7 +43,7 @@ class Frontage:
                 Position, and which way you face walking in off the lane. Put the door there.
                 Nothing else in the shared state says anything about intent, and this exists
                 only because the world cannot be asked which side was meant to be the front.
-                
+
         """
         self.calls["threshold"] += 1
         t = self.net.threshold(label) if self.net else None
@@ -73,7 +73,7 @@ class Frontage:
                 both when nobody can stand in the doorway at all and when they can but cannot
                 get there from the lane without jumping -- the second is the headline defect and
                 the one no check could see before the network existed.
-                
+
         """
         self.calls["check_door"] += 1
         x, y, z = int(x), int(y), int(z)

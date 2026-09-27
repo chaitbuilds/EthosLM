@@ -322,7 +322,23 @@ def _improve_stage(rnd, be, results):                        # noqa: ANN202
     return stage_improve(rnd, be, results)
 
 
+def _design_stage(name):                                     # noqa: ANN202
+    def run(rnd, be, results):
+        from . import stages_design
+        return getattr(stages_design, f"stage_{name}")(rnd, be, results)
+    run.__name__ = f"stage_{name}"
+    return run
+
+
 STAGES = {
+    # The design synthesis round: the designed place (`pipeline/stages_design.py`).
+    "design_references": _design_stage("design_references"),
+    "design": _design_stage("design"),
+    "design_compare": _design_stage("design_compare"),
+    "design_resolve": _design_stage("design_resolve"),
+    "regions": _design_stage("regions"),
+    "region_views": _design_stage("region_views"),
+    "region_write": _design_stage("region_write"),
     # The architecture round: **before** the spec. What the sentence requires outright
     # (`intent.json`, by rule, no model) and what was found out about it
     # (`reading.json`, with the source of every claim on it).

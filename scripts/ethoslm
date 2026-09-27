@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Start a place from a sentence, see where it stands, resume it, deliver it.
+# `scripts/ethoslm --help`; the commands are in src/ethoslm/cli.py.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT/scripts/env.sh"
+exec "$PY" -m ethoslm "$@"

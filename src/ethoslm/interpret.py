@@ -49,7 +49,7 @@ def read_answer(sentence: str, doc: dict, *, source: str = "agent") -> dict:
         The answer is a list of readings; everything else on the record -- the sentence, the
         unread words, the checks -- is filled in here, so the reader is answerable for the
         meaning and not for the bookkeeping.
-        
+
     """
     reads = []
     for i, r in enumerate(doc.get("reads") or []):
@@ -136,7 +136,7 @@ def _value_disagreement(read: dict, rules: list) -> dict | None:
         A count is `n` and whether it is `about`; a quality is its value on its axis (an
         opposed value is handled as a contradiction by `_conflicts`, so this is the same
         value read to a different bound). None where they agree or where there is no rule.
-        
+
     """
     if not rules:
         return None
@@ -184,7 +184,7 @@ def cross_check(sentence: str, interp: dict) -> dict:
 
         `unsupported_phrase` is the other direction: a reading whose `phrase` is not in the
         sentence is refused outright. A reader that may quote anything can say anything.
-        
+
     """
     rules = intent_mod.read(sentence)
     text = intent_mod._words(sentence)
@@ -277,7 +277,7 @@ def requirements(sentence: str, interp: dict | None, reading: dict | None = None
         related, reasoned -- the rules contribute whatever they found and the reader did not,
         contradictions are carried `unresolved` rather than decided, and the independent
         unclaimed-word check runs over both sets of spans together.
-        
+
     """
     if not interp:
         return intent_mod.read(sentence)

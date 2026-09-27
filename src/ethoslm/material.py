@@ -88,7 +88,7 @@ def recipe_for(voice) -> dict:
         A family must be one `prims.MATERIALS` knows or a bare block that exists; a weight
         is a share in (0, 1]; `when` is one of `WHEN`. A voice with no `variants` has an
         empty recipe, and the pass then changes nothing -- which is a legitimate voice.
-        
+
     """
     from . import voices as _voices
     doc = _voices.load(voice) if isinstance(voice, str) else dict(voice)
@@ -304,7 +304,7 @@ def context_of(prec: dict) -> str:
         variants went. Rates are collected per context and the random arm draws from the
         context's own; a context whose voice has no recipe for a role gets nothing in
         either arm.
-        
+
     """
     return f"{prec.get('voice_name') or '-'}|{prec.get('type') or prec.get('kind') or '-'}"
 
@@ -335,7 +335,7 @@ def plan(surfaces_doc: dict, recipe: dict, settings: dict | None, seed: int,
         types had declared no figure, so a comparison can show what the guard is holding
         back on the same cameras. It is never how a world is finished; every caller that
         finishes a world leaves it alone.
-        
+
     """
     if mode not in MODES:
         raise ValueError(f"mode is one of {', '.join(MODES)}, not {mode!r}")
@@ -459,7 +459,7 @@ def apply(built: Volume, surfaces_doc: dict, recipe: dict, settings: dict | None
         protected, a cell whose block no longer stands is gone, and a cell with no air on
         any face is not worth editing. Exposure is recomputed there from the assembled
         world, so the conditions the contextual arm reads are the assembled world's.
-        
+
     """
     if reconcile and not (surfaces_doc or {}).get("reconciled"):
         surfaces_doc, _rep = _surfaces.reconcile(surfaces_doc or {}, built)

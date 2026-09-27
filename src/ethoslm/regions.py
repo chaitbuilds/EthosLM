@@ -86,7 +86,7 @@ class Regions:
 
                 In the order `WorldSlice` indexes it -- `x + z * size.x` -- and uncompressed,
                 which is what `asBytes=True` returns from the interface.
-                
+
         """
         root = nbt.NBTFile()
         root.name = ""
@@ -146,7 +146,7 @@ def prefetch_one(item: tuple) -> bool:
         The unit of work `ethoslm.parallel.par_map` distributes: one process, one square,
         its own open region files, nothing shared. True where the square was finished
         ground and is now cached; False where the files do not hold it.
-        
+
     """
     x, z, size, cache = item
     regs = Regions()

@@ -61,7 +61,7 @@ def _pins(part):
 
         The threshold sits in one wall and a block off the corner beside it, so one x
         edge and one z edge are spoken for; the other two are mine to pull in.
-        
+
     """
     x0, z0, x1, z1 = part["x0"], part["z0"], part["x1"], part["z1"]
     dx, dz = part["door"]
@@ -96,7 +96,7 @@ def _setback(b, part):
         lane. Two courses of platform want two blocks of apron where a lane runs along
         the foot of them, one where the fall is private. A temple set back off its own
         edge is the right building anyway: the platform is meant to be walked on.
-        
+
     """
     floor_y = part["floor_y"]
     back = {}
@@ -192,7 +192,7 @@ def _roof_spec(rng, w, d):
         Anything shallower than (1,2) below runs the eave course so far out that the
         tier corners end up facing down their own slope, so (1,2) is the floor of it,
         and a third tier only buys another sealed loft nobody can reach.
-        
+
     """
     if abs(w - d) <= 1:
         axis = rng.choice(["x", "z"])
@@ -267,7 +267,7 @@ def _fenestrate(b, foot, door, floor_y, storeys, eave, spacing):
         the floor through to the eave; then an opening cut in the panel between one
         pair of posts and the next, so a post can never land across a window and a
         window can never eat a post.  The doorway's own panel is left alone.
-        
+
     """
     dx, dz = door
     posts = set()
@@ -516,7 +516,7 @@ def _mend_court(b, part, foot, wing, used, door):
         end up reachable only across a diagonal, which is not walking.  Anything
         small enough to be that gets a pier of the platform's own stone standing on
         it, so it is masonry rather than floor nobody can reach.
-        
+
     """
     fy = part["floor_y"]
 

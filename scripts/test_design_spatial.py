@@ -52,7 +52,7 @@ def rings_fixture():
     """The expression round's hill town: spec, site, plateau, types, intent.
 
         Retained state, read and never written. `out/expr-rings` is immutable input.
-        
+
     """
     if "rings" in _LOADED:
         return _LOADED["rings"]
@@ -180,7 +180,7 @@ def t_e2c_allocated_area_alone_cannot_prove_built_massing():
         three-fold and leaves the district holding *fewer houses*: the number a density
         clause reads went up while the place emptied. So `allocated_columns` and
         `built_columns` are reported apart and `intent.lot_cover` carries both.
-        
+
     """
     spec, _site, _plateau, decls, _intent = rings_fixture()
     by = {p["name"]: p for p in spec["defining_parts"]}

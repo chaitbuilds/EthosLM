@@ -69,7 +69,7 @@ def _ring_of(layout: dict, x: int, z: int):
 
         Chebyshev distance from the layout's own centre, which is how the rings are drawn.
         Returns the ring index, or None for the centre square and for outside the place.
-        
+
     """
     cx, cz = layout["centre"]
     r = max(abs(x - cx), abs(z - cz))
@@ -163,7 +163,7 @@ def floor(state: str, plan: dict, layout: dict, log=print) -> dict:
         walks over and looks at, and no instrument in this project had ever read it. Read on
         the built volume and again on the volume the ground work left behind, so a cover
         that was laid and then taken off is visible as the difference.
-        
+
     """
     import numpy as np
     from ethoslm import observe, offline

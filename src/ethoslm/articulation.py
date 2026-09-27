@@ -70,7 +70,7 @@ def _mode(values: np.ndarray) -> int:
         Lowest rather than first-seen: the modal plane of a wall that is half flush and half
         set back one block is the flush half, and a tie broken by array order would make the
         answer depend on which corner the volume starts at.
-        
+
     """
     counts = np.bincount(values)
     return int(np.argmax(counts))
@@ -81,7 +81,7 @@ def _face_samples(solid: np.ndarray, axis: int, sign: int):
 
         `depth` is the distance from the face's outer bounding plane to the first solid
         cell along the view axis, per (u, y); `hit` marks the columns that have one at all.
-        
+
     """
     s = solid if sign < 0 else np.flip(solid, axis=axis)
     hit = s.any(axis=axis)

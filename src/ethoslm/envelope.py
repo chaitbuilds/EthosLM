@@ -100,7 +100,7 @@ def required_features(requirements, part: dict | None = None) -> tuple:
         market or a hearth maps to the feature the type has to emit. A requirement with a
         scope applies only to a part inside that scope; `part` is the leaf or defining part
         (`name`, `defines`, `in`) the question is asked for, and None asks for the place.
-        
+
     """
     return tuple(required_by(requirements, part))
 
@@ -113,7 +113,7 @@ def required_by(requirements, part: dict | None = None) -> dict:
         asked for rather than against a token. `required_features` is this in the shape its
         existing callers take. Insertion order is requirement order, which is the order a
         reader of the intent record meets them in.
-        
+
     """
     from . import intent as intent_mod
     out: dict = {}
@@ -174,7 +174,7 @@ def feature_token(word) -> str | None:
         `material = "stalls" in {"market"}` -- False. The row was never selected, on a
         requirement the sentence makes hard. `FEATURE_WORDS` is the table that already knew
         the two words are the same ask; this is it read the other way round.
-        
+
     """
     w = str(word or "").strip().lower()
     if not w:
@@ -214,7 +214,7 @@ def _deps_print(type_name: str, voice: str | None) -> str:
         The type file's bytes, the builder modules that execute it, and the voice palette it
         is built in. `deps.content_print` is the same hash the dependency contract uses, so a
         type file that changes without changing length is a different type here too.
-        
+
     """
     key = (type_name, voice or None)
     got = _DEPS.get(key)
@@ -265,7 +265,7 @@ def flanks(context: dict | None) -> int:
         question must be answered against, and a caller that knows a particular lot's flanks
         says so with the number. Under-claiming attachment costs a slightly larger lot;
         over-claiming it hands a row's end lot a pad it does not have.
-        
+
     """
     v = (context or {}).get("attached")
     if v is None or v is False or v is True:
@@ -302,7 +302,7 @@ def _load_cache(path: str | None) -> dict:
 
         A document from another version loads and is dropped: its keys were made of a
         different question, and an answer whose question cannot be recovered is not one.
-        
+
     """
     if path and os.path.exists(path):
         try:
@@ -348,7 +348,7 @@ def declared_features(type_name: str) -> tuple:
         `ethoslm.demand` reports the two apart so that a token nothing required can be revised
         away and a token a requirement named cannot. `pipeline.load_type` does not carry
         `FEATURES`, so the file is executed here and remembered per its content digest.
-        
+
     """
     key = (type_name, _deps_print(type_name, None))
     got = _FEATURES.get(key)
@@ -410,7 +410,7 @@ def _delivered(got: dict, params: dict, features, said: dict | None = None,
         believed exactly as it was. Checked on all four committed types that declare
         `FEATURES` -- market, square, courtyard_house, worship -- every one of whose tokens
         is emitted with a rectangle and verified, so nothing that passed stops passing.
-        
+
     """
     feats = got.get("features") or {}
     src = got.get("features_source") or {}
@@ -476,7 +476,7 @@ def probe(type_name: str, params: dict, features=(), *, seed: int = 1,
         `n_flanks` is how many of the lot's flanks the probe stands it against. It is a
         property of the **lot**, not of the type: the same 6x13 plot is a 4x11 pad free on
         all four sides and a 6x9 pad between two party walls, and `why` says which was built.
-        
+
     """
     needs = declared_needs(type_name)
     fp = needs.get("footprint") or (3, 3, 64, 64)
@@ -553,7 +553,7 @@ def lot_for(type_name: str, params: dict | None, *, features=(), voice: str | No
         type. The rest of the context is still keyed and recorded rather than built, so a
         flat-ground certificate cannot be read as an answer about a slope once one of those
         can be measured. `ethoslm.demand` fills it.
-        
+
     """
     params = dict(params or {})
     features = tuple(f for f in (features or ()) if f)

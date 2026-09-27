@@ -67,7 +67,7 @@ def _rect(part: dict) -> tuple:
         could not be measured: KeyError: 'x0'"}`, beside `failed: 0`. The geometry was
         never missing -- `Builder.pad_extent` has known how to turn both kinds into an
         extent since A1 -- this line just never asked for it.
-        
+
     """
     from .pipeline import part_rect
     fp = part.get("footprint")
@@ -103,7 +103,7 @@ def measure(builder, part: dict) -> dict:
         it inside a standing wall ring; a roof is solid over solid and is never counted.
         That is what tells a one-storey cottage under a tall roof from a three-storey one,
         and it needs nothing from the type.
-        
+
     """
     cols = _window(builder, part)
     fy = _floor_y(builder, part, cols)
@@ -213,13 +213,14 @@ def _declared(part: dict) -> dict:
 #: Features that are **open** -- a paved court, a yard, an aisle -- and are verified by
 #: their openness rather than by a mass standing on them (worker B's request, the
 #: expression round): paved at the floor and clear for three courses above.
-OPEN_FEATURES = ("courtyard", "yard", "court", "aisle")
+OPEN_FEATURES = ("courtyard", "yard", "court", "aisle", "roof_terrace")
 #: What share of an open feature's cells must be paved and clear for it to stand.
 OPEN_STANDS = 0.8
 #: Every feature a type may claim by rectangle; measured where it can be.
 CLAIMED_FEATURES = ("outshot", "wing", "porch", "dormers", "canopy", "jetty", "oriel",
                     "courtyard", "gate", "main_hall", "screen", "stalls", "aisle",
-                    "forge", "hearth", "shopfront", "counter", "altar", "dais", "benches", "bell")
+                    "forge", "hearth", "shopfront", "counter", "altar", "dais", "benches", "bell",
+                    "roof_terrace", "flat_roof")
 
 
 def _verify_open(cols: dict, rect, fy: int) -> bool:
@@ -240,6 +241,32 @@ def _verify_open(cols: dict, rect, fy: int) -> bool:
     return ok >= OPEN_STANDS * len(cells)
 
 
+#: Features that are a **roof you can stand on**: solid over the claimed rectangle at
+#: the claimed level, with the rectangle's inside clear for a person above it (a parapet
+#: round the rim and a pergola's posts are allowed). The transfer round: "flat-roofed
+#: homes" was a label until this read the roof off the blocks.
+FLAT_FEATURES = ("flat_roof",)
+
+
+def _verify_flat(cols: dict, rect, deck: int) -> bool:
+    if not rect or len(rect) != 4:
+        return False
+    x0, z0, x1, z1 = [int(v) for v in rect]
+    inner = [(x, z) for x in range(min(x0, x1) + 1, max(x0, x1))
+             for z in range(min(z0, z1) + 1, max(z0, z1))]
+    if not inner:
+        return False
+    solid = sum(1 for c in inner if _name((cols.get(c) or {}).get(deck, "air")) not in AIR
+                or "ladder" in str((cols.get(c) or {}).get(deck, "")))
+    # nothing pitched: no roof block rises three courses over the deck inside the rim
+    risen = sum(1 for c in inner
+                if any(_name((cols.get(c) or {}).get(deck + k, "air")) not in AIR
+                       and "fence" not in str((cols.get(c) or {}).get(deck + k, ""))
+                       and "slab" not in str((cols.get(c) or {}).get(deck + k, ""))
+                       for k in (2, 3, 4)))
+    return solid >= 0.9 * len(inner) and risen <= 0.1 * len(inner)
+
+
 def rects_of(claim) -> list:
     """A feature's claimed ground, as a **list** of rectangles.
 
@@ -251,7 +278,7 @@ def rects_of(claim) -> list:
         carry something, four small booths give it three per cent, and the square's stalls
         read `claimed_not_found` **however well they stood**. A feature in four places is
         four rectangles and not the box round them.
-        
+
     """
     if not claim:
         return []
@@ -270,7 +297,7 @@ def _verify_all(verify, cols: dict, claim, fy: int) -> tuple:
         Every one of them has to stand. A market whose two western booths a neighbour's
         tree-clearing pass razed is not a market that delivered its stalls, and the count is
         on the record so a reader can see it was two of four rather than none of one.
-        
+
     """
     rs = rects_of(claim)
     if not rs:
@@ -299,7 +326,7 @@ def _verify_rect(cols: dict, rect, fy: int) -> bool:
         the column. `usable._stands_in` reads the same window on the assembled world, so the
         two instruments cannot drift: a disagreement between them is then a fact about the
         world and not about their arithmetic.
-        
+
     """
     if not rect or len(rect) != 4:
         return False
@@ -345,9 +372,10 @@ def _verify_feature(cols: dict, name: str, claim, fy: int) -> tuple:
         round's second evidence connection: half a rectangle of the voice's own masonry is
         not a hearth, and `source: "not_identified"` is a different fact from
         `claimed_not_found` -- the type laid something there and it is not the thing.
-        
+
     """
-    verify = _verify_open if name in OPEN_FEATURES else _verify_rect
+    verify = (_verify_open if name in OPEN_FEATURES else
+              _verify_flat if name in FLAT_FEATURES else _verify_rect)
     ok, stood_n, want_n = _verify_all(verify, cols, claim, fy)
     words = _identity_words(name)
     if not ok or not words:
@@ -368,7 +396,7 @@ def outcome(builder, part: dict, decl: dict | None = None,
         where it made one, and `declared` where only the type says so; `features_source`
         records which. `omitted` and `fallback` are what was asked for and not delivered,
         from the attempted parameters, the type's own account and the measurement together.
-        
+
     """
     params = dict(params or (part.get("params") or {}))
     try:
@@ -402,11 +430,18 @@ def outcome(builder, part: dict, decl: dict | None = None,
     #: rather than a bool, because "two of the four booths stand" is the fact and
     #: `False` is the summary of it.
     counted: dict = {}
+    # **A feature off the ground floor says where it stands.** The transfer round: a
+    # roof terrace is paved at the roof deck and a pergola stands on it, and read at the
+    # ground floor both were `claimed_not_found` however well they stood. A type that
+    # lays a feature at another level publishes it in `emitted.levels`, and the feature
+    # is verified in the same window at that level.
+    lv = em.get("levels") or {}
     for name in CLAIMED_FEATURES:
         claim = (em.get("features") or {}).get(name)
         rect = (em.get("rects") or {}).get(name)
-        if rect and fy is not None:
-            ok, stood_n, want_n, how = _verify_feature(cols, name, rect, int(fy))
+        at = lv.get(name, fy)
+        if rect and at is not None:
+            ok, stood_n, want_n, how = _verify_feature(cols, name, rect, int(at))
             features[name] = bool(ok)
             source[name] = how
             counted[name] = [want_n, stood_n]
@@ -527,7 +562,7 @@ def feature_kind(token: str) -> str | None:
         and for `gate` or `chimney` (openings in the fabric, which `usable.EQUIPMENT`
         deliberately excludes). A caller that needs evidence for one of those reads
         `evidence_for`, which says so rather than guessing.
-        
+
     """
     from . import usable
     t = str(token)
@@ -545,7 +580,7 @@ def wants_for(row: dict, required=()) -> tuple:
         `required` are the feature tokens the **demand binding** makes mandatory of this part
         (`demand.required_by_part`). The result is in `usable.WANTS` order so a reader meets
         the predicates in the order the contract names them.
-        
+
     """
     from . import usable
     got = set(CONFIRM_WANTS)
@@ -591,7 +626,7 @@ def occupied_columns(world, row: dict) -> dict | None:
         else. **None, not zero**, where the part is not standing or has no rectangle to
         measure: `emitted_columns`' contract is that an unreported part is absent from the
         dict, and a 0 would be read as a part that built nothing.
-        
+
     """
     from . import usable
     name = str(row.get("part") or row.get("name") or "")
@@ -680,7 +715,7 @@ def confirm(world, parts_record: dict, *, wants=None, required=None) -> dict:
 
         Returns `{"parts": n, "changed": [...], "owed": [...], "why": str}` and **mutates the
         record**, so the caller writes `parts.json` back.
-        
+
     """
     from . import usable
     rows = [r for w in (parts_record or {}).get("waves") or []
@@ -773,7 +808,7 @@ def evidence_for(source, part, feature: str, *, answers: dict | None = None) -> 
         happen -- `usable.answer` refuses to build one -- so the only affirmative answers are
         `observed` (the assembled volume) and `inferred` (a geometric measurement at
         emission, which is what `storeys` is). Anything else is owed and says why.
-        
+
     """
     from . import usable
     world = source if isinstance(source, usable.World) else None
@@ -915,7 +950,7 @@ def surfaces(builder, part: dict) -> dict:
         and never guessed. `exposed` counts wall-role blocks with open air on a side, which
         is what a later material pass would weather; `by_face` says which side. Ground the
         part did not lay is not in the builder's pending set and is not charged here.
-        
+
     """
     # **Recorded at the write, where the builder has the record.** The expression round:
     # the role is what the primitive laid the block as, not a guess from its family; a
@@ -990,7 +1025,7 @@ def _type_ns(type_name: str, source: str | None = None) -> dict:
         to mean putting it in `types/` for the length of the probe, which is a shared
         directory a concurrent run also reads; naming the file is the same answer without
         the hazard.
-        
+
     """
     from . import pipeline
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -1030,7 +1065,7 @@ def probe_build(type_name: str, w: int, d: int, params: dict | None = None, *,
         is what a terrace leaf is actually handed. Nothing stands next door in the probe --
         what is being measured is the pad, and the pad is decided by the plan's word, not by
         whether the neighbour has been built yet.
-        
+
     """
     from . import offline, pipeline
     from .buildlib import Builder
@@ -1073,7 +1108,7 @@ def probe_storeys(type_name: str, storeys: int, small_lot, control_lot, *,
 
         `{"small": {"planned", "emitted", "lot"}, "control": {...}}`, each `emitted` read off
         the geometry by `outcome` and never off the parameters.
-        
+
     """
     out = {}
     for key, lot in (("small", small_lot), ("control", control_lot)):
@@ -1099,7 +1134,7 @@ def constraint(part: dict, decl: dict | None, emitted: dict | None, *,
         executing them, which is the only statement of those rules that cannot drift from
         the code. The owner is `layout` (the lot is the layout's decision) where a lot
         within reach delivers it, and `build` (the type cannot) where none does.
-        
+
     """
     em = emitted or {}
     params = dict(params or em.get("attempted") or part.get("params") or {})

@@ -136,7 +136,8 @@ VARIANTS = "variants"
 #: says nothing the place's form decides (`chimney_default`). The voice *permits*: the
 #: type still decides per building by purpose and seed, as `cottage` and `hall` do and
 #: `minka` never does, so a permitted chimney is never every building.
-CHIMNEY_BY_FORM = {"east_asian": False, "european_vernacular": True}
+CHIMNEY_BY_FORM = {"east_asian": False, "european_vernacular": True,
+                   "dryland_vernacular": False}
 
 
 def chimney_default(form: str | None) -> bool:
@@ -163,7 +164,7 @@ def validate(voice: dict, where: str = "a voice") -> dict:
         Every refusal names the role and what was in it, because the caller is as likely to
         be a model that just wrote the file as a person who just edited it, and "invalid
         voice" is not something either of them can act on.
-        
+
     """
     from .prims import family
     if not isinstance(voice, dict):
@@ -231,6 +232,17 @@ def validate(voice: dict, where: str = "a voice") -> dict:
                 f"in stairs and slabs as well as cubes. Name one of "
                 f"{', '.join(sorted(fams))} -- or, if this exact block is wanted "
                 f"somewhere no shape is needed, that is what 'roles.floor' is for")
+    # **...and the footing is laid as a wall too** (the city attempt round): a hall's
+    # skirt and a yard's low wall are the footing's `wall` shape, and a voice whose
+    # footing is quartz -- which has stairs and a slab and no wall -- validated here and
+    # then crashed 67 parts of a city at construction
+    from .prims import shape as _shape
+    try:
+        _shape(str(roles["footing"]), "wall")
+    except (ValueError, KeyError) as e:
+        raise VoiceError(f"{where}: 'roles.footing' is {roles.get('footing')!r}, and the "
+                         f"footing is laid as a wall as well as in stairs and slabs -- "
+                         f"{e}") from e
     for role in SOLID + tuple(r for r in OPTIONAL
                               if roles.get(r) and r not in OPTIONAL_SHAPED):
         from .prims import solid
@@ -335,7 +347,7 @@ def value_range(roles: dict) -> dict:
         is the project's own block-to-colour table and this is its luma, so a voice's spread
         is measured by the same thing that draws the previews. Recorded rather than
         enforced: `blackstone_and_ash` is a legitimate voice and it is nearly flat.
-        
+
     """
     from .preview import block_colour
     from .prims import solid
@@ -396,7 +408,7 @@ def author(name: str, voice: dict, directory: str | None = None) -> dict:
         The point of the whole change: the place spec may hand back a voice that does not
         exist yet, and this is where it becomes one. Validated **before** it is written, so
         a refused voice leaves nothing on disk to be picked up by the next run.
-        
+
     """
     if not isinstance(name, str) or not NAME_RE.match(name):
         raise VoiceError(f"a voice is named in lower case with underscores, like "

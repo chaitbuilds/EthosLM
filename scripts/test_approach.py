@@ -188,7 +188,7 @@ def t_it_does_not_eat_the_door_it_was_called_for():
         straight through them. The building came back walkable and with no door in it, and
         W002 was the only thing that noticed. Anything the program placed that is not its
         own air is now protected.
-        
+
     """
     extra, door = hut_on_a_plinth({}, floor=GROUND + 3)
     vol = world()
@@ -345,7 +345,7 @@ def t_nothing_else_composes_an_api_section():
         `make_briefs.py`'s API section omitted `check_door` and `check_walkable` while the
         settlement brief had them, so which checks a builder knew about depended on which
         script composed its brief -- and 0 of 16 product-claim programs called either.
-        
+
     """
     readers = set()
     offenders = []

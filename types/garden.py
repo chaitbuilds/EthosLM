@@ -112,6 +112,12 @@ def build(b, part, seed, **params):
         layout = "cross"
 
     ground = b.block(b.voice["ground"])
+    # **Beds are soil.** The transfer round: a voice whose ground is dressed stone
+    # (`cut_sandstone_terraces`) planted its gardens' flowers in smooth sandstone. The
+    # path keeps the made ground; what is planted is planted in earth.
+    soil = ground if ground.split("[")[0] in ("grass_block", "dirt", "coarse_dirt",
+                                              "podzol", "rooted_dirt", "moss_block",
+                                              "mud") else "grass_block"
     # **A garden's path is the ground worked, not the voice's paving**, the craft round
     # (E6): a path of the voice's `floor` under a kerb of its `trim` made an area the
     # size of nine houses a large red rectangle in a voice whose trim is red sandstone,
@@ -140,7 +146,7 @@ def build(b, part, seed, **params):
             if (x, z) in walk:
                 b.place_block(x, y, z, path)
             else:
-                b.place_block(x, y, z, ground)
+                b.place_block(x, y, z, soil)
                 beds.append((x, z))
             b.place_block(x, y + 1, z, "air")
             b.place_block(x, y + 2, z, "air")
@@ -155,7 +161,7 @@ def build(b, part, seed, **params):
         if (x, z) in walk and layout == "cross":
             continue
         if edge == "hedge":
-            b.place_block(x, y, z, ground)
+            b.place_block(x, y, z, soil)
             b.place_block(x, y + 1, z, bush)
         elif edge == "rail":
             b.place_block(x, y + 1, z, rail)

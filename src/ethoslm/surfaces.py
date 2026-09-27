@@ -116,7 +116,7 @@ def record(builder, part: dict, *, part_index: int | None = None,
 
         `part_index` selects the builder's part where it built several; by default the
         last part sited (the way `instantiate_part` builds: one part per builder).
-        
+
     """
     owner = getattr(builder, "_owner", None) or {}
     pending = getattr(builder, "_pending", None) or {}
@@ -287,7 +287,7 @@ def reconcile(doc: dict, built, *, note: str = "") -> tuple:
         each kind were dropped and why. Nothing is added: a cell the record does not own
         stays unowned, because unknown ownership is not permission to recolour the
         landscape or another part's work.
-        
+
     """
     parts = list((doc or {}).get("parts") or [])
     pal = list(built.palette)

@@ -110,7 +110,7 @@ def _bands(size, rng):
         left a 2x2 yard between two ranges with no rooms in them. Both were inside the band
         the file declared. `size` here is one axis of the pad; the caller is responsible for
         not calling it below `PAD_MIN`.
-        
+
     """
     tot = min(size - COURT_MIN, 2 * 6)         # what the two ranges may have
     hi = max(COURT_MIN, min(size - 2 * RANGE_MIN, size // 3 + 2))

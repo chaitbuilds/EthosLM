@@ -97,7 +97,7 @@ def rooms_by_level(res: dict) -> dict:
         Only meaningful while they *are* two: once a flight cuts the stairwell the storeys
         are one connected component and `observe.rooms` rightly reports one room. That is
         why the acceptance is stated on totals -- see `walked`.
-        
+
     """
     return {r["bbox"][1] - 1: r["fraction"] for r in res["rooms"]}
 
@@ -261,7 +261,7 @@ def t_a3_check_walkable_scopes_to_the_plot_not_the_bounding_box():
         builder was told fifteen rooms could not be walked into at all. It said so in its
         reply and discounted the report; it then shipped the tower that carries three of the
         town's four errors.
-        
+
     """
     from ethoslm import pipeline
     rnd = pipeline.Round.load(os.path.join(ROOT, "rounds", "site_d.json"))
@@ -480,7 +480,7 @@ def r_bss3_b2_a_type_may_not_build_on_its_own_doorstep():
         walk in; a type that then puts a block in it seals the building. Four halls in a
         city did exactly that -- a footing course over ground their own flood could not
         reach, doorstep included -- and it read as four unreachable doors.
-        
+
     """
     from ethoslm.buildlib import TypeBuilder
     v = world()

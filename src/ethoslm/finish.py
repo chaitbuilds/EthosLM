@@ -50,7 +50,7 @@ def plan_finish(built: dict, ground: np.ndarray, x0: int, z0: int, *,
         `built` maps (x, z) -> the finished height of ground we laid (lane cells, and the
         grade a plot was cut to). `ground` is the vegetation-free surface. Returns only the
         columns whose height should change, as (x, z) -> new height.
-        
+
     """
     sx, sz = ground.shape
 
@@ -119,7 +119,7 @@ def apply(builder, targets: dict, dress: bool = True) -> dict:
         Fill uses the column's own subsoil and caps with its own surface block, so a seam in
         a jungle finishes in dirt and grass and a seam in a mesa finishes in terracotta,
         without being told which site it is on.
-        
+
     """
     stats = {"columns": len(targets), "cut": 0, "filled": 0, "moved": 0}
     for (x, z), y in sorted(targets.items()):

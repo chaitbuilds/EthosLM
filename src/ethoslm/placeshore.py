@@ -68,7 +68,7 @@ def wants_frontage(spec: dict) -> str | None:
         Read through `ethoslm.intent`, off the sentence, like every other word-driven choice
         in this project. This is what turns "with homes facing the water" into a constraint
         the compiler obeys, instead of a sentence the report quotes.
-        
+
     """
     from . import intent as intent_mod
     text = " ".join([str((spec or {}).get("sentence") or ""),
@@ -86,7 +86,7 @@ def wants_shoreline(spec: dict) -> bool:
         same rule every other word-driven choice in this project obeys. A spec that declares
         rings is concentric whatever else the sentence says -- rings are the stronger
         statement and the two cannot both be the whole-place organisation.
-        
+
     """
     from . import intent as intent_mod
     if spec_mod.rings(spec):
@@ -105,7 +105,7 @@ def _path_near(anchor: dict, rect, pad: int = 128) -> dict:
         of its blocks. Cut down rather than whole because the whole path of a site's shore
         is a long list to copy onto every district, and a point 300 columns away has no
         bearing on which wall a door goes in.
-        
+
     """
     x0, z0, x1, z1 = [int(v) for v in rect]
     path = [[int(a), int(b)] for a, b in
@@ -224,7 +224,7 @@ class ShoreSolver(placesolve.Solver):
                 band of 65 columns against a 28-column floor and a 6-column lane tiled into one
                 row of 32 and a 27-column remainder that is nobody's -- the same defect the ring
                 layout had at its chamfered corners, a size smaller.
-                
+
         """
         gap = placesolve.LANE_GAP
         self.band_depth = rows * self.row_depth + (rows - 1) * gap
@@ -394,7 +394,7 @@ class ShoreSolver(placesolve.Solver):
                 on the shore its band is longest about. A green "beside the centre" of a village
                 strung along the water goes there, on the landward side of the shore road, and
                 the request is answered rather than refused for a centre nobody asked for.
-                
+
         """
         if self.core is not None and self.by_name.get(self.core.get("name")) is not None:
             return super()._cands_beside(d, name, k)
@@ -483,7 +483,7 @@ class ShoreSolver(placesolve.Solver):
                 district's longer side) then puts every front on a street parallel to the water,
                 by construction. `placed` overrides the parts blocked out, so the centre can ask
                 what the band tiles into before it chooses where to stand.
-                
+
         """
         import numpy as np
         g = placesolve.LANE_GAP
@@ -542,7 +542,7 @@ class ShoreSolver(placesolve.Solver):
                 The parent cuts four strips out of the box round a centre. Here the ground is a
                 mask and the districts are its tiling, which is the operation both policies now
                 share (`regions.tile`).
-                
+
         """
         if not groups:
             return
@@ -578,7 +578,7 @@ class ShoreSolver(placesolve.Solver):
                         each `least` deep, and each row is tiled along its own length. The
                         compiler's own rule (streets run along a district's longer side) then puts
                         every front on a street parallel to the water, by construction.
-                        
+
             """
             import numpy as np
             whole = _blocked(np.asarray(self._band(rows), bool).copy())
@@ -907,7 +907,7 @@ def faces_water(place: dict) -> tuple:
         aspect ratio says where the streets run and says nothing at all about which way a
         door is. `fronts_facing_water` below is the requirement; this is a property of the
         tiling.
-        
+
     """
     lay = (place or {}).get("layout") or {}
     anchor = lay.get("anchor") or {}
@@ -946,7 +946,7 @@ def water_direction(anchor: dict, x: int, z: int) -> str | None:
         to the nearest column of the shore path, reduced to its dominant axis -- which is
         the same answer as `water_side` on a straight shore and a different one on a curved
         shore, which is the entire point.
-        
+
     """
     path = [(int(p[0]), int(p[1])) for p in (anchor or {}).get("path") or []]
     if not path:
@@ -977,7 +977,7 @@ def fronts_facing_water(anchor: dict, parts: list) -> dict:
         No threshold and no share: "most of them face the water" is a number somebody would
         have to choose, and the geometric statement that needs no choosing is that a place
         whose homes face the water has **no home fronting away from it**.
-        
+
     """
     out = {"toward": 0, "along": 0, "away": 0, "unknown": 0, "rows": []}
     for p in parts:

@@ -157,7 +157,7 @@ def c_a_refused_card_cannot_be_judged_from_a_stale_file():
         compose. A judge stage that resolved paths off the filesystem judged the stale one
         and reported a clean result -- which is precisely the "nobody looked" failure the
         refusal exists to stop.
-        
+
     """
     with tempfile.TemporaryDirectory() as d:
         frames = os.path.join(d, "frames")
@@ -663,7 +663,7 @@ def _sel_round(d, k=4):
         directory of hash-named jobs says nothing about any one of them -- so a suite that
         stages blinded builds would otherwise litter the real one. Same trap, and same fix,
         as `measure.LOG` at the top of this file.
-        
+
     """
     pipeline.BUILD_SCRATCH = os.path.join(d, "out", "build_scratch")
     _sel_round.answer = lambda b, src: (          # write a program and say so
@@ -1043,7 +1043,7 @@ def _check_round(d):
 
         Real enough for `lint.Context`, `observe.rooms` and the walk model -- the check
         under test is the real one, not a stand-in.
-        
+
     """
     from ethoslm import observe, offline
     from ethoslm.circulate import Network, Threshold
@@ -1101,7 +1101,7 @@ def c_check_py_tells_a_builder_its_door_is_a_jump_and_stops_when_it_is_not():
         `check.py` it was given, and the on-foot line is in `findings.md`. It appends one
         `approach()` call, runs the same check again, and the line is gone. Nothing else
         about the program changes.
-        
+
     """
     import subprocess
     with tempfile.TemporaryDirectory() as d:
@@ -1455,7 +1455,7 @@ def t_a4_a_tree_flattens_to_the_plots_a_flat_plan_gives():
         every stage downstream reads plots, so the tree has to flatten to exactly the list
         the flat plan gave, or the change is a rewrite of the pipeline rather than an
         addition to the plan.
-        
+
     """
     rnd = pipeline.Round.load(os.path.join(ROUNDS, "site_f.json"))
     flat = rnd.plots()
@@ -1494,7 +1494,7 @@ def t_a4_the_tree_survives_a_round_trip_through_the_round():
         the driver reads and does not write: a planner writes `plan.json` and every stage
         after it reads that file, so a shape the driver silently flattens on the way in
         would lose the "of" the moment it landed.
-        
+
     """
     d = tempfile.mkdtemp(prefix="ethoslm_tree_")
     tree = {"intent": "a walled district", "centre": "gate", "parts": [
@@ -1539,7 +1539,7 @@ def t_a6_the_per_wave_findings_union_equals_the_whole_town():
         the end. The thing that has to be true is that nothing falls between: the union of
         the per-wave findings, each restricted to that wave's own plots, is exactly the
         whole-town finding set restricted to the plots.
-        
+
     """
     from ethoslm import lint, offline
     rnd = pipeline.Round.load(os.path.join(ROUNDS, "site_f.json"))
@@ -1585,7 +1585,7 @@ def t_a6_e010_reports_every_floating_mass_on_a_plot_not_the_first_sixty():
 
         The fix is that a cap is a cap on the answer: the rectangles the caller is
         answerable for go in, and only what is inside them is counted against it.
-        
+
     """
     from ethoslm import lint, observe, offline
     rnd = pipeline.Round.load(os.path.join(ROUNDS, "site_f.json"))
@@ -1645,7 +1645,7 @@ def t_a2_a_plan_with_an_undersized_plot_is_rejected_with_that_plot_named():
         on one refused it by name **after** the ground had been prepared. Here the plan does
         not get that far: the leaf is named, the pad and the need are quoted, and widening
         the plot to what the type asks for makes the same tree pass.
-        
+
     """
     from ethoslm import place
     decl = pipeline.load_type(os.path.join(ROOT, "types", "townhouse.py"))
@@ -1678,7 +1678,7 @@ def t_a2_a_plan_is_also_checked_for_overlap_kind_and_the_gate_in_its_wall():
         standing in the wall it crosses is not: `PASSAGE` is the type saying a network may
         cross it, and a crossing that did not touch the thing it crosses would be a gap
         beside a gate.
-        
+
     """
     from ethoslm import place
     over = [_leaf("a", "workshop", 0, 0, 9, 9), _leaf("b", "workshop", 4, 4, 9, 9)]
@@ -1715,7 +1715,7 @@ def t_a2_a_failing_plan_goes_back_to_the_planner_once_and_then_stops():
         A second failure stops the round with the list rather than asking again: a planner
         that has been told exactly which leaves are too small and has come back with leaves
         that are too small has answered the question.
-        
+
     """
     from ethoslm import place
 

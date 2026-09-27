@@ -123,7 +123,7 @@ def face_crop(vol, rect, facing: str, floor: int | None, *, side: int = 1,
         so an eave that oversails the footprint is not clipped off. `floor` cuts the
         subsoil, `rise` limits the view to that many courses above the floor (an eye-height
         view of a wall) and `run` to that many blocks along the face, centred.
-        
+
     """
     from ethoslm import observe
     x0, z0, x1, z1 = [int(v) for v in rect]
@@ -198,7 +198,7 @@ def wall_run(plan_part: dict, centre, run: int = 40) -> tuple | None:
         A wall is a swept polyline with no rectangle, so its camera comes off the path:
         the longest axis-aligned segment, `run` blocks of it about its midpoint, seen from
         whichever side is away from the centre of the place.
-        
+
     """
     path = [tuple(int(v) for v in p) for p in (plan_part.get("path") or [])]
     if len(path) < 2 or centre is None:
@@ -225,7 +225,7 @@ def subjects(rows: list, plan_parts: dict, sdoc: dict, floors: dict,
         Chosen by what they are, not by a bounding box: the busiest street row and the
         house at its head, that house's own face at eye height, a courtyard type seen from
         above, the outer face of a wall, and the place itself for the composition.
-        
+
     """
     built = [r for r in rows if r.get("status") == "built" and r.get("stood", True)]
     plots = [(r["part"], _rect(r, plan_parts),
@@ -357,7 +357,7 @@ def nearest_by_colour(block: str) -> str | None:
         colour table names the pair it cannot separate. On the farm's cobblestone it
         returns andesite, which is exactly the substitution the expression round's recipe
         makes on its walls and exactly the one its pictures could not show.
-        
+
     """
     from ethoslm import prims
     here = np.array(preview.block_colour(str(block)), float)
@@ -381,7 +381,7 @@ def dominant(prec: dict, role: str | None = None) -> tuple:
         house's street face is its roof, and the restrained recipe under judgement edits
         walls -- so the display is asked about the substitution that is actually being made
         as well as about the biggest one on the camera.
-        
+
     """
     cells = prec.get("cells") or {}
     if not cells:
@@ -407,7 +407,7 @@ def controls(built, sdoc: dict, subj: dict, out_dir: str, seed: int,
         `gross` is a substitution no display may miss. `pair` is the two blocks the flat
         display draws alike, chosen by that display's own table. A display that registers
         `gross` and not `pair` cannot answer the question this comparison asks.
-        
+
     """
     got: dict = {"subject": subj["view"], "role_asked_for": role_want,
                  "part": subj["parts"][0] if subj["parts"] else None, "cases": []}
@@ -455,7 +455,7 @@ def coherence(p: dict) -> dict:
 
         A coherent patch has neighbours; a uniform scatter at the same rate does not. This
         is the difference the contextual arm claims to make, as a number.
-        
+
     """
     cells = p.get("cells") or {}
     if not cells:
@@ -636,7 +636,7 @@ def re_record_state(state: str, work: str, *, rebuild: bool = False) -> dict:
 
         The retained state directory is read and never written; everything goes to
         `work/<name>/`.
-        
+
     """
     from ethoslm import ground as _ground, pipeline, stages, surfaces as SS
     from ethoslm.buildlib import max_blocks_for
@@ -835,7 +835,7 @@ def narrow(recipe: dict, roles=None, whens=None) -> dict:
 
         Not part of the registered comparison: it is how a **diagnostic** run isolates
         which half of a recipe did the damage, after the registered run has been recorded.
-        
+
     """
     def cut(rec):
         out = {}

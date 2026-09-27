@@ -84,7 +84,7 @@ def _bed_heights(vol: observe.Volume) -> np.ndarray:
         across a pond is a causeway at water level and that is what the router needs. A
         causeway also has to be *filled* to something, and filling to the surface is a road
         floating on a lake -- so the fill in this harness is measured from here.
-        
+
     """
     t = vol.tables()
     c = vol.codes
@@ -111,7 +111,7 @@ def _ground(key: int) -> tuple:
         Lamp posts and lanterns are off. They are the one thing `emit` places that is
         lighting rather than circulation, and a fixture bank is not the place to measure
         whether a lantern is in the way.
-        
+
     """
     fx = terrain_bank.load()["fixtures"][key]
     full = _world(fx["round"], fx["cache"])
@@ -134,7 +134,7 @@ def instance(key: int, seed: int, storeys: int) -> dict:
         Returns the builder, the part, the volume the instance stands in and the world it
         stood in before it -- which is what makes "the instance's own writes" a set rather
         than an argument.
-        
+
     """
     base, net, plot = _ground(key)
     b = Builder(offline.OfflineSite(base))
@@ -201,7 +201,7 @@ def _surround(base: observe.Volume, plot: dict) -> str:
         `site()` clears and is the answer `dress_ground` gives itself when nobody names a
         cover. Where that ring is itself bare subsoil there is nothing to put back and the
         assertion does not apply.
-        
+
     """
     x0, z0 = min(plot["x0"], plot["x1"]), min(plot["z0"], plot["z1"])
     x1, z1 = max(plot["x0"], plot["x1"]), max(plot["z0"], plot["z1"])
@@ -350,7 +350,7 @@ def _one(work) -> dict:
         Everything that crosses a process boundary is a string or a list of strings: the
         builder, the volume and the lint report stay in the worker, because the answer this
         suite gives is `bad` and the line it prints, and nothing downstream reads the rest.
-        
+
     """
     key, seed, storeys = work
     fixtures = terrain_bank.load()["fixtures"]

@@ -485,7 +485,7 @@ def gate_programme_composed(g: Gate) -> None:
             compiled record already lists, per district, the types its role admits that its
             programme did **not** ask for (`use_mix.unasked`); the check asks whether any of
             those stood, which is the question the sentence was always about.
-        
+
     """
     place = _doc(CITY, "plan.place.json")
     if not g.have("plan.place.json", place):
@@ -754,7 +754,7 @@ def gate_ground_is_feasible(g: Gate) -> None:
         `placeplan.developable_columns` subtracts roads and standing-part clearances from a
         rectangle, but not water or infeasible grades. `arrange.certificate_for` calls the
         district validator with `ground=None`."*
-        
+
     """
     place = _doc(CITY, "plan.place.json")
     if not g.have("plan.place.json", place):
@@ -858,7 +858,7 @@ def gate_change_is_scoped(g: Gate) -> None:
         on its defining part; the recorded actions refabricate ten lower-ring districts."* and
         *"`arrange.alternatives` passes the previous candidate's `parts_record` into
         `region_columns` and `street_enclosure` for hypothetical newly compiled leaves."*
-        
+
     """
     imp = _doc(CITY, "improve.json")
     if not g.have("improve.json", imp):
@@ -936,7 +936,7 @@ def gate_promotion_is_earned(g: Gate) -> None:
         lint it returns `blocked` without restoring the previous candidate. Both recorded
         cycles stopped at lint. The next cycle operates on the failed first revision, and the
         second failed revision remains the delivered candidate."*
-        
+
     """
     rec = _doc(CITY, "trials.json")
     if not g.have("trials.json", rec):
@@ -1188,7 +1188,7 @@ def gate_both_sides_inhabited(g: Gate) -> None:
 
         Built geometry and a reader's view of the delivered artifact together. A numerical
         guard does not overrule a negative reading, and a reading does not overrule geometry.
-        
+
     """
     sec = _section(CITY)
     con = _rel_of(sec, "contrast")
@@ -1286,7 +1286,7 @@ def gate_improvement_is_earned(g: Gate) -> None:
         and without silently worsening another adopted architectural obligation.
 
         Rejection is exercised on a focused regression case and its attempt history survives.
-        
+
     """
     tr = _doc(CITY, "trials.json")
     imp = _doc(CITY, "improve.json")

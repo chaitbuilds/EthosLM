@@ -22,7 +22,14 @@ ROLE = "civic"
 PARAMS = {
     "planting": ("choice", ["rows", "copse", "avenue"]),
     "floor": ("choice", ["turf", "swept"]),
+    "crown": ("choice", ["broad", "palm"]),
 }
+
+#: What turf is: the ground a thing is planted in. A voice whose own ground is made --
+#: dressed stone, beaten earth -- still plants a grove in soil (the transfer round: an
+#: oasis's palms stood in smooth sandstone).
+SOIL = ("grass_block", "dirt", "coarse_dirt", "podzol", "rooted_dirt", "moss_block",
+        "mud", "mycelium")
 
 
 #: What this type needs from the ground before it can stand.
@@ -112,6 +119,29 @@ def _tree(b, x, z, y, height, trunk, rng, leaf=_LEAF):
     b.place_block(x, top + 1, z, leaf)
 
 
+def _palm(b, x, z, y, height, rng):
+    """A palm: a tall bare trunk and a crown of fronds that reach out and droop at their
+    tips, every leaf touching the crown or another leaf, two out at the most. Jungle
+    timber, whatever the voice: a palm is its own tree. The trunk is worked timber
+    (stripped), as every built tree's is: a neighbour's site clearance takes a bare log
+    for a wild tree and removes it, crown and all."""
+    trunk = b.axial("stripped_jungle_log", "y")
+    leaf = "jungle_leaves[persistent=true]"
+    for i in range(height):
+        b.place_block(x, y + 1 + i, z, trunk)
+    top = y + height
+    b.place_block(x, top + 1, z, leaf)
+    b.place_block(x, top + 2, z, leaf)
+    for (ux, uz) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        b.place_block(x + ux, top + 1, z + uz, leaf)
+        b.place_block(x + 2 * ux, top + 1, z + 2 * uz, leaf)
+        b.place_block(x + 2 * ux, top, z + 2 * uz, leaf)
+    for (ux, uz) in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+        b.place_block(x + ux, top + 1, z + uz, leaf)
+        if rng.random() < 0.5:
+            b.place_block(x + ux, top, z + uz, leaf)
+
+
 def build(b, part, seed, **params):
     rng = random.Random(seed)
     x0, z0, x1, z1 = _rect(part)
@@ -125,11 +155,20 @@ def build(b, part, seed, **params):
     if floor not in ("turf", "swept"):
         floor = "turf"
 
+    crown = params.get("crown", "broad")
+    if crown not in ("broad", "palm"):
+        crown = "broad"
     ground = b.block(b.voice["ground"])
+    if ground.split("[")[0] not in SOIL:
+        ground = "grass_block"
     swept = b.block(b.voice["footing"])
     trunk = b.axial(b.block(b.voice["frame"], "post"), "y")
     leaf = b.foliage(b.voice["frame"]) + "[persistent=true]"
-    b.fill_region(x0, y + 1, z0, x1, y + 8, z1, "air")
+    if not any(k in trunk for k in ("_log", "_wood", "_stem", "_hyphae", "bamboo_block")):
+        # a voice framed in stone grows no tree of its own: the tree is oak, and worked
+        # timber like every built trunk (see `_palm`)
+        trunk = b.axial("stripped_oak_log", "y")
+    b.fill_region(x0, y + 1, z0, x1, y + (12 if crown == "palm" else 8), z1, "air")
 
     door = part.get("door")
     dx, dz = (int(door[0]), int(door[-1])) if door else (None, None)
@@ -164,8 +203,23 @@ def build(b, part, seed, **params):
     spots = [c for c in _spots(x0, z0, x1, z1, planting, rng, cx, cz)
              if c not in walk]
     planted = 0
+    if crown == "palm":
+        # a palm's crown reaches two, as a broad tree's canopy and trunk do together:
+        # its trunks stand two in from the rim, far enough apart that crowns only touch
+        cells = [(tx, tz) for tx in range(x0 + 2, x1 - 1) for tz in range(z0 + 2, z1 - 1)
+                 if (tx, tz) not in walk]
+        rng.shuffle(cells)
+        spots = []
+        for c in cells:
+            if all(max(abs(c[0] - o[0]), abs(c[1] - o[1])) >= 3 for o in spots):
+                spots.append(c)
+            if len(spots) >= max(1, len(cells) // 7):
+                break
     for (tx, tz) in spots:
-        _tree(b, tx, tz, y, rng.randint(*_TRUNK), trunk, rng, leaf)
+        if crown == "palm":
+            _palm(b, tx, tz, y, rng.randint(5, 8), rng)
+        else:
+            _tree(b, tx, tz, y, rng.randint(*_TRUNK), trunk, rng, leaf)
         planted += 1
 
     # the undergrowth, where the floor is turf and nothing stands
@@ -185,5 +239,6 @@ def build(b, part, seed, **params):
     b.check_attached()
     # the reserved doorway stays walkable, whatever the floor and the border did
     b.area_way_in(part["x0"], part["z0"], part["x1"], part["z1"], int(part["floor_y"]))
-    return {"ok": True, "planting": planting, "floor": floor, "trees": planted,
+    return {"ok": True, "planting": planting, "floor": floor, "crown": crown,
+            "trees": planted,
             "undergrowth": under, "cells": w * d}

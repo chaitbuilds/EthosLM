@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import sys
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -21,8 +22,15 @@ loader.loader.exec_module(fs)
 
 class Coherence(unittest.TestCase):
     def test_virgin_ground_known_sites_and_clean_fixture(self):
-        self.assertIn("origin_builds", groundread.excluded(-256, 0, 372, 372))
-        self.assertIn("site_b", groundread.excluded(1536, -768, 192, 192))
+        # Reservations belong to the user's world. A public checkout starts empty;
+        # exercise intersection and margin with an explicit ledger, not our save.
+        ledger = {"margin": 4, "sites": [{"name": "occupied", "rect": [0, 0, 9, 9]}]}
+        with patch.object(groundread, "exclusions", return_value=ledger):
+            self.assertEqual(groundread.excluded(0, 0, 1, 1), ["occupied"])
+            self.assertEqual(groundread.excluded(13, 0, 1, 1), ["occupied"])
+            self.assertEqual(groundread.excluded(14, 0, 1, 1), [])
+        with patch.object(groundread, "exclusions", return_value={"margin": 4, "sites": []}):
+            self.assertEqual(groundread.excluded(0, 0, 1, 1), [])
         v = observe.Volume(5000, 60, 5000, np.ones((48, 12, 48), np.uint16), ["air", "stone", "bricks"])
         clean = fs.measure(fs.field_from_volume(v), 5000, 5000, 48, 12)
         self.assertEqual(clean["man_made_share"], 0)
@@ -41,7 +49,7 @@ class Coherence(unittest.TestCase):
                 90 of the 111 squares a city's search scanned were refused for it; and the one
                 green square that met every other need read 1.65% "man-made" with no build in
                 it. Here: a wood on grass counts for nothing, and a cobblestone wall still does.
-                
+
         """
         n = 48
         codes = np.zeros((n, 12, n), np.uint16)
@@ -114,7 +122,7 @@ class Coherence(unittest.TestCase):
                 failure and was really a contract failure: the palette was never the type's to
                 declare. A type declares a **form** now, so the same plan, unchanged, is checked
                 against the place's form family instead, and the whole class is gone.
-                
+
         """
         # Asked of the round rather than of a path under `out/`, so a checkout that has
         # the recorded plan as a shipped fixture and has never run the round reads the
@@ -199,7 +207,7 @@ class Coherence(unittest.TestCase):
                 so the same search over the same grid runs again with no server at all and gives
                 the same ranked list -- which is what makes a scan of a city's ground affordable
                 rather than a session apiece.
-                
+
         """
         import numpy as np
         import os

@@ -80,7 +80,7 @@ def _tiled(side: int) -> float:
         sits on. This is the whole of why a dense district is covered **less** than a sparse
         one: at a house's scale the street is a third of the ground and at a field's scale
         it is a tenth.
-        
+
     """
     s = max(1, int(side))
     return (s * s) / float((s + PLOT_LANE) ** 2)
@@ -114,7 +114,7 @@ def occupancy_shares() -> dict:
         `AREA_PLOTS` still says how big one piece of open ground is, capped at the largest
         square a committed area type admits; `PLOT_CELLS` is still what a spec call is shown
         as the word's place on the ladder, and is no longer what charges the ground.
-        
+
     """
     big = largest_area()[0] or 48
     out = {}
@@ -148,7 +148,7 @@ def fabric_fit(w: int, d: int, density: str, role: str | None = None,
         The same runs the compiler lays (`district_compile._runs`), the same lots along
         them, two rows to a block where it is deep enough for two, less the open blocks and
         the back rows the courtyard blocks give up.
-        
+
     """
     from . import district_compile as dc
     f = fabric(density, role, character)
@@ -209,7 +209,7 @@ def density_target(value: str | None, role: str | None = None) -> dict:
 
         Prefers `intent.density_target` where the meaning module states it, so that the
         checker and the generator read one table; answers from `DENSITY_TARGETS` otherwise.
-        
+
     """
     value = value or "medium"
     try:
@@ -256,7 +256,7 @@ def count_band(district: dict, part: dict, place: dict | None = None,
         above it, and the same restriction applies: the **lot** only, because `open_share`
         and `courtyard_share` are levers the compiler moves to reach its count and feeding
         those back into the count is a circle.
-        
+
     """
     usable = developable_columns(district, place, decls)
     ch = {k: v for k, v in {**(part.get("character") or {}),
@@ -317,7 +317,7 @@ def columns_per_structure_ceiling() -> dict:
         column lot at 15% cover is 960 columns of ground -- over `RING_COVERAGE`, the least
         of an annulus its districts may cover. It was the fabric's own natural density over
         the coverage, a number the band's definition of the word no longer targets.
-        
+
     """
     out = {}
     for w in spec_mod.PLOT_CELLS:
@@ -349,7 +349,7 @@ def least_footprint(spec: dict, decls: dict | None = None, *,
         asked before a site is chosen: the centre square the compound needs, every ring's
         least width from its insets and `RING_COVERAGE`, the outer wall's edge inset, and
         the room a district needs on a side. None where the spec declares no rings.
-        
+
     """
     from .buildlib import Builder
     rings = spec_mod.rings(spec)
@@ -566,7 +566,7 @@ def compound_composition(part: dict | None = None, *, spec: dict | None = None,
         the default row. `margin` is how far inside its rectangle the composition stands:
         the wall's inset and its clearance where the compound is walled, one plot clearance
         where it is not.
-        
+
     """
     if part is None and comp is not None and spec:
         part = next((d for d in spec_mod.compounds(spec) if _answers(comp, d)), None)
@@ -589,7 +589,7 @@ def largest_plot(types: list | None = None) -> tuple:
         Read off the files, honouring `NEEDS["except"]` -- a size the sweep found broken is
         not a size the library may size ground for. This is the biggest single building the
         place can hold anywhere, and so the thing a great thing has to be greater than.
-        
+
     """
     d = os.path.join(ROOT, "types")
     best = (0, None)
@@ -632,7 +632,7 @@ def dense_plot(types: list | None = None) -> dict:
         columns against 158.
 
         Returns the columns and every term of it, so the record says why rather than what.
-        
+
     """
     d = os.path.join(ROOT, "types")
     best = None
@@ -684,7 +684,7 @@ def largest_area(types: list | None = None) -> tuple:
         single piece of open ground the library can make. A brief that asked a sparse
         district for one area of 5,400 columns would be asking for a 73-block square and no
         committed type builds one.
-        
+
     """
     d = os.path.join(ROOT, "types")
     best = (0, None)
@@ -717,7 +717,7 @@ def admitted_plot_sides(role: str | None = None) -> list:
         every plot type on disk. The craft round, E1: a lot the library cannot build on is
         not a lot, and until this the only place on the ladder that was read off the files
         was its dense end (`dense_plot`).
-        
+
     """
     d = os.path.join(ROOT, "types")
     out: set = set()
@@ -776,7 +776,7 @@ def _demanded_shape(density: str, role: str | None, columns: int, side: int,
 
         A density with no attached house type, or a house type that declares no `STOREY_PAD`,
         gets the square this function replaces and nothing moves.
-        
+
     """
     from . import district_compile as dc
     ch = dict(spec_mod.CHARACTER_DEFAULTS.get(density) or {})
@@ -869,7 +869,7 @@ def density_lot(density: str, role: str | None = None,
         accident, out of a type's footprint ceiling. See `_demanded_shape`. Where nothing
         asks for a shape -- no attached house type, no storey band it can answer -- the width
         and the depth are the side, and the record says why.
-        
+
     """
     anchor = dense_plot()
     base = float(anchor["columns"])
@@ -918,7 +918,7 @@ def fabric(density: str, role: str | None = None, character: dict | None = None)
         `character` is a district's own where it has one -- a row of party walls is charged
         its frontage and no gap at all -- and the density's registered default otherwise,
         which is what `columns_per_structure_ceiling()` is the table of.
-        
+
     """
     from . import district_compile as dc
     ch = dict(spec_mod.CHARACTER_DEFAULTS[density])
@@ -1048,7 +1048,7 @@ def compound_ground(types: list | None = None, *, spec: dict | None = None,
             planner is being set up to fail.
 
         Returns the side and every term of it, so the record says why rather than what.
-        
+
     """
     from .placeread import MONUMENT_FOOTPRINT_MARGIN
     side, biggest = largest_plot(types)
@@ -1102,7 +1102,7 @@ def _monumental_columns(types: list | None = None) -> dict:
         The place read's own `MONUMENT_FOOTPRINT_MARGIN` over the largest plot the committed
         types admit -- the same two numbers `compound_ground` sizes the ground from, so the
         plan-time refusal and the ground the search cut cannot disagree.
-        
+
     """
     from .placeread import MONUMENT_FOOTPRINT_MARGIN
     side, name = largest_plot(types)
@@ -1438,7 +1438,7 @@ def _kind_ok(part: dict, d: dict, decls: dict) -> bool:
         So the kind a leaf may be is the spec's or the one its committed type declares. What
         the spec is answerable for -- that a palace is here, at the centre, and there is one
         of it -- is untouched.
-        
+
     """
     kind = part.get("kind", "plot")
     if kind == d["kind"]:
@@ -1452,7 +1452,7 @@ def _district_part(spec: dict, district: dict) -> dict:
 
         A district says which ring it is; where it does not, it gets the place's own number,
         which is `DENSITIES["medium"]` and is what every round before this one used.
-        
+
     """
     name = district.get("defines")
     for p in spec.get("defining_parts", []):
@@ -1469,7 +1469,7 @@ def _density_note(spec: dict) -> str:
         that says one ring is dense and another is farmland has said something the planner
         can only act on if somebody turns the word into columns. That arithmetic is the
         library's -- `spec.columns_per_plot` -- and this is where it is quoted.
-        
+
     """
     rows = [p for p in spec["defining_parts"] if p.get("density")
             and p["kind"] == "group"]
@@ -1490,7 +1490,7 @@ def _concentric_rules(spec: dict) -> str:
 
         Silent where nothing is concentric. A rule that is checked and not stated is a plan
         handed back once for free, and this level is handed back at most once in total.
-        
+
     """
     from .placeread import GREAT_WALL_HEIGHT
     rings = [p for p in spec["defining_parts"] if p["relation"] == "concentric"
@@ -1631,7 +1631,7 @@ def district_ground(district: dict, vol, *, ring_level: int | None = None,
         or an unmeasured record where there is no volume to read. A caller that gets
         `measured: False` knows the ground was not read; it does not get a confident answer
         about ground nobody looked at.
-        
+
     """
     from . import feasible
     rect = (min(district["x0"], district["x1"]), min(district["z0"], district["z1"]),
@@ -1914,7 +1914,7 @@ def _fronted(alt: dict, districts: list, rects: list, profs: dict, *, along_x: b
 
 def negotiate_strip(vol, districts: list, *, ring_level: int, depth_min: int,
                     gap: int = None, routes=None, access=None,
-                    front_depth: int | None = None) -> dict:
+                    front_depth: int | None = None, forms: dict | None = None) -> dict:
     """**A ring strip's cut, negotiated with the ground it cuts.** The quarter design
         round's parent decision.
 
@@ -1935,7 +1935,7 @@ def negotiate_strip(vol, districts: list, *, ring_level: int, depth_min: int,
 
         Pure: measures and returns `{"alternatives", "chosen", "pieces", ...}`; the caller
         adopts it or not and records why.
-        
+
     """
     gap = int(LANE_GAP if gap is None else gap)
     step = TERRACE_STEP
@@ -1986,6 +1986,30 @@ def negotiate_strip(vol, districts: list, *, ring_level: int, depth_min: int,
             if got and key not in seen:
                 seen.add(key)
                 alts.append(got)
+    # **...and cut again where the fabric's modules need it** (the parent composition
+    # round). The cuts above know the ground and nothing of what stands on it; where the
+    # strip's dwelling publishes a form plan, each arrangement is revised so that a
+    # piece past the arrival holds whole modules of the street arrangement its depth
+    # admits (`parentdemand.refit`), with the programme those modules hold and the
+    # ground they leave as landscape. The section each arrangement needs -- and what the
+    # strip is short of where one does not fit -- is recorded whether or not a module is
+    # cut.
+    demand = None
+    if forms:
+        from . import parentdemand as _pd
+        depth_b, street_side = _pd.strip_depth(rects, routes, along_x=along_x)
+        demand = {"forms": forms, "depth": int(depth_b), "street_side": street_side,
+                  "sections": _pd.sections(forms, int(depth_b))}
+        seen = {json.dumps([p["rect"] + [p["level"]] for p in a["pieces"]]) for a in alts}
+        for a in list(alts):
+            got = _pd.refit(a, districts, rects, profs, forms, depth=int(depth_b),
+                            ref=int(ring_level), gap=gap, along_x=along_x, access=access,
+                            open_share=SECTOR_OPEN_SHARE,
+                            negotiate_share=SECTOR_NEGOTIATE_SHARE)
+            key = json.dumps([p["rect"] + [p["level"]] for p in got["pieces"]]) if got else None
+            if got and key not in seen:
+                seen.add(key)
+                alts.append(got)
     best = max(alts, key=lambda a: (a["score"], -a["cuts"]))
     chosen = dict(best)
     if access is not None:
@@ -1998,7 +2022,8 @@ def negotiate_strip(vol, districts: list, *, ring_level: int, depth_min: int,
         chosen["access_piece"] = chosen["pieces"].index(nearest)
     return {"measured": True, "levels": levels, "alternatives": alts,
             "chosen": chosen["arrangement"], "adopted": chosen,
-            "gain": int(chosen["score"] - alts[0]["score"])}
+            "gain": int(chosen["score"] - alts[0]["score"]),
+            **({"demand": demand} if demand else {})}
 
 
 def terrace_ground(vol, rect, level: int, *, reach: int = DISTRICT_TERRACE_REACH,
@@ -2028,7 +2053,7 @@ def terrace_ground(vol, rect, level: int, *, reach: int = DISTRICT_TERRACE_REACH
         single column of it -- with `label` and `reach` on it. Hand it to
         `Builder.terrace_annulus` as `base=vol, reach=reach` and the two instruments answer
         with the same numbers because they are the same call.
-        
+
     """
     from . import feasible
     got = feasible.dispositions(vol, rect, level=int(level), relief=int(reach),
@@ -2098,7 +2123,7 @@ def _best_cover_rect(usable, step: int, bar: float, least_side: int,
         all of its column pairs at once. The corners are searched on the grid and the answer
         is reported exactly as found -- no refinement, because a step under half a lot's
         width cannot move a block in or out of the envelope.
-        
+
     """
     import numpy as _np
     u = _np.asarray(usable, bool)
@@ -2176,7 +2201,7 @@ def developable_envelope(district: dict, place: dict | None = None,
         Returns a record that always says which case it is: `rect` is None where the whole
         rectangle is usable, where no ground was read, or where nothing worth laying a grid
         on is left, and `why` says which of those. Never raises on a district with no ground.
-        
+
     """
     import numpy as _np
     x0, x1 = min(district["x0"], district["x1"]), max(district["x0"], district["x1"])
@@ -2268,7 +2293,7 @@ def developable_rect(district: dict, place: dict | None = None,
         None where the whole rectangle is usable, where no ground was read, or where no
         envelope is worth laying -- and a caller that gets None behaves exactly as it does
         today. `developable_envelope` is the same answer with the numbers it was made on.
-        
+
     """
     got = developable_envelope(district, place, decls)
     r = got.get("rect")
@@ -2321,7 +2346,7 @@ def developable_columns(district: dict, place: dict | None,
         record (`district_ground`, written by the layout) the ground it refuses leaves this
         number; where it does not, the answer is what it always was and the record says the
         terrain was not read.
-        
+
     """
     x0, x1 = min(district["x0"], district["x1"]), max(district["x0"], district["x1"])
     z0, z1 = min(district["z0"], district["z1"]), max(district["z0"], district["z1"])
@@ -2382,7 +2407,7 @@ def region_columns(district: dict, place: dict | None = None,
 
         A figure improved only by enlarging empty lots moves `allocated_columns` and leaves
         `built_columns` where it was, which is the whole reason they are two fields.
-        
+
     """
     from . import district_compile as dc, placeregion as _regions
     rect = (min(district["x0"], district["x1"]), min(district["z0"], district["z1"]),
@@ -2436,7 +2461,7 @@ def emitted_for(rows: dict, district_name, leaf_name):
         `b0_1_00` naming is almost always -- so a lookup on the plan's name alone misses every
         built leaf in a multi-district place and a lookup on the prefixed name alone misses
         every one in a single-district place. Both are tried, in that order.
-        
+
     """
     name = str(leaf_name or "")
     if name in rows:
@@ -2456,7 +2481,7 @@ def emitted_columns(parts_record: dict | None) -> dict:
 
         A part that reported no rectangle is **absent from this dict**, never zero: zero
         columns of building is a measurement and an unreported part is not one.
-        
+
     """
     out: dict = {}
     rec = parts_record or {}
@@ -2499,7 +2524,7 @@ def built_occupation(district: dict, parts_record: dict | None, *,
 
         `region_columns` does the four-column arithmetic and this reuses it rather than
         writing a second one; what this adds is the two covers and the honest `from`.
-        
+
     """
     if leaves is None or parts_record is None:
         return {"built_columns": None, "allocated_columns": None,
@@ -2580,7 +2605,7 @@ def street_enclosure(district: dict, place: dict | None, leaves: list | None, *,
         `from` says what was read. Where there are no leaves this reports `unavailable` and
         Nones, because a district with nothing in it has no enclosure to measure and zero
         would read as "measured, and empty".
-        
+
     """
     from . import district_compile as dc
     if not leaves:
@@ -2755,7 +2780,7 @@ def emitted_rects(parts_record: dict | None) -> dict:
 
         The same read as `emitted_columns` and for the same reason: `emitted.footprint` is
         what stood, and a part that reported none is absent rather than empty.
-        
+
     """
     out: dict = {}
     rec = parts_record or {}
@@ -2779,7 +2804,7 @@ def district_target(district: dict, part: dict, place: dict | None = None,
         (`developable_columns`) and not over its whole rectangle, where the caller knows the
         place well enough to say. The count is untouched: it is the layout's own ask and the
         compiler's retry is what answers it.
-        
+
     """
     x0, x1 = min(district["x0"], district["x1"]), max(district["x0"], district["x1"])
     z0, z1 = min(district["z0"], district["z1"]), max(district["z0"], district["z1"])
@@ -2890,7 +2915,7 @@ def _arterial_note(place: dict, district: dict) -> str:
 
         Run-length encoded by row, because 909 columns written out one pair at a time is a
         brief nobody reads and a box is a brief nobody can obey.
-        
+
     """
     art = place.get("arterials") or {}
     joins = (art.get("joins") or {}).get(district.get("name")) or []
@@ -2959,7 +2984,7 @@ def _compound_note(spec: dict, plateau: dict | None = None) -> str:
 
         Silent where the spec has none. Stated rather than only refused, for the reason
         every rule in this brief is: the level is handed back at most once.
-        
+
     """
     rows = spec_mod.compounds(spec)
     if not rows:
@@ -3003,7 +3028,7 @@ def place_failures(place: dict, spec: dict, site: dict, decls: dict,
 
         `plateau` is `stage_plateau`'s record -- `part`, `rect`, `y` -- where ground was
         levelled for a defining part, and the compound answering that part is held to it.
-        
+
     """
     out = []
     X, Z = site["origin"]
@@ -3274,7 +3299,7 @@ def concentric_failures(place: dict, spec: dict, decls: dict) -> list:
         Three of the place read's five clauses are about geometry the plan already has --
         nesting, a gate per ring, and what is at the centre -- so they are asked here too.
         The other two need the arterial and what stood, and are the read's.
-        
+
     """
     from .placeread import inside, rings
     parts = [{**p, "name": p.get("name"), "in": []}
@@ -3349,6 +3374,12 @@ def concentric_failures(place: dict, spec: dict, decls: dict) -> list:
 #: districts carries the whole place through it.
 ARTERIAL_WIDTH = 4
 
+#: What crossing a ring strip off its section's street band costs the arterial router,
+#: per column, over the grid's own weight of one plus slope (`circulate._grid`): enough
+#: that a ring street follows the band its section was sized for rather than cutting
+#: across the strip, not so much that a gate's approach cannot cross it.
+SECTION_OFF_STREET_COST = 4.0
+
 
 def arterial_nodes(place: dict, decls: dict) -> list:
     """The things an arterial joins: every gate, and the centre of every district."""
@@ -3376,6 +3407,14 @@ def arterial_nodes(place: dict, decls: dict) -> list:
         # point of its own rectangle nearest that, one column in. The centre rule is
         # unchanged for every other district, whose plans were compiled against it.
         acc = d.get("access") if d.get("sector") else None
+        edge = section_street_node(d, (place.get("layout") or {}).get("centre"))
+        if edge is not None:
+            # the ring's section lays its principal street along the strip's inner edge
+            # (the city attempt round): the arterial is joined there, so the ring street
+            # runs where the section's frontage faces it
+            out.append({"id": d["name"], "kind": "district", "x0": edge[0],
+                        "z0": edge[1], "x1": edge[2], "z1": edge[3]})
+            continue
         if acc:
             cx = min(max(int(acc[0]), x0 + 1), x1 - 1)
             cz = min(max(int(acc[-1]), z0 + 1), z1 - 1)
@@ -3387,8 +3426,25 @@ def arterial_nodes(place: dict, decls: dict) -> list:
     # A compound is joined at its **edge** and never crossed: the road arrives where its
     # gate will be, and the compound's own call is told where that is. Its whole
     # rectangle is the node, so the router chooses the side, and `plan_arterials` keeps
-    # the road out of the inside.
+    # the road out of the inside. **...and the compound at the centre of a concentric
+    # place is joined on its axis** (the city attempt round): the ring gates stand on
+    # one axis through the centre and the road runs up it, but a node the size of the
+    # whole compound let the tree join the palace from whichever side was cheapest --
+    # the west, in the first plan -- so its gate, which goes where the road arrives,
+    # turned its back on the approach the city's gates line up. Its node is the middle
+    # of its side facing the gates.
+    lay = place.get("layout") or {}
+    axis = lay.get("axis_side") if lay.get("policy") == "concentric" else None
     for name, (x0, z0, x1, z1) in compound_rects(place).items():
+        if axis and name == place.get("centre"):
+            mx, mz = (x0 + x1) // 2, (z0 + z1) // 2
+            nx0, nz0, nx1, nz1 = {"north": (mx - 1, z0 - 3, mx + 1, z0 - 1),
+                                  "south": (mx - 1, z1 + 1, mx + 1, z1 + 3),
+                                  "west": (x0 - 3, mz - 1, x0 - 1, mz + 1),
+                                  "east": (x1 + 1, mz - 1, x1 + 3, mz + 1)}[axis]
+            out.append({"id": name, "kind": "compound", "x0": nx0, "z0": nz0,
+                        "x1": nx1, "z1": nz1})
+            continue
         out.append({"id": name, "kind": "compound",
                     "x0": x0, "z0": z0, "x1": x1, "z1": z1})
     return out
@@ -3401,7 +3457,7 @@ def plan_arterials(place: dict, decls: dict, heights, x0: int, z0: int,
         Routed by the same `plan_network` the lanes get, over the same ground, with the
         walls as obstacles and the gates as their one crossing -- so an arterial reaches the
         outside world through the gate and nowhere else, which is what a walled town means.
-        
+
     """
     nodes = arterial_nodes(place, decls)
     if len(nodes) < 2:
@@ -3431,6 +3487,26 @@ def plan_arterials(place: dict, decls: dict, heights, x0: int, z0: int,
         r = pipeline.part_rect({**p, "name": p.get("name")})
         avoid[max(0, r[0] - x0):max(0, r[2] - x0) + 1,
               max(0, r[1] - z0):max(0, r[3] - z0) + 1] = np.inf
+    # **...and a ring's section says where its principal street runs** (the city attempt
+    # round): across a strip whose width was set for a street along its inner edge, the
+    # rest of the strip is dearer to cross than that band, so the ring street is laid
+    # where the section's frontage faces it rather than wherever the tree is shortest.
+    for d in (place.get("districts") or []):
+        band = section_street_band(d)
+        if not band:
+            continue
+        xa, xb = min(d["x0"], d["x1"]) - x0, max(d["x0"], d["x1"]) - x0
+        za, zb = min(d["z0"], d["z1"]) - z0, max(d["z0"], d["z1"]) - z0
+        xa, za = max(0, xa), max(0, za)
+        xb, zb = min(avoid.shape[0] - 1, xb), min(avoid.shape[1] - 1, zb)
+        if xa > xb or za > zb:
+            continue
+        avoid[xa:xb + 1, za:zb + 1] += SECTION_OFF_STREET_COST
+        for (bx, bz) in band:
+            i, j = bx - x0, bz - z0
+            if 0 <= i < avoid.shape[0] and 0 <= j < avoid.shape[1] \
+                    and np.isfinite(avoid[i, j]):
+                avoid[i, j] = max(0.0, avoid[i, j] - SECTION_OFF_STREET_COST)
     # ...and a compound is somebody's palace: the road stops at its edge.
     for r in compound_rects(place).values():
         avoid[max(0, r[0] - x0):max(0, r[2] - x0) + 1,
@@ -3450,7 +3526,7 @@ def arterial_record(net, nodes, place: dict) -> dict:
         rectangle. It is a fact about the two geometries and not a declaration, so it is
         computed here rather than asked for -- and a district with none of them is a
         district the road does not reach, which is what `place_failures` refuses.
-        
+
     """
     cells = sorted(net.cells) if net is not None else []
     joins: dict = {}
@@ -3461,7 +3537,19 @@ def arterial_record(net, nodes, place: dict) -> dict:
                             if x0 - 1 <= x <= x1 + 1 and z0 - 1 <= z <= z1 + 1]
     # A compound's join is where the road **arrives**: the columns of it against the
     # compound's edge, which is where the compound's own call is told to put its gate.
+    # ...and where the compound's node is not its rectangle -- the centre of a
+    # concentric place, joined on its axis (`arterial_nodes`) -- the columns against
+    # that node, so a road running past its other sides is not read as its arrival
+    node_at = {n["id"]: (n["x0"], n["z0"], n["x1"], n["z1"]) for n in nodes
+               if n.get("kind") == "compound"}
     for name, (x0, z0, x1, z1) in compound_rects(place).items():
+        nr = node_at.get(name)
+        if nr and nr != (x0, z0, x1, z1):
+            a0, b0, a1, b1 = nr
+            joins[name] = [[x, z] for (x, z) in cells
+                           if a0 - 1 <= x <= a1 + 1 and b0 - 1 <= z <= b1 + 1]
+            if joins[name]:
+                continue
         joins[name] = [[x, z] for (x, z) in cells
                        if x0 - 1 <= x <= x1 + 1 and z0 - 1 <= z <= z1 + 1]
     # **The faces too.** A rise of one block on the road is passable only onto a stair
@@ -3484,7 +3572,7 @@ def arterial_failures(place: dict, arterials: dict, decls: dict) -> list:
         Three things, and each is a way a place stops being one place: a district the road
         does not reach, a road through somebody's building, and a road through a wall
         somewhere other than its gate.
-        
+
     """
     out = []
     if not arterials or not arterials.get("cells"):
@@ -3544,11 +3632,11 @@ def _edge_cells(edge: dict) -> list:
         if a[0] != b[0] and a[1] != b[1]:
             if abs(b[0] - a[0]) != abs(b[1] - a[1]):
                 continue
-            sx, sz = (1 if b[0] > a[0] else -1), (1 if b[1] > a[1] else -1)
-            for i in range(abs(b[0] - a[0]) + 1):
-                cx, cz = a[0] + sx * i, a[1] + sz * i
-                for e in range(-half, half + 1):
-                    out.append((cx - sz * e, cz + sx * e))
+            # a diagonal run's band is the siting's own (`Builder.edge_band`, solid
+            # since the design synthesis round), so the plan's cells and the sited ones
+            # agree
+            from .buildlib import Builder
+            out.extend(Builder.edge_band(a, b, int(edge.get("width", 1) or 1)))
             continue
         step = (0, 1) if a[0] == b[0] else (1, 0)
         n = abs(b[0] - a[0]) + abs(b[1] - a[1])
@@ -3568,7 +3656,7 @@ def occupancy_failures(district: dict, plots: list, part: dict,
         The craft round: the cover floor is over the ground the district can develop
         (`developable_columns`), where the caller passes the place. The road across it is
         not the district's to cover.
-        
+
     """
     t = district_target(district, part, place, decls)
     if not t["count"]:
@@ -3711,7 +3799,7 @@ def arrangement_failures(district: dict, got: dict, plots: list) -> list:
         A district with no adopted arrangement is not checked and returns nothing: this is a
         check about agreement with a decision, and where no decision was recorded there is
         nothing to disagree with.
-        
+
     """
     arr = district.get("arrangement") or {}
     want_w, want_d = arr.get("lot_width"), arr.get("lot_depth")
@@ -3781,7 +3869,7 @@ def reservation_failures(district: dict, got: dict, plots: list,
             has to be of a type that answers that requirement.
 
         The second is what keeps the first honest: a plan cannot pass by omitting the field.
-        
+
     """
     from . import district_compile as dc
     out = []
@@ -3853,7 +3941,7 @@ def district_failures(district: dict, got: dict, place: dict, decls: dict,
         `pipeline.plan_failures` over the plots, plus the two things only this level knows:
         a plot outside its own district, and a plot on top of something the place level
         already put there.
-        
+
     """
     x0, x1 = min(district["x0"], district["x1"]), max(district["x0"], district["x1"])
     z0, z1 = min(district["z0"], district["z1"]), max(district["z0"], district["z1"])
@@ -4033,7 +4121,7 @@ def district_plots(got: dict, role: str | None = None,
         kind of thing. The planner was right and the driver was not.
 
         A leaf still defaults to `plot`, because that is what almost every one of them is.
-        
+
     """
     out = []
     for q in (got.get("quarters") or []):
@@ -4157,7 +4245,7 @@ def compound_types(types, spec: dict, part: dict) -> tuple:
         The traditions of the place **and** the ones the defining part names, plus the
         universal forms; the part's own role **and** the defensive types, plus the
         universal roles -- a compound has a wall and a gate whatever it is for.
-        
+
     """
     forms = sorted({f for f in [spec.get("form"), *(part.get("forms") or [])] if f})
     admits = compound_composition(part, spec=spec)["admits"]
@@ -4319,7 +4407,7 @@ def compound_parts(got: dict, part: dict | None, name: str,
         `role` is the defining part's, so `pipeline.plan_failures` can put it beside the
         type's own; `compound` is the compound's name, which is what lets that check admit
         the defensive types a compound has whatever it is for.
-        
+
     """
     out = []
     admits = compound_composition(part, spec=spec)["admits"] if part else None
@@ -4374,7 +4462,7 @@ def compound_failures(comp: dict, got: dict, place: dict, decls: dict,
         asks no wall and no gate of itself, a castle one keep inside its wall, a palace two
         halls; a wall drawn where none is asked is still held closed and inset, and a gate
         drawn is held to stand on a wall.
-        
+
     """
     from .placeread import inside
     part = next((d for d in spec_mod.compounds(spec or {"defining_parts": []})
@@ -4525,7 +4613,7 @@ def assemble(place: dict, districts: dict, spec: dict,
         their own, so the whole place is one `district` node -- which is what `part_waves`
         turns into the build order: the walls and the gates, then the squares, then a
         quarter at a time.
-        
+
     """
     children = []
     defining = [dict(p) for p in (place.get("parts") or [])]
@@ -4686,6 +4774,11 @@ RING_COVERAGE = 0.6
 #: the tallest thing in the place: 48 -> 36 -> 27 -> 20.
 WALL_STEP = 0.75
 
+#: How much taller each ring wall stands than the ring wall inside it (the city attempt
+#: round): one storey's pitch, so the walls between the classes step up outward over the
+#: fabric and stay far under the great wall.
+RING_WALL_RISE = 4
+
 #: A terrace step of four blocks. The outermost ring stands at the site's median ground,
 #: each ring in is `TERRACE_STEP` above the one outside it, and the compound's podium a
 #: further step above the innermost ring, so a city of four rings rises sixteen blocks
@@ -4709,7 +4802,7 @@ def terrace_levels(median: int, n: int, step: int = TERRACE_STEP,
         rings step down from the centre, which is what they have always done and what a
         podium at the middle of a place means. The podium stands one step over the highest
         ring, which for the default order is the same number it has always been.
-        
+
     """
     if ranks is None:
         ranks = [n - 1 - k for k in range(n)]
@@ -4732,7 +4825,7 @@ def terrace_ranks(rings: list) -> tuple:
         Returns `(ranks, why)` -- the elevation rank of each ring, 0 for the lowest, and the
         sentence that says where the order came from. `(None, why)` where no ring carries an
         elevation word, which leaves every existing place exactly as it was.
-        
+
     """
     from .placeread import RING_WORDS
     n = len(rings)
@@ -4774,7 +4867,7 @@ def order_terrace(terrace: dict | None, rings: list) -> tuple:
         ground stage chose and this is not the owner of that number -- they are **permuted**,
         so the ring the sentence calls `upper` is the one standing on the higher terrace.
         `(terrace, why)`; `why` is None where nothing changed.
-        
+
     """
     if not terrace or not terrace.get("rings") or len(terrace["rings"]) != len(rings):
         return terrace, None
@@ -4884,6 +4977,16 @@ def gate_approach_pieces(h, x0: int, z0: int, layout: dict, gate: dict, *,
     if not inside_map(ix, iz):
         return None
     inside = int(h[ix - x0, iz - z0])
+    # **a gate in the centre compound's wall opens off the podium** (the city attempt
+    # round): the map read at the column inside it is the podium's own edge, which its
+    # retaining and feathering had already lowered, so the approach was laid from 75 and
+    # the podium at 83 was an island of 1,993 lane stances no way in reached. Where the
+    # layout designs a podium and the gate stands inside the compound's rectangle, the
+    # level run starts at the podium's level.
+    cr = layout.get("compound_rect")
+    pod = (layout.get("terrace") or {}).get("podium")
+    if cr and pod is not None and cr[0] <= gx <= cr[2] and cr[1] <= gz <= cr[3]:
+        inside = int(pod)
     def strip(k0, k1, level):
         """The corridor from `k0` to `k1` columns out (inclusive), at `level`."""
         a = (gx + ox * k0, gz + oz * k0)
@@ -5008,7 +5111,7 @@ def site_median(vol, site: dict) -> int | None:
 
         Water stands at its own surface and a terrace laid at a pond's level is a terrace
         laid a block too low, so the median is of the columns that are not water.
-        
+
     """
     if vol is None:
         return None
@@ -5267,7 +5370,7 @@ def wall_face_for(part: dict, spec: dict | None = None) -> str | None:
         the spec's `invariants` paragraph -- says it is earthen, solid or monolithic: a
         word in the spec and never a place's name; `banded` where it says coursed masonry;
         `framed` (the grid) otherwise. See `WALL_FACE_WORDS`.
-        
+
     """
     text = " ".join([str(part.get("notes") or ""),
                      str((spec or {}).get("invariants") or "")]).lower()
@@ -5349,7 +5452,7 @@ def _label_sectors(rects: list, cx: int, cz: int) -> list:
         it has to be stable and it has to mean something: the compass point of the
         rectangle's own middle, and an index where two share one. Deterministic -- the
         tiler is, and this sorts.
-        
+
     """
     out = []
     for (x0, z0, x1, z1) in rects:
@@ -5425,7 +5528,7 @@ def probe_key(r: dict, rect, count: int, arrangement: dict, spec: dict | None, *
         selection). Sharing one entry would let an uncertified probe answer a certified
         question -- an alternative with no verdict reads as an alternative with no failures,
         which is the whole false pass A4 is about.
-        
+
     """
     return (int(rect[2]) - int(rect[0]) + 1, int(rect[3]) - int(rect[1]) + 1,
             int(count), _digest(arrangement or {}), str(r.get("name") or ""),
@@ -5499,7 +5602,7 @@ def _trial_place(bare: dict, rect) -> dict:
         `ARTERIAL_WIDTH` wide and the compiler dilates it by a column either side, exactly
         as it does a real arterial's cells -- so a band the road leaves too thin for a row
         of lots is one the probe reports as holding nothing, which is what it holds.
-        
+
     """
     x0, z0, x1, z1 = (int(v) for v in rect)
     along_x = (x1 - x0) >= (z1 - z0)
@@ -5529,7 +5632,7 @@ def negotiate_ring(r: dict, *, cx: int, cz: int, inner: float, i_in: int, i_out:
         Invariants: the count `n` is the count (an alternative that cannot hold it is
         recorded and not chosen), and the ring is still the whole annulus -- the cover below
         is measured over every sector's whole rectangle, remainder and all.
-        
+
     """
     from . import arrange as _arrange
     out = {"considered": [], "chosen": None, "width": None, "from": []}
@@ -5742,6 +5845,95 @@ def negotiate_ring(r: dict, *, cx: int, cz: int, inner: float, i_in: int, i_out:
     return out
 
 
+def ring_section_demand(r: dict, spec: dict | None = None, *,
+                        allocation: dict | None = None) -> dict | None:
+    """**What a ring's neighbourhood needs across each strip**, or None where its
+        fabric is not composed from its streets or its dwelling publishes no form plan.
+
+        The city attempt round. The same form plans the compiler asks (`parentdemand.forms`
+        over the ring's own character and the lead dwelling of its resolved demand), turned
+        into the least district depth at which a strip holds a whole section
+        (`parentdemand.ring_section`). `allocation.sections[ring]` may pin the street's
+        place (`edge` or `middle`) or the lane arrangement; the record keeps every proposal
+        it was compared against.
+
+    """
+    from . import district_compile as dc, formplan as _fp, parentdemand as _pd
+    try:
+        ch = dc.character_of(r, None) or {}
+    except Exception:                        # noqa: BLE001 -- no character, no section
+        ch = spec_mod.character(r) or {}
+    if str(ch.get("layout") or "") != "street":
+        return None
+    types = list((r.get("demand") or {}).get("types") or r.get("fabric_types") or [])
+    lead = next((t for t in types if _fp.plan_fn(t) is not None), None)
+    f = _pd.forms(ch, lead) if lead else None
+    if f is None:
+        return None
+    pin = dict(((allocation or {}).get("sections") or {}).get(r["name"]) or {})
+    got = _pd.ring_section(f, road=ARTERIAL_WIDTH, place=pin.get("street"))
+    if pin.get("arrangement"):
+        keep = [p for p in got["proposals"] if p["arrangement"] == pin["arrangement"]]
+        if keep:
+            got["chosen"] = keep[0]
+    if got.get("chosen") is None:
+        return None
+    got["pinned"] = pin or None
+    got["dwelling"] = lead
+    return got
+
+
+def _inner_side(rc, cx: int, cz: int) -> str:
+    """The side of a ring strip `rc` that faces the centre `(cx, cz)`."""
+    x0, z0, x1, z1 = rc
+    if (x1 - x0) >= (z1 - z0):
+        return "south" if z1 < cz else "north"
+    return "east" if x1 < cx else "west"
+
+
+def section_street_band(d: dict) -> list:
+    """The columns the principal street of a district's section will take where the
+    arterial has not been routed yet: `ARTERIAL_WIDTH` wide, one column in from the
+    strip's inner edge (`section.edge_side`), along its whole length -- what
+    `section_street_node` routes the arterial onto. Empty for a district without an
+    edge section."""
+    sec = d.get("section") or {}
+    side = sec.get("edge_side")
+    if sec.get("street") != "edge" or not side:
+        return []
+    x0, x1 = min(d["x0"], d["x1"]), max(d["x0"], d["x1"])
+    z0, z1 = min(d["z0"], d["z1"]), max(d["z0"], d["z1"])
+    w = ARTERIAL_WIDTH
+    if side == "south":
+        return [(x, z) for x in range(x0, x1 + 1) for z in range(z1 - w, z1)]
+    if side == "north":
+        return [(x, z) for x in range(x0, x1 + 1) for z in range(z0 + 1, z0 + 1 + w)]
+    if side == "east":
+        return [(x, z) for z in range(z0, z1 + 1) for x in range(x1 - w, x1)]
+    return [(x, z) for z in range(z0, z1 + 1) for x in range(x0 + 1, x0 + 1 + w)]
+
+
+def section_street_node(d: dict, centre) -> tuple | None:
+    """`(x0, z0, x1, z1)`: where the arterial joins a district whose ring's section
+    lays its principal street along the strip's inner edge (`section.street == "edge"`),
+    a small square one column in from that edge at the strip's middle. None for every
+    other district, which is joined at its centre as before."""
+    sec = d.get("section") or {}
+    if sec.get("street") != "edge" or centre is None:
+        return None
+    x0, x1 = min(d["x0"], d["x1"]), max(d["x0"], d["x1"])
+    z0, z1 = min(d["z0"], d["z1"]), max(d["z0"], d["z1"])
+    cx, cz = int(centre[0]), int(centre[1])
+    half = ARTERIAL_WIDTH // 2
+    if (x1 - x0) >= (z1 - z0):
+        mx = (x0 + x1) // 2
+        z = (z1 - 1 - half) if z1 < cz else (z0 + 1 + half)
+        return (mx - 1, z - 1, mx + 1, z + 1)
+    mz = (z0 + z1) // 2
+    x = (x1 - 1 - half) if x1 < cx else (x0 + 1 + half)
+    return (x - 1, mz - 1, x + 1, mz + 1)
+
+
 def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                       voice: str, vol=None, caps: dict | None = None,
                       allocation: dict | None = None) -> tuple:
@@ -5777,7 +5969,7 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
              over them by area and capped by the room each has at the ring's density;
           6. the **compound** at the centre over the whole of its plateau, or the centre
              part as one leaf where it is not a compound.
-        
+
     """
     from .buildlib import Builder
     fails = []
@@ -5901,10 +6093,23 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                     kind = "great"
                     src = src0 + [f"the top of `{tallest[0]}`'s band, {outer_h}"]
                 else:
-                    got = _wall_for(int(round(outer_h * WALL_STEP ** step)), by_height)
+                    # **a ring wall is sized by the fabric it divides, not by the great
+                    # wall** (the city attempt round): stepped down from a 48-high great
+                    # wall by three quarters a ring, the walls between the classes stood
+                    # 36, 27 and 20 over houses of one and two storeys, and from the air
+                    # the city read as walls with a little fabric between them. The
+                    # innermost stands a town wall over its fabric's storeys; each ring
+                    # wall outward one `RING_WALL_RISE` higher; none reaches the great
+                    # wall, which stays the singular monument the sources lead with.
+                    th, tsrc = wall_height_for("town", spec, by_height[-1][1],
+                                               storeys=_fabric_storeys(spec))
+                    want = int(th) + RING_WALL_RISE * (len(walled) - 1 - step)
+                    want = min(want, int(round(outer_h * WALL_STEP ** step)))
+                    got = _wall_for(want, by_height)
                     kind = "ring"
-                    src = [f"a ring wall inside the great wall: {outer_h} stepped down "
-                           f"by WALL_STEP {WALL_STEP} x{step}"]
+                    src = tsrc + [f"a ring wall inside the great wall: the town wall "
+                                  f"{th} + RING_WALL_RISE {RING_WALL_RISE} x "
+                                  f"{len(walled) - 1 - step} ring(s) inside it"]
                 heights[r["name"]] = got
                 hierarchy[r["name"]] = {"kind": kind, "height": int(got[2]), "from": src}
         elif walled:
@@ -5934,6 +6139,10 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         _n, d, _h = heights[r["name"]]
         masses[r["name"]] = (wall_width_for(wall_part, spec, d)
                              if wall_part is not None else WALL_MASSES["screen"])
+        # ...and only the great wall carries the rampart's mass: a ring wall is a
+        # curtain between quarters (the city attempt round)
+        if (hierarchy.get(r["name"]) or {}).get("kind") == "ring":
+            masses[r["name"]] = min(masses[r["name"]], WALL_MASSES["curtain"])
     insets = []
     for k, r in enumerate(rings):
         inner_ring = rings[k - 1] if k else None
@@ -5999,7 +6208,29 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         # The **width negotiation stays where it was**, and deliberately. A ring's width
         # is derived from its count, so it is a decision only a counted ring can take.
         # An inferred ring adopts the arrangement, keeps its width and its
-        # `district_depth`, and the record says so.
+        # `district_depth`, and the record says so. **The ring's width from its complete
+        # neighbourhood, counted or not** (the city attempt round). A ring whose fabric
+        # is composed from its streets and whose dwelling publishes a form plan owes
+        # each strip a whole section: the principal street's frontage and a residential
+        # lane of courtyard houses facing each other behind it
+        # (`parentdemand.ring_section`). That depth is the least this ring may be, and
+        # it is a parent decision: the rings with slack give it up below, and a site
+        # with no slack refuses by name. It replaces the old restriction that only a
+        # sentence's count could renegotiate a width -- a restriction from a local
+        # rebuild, when moving a district rectangle was forbidden.
+        sec = ring_section_demand(r, spec, allocation=allocation)
+        if sec is not None:
+            ch_sec = sec["chosen"]
+            w_sec = int(ch_sec["depth"]) + i_in + i_out
+            rec["section"] = {**sec, "width": int(w_sec)}
+            if w_sec > widths[k]:
+                rec["from"] = list(rec["from"]) + [
+                    f"its neighbourhood's section needs a district {ch_sec['depth']} "
+                    f"deep ({ch_sec['street']} street, `{ch_sec['arrangement']}` lanes: "
+                    f"{ch_sec['why']}) and insets {i_in}+{i_out}: width {w_sec} against "
+                    f"the share's {widths[k]:.0f}"]
+            mins[k] = max(mins[k], w_sec)
+            widths[k] = max(widths[k], float(w_sec))
         arr_over = adopted_arrangement(allocation, r["name"])
         if arr_over and not (counted and n_r):
             rec["arrangement"] = dict(arr_over)
@@ -6049,7 +6280,8 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
             # squeezed against.
             mins[k] = max(total_insets[k] + min(depth, dmin),
                           int(math.ceil(total_insets[k] / (1.0 - RING_COVERAGE)))
-                          + LANE_GAP)
+                          + LANE_GAP,
+                          int((rec.get("section") or {}).get("width") or 0))
             if over.get("width"):
                 w_need = float(over["width"])
                 rec["from"] = list(rec["from"]) + [f"allocation.rings {r['name']}: "
@@ -6076,12 +6308,20 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
         h_last = int(min(h_last, round(hc + sum(widths))))
     room = float(h_last - hc)
     if sum(mins) > room:
+        owed = {r["name"]: (ring_needs.get(r["name"]) or {}).get("section")
+                for r in rings}
         fail("rings", "shares",
              f"the rings cannot be laid on a {S}x{S} site: their least widths -- "
-             + ", ".join(f"{r['name']} {m}" for r, m in zip(rings, mins))
+             + ", ".join(f"{r['name']} {m}"
+                         + (" (its neighbourhood's section)" if owed.get(r["name"])
+                            and owed[r["name"]]["width"] >= m else "")
+                         for r, m in zip(rings, mins))
              + f" -- sum to {sum(mins)} and the ground between the centre square "
-               f"(half-side {hc}) and the outer wall (half-side {h_last}) is {int(room)}",
-             widths=mins, room=int(room))
+               f"(half-side {hc}) and the outer wall (half-side {h_last}) is {int(room)}: "
+               f"{sum(mins) - int(room)} short. The site's extent, the centre or an "
+               f"inferred section is what can supply it",
+             widths=mins, room=int(room), short=int(sum(mins) - room),
+             sections={k2: v["width"] for k2, v in owed.items() if v})
         return None, fails
     over = sum(widths) - room
     squeezed = []
@@ -6468,6 +6708,28 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
             rec["merged"] = merged
         if any(p[5] for p in pieces):
             areas = [(p[1][2] - p[1][0] + 1) * (p[1][3] - p[1][1] + 1) for p in pieces]
+        # **A ring's landmarks stand at its arrival** (the city attempt round): the
+        # character's landmark -- the Middle Ring's market -- was laid in every sector
+        # of the ring, eight markets for one, each a reservation its sector had to
+        # front. It stands in the sector nearest the ring's own gate, where the gate
+        # street arrives; the other sectors carry none, and the record says where it
+        # went. A ring with no gate keeps the old rule.
+        arrival_label = None
+        ch_lm = (spec_mod.character(r) or {}).get("landmarks") or []
+        if ch_lm and r.get("walled"):
+            gx_, gz_ = _gate_at(cx, cz, hs[k], side)
+
+            def _gd(rc_):
+                return (max(rc_[0] - gx_, 0, gx_ - rc_[2])
+                        + max(rc_[1] - gz_, 0, gz_ - rc_[3]))
+            live_ = [(lab, rc_) for (lab, rc_, cnt_, *_r) in pieces
+                     if cnt_ and _r[2] != "open"]
+            if live_:
+                arrival_label = min(live_, key=lambda t: (_gd(t[1]), t[0]))[0]
+                rec["landmarks_at"] = {"sector": arrival_label, "gate": [gx_, gz_],
+                                       "why": "the ring's landmarks stand in the sector "
+                                              "nearest its gate, where the gate street "
+                                              "arrives"}
         for (label, rc, cnt, band, here, moved, cut_from) in pieces:
             if moved:
                 band = count_band({"name": label, "x0": rc[0], "z0": rc[1], "x1": rc[2],
@@ -6517,6 +6779,24 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
                     why=[f"the {label.replace('_', ' ')} sector of ring {r['ring']} "
                          f"(`{r['name']}`), fixed when the ring was resolved"]),
                 **({"arrangement": dict(arrangement)} if arrangement and cnt else {}),
+                # the ring's complete section, carried to every strip of it: where its
+                # principal street runs (so the arterial is routed there), the lane
+                # arrangement the ring's width was set for, and that it is **owed** --
+                # an unmet section is a finding for the ring's width, not a lane quietly
+                # dropped (`district_compile`, `sector.module`)
+                **({"section": {
+                    "street": rec["section"]["chosen"]["street"],
+                    "arrangement": rec["section"]["chosen"]["arrangement"],
+                    "depth": int(rec["section"]["chosen"]["depth"]),
+                    "owes": rec["section"]["owes"], "owed": True,
+                    "lane_least": int(rec["section"]["lane_least"]),
+                    "ring_width": int(rec["section"]["width"]),
+                    # the side of the strip its principal street runs along: the one
+                    # facing the centre
+                    "edge_side": _inner_side(rc, cx, cz)}}
+                   if rec.get("section") else {}),
+                **({"landmarks": []} if arrival_label and label != arrival_label
+                   else {}),
                 **({"least_side": int(rdmin)} if rdmin != dmin else {}),
                 "count_band": {k2: band[k2] for k2 in ("lo", "mid", "hi", "usable")},
                 "defines": r["name"], "ring": int(r["ring"]), "voice": rvoice,
@@ -6563,6 +6843,8 @@ def concentric_layout(spec: dict, site: dict, plateau: dict | None, decls: dict,
             "annulus_columns": int(annulus), "district_columns": int(covered),
             "coverage": round(cov, 4), "voice": rvoice, "level": levels[k],
             # what this ring was sized from (the expression round)
+            "section": rec.get("section") or None,
+            "landmarks_at": rec.get("landmarks_at") or None,
             "target": ({k2: rec.get(k2) for k2 in ("what", "columns", "target_cover",
                                                     "lot", "houses", "counted",
                                                     "share_width", "width_need",
@@ -6743,6 +7025,150 @@ def _centre_leaf(core: dict, decls: dict, rect: tuple, seed: int) -> dict | None
 # ------------------------------------------------ an axial compound, laid by the
 # library
 
+#: The least run and span inside a compound's wall that is laid as a city of courts
+#: (`_lay_court_city`) rather than a spine and a grid of ranges: two courtyard cells a
+#: wing either side of a spine a court wide.
+COURT_CITY_LEAST = 120
+
+#: A courtyard cell of a palace's wings: a main range across the back of its own court
+#: and a range down either side of it, open towards the axis's gate end.
+COURT_CELL = {"side": 8, "court": 8, "main": 8, "depth": 23}
+
+
+def _lay_court_city(*, plot, admit, rect, plot_t, area_t, temple_t, inner_u, inner_v,
+                    gap, lo_p, hi_p, lo_a, hi_a, name) -> dict | None:
+    """**A palace precinct as a sequence of courts on its axis, flanked by courtyards.**
+
+        The city attempt round. `u` runs from the gate, `v` across; `plot`, `admit` and
+        `rect` are `compound_axial`'s own. On the axis, in order from the gate: a forecourt,
+        a gate hall across the axis, the outer court, the middle hall, the inner court and
+        the greatest hall at the far end -- three halls on the axis, each wider than it is
+        deep, the greatest the largest plot inside the wall. Either side of the axis, in
+        the band before the greatest hall, **courtyard cells**: each a court with a main
+        range across its far end and a range down either side, open towards the gate; the
+        cells nearest the gate hold a temple each instead, one either side. Returns
+        `{"bands": [...]}`, or None where the axis does not fit and the caller lays the
+        spine and grid instead.
+
+    """
+    run = inner_u[1] - inner_u[0] + 1
+    span = inner_v[1] - inner_v[0] + 1
+    cw = 2 * COURT_CELL["side"] + COURT_CELL["court"] + 2 * gap
+    cells_across = 2 if span >= 2 * (2 * cw + gap) + lo_a + 2 * gap else 1
+    wing_w = cells_across * cw + (cells_across - 1) * gap
+    spine_w = span - 2 * (wing_w + gap)
+    if spine_w < max(lo_a, lo_p):
+        return None
+    court_w = min(hi_a, spine_w)
+    hall_w = min(hi_p, spine_w)
+    shares = (("forecourt", "court", 0.12), ("gate_hall", "hall", 0.07),
+              ("outer_court", "court", 0.20), ("middle_hall", "hall", 0.09),
+              ("inner_court", "court", 0.13), ("great_hall", "hall", 0.19))
+    avail = run - gap * (len(shares) - 1)
+    depths = [max(lo_a if kind == "court" else lo_p, int(round(avail * sh)))
+              for _n, kind, sh in shares]
+    spare = avail - sum(depths)
+    if spare < 0:
+        return None
+    # what is left deepens the courts, the outer court most
+    for i, extra in ((2, spare // 2), (4, spare // 4), (0, spare - spare // 2 - spare // 4)):
+        depths[i] += extra
+    bands, at = [], inner_u[0]
+    v_mid = inner_v[0] + span // 2
+    for (bname, kind, _sh), dep in zip(shares, depths):
+        u_a, u_b = at, at + dep - 1
+        at = u_b + 1 + gap
+        if kind == "court":
+            got = admit(area_t, min(hi_a, dep), court_w, lo_a)
+            if got is None:
+                return None
+            d_, w_ = got
+            u_c = u_a + (dep - d_) // 2
+            plot("court", area_t, rect(u_c, u_c + d_ - 1, v_mid - w_ // 2,
+                                       v_mid - w_ // 2 + w_ - 1),
+                 {"forecourt": "the forecourt inside the gate",
+                  "outer_court": "the outer court, before the middle hall",
+                  "inner_court": "the inner court, before the greatest hall"}[bname],
+                 name=f"{name}_{bname}")
+        else:
+            # a hall on the axis is wider than it is deep; the greatest is the whole
+            # band and the spine's width, the others a fraction of both
+            want_w = hall_w if bname == "great_hall" else max(lo_p, int(hall_w * 0.8))
+            want_d = min(hi_p, dep) if bname == "great_hall" else \
+                max(lo_p, min(dep, int(want_w * 0.45)))
+            # the three halls on the axis are the precinct's civic halls: a hall on a
+            # platform under a tiered roof where the compound admits one (its worship
+            # type), the greatest of them the tallest -- the silhouette the approach
+            # rises to -- and the ranges' own type otherwise
+            axis_t = temple_t or plot_t
+            got = admit(axis_t, want_d, want_w, lo_p)
+            if got is None:
+                axis_t = plot_t
+                got = admit(axis_t, want_d, want_w, lo_p)
+            if got is None:
+                return None
+            d_, w_ = got
+            u_c = (u_b - d_ + 1) if bname == "great_hall" else u_a + (dep - d_) // 2
+            plot("great" if bname == "great_hall" else "range", axis_t,
+                 rect(u_c, u_c + d_ - 1, v_mid - w_ // 2, v_mid - w_ // 2 + w_ - 1),
+                 {"gate_hall": "the gate hall across the axis",
+                  "middle_hall": "the middle hall, between the outer and inner courts",
+                  "great_hall": "the greatest hall, at the far end of the axis"}[bname],
+                 name=f"{name}_{bname}",
+                 fixed={"storeys": 3 if bname == "great_hall" else 2})
+        bands.append((bname, u_a, u_b))
+    great_u = bands[-1][1]
+    # the wings: courtyard cells in rows from the gate end to the greatest hall
+    wing_u1 = great_u - gap - 1
+    s_, c_, m_ = COURT_CELL["side"], COURT_CELL["court"], COURT_CELL["main"]
+    cd = COURT_CELL["depth"]
+    rows = max(0, (wing_u1 - inner_u[0] + 1 + gap) // (cd + gap))
+    if rows < 1:
+        return None
+    for r_i in range(rows):
+        ua = inner_u[0] + r_i * (cd + gap)
+        ub = ua + cd - 1
+        for c_i in range(cells_across):
+            for side in (0, 1):
+                # the cell's v range, outward from the spine, paired across the axis
+                if side == 0:
+                    va = inner_v[0] + c_i * (cw + gap)
+                else:
+                    va = inner_v[1] - c_i * (cw + gap) - cw + 1
+                vb = va + cw - 1
+                if r_i == 0 and c_i == cells_across - 1 and temple_t:
+                    got = admit(temple_t, cd, cw, lo_p)
+                    if got is not None:
+                        d_, w_ = got
+                        plot("range", temple_t,
+                             rect(ua, ua + d_ - 1, va + (cw - w_) // 2,
+                                  va + (cw - w_) // 2 + w_ - 1),
+                             "a temple beside the approach, one either side of it")
+                        continue
+                # the main range across the far end of the cell's court
+                got = admit(plot_t, m_, cw, lo_p)
+                if got is None:
+                    continue
+                d_, w_ = got
+                plot("range", plot_t, rect(ub - d_ + 1, ub, va, va + w_ - 1),
+                     "the main range of a courtyard in the palace's wings")
+                sd = cd - d_ - gap
+                for sv in (va, vb - s_ + 1):
+                    got = admit(plot_t, sd, s_, lo_p)
+                    if got is None:
+                        continue
+                    d2, w2 = got
+                    plot("range", plot_t, rect(ua, ua + d2 - 1, sv, sv + w2 - 1),
+                         "a side range of a courtyard in the palace's wings")
+                got = admit(area_t, sd, c_, lo_a)
+                if got is not None:
+                    d3, w3 = got
+                    vc = va + s_ + gap
+                    plot("court", area_t, rect(ua, ua + d3 - 1, vc, vc + w3 - 1),
+                         "the court of a courtyard in the palace's wings",
+                         name=f"{name}_cell_court_{r_i}_{c_i}_{side}")
+    return {"bands": bands}
+
 #: **How deep the forecourt and the inner court are**, as a share of the axial run each.
 #: The craft round, E5: an approach is a sequence and the courts are the pauses in it.
 #: The greatest hall takes what is left after them and the flanking ranges' band.
@@ -6770,7 +7196,7 @@ def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
 
         Returns `(got, record)` in the shape a model's answer has, or `(None, why)` where the
         rectangle is too small to lay a sequence in and the compound is asked for as before.
-        
+
     """
     import random
     made_of = compound_composition(part, spec=spec)
@@ -6858,7 +7284,7 @@ def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
     parts, order = [], []
     n_plot = [0]
 
-    def plot(kind, tname, r, notes, name=None):
+    def plot(kind, tname, r, notes, name=None, fixed=None):
         n_plot[0] += 1
         nm = name or f"{comp['name']}_range_{n_plot[0]}"
         decl = decls.get(tname) or {}
@@ -6866,6 +7292,10 @@ def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
         for pn, sp in (decl.get("params") or {}).items():
             if isinstance(sp, (list, tuple)) and sp and sp[0] == "int" and len(sp) >= 3:
                 params[pn] = rng.randint(int(sp[1]), int(sp[2]))
+                # a value the composition fixes (the axis halls' storeys), clamped into
+                # what the type declares
+                if pn in (fixed or {}):
+                    params[pn] = max(int(sp[1]), min(int(sp[2]), int(fixed[pn])))
             elif isinstance(sp, (list, tuple)) and sp and sp[0] == "choice" and sp[1]:
                 params[pn] = rng.choice(list(sp[1]))
         row = {"kind": "area" if kind == "court" else "plot", "name": nm, "type": tname,
@@ -6886,7 +7316,7 @@ def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
                 insets a plot by one on every side where a side of it is under nine, so a lot 36
                 by 7 gives a pad of 34 by 5 and a type written for at most 32 refuses it. Asked
                 of the same check the plan validator asks, and shrunk a column at a time.
-                
+
         """
         decl = decls.get(tname) or {}
         kind = decl.get("kind", "plot")
@@ -6902,106 +7332,144 @@ def compound_axial(comp: dict, part: dict | None, place: dict, decls: dict,
                 d -= 1
         return None
 
-    # **The spine, and the wings either side of it.** The sequence is the middle strip:
-    # the forecourt inside the gate, the inner court, and the greatest hall across the
-    # far end. What a great thing holds beyond those is its **ranges**, and on a
-    # precinct a hundred and eighty-eight square a composition asks for fifty of them --
-    # so the ground either side of the spine is a grid of halls with lanes between,
-    # paired across the axis, and not a single file. The craft round, E5 and E7. the
-    # spine's own width: the court an area type will take, at most a third of the span,
-    # so the wings either side of it are the greater part of the precinct
-    spine_w = max(lo_a, min(hi_a, max(span // 3, lo_a)))
-    wing_w = max(0, (span - spine_w - 2 * gap) // 2)
-    court_w = span - 2 * (wing_w + gap) if wing_w >= lo_p else span
-    court_w = max(lo_a, min(hi_a, court_w))
-    wing = wing_w >= lo_p and want_halls > 1
-    per_side = max(0, (want_halls - 1 + 1) // 2) if wing else 0
+    # **A precinct large enough to be a city of courts is laid as one** (the city
+    # attempt round). The spine-and-grid below lays the greatest hall at the end of an
+    # axis and fills the wings with a grid of identical ranges -- sixty halls in rows,
+    # which from the air read as barracks round a plaza, not as a palace. The sourced
+    # organisation (`claim/palace-precinct-axis-gate`, `claim/palace-axis-and-grounds`)
+    # is a **sequence of gates, courts and halls on the axis** -- the main halls in a
+    # group of three -- flanked by **courtyards**: ranges round their own courts, the
+    # residences in clusters, a temple either side near the gate. Every size is the
+    # types' own band and the validator's clearances; nothing here names a place.
+    court_city = (run >= COURT_CITY_LEAST and span >= COURT_CITY_LEAST
+                  and want_halls >= 12)
+    if court_city:
+        laid_city = _lay_court_city(
+            plot=plot, admit=admit, rect=rect, plot_t=plot_t, area_t=area_t,
+            # the civic plot type of the place's own tradition among the compound's
+            # demanded types, where it declares storeys: its hall on a platform under a
+            # tiered roof is what the axis is lined with ...unless the capability record
+            # approved the compound's plot type: then that is what the halls are built
+            # as, and a second chooser does not overrule it (the reconciliation refuses
+            # the place when two choosers disagree)
+            temple_t=None if approved.get(_AXIAL_FAMILY["plot"]) else next((tn for tn in sorted(((part or {}).get("demand") or {}).get("types")
+                                                or decls)
+                           if (decls.get(tn) or {}).get("kind", "plot") == "plot"
+                           and (decls.get(tn) or {}).get("role") == "civic"
+                           and (decls.get(tn) or {}).get("form") == (spec or {}).get("form")
+                           and "storeys" in ((decls.get(tn) or {}).get("params") or {})),
+                          None),
+            inner_u=inner_u, inner_v=inner_v, gap=gap, lo_p=lo_p, hi_p=hi_p,
+            lo_a=lo_a, hi_a=hi_a, name=comp["name"])
+        if laid_city is None:
+            parts.clear()
+            order.clear()
+            n_plot[0] = 0
+            court_city = False
+        else:
+            bands = laid_city["bands"]
+    if not court_city:
+        # **The spine, and the wings either side of it.** The sequence is the middle
+        # strip: the forecourt inside the gate, the inner court, and the greatest hall
+        # across the far end. What a great thing holds beyond those is its **ranges**,
+        # and on a precinct a hundred and eighty-eight square a composition asks for
+        # fifty of them -- so the ground either side of the spine is a grid of halls
+        # with lanes between, paired across the axis, and not a single file. The craft
+        # round, E5 and E7. the spine's own width: the court an area type will take, at
+        # most a third of the span, so the wings either side of it are the greater part
+        # of the precinct
+        spine_w = max(lo_a, min(hi_a, max(span // 3, lo_a)))
+        wing_w = max(0, (span - spine_w - 2 * gap) // 2)
+        court_w = span - 2 * (wing_w + gap) if wing_w >= lo_p else span
+        court_w = max(lo_a, min(hi_a, court_w))
+        wing = wing_w >= lo_p and want_halls > 1
+        per_side = max(0, (want_halls - 1 + 1) // 2) if wing else 0
 
-    # the spine's own bands
-    bands, at = [], inner_u[0]
-    for name, depth in (("forecourt", fore), ("middle", inner_c), ("great", great)):
-        bands.append((name, at, min(inner_u[1], at + depth - 1)))
-        at += depth + gap
-    if bands[-1][1] > inner_u[1] or bands[-1][2] - bands[-1][1] + 1 < 5:
-        return None, "the sequence's bands do not fit the rectangle"
+        # the spine's own bands
+        bands, at = [], inner_u[0]
+        for name, depth in (("forecourt", fore), ("middle", inner_c), ("great", great)):
+            bands.append((name, at, min(inner_u[1], at + depth - 1)))
+            at += depth + gap
+        if bands[-1][1] > inner_u[1] or bands[-1][2] - bands[-1][1] + 1 < 5:
+            return None, "the sequence's bands do not fit the rectangle"
 
-    rng = random.Random(f"{seed}/{comp['name']}/axial")
-    parts, order = [], []
-    n_plot = [0]
+        rng = random.Random(f"{seed}/{comp['name']}/axial")
+        parts, order = [], []
+        n_plot = [0]
 
-    def plot(kind, tname, r, notes, name=None):
-        n_plot[0] += 1
-        nm = name or f"{comp['name']}_range_{n_plot[0]}"
-        decl = decls.get(tname) or {}
-        params = {}
-        for pn, sp in (decl.get("params") or {}).items():
-            if isinstance(sp, (list, tuple)) and sp and sp[0] == "int" and len(sp) >= 3:
-                params[pn] = rng.randint(int(sp[1]), int(sp[2]))
-            elif isinstance(sp, (list, tuple)) and sp and sp[0] == "choice" and sp[1]:
-                params[pn] = rng.choice(list(sp[1]))
-        row = {"kind": "area" if kind == "court" else "plot", "name": nm, "type": tname,
-               "seed": 1 + (n_plot[0] % 89), "params": params,
-               "x0": r[0], "z0": r[1], "x1": r[2], "z1": r[3], "notes": notes}
-        parts.append(row)
-        order.append(nm)
-        return row
+        def plot(kind, tname, r, notes, name=None):
+            n_plot[0] += 1
+            nm = name or f"{comp['name']}_range_{n_plot[0]}"
+            decl = decls.get(tname) or {}
+            params = {}
+            for pn, sp in (decl.get("params") or {}).items():
+                if isinstance(sp, (list, tuple)) and sp and sp[0] == "int" and len(sp) >= 3:
+                    params[pn] = rng.randint(int(sp[1]), int(sp[2]))
+                elif isinstance(sp, (list, tuple)) and sp and sp[0] == "choice" and sp[1]:
+                    params[pn] = rng.choice(list(sp[1]))
+            row = {"kind": "area" if kind == "court" else "plot", "name": nm, "type": tname,
+                   "seed": 1 + (n_plot[0] % 89), "params": params,
+                   "x0": r[0], "z0": r[1], "x1": r[2], "z1": r[3], "notes": notes}
+            parts.append(row)
+            order.append(nm)
+            return row
 
-    # 1. the spine
-    great_row = None
-    for (name, u_a, u_b) in bands:
-        depth = u_b - u_a + 1
-        if name == "great":
-            got = admit(plot_t, max(lo_p, min(hi_p, depth)),
-                        max(lo_p, min(hi_p, court_w if wing else span)), lo_p)
+        # 1. the spine
+        great_row = None
+        for (name, u_a, u_b) in bands:
+            depth = u_b - u_a + 1
+            if name == "great":
+                got = admit(plot_t, max(lo_p, min(hi_p, depth)),
+                            max(lo_p, min(hi_p, court_w if wing else span)), lo_p)
+                if got is None:
+                    return None, "no admitted plot type stands the greatest hall"
+                d, w = got
+                v_a = inner_v[0] + (span - w) // 2
+                great_row = plot("great", plot_t, rect(u_b - d + 1, u_b, v_a, v_a + w - 1),
+                                 "the greatest hall, at the far end of the axis",
+                                 name=f"{comp['name']}_great_hall")
+                continue
+            got = admit(area_t, max(lo_a, min(hi_a, depth)), court_w, lo_a)
             if got is None:
-                return None, "no admitted plot type stands the greatest hall"
-            d, w = got
-            v_a = inner_v[0] + (span - w) // 2
-            great_row = plot("great", plot_t, rect(u_b - d + 1, u_b, v_a, v_a + w - 1),
-                             "the greatest hall, at the far end of the axis",
-                             name=f"{comp['name']}_great_hall")
-            continue
-        got = admit(area_t, max(lo_a, min(hi_a, depth)), court_w, lo_a)
-        if got is None:
-            continue
-        d, cw = got
-        v_a = inner_v[0] + (span - cw) // 2
-        plot("court", area_t, rect(u_a, u_a + d - 1, v_a, v_a + cw - 1),
-             "the forecourt inside the gate" if name == "forecourt"
-             else "the inner court, before the greatest hall",
-             name=(f"{comp['name']}_forecourt" if name == "forecourt"
-                   else f"{comp['name']}_inner_court"))
+                continue
+            d, cw = got
+            v_a = inner_v[0] + (span - cw) // 2
+            plot("court", area_t, rect(u_a, u_a + d - 1, v_a, v_a + cw - 1),
+                 "the forecourt inside the gate" if name == "forecourt"
+                 else "the inner court, before the greatest hall",
+                 name=(f"{comp['name']}_forecourt" if name == "forecourt"
+                       else f"{comp['name']}_inner_court"))
 
-    # 2. the wings: a grid of ranges either side of the spine, paired across it
-    laid = 0
-    if wing and per_side:
-        # **the wings stop where the greatest hall begins**: a range beyond it is a
-        # range past the end of the approach, and the axis clause refuses it by name
-        wing_u1 = bands[-1][1] - gap - 1
-        run_w = max(0, wing_u1 - inner_u[0] + 1)
-        cols_n = max(1, min(per_side, wing_w // (lo_p + gap)))
-        rows_n = max(1, min(-(-per_side // cols_n), run_w // (lo_p + gap)))
-        cell_w = (wing_w - (cols_n - 1) * gap) // cols_n
-        cell_d = (run_w - (rows_n - 1) * gap) // rows_n
-        got = admit(plot_t, cell_d, cell_w, lo_p)
-        if got is not None:
-            cell_d, cell_w = got
-            for r_i in range(rows_n):
-                uu = inner_u[0] + r_i * (cell_d + gap)
-                if uu + cell_d - 1 > wing_u1:
-                    break
-                for c_i in range(cols_n):
-                    # **a pair or nothing**: a range on one side of an approach with
-                    # nothing opposite it is not a flanking range
-                    left = inner_v[0] + c_i * (cell_w + gap)
-                    right = inner_v[1] - c_i * (cell_w + gap) - cell_w + 1
-                    if left + cell_w - 1 >= right:
+        # 2. the wings: a grid of ranges either side of the spine, paired across it
+        laid = 0
+        if wing and per_side:
+            # **the wings stop where the greatest hall begins**: a range beyond it is a
+            # range past the end of the approach, and the axis clause refuses it by name
+            wing_u1 = bands[-1][1] - gap - 1
+            run_w = max(0, wing_u1 - inner_u[0] + 1)
+            cols_n = max(1, min(per_side, wing_w // (lo_p + gap)))
+            rows_n = max(1, min(-(-per_side // cols_n), run_w // (lo_p + gap)))
+            cell_w = (wing_w - (cols_n - 1) * gap) // cols_n
+            cell_d = (run_w - (rows_n - 1) * gap) // rows_n
+            got = admit(plot_t, cell_d, cell_w, lo_p)
+            if got is not None:
+                cell_d, cell_w = got
+                for r_i in range(rows_n):
+                    uu = inner_u[0] + r_i * (cell_d + gap)
+                    if uu + cell_d - 1 > wing_u1:
                         break
-                    for v_a in (left, right):
-                        plot("range", plot_t,
-                             rect(uu, uu + cell_d - 1, v_a, v_a + cell_w - 1),
-                             "a flanking range, paired across the axis")
-                        laid += 1
+                    for c_i in range(cols_n):
+                        # **a pair or nothing**: a range on one side of an approach with
+                        # nothing opposite it is not a flanking range
+                        left = inner_v[0] + c_i * (cell_w + gap)
+                        right = inner_v[1] - c_i * (cell_w + gap) - cell_w + 1
+                        if left + cell_w - 1 >= right:
+                            break
+                        for v_a in (left, right):
+                            plot("range", plot_t,
+                                 rect(uu, uu + cell_d - 1, v_a, v_a + cell_w - 1),
+                                 "a flanking range, paired across the axis")
+                            laid += 1
 
     # 3. **the courts and gardens between them**: every free rectangle inside the wall
     # that an area type will take, largest first, until none is left. A composition asks
@@ -7118,7 +7586,7 @@ def _axis_failure(comp: dict, place: dict, halls: list, courts: list) -> str | N
         fuller sequence -- forecourt, ranges, inner court, the greatest hall -- is what
         `compound_axial` lays and what its own case holds it to; a compound a model drew is
         held to the two a person sees.
-        
+
     """
     x0, z0 = min(comp["x0"], comp["x1"]), min(comp["z0"], comp["z1"])
     x1, z1 = max(comp["x0"], comp["x1"]), max(comp["z0"], comp["z1"])
@@ -7165,7 +7633,7 @@ def _axial_band(decl: dict | None, kind: str = "plot") -> tuple:
         An edge, a point and an area are drawn as they are built. The craft round: without
         it an axial compound on a 188-square podium divided its flanking strips into cells
         of 32x3, which the footprint check then refused one by one.
-        
+
     """
     from .buildlib import Builder
     if not decl:
@@ -7203,7 +7671,7 @@ def _axial_type(decls: dict, kind: str, part: dict | None, spec: dict | None,
         the largest-banded type of the compound's own role is the fallback, so the greatest
         hall is as great as the library can make it. Returns the name, and `chosen_by` is
         recorded by the caller.
-        
+
     """
     fam = _AXIAL_FAMILY.get(kind)
     got = (approved or {}).get(fam) if fam else None

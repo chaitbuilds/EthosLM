@@ -53,7 +53,7 @@ def _ground_set(v) -> list:
         28 committed types declare, and `list("any")` is `['a', 'n', 'y']` -- a card whose
         ground classes were three letters. It never bit because nothing asked; the
         integration round asks.
-        
+
     """
     if v is None:
         return []
@@ -121,7 +121,7 @@ def _named_for(name: str, family: str) -> bool:
         was not that names were consulted -- it was that a name was consulted *instead of*
         the declarations, so a `tower` of the wrong form was adopted as a tower. `fits`
         asks the declarations as well, every time.
-        
+
     """
     return name == family or name.startswith(family + "_")
 
@@ -141,7 +141,7 @@ def fits(c: dict, want: dict) -> tuple:
         the order a reader wants the refusal in: the wrong family first, then the wrong
         shape of part, then the wrong tradition, then the wrong purpose, then a footprint
         that cannot hold the thing.
-        
+
     """
     from . import pipeline as _pipeline
     # a type declaring the function the part is asked for answers the part whatever it
@@ -229,7 +229,7 @@ def _part_footprint(p: dict) -> list | None:
         asks the library nothing about size, which is honest, and a want carrying a band
         would be comparing a type's range against another range and passing whatever
         overlapped -- which is how an envelope stops meaning anything.
-        
+
     """
     need = (p.get("needs") or {}).get("footprint")
     if not need or len(list(need)) != 2:
@@ -246,7 +246,7 @@ def requirement_for(intent: dict | None, part: dict, family: str | None) -> str 
         requirement, the design choice that answers it and the evidence for it are one
         chain. `resolve._requirement_for` does the same job for a *region*; this does it for
         a capability, by the same rule and against the same record.
-        
+
     """
     for r in (intent or {}).get("requirements") or []:
         w = r["wants"]
@@ -282,7 +282,7 @@ def requirements_for(spec: dict | None, intent: dict | None, part: dict) -> dict
         This is the coordinator's half of the resolved-demand contract; `demand.resolve`
         calls it and hands what comes back to the envelope, and the ids travel with the
         answer so a lot that had to grow can say which clause grew it.
-        
+
     """
     from . import envelope as envelope_mod
     from . import intent as intent_mod
@@ -407,7 +407,7 @@ def wants_of(spec: dict, *, round_boundaries: bool = False,
         want, because whether a type will stand somewhere is a fact about the pair and not
         about the type. The review's finding was that production never passed them at all,
         so `fits` was answering a question with half its terms missing.
-        
+
     """
     out = []
     forms_place = [spec.get("form")] if spec.get("form") else []
@@ -567,7 +567,7 @@ def _rank(name: str, c: dict, want: dict) -> tuple:
         The previous order was widest-envelope-first for everything, and it is why the
         round's own report recorded a match of `wall` while the ring layout built
         `great_wall`: two rules, one library, two answers.
-        
+
     """
     fam = want.get("family")
     if fam:
@@ -589,7 +589,7 @@ def match(spec: dict, decls: dict | None = None, *, names=None,
         read off disk. **The form filter is not applied to the table** -- it is applied per
         want by `fits`, so a refusal can say *which* fact refused it instead of the type
         simply being absent from a list.
-        
+
     """
     from .placeplan import types_card
     if decls is None:
@@ -664,7 +664,7 @@ def _types_used(place: dict, plan: dict | None) -> dict:
         place level only, and skipped compound components and district fabric entirely. So a
         district whose first house was the approved type and whose remaining forty were not
         produced no finding at all, and a palace's halls were never compared with anything.
-        
+
     """
     from . import pipeline as _pipeline
     out: dict = {}
@@ -722,7 +722,7 @@ def agreements(rec: dict, place: dict, decls: dict, plan: dict | None = None) ->
         can be compared, which is what the review found: the fabric a district was compiled
         out of and the halls inside a compound were never reconciled with anything, and both
         are where the type choices actually are.
-        
+
     """
     used_by = _types_used(place, plan)
     entries, findings = [], []
@@ -810,7 +810,7 @@ def adoptable(path: str, want: dict) -> tuple:
         `types/<family>.py`, **including the file whose wrong form opened the gap**. A file
         on disk is a candidate here and nothing more; it is loaded, its five facts are read,
         and it is adopted only if they answer the want.
-        
+
     """
     from . import pipeline as _pipeline
     if not os.path.exists(path):

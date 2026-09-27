@@ -1,0 +1,50 @@
+{
+ "chimney": false,
+ "name": "hutong_grey_brick_tile",
+ "notes": {
+  "blurb": "Ordinary fabric of a northern Chinese capital: grey brick walls under grey tile, with red-painted timber only at the gate.",
+  "construction": "Grey brick (stone brick, a share of houses in the greener tuff brick) on an andesite base, deepslate brick bands; timber posts and gates painted red.",
+  "ground": "Grey paving between the houses.",
+  "roofs": "Grey tile (deepslate tile), gabled, a shallow two-pitch profile with a straight eave\noversailing one block. the gable and the one-block eave are this voice's choice.",
+  "signature": "A grey roofscape and grey lane walls, broken by red gates -- the colour saved for the rings within."
+ },
+ "roles": {
+  "floor": "polished_andesite",
+  "footing": "andesite",
+  "frame": "mangrove",
+  "roof": "deepslate_tile",
+  "trim": "deepslate_brick",
+  "wall": "stone_brick",
+  "wall_alt": "tuff_brick"
+ },
+ "roof": {
+  "eave": "straight",
+  "ends": "gable",
+  "overhang": 1,
+  "profile": [
+   [
+    1,
+    2
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "tiers": 1
+ },
+ "variants": {
+  "wall": [
+   {
+    "family": "tuff_brick",
+    "weight": 0.12,
+    "when": "patch"
+   },
+   {
+    "family": "andesite",
+    "weight": 0.3,
+    "when": "damp"
+   }
+  ]
+ }
+}

@@ -77,7 +77,7 @@ def requirement_read(spec: dict, plan: dict, parts_record: dict,
         Silent where the sentence states nothing this build reads by rule -- "Build Ba Sing
         Se" states no requirement outright, and a clause that holds vacuously is a clause
         nobody can read.
-        
+
     """
     from . import contracts, intent as intent_mod
     rec = intent_rec or intent_mod.read(spec.get("sentence") or "")
@@ -128,7 +128,7 @@ def construction_limits(plan: dict, parts_record: dict, findings: list) -> list:
         a record here: the part, what was lost, what was requested and emitted, the owner,
         and the constraint `construction.constraint` derives by probing the type
         (`needs.lot_min`).
-        
+
     """
     rows = [f for f in findings or [] if str(f.get("id", "")).startswith("find/emitted/")]
     if not rows:
@@ -193,7 +193,7 @@ def ring_words(spec: dict, layout: dict | None) -> list:
         Returns one row per ring word the spec's part names carry:
         `{"part", "word", "means", "ring", "level", "agrees", "why"}`. `agrees` is None
         where the word is radial or the place is flat -- neither met nor missed.
-        
+
     """
     rings = [r for r in ((layout or {}).get("rings") or []) if r.get("name")]
     if len(rings) < 2:
@@ -624,7 +624,7 @@ def inside(path: list, point: tuple) -> bool:
         `_edge_cells` about what a wall's line is and because a dependency for a crossing
         count is a dependency for nothing. A point **on** the line is not inside it: a gate
         stands in its wall and is answered by the clause that asks about gates.
-        
+
     """
     pts = [(float(a[0]), float(a[1])) for a in path]
     if len(pts) >= 2 and pts[0] == pts[-1]:
@@ -672,7 +672,7 @@ def concentric_clauses(spec: dict, plan: dict, parts: list, decls: dict,
         Silent where the spec asks for no concentric part: a hamlet round a green is not a
         place this has anything to say about, and a clause that holds vacuously on every
         place that is not a city is a clause nobody can read.
-        
+
     """
     from .placeplan import _edge_cells
     wanted = [d for d in spec["defining_parts"] if d["relation"] == "concentric"]
@@ -846,7 +846,7 @@ def compound_clauses(spec: dict, plan: dict, parts: list, decls: dict, stood: di
           compound/<name>/ground
                            its parts stand on prepared ground and not on water, and where
                            the site search levelled ground for it, on that ground.
-        
+
     """
     from .placeplan import (COMPOUND_PLATEAU_SHARE, _edge_cells, compound_composition,
                             compound_rects)
@@ -1054,7 +1054,7 @@ def _in_group(part: dict, d: dict, links: dict | None = None) -> bool:
         the place level gives a district -- `<defining part>_<sector>` -- which is the same
         link a step weaker. A leaf whose ancestry resolves to no defining part is nobody's
         and is counted for nobody.
-        
+
     """
     name = d["name"]
     for a in part.get("in") or []:
@@ -1076,7 +1076,7 @@ def _matching(parts: list, d: dict, decls: dict | None = None) -> list:
         The **kind** is the spec's or the one the leaf's committed type declares, for the
         reason `placeplan._kind_ok` gives: a spec names a family, is written before any type
         exists, and cannot know that a palace will be built as an area.
-        
+
     """
     out = []
     for p in parts:
@@ -1130,7 +1130,7 @@ def built_palette(voice: str | None, parts: list, stood: dict, built, base) -> d
 
         Read over every part rather than a sample, because the cost is a slice of two
         arrays per part and a sample is one more place to be wrong about which parts.
-        
+
     """
     from . import prims, styles
     from .lint import plot_rects

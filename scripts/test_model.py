@@ -138,7 +138,8 @@ class RouteTests(unittest.TestCase):
                                "type": "anthropic/" + t["frontier"],
                                "build": "anthropic/" + t["frontier"],
                                "revise": "anthropic/" + t["small"],
-                               "judge": "anthropic/" + t["vision"]})
+                               "judge": "anthropic/" + t["vision"],
+                               "research": "anthropic/" + t["frontier"]})
 
     def test_a_role_may_go_to_another_provider_or_stay_staged(self):
         env = {"ETHOSLM_MODEL_API": "openai", "OPENAI_API_KEY": "k",

@@ -75,7 +75,7 @@ def _blind_build(rnd: Round, sub: str, req_path: str,
         `revise` for a findings revision, `build` otherwise -- and `model.router()` decides
         whether that role is answered by the supervising agent (the default) or by an API
         model. The record carries the role so the driver can say which.
-        
+
     """
     import shutil
     i = int(os.path.basename(req_path)[len("build_request_"):-len(".json")])
@@ -185,7 +185,7 @@ def scrub_traceback(tb: str) -> str:
         has been told it is candidate 3 of something called selection, which is the one
         thing the spec says must not happen. The frames from this package and from
         `scripts/` are dropped and what is left is the line that raised and the exception.
-        
+
     """
     keep, drop_next = [], False
     ours = (os.sep + "ethoslm" + os.sep, os.sep + "scripts" + os.sep)
@@ -215,7 +215,7 @@ def _bounce(rnd: Round, sub: str, builds: str, tb: str) -> dict:
         replacement, the traceback goes into the *builder's own* blinded directory as
         `error.md`, and the cap comes off the config so nobody can quietly bounce one
         candidate more than another.
-        
+
     """
     # A waves round carries none of the three experiment blocks, so its bounce cap lives
     # in `flags` beside the rest of its pipeline settings.
@@ -402,7 +402,7 @@ def check_fixtures(rounds=FIXTURE_ROUNDS) -> list:
         tie-break, so there is nothing here for a later reader to have to take on trust.
         Each fixture is taken from the plots the earlier rules have not already taken, so
         six rules give six different plots.
-        
+
     """
     pool = [row for r in rounds for row in plot_ground(r)]
     rules = {
@@ -482,7 +482,7 @@ def big_loop_fixture(sources=PART_EDGE_BIG_SOURCES, n: int = PART_EDGE_BIG,
         the smallest ring worth cutting; where no ground on disk holds the full size, the
         largest one that fits is taken and **the answer says so**, because a fixture quietly
         a third smaller than the one that was registered is worse than a miss reported.
-        
+
     """
     for round_name, cache in sources:
         got = None
@@ -513,7 +513,7 @@ def big_area_fixture(sources=PART_EDGE_BIG_SOURCES, n: int = PART_AREA_BIG,
         cut from, and for the same reason: there is no 48x48 anywhere on a 192-block site
         that its town has not spoken for, and an area type asked to build a palace on a
         12x12 square is being asked the wrong question.
-        
+
     """
     for round_name, cache in sources:
         for side in range(int(n), int(floor) - 1, -4):
@@ -690,7 +690,7 @@ def _plots_of(rnd: Round) -> list:
         Ground that has never been built on has no registry, and that is not a missing file
         -- it is the whole reason a city's own unbuilt footprint is the only piece of ground
         on disk big enough to cut a 600-column ring out of.
-        
+
     """
     p = rnd.rel("plots.json")
     return json.load(open(p)) if os.path.exists(p) else []
@@ -703,7 +703,7 @@ def _free_ground(round_name: str):
         cell and every reserved doorstep, and dry. A wall, a gate and a square have to be
         cut out of ground the settlement has not already spoken for, or the fixture is
         measuring a collision with a standing town rather than a part on ground.
-        
+
     """
     from .. import observe
     rnd, _be = _fixture_round(round_name)
@@ -756,7 +756,7 @@ def check_parts(round_name: str = PART_FIXTURE_ROUND) -> list:
                  neighbour, facing away from it. That is where a gate goes -- the town
                  stops there -- and it is the one anchor a settlement defines for itself.
           area   the flattest free square of 12, which is a market square's worth.
-        
+
     """
     rnd, vol, net, free = _free_ground(round_name)
     out = []
@@ -921,7 +921,7 @@ def _fixtures(rnd: Round) -> list:
     """From the config, so what a builder was checked against is on disk and registered
         before the builder was called; `check_fixtures()` is what wrote it and
         `test_siting` is what asserts the two still agree.
-        
+
     """
     t = rnd.types or {}
     if t.get("check_fixtures"):
@@ -961,7 +961,7 @@ def _seeds_for(rnd: Round, spec: dict) -> list:
         A plot type has six pieces of ground and two seeds; an edge, a point and an area
         have one piece each, so they get four seeds instead -- the same eight-ish instances,
         varied on the axis there is one of.
-        
+
     """
     t = rnd.types or {}
     if spec.get("part", "plot") == "plot":
@@ -1015,7 +1015,7 @@ def roof_share(pending: dict, rect, floor_y: int, roof_family: str) -> dict:
         slab, a hip stair and a full course all count. Returns `{"columns", "roofed",
         "share"}`; `share` is None where nothing rises a storey, which is a plot with no
         building on it and not a plot with no roof.
-        
+
     """
     from ..prims import shape
     shapes = set()
@@ -1131,7 +1131,7 @@ def param_summary(rows: list, sets: list) -> dict:
 
         Keyed by the parameters as they are written down, because that is what an author
         has to change and what a plan has to avoid asking for.
-        
+
     """
     out = {}
     for kw in sets:
@@ -1173,7 +1173,7 @@ def coupled_to_silhouette(by_voice: dict) -> dict | None:
         Read on the counts and not on the cells, because a roof that follows the voice is
         *supposed* to put its stairs in different places; what it is not supposed to do is
         put them where the linter objects in one voice and not the other.
-        
+
     """
     if len(by_voice) < 2:
         return None
@@ -1190,7 +1190,7 @@ def _check_type_job(rnd, be, prog, decl, fixtures, sets, work) -> dict:
         Everything a worker needs is an argument, and everything it hands back is data.
         `_fixture_round` is cached per process, so a forked worker inherits whatever the
         parent had already loaded and reads the rest once.
-        
+
     """
     import traceback
     name, seed, voice, pi = work
@@ -1305,7 +1305,7 @@ def _type_walkable(ctx) -> set:
         Context chooses the circulation lane where one exists and the volume perimeter
         otherwise. Re-running a perimeter-only flood here made a valid building on a cut
         fixture report zero walkability even though its lane reached every floor cell.
-        
+
     """
     return set(ctx.from_outdoors)
 
@@ -1329,7 +1329,7 @@ def _run_src(rnd: Round, be, prog: str, src: str, allow_collide: bool | None = N
         checked on its two plots stood with `fitting()` refusing nothing: a barrel on the
         foot of a flight, a bookshelf in a dais's step, and a sealed storey the city would
         never have built. A type is checked under the city's rules. Demo-polish, 1c.
-        
+
     """
     from .. import offline, stages
     if allow_collide is None:
@@ -1450,7 +1450,7 @@ def check_program(rnd: Round, be, prog: str, labels: list, wave: str,
         builder is not already told: `standard_report` (the build family on its own plots,
         the place family over the town), the on-foot lines the linter is silent on, and now
         placed versus attempted.
-        
+
     """
     import traceback
     t0 = time.perf_counter()
@@ -1481,7 +1481,7 @@ def run_check(key: str, d: str) -> int:
         The run goes on `out/measurements.jsonl` as a `check_run` row keyed by the scratch
         directory and the program's own bytes, which is the only record of how many times a
         builder looked -- and, per the spec, the thing `done` is refused without.
-        
+
     """
     import hashlib
     job = json.load(open(os.path.join(CHECK_JOBS, f"{key}.json")))

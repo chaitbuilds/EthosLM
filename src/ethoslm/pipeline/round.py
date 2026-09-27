@@ -87,7 +87,7 @@ class Round:
                 fixture under `fixtures/<name>/` is read-only input; the run writes to
                 `out/<name>/` like every other round, so running it twice is running it twice
                 and not editing a fixture.
-                
+
         """
         if self.state_dir:
             return self.state_dir
@@ -145,7 +145,7 @@ class Round:
                 A4: the plan is a tree, and this is the one call that flattens it, so every
                 stage that used to read `plan["structures"]` keeps working whichever shape the
                 plan on disk is.
-                
+
         """
         return _pipeline.plan_plots(self.plan())
 
@@ -173,7 +173,7 @@ class Round:
                 deliberately the *search's* own answer: `site.json` is written from this by
                 `prepare_settlement.py`, so reading it back would be reading our arithmetic
                 twice and would hide a disagreement between them.
-                
+
         """
         got = (self.site_search() or {}).get("chosen")
         if not got:
@@ -249,7 +249,7 @@ class LiveBackend:
         Deliberately thin: it holds the editor and the site every existing pass already
         builds for itself, so that the orchestration above it is the same code in both
         modes. The passes themselves are unchanged.
-        
+
     """
     live = True
 
@@ -331,7 +331,7 @@ class LiveBackend:
                 So a live round now builds its parts against the volume, like a dry run, and
                 the world is written once. `blocks` is what is owed the world, in the order it
                 was laid, and a part's own record still says how many blocks it placed.
-                
+
         """
         pending = dict(getattr(builder, "_pending", {}) or {})
         if pending:
@@ -349,7 +349,7 @@ class LiveBackend:
                 the one thing only a running server computes -- a fence's joins, a wall's
                 posts, a stair's mitre -- and it is the reason this is a server's job at all.
                 The read-back is the single `loadWorldSlice` the per-part path did per part.
-                
+
         """
         if not self.blocks:
             return {"published": 0, "note": "nothing was committed to publish"}
@@ -489,7 +489,21 @@ PLACE_DRY = ("reading", "interpret", "place_spec", "site_search", "cache", "site
              "section", "inspect", "improve", "qualify", "place_check", "readout")
 
 
+#: The design synthesis round: a **designed place**. After the reading, the meaning and
+#: the spec, the model designs the whole place's organisation (`design`), the proposals
+#: are compiled and compared on their sites and one is adopted (`design_compare`), the
+#: adopted design is resolved for construction (`design_resolve`), and the regions the
+#: round names are built, bounded and resumable (`regions`), then looked at
+#: (`region_views`). `flags.design` selects it; see `pipeline/stages_design.py`.
+#: `design_references` comes first: the visual evidence a named place's identity needs,
+#: found (or reused) and read into a reference brief before anything is designed.
+DESIGN_DRY = ("reading", "interpret", "place_spec", "design_references", "design",
+              "design_compare", "design_resolve", "regions", "region_views")
+
+
 def default_stages(rnd: Round) -> tuple:
+    if rnd.sentence and rnd.flags.get("design"):
+        return DESIGN_DRY
     if rnd.sentence and rnd.flags.get("plan_only"):
         # **A dry plan-only run is the dry list, cut at the plan.** It took the live
         # list, which has no `cache` stage, so a dry run that only wanted a plan chose a
@@ -529,7 +543,7 @@ def _needs_model(res: dict) -> list:
         was staged, nothing saw it, and the site search ran next and stopped on the
         `place.json` the unanswered job was going to write. The router has always looked in
         all three places; the controller now looks in the same three.
-        
+
     """
     from ..model import staged
     return list(staged(res))
@@ -545,7 +559,7 @@ def _reenter(res: dict) -> str | None:
         the round went on to build a plan nobody had inspected. Prose is not control flow.
         A stage that has changed the candidate under itself says `status: "reenter"` -- on
         the result or on one of its entries -- and this is what the loop below asks.
-        
+
     """
     if res.get("status") == "reenter":
         return str(res.get("why") or "the stage asked to be run again")
@@ -562,7 +576,7 @@ def _drive_reentries(rnd: Round, be, results: dict, name: str, res: dict) -> dic
         loop: the round is stopped by name rather than left to spin. A stage that asks to
         re-enter and then asks for a model call is answered by the caller's wait loop on the
         next turn, which is why this returns rather than swallowing that state.
-        
+
     """
     from ..model import router
     trail = list(res.get("reentries") or [])
@@ -602,7 +616,7 @@ def run(rnd: Round, stages=DETERMINISTIC, backend=None, wait: int = 0,
         It re-enters the *same* stage and nothing else. Re-running the whole list would
         re-cache the base volume between waves, which is the one thing `stage_cache`
         exists to refuse.
-        
+
     """
     be = backend or OfflineBackend(rnd)
     results = {}
@@ -662,7 +676,9 @@ def run(rnd: Round, stages=DETERMINISTIC, backend=None, wait: int = 0,
                              "role": rec.get("role"),
                              "request": bl.get("request") or rec.get("request"),
                              "write": bl.get("write") or rec.get("write"),
-                             "check": bl.get("check")})
+                             "check": bl.get("check"),
+                             # what the job is, or why an answer was handed back
+                             "note": str(rec.get("note") or "")[:400] or None})
             results["pending"] = {"stage": name, "waiting": asks,
                                   "why": (f"{name} is waiting on {len(asks)} agent "
                                           f"answer(s); the round resumes at this stage "

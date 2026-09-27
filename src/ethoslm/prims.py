@@ -19,7 +19,7 @@ class Material(str):
         the builder's write path, which records the role beside every emitted block. The
         shape helpers below hand the role on (`shape`, `solid`, `material`); an f-string
         drops it, and the builder then falls back to the role context or the family.
-        
+
     """
     role = None
 
@@ -144,7 +144,7 @@ def family(name: str) -> str | None:
         same material said differently, so the shape is stripped off and the answer checked
         against the table at every step. `hay_block` has no family: there are no hay stairs
         and no hay slab, and nothing here will invent them.
-        
+
     """
     n = str(name).split("[")[0].split(":")[-1]
     for _ in range(6):
@@ -200,7 +200,7 @@ def solid(name: str) -> str:
         and no shapes, and a palette is allowed to name that cube directly -- so this
         accepts `white_concrete_powder` where `material()` will not, and still refuses a
         name that is neither a family nor a real block.
-        
+
     """
     fam = family(name)
     if fam is not None:
@@ -258,7 +258,7 @@ def shape(name: str, kind: str = "full") -> str:
         a voice's role happens to say -- and `kind` is one of `SHAPES`. Refuses by name
         rather than substituting: a type that asks for a fence of a stone family is asking
         for something the game does not have, and the answer is the refusal and not a wall.
-        
+
     """
     if kind not in SHAPES:
         raise ValueError(f"a shape is one of {', '.join(SHAPES)}, not {kind!r}")
@@ -308,7 +308,7 @@ def foliage(mat: str) -> str:
         same green. A tree's leaf is its timber's; a family the game grows no leaf of --
         stone, a brick -- gets oak, which is the one place a fallback is right, because the
         choice being made is which tree.
-        
+
     """
     fam = family(mat) or str(mat or "")
     for cand in (f"{fam}_leaves", f"{fam}_wart_block"):
@@ -333,7 +333,7 @@ def axial(block: str, axis: str = "y") -> str:
         where the registry says it has one, keeps any properties it already carries, and is
         returned untouched otherwise. The same shape as `VEGETATION` containing `grass`, and
         the same fix -- ask what a thing *is*.
-        
+
     """
     from . import registry
     if not block:
@@ -368,7 +368,7 @@ def _has_block(block_id: str) -> bool:
         6,390 misses, 85 of the 97 profiled seconds the fourteen parts took, every one of
         them spent suggesting a name to a caller that only asked whether one existed.
         Memoised, because the registry does not change under a running build.
-        
+
     """
     from . import registry
     try:
@@ -388,7 +388,7 @@ def _occupies_cell(state: str) -> bool:
         stops exactly where `surface_heights` would have put the surface. `_is_surface`
         below is the stricter `lower and upper`, which a slab fails: sounding with that
         would walk a probe straight through the top of a slabbed roof.
-        
+
     """
     if not state or state in ("air", "cave_air", "void_air"):
         return False
@@ -405,7 +405,7 @@ def _is_surface(state: str) -> bool:
         and the rule the linter judges it by have to be the same rule, or the library is
         measuring the world differently from the thing that reads the world back. This is
         observe's `lower and upper`, which is what backwards_stairs compares columns with.
-        
+
     """
     if not state or state in ("air", "cave_air", "void_air"):
         return False
@@ -478,7 +478,7 @@ class Primitives:
                 is how it says so. Nesting takes the innermost name; `surfaces.record` turns the
                 cells into `FLAGS["figure"]` and `material.plan` refuses them. Cheap: one dict
                 entry per declared cell, and nothing at all for a type that declares nothing.
-                
+
         """
         return _Figure(self, str(name))
 
@@ -499,7 +499,7 @@ class Primitives:
 
                 Walking the angle and rounding is what keeps the thickness even; a distance-band
                 test gives a ring that is fat on the axes and thin on the diagonals.
-                
+
         """
         seen = set()
         steps = max(16, int(8 * r))
@@ -623,7 +623,7 @@ class Primitives:
                 module clamps first, and one of them -- the gambrel's shallow upper slope --
                 asks for (1, run*2), which on a (1,3) gambrel is 1-in-6 and below MIN_RATIO.
                 Clamping here would redraw every gambrel in the record.
-                
+
         """
         return self._segment_profile(span, [(rise, run)], clamp=False)
 
@@ -639,7 +639,7 @@ class Primitives:
                 This is the whole of what `profile=` means, and it is why an irimoya can be
                 asked for at all: "shallow (1,2) then steep (2,1) at the ridge" is two segments
                 and nothing else in the library has to know what a Japanese roof is.
-                
+
         """
         segs = [(self._clamp_pitch(*s) if clamp else (max(1, int(s[0])),
                                                       max(1, int(s[1]))))
@@ -920,7 +920,7 @@ class Primitives:
                     irimoya   hipped below, gabled above, and the gable set back one course --
                               the outermost end column stays hipped, so the upper gable stands
                               on the lower hip's own slope rather than hanging off its edge.
-                
+
         """
         sd, sh, sk, sf = side
         ed, eh, ek, ef = end
@@ -961,7 +961,7 @@ class Primitives:
                 of a roof is solid, so this fills it with the same block the wall course between
                 the tiers is made of. `solid_fill=False` is a caller asking for a hollow roof
                 and gets one, here as everywhere else.
-                
+
         """
         ridge = y
         a0, b0, a1, b1 = int(x0), int(z0), int(x1), int(z1)
@@ -1021,7 +1021,7 @@ class Primitives:
                 tip *not dropping*, never the eave standing proud of the roof: it rises as far
                 as the course it leaves has risen, as a stair where that course is a full step
                 up and as a slab where it is half of one, and not at all where it is level.
-                
+
         """
         inner_h, inner_kind = prof[min(overhang, len(prof) - 1)]
         if inner_h >= h + 1:
@@ -1136,7 +1136,7 @@ class Primitives:
                 `flight` is set by `steps()` and names the run this tread belongs to. A lone
                 tread has none and is decided against the ground beside it, which is the only
                 thing there is to go on.
-                
+
         """
         self._step_queue().append({"x": int(x), "y": int(y), "z": int(z), "mat": mat,
                                    "axis": "x" if axis == "x" else "z",
@@ -1164,7 +1164,7 @@ class Primitives:
                 This is for treads -- steps, flights, terrace edges. A stair used as a corbel,
                 a chair or a sill bracket is not a tread and should be placed directly; it has
                 no up-slope side and this would flatten it to a slab.
-                
+
         """
         cells = [(int(x), int(y), int(z)) for (x, y, z) in cells]
         self._flight_seq = getattr(self, "_flight_seq", 0) + 1
@@ -1191,7 +1191,7 @@ class Primitives:
                 which counts a full cube (or a stair, which fills its cell for collision) as
                 surface and a bottom slab as not -- both read the ground the same way, which is
                 what makes the check able to judge this.
-                
+
         """
         w = self.STEP_WINDOW
 
@@ -1283,7 +1283,7 @@ class Primitives:
                 Idempotent, and called for you by `Builder.flush()` -- a queue a program forgot
                 to resolve would be a flight of stairs that never got built, which is a worse
                 failure than the one this exists to prevent.
-                
+
         """
         decided = self._decide_steps()
         placed = demoted = 0
@@ -1322,7 +1322,7 @@ class Primitives:
                 and the construction check stopped the run with six `E010`s. Nothing the world
                 generates is ever `stripped_`, which is why `clear_ground_cover` one function
                 down already makes the same exclusion.
-                
+
         """
         removed = 0
         trunks = []
@@ -1387,7 +1387,7 @@ class Primitives:
                 over ground it could not walk to. `_dress_worked` reads this register and puts
                 the level back; nothing else does, so what a stored program places here is byte
                 for byte what it placed before.
-                
+
         """
         from .observe import is_growing
         # Only where the **library** is preparing ground for a part. A stored program
@@ -1456,7 +1456,7 @@ class Primitives:
                 `air` at the old surface -- so a sounding that could see its own work would walk
                 straight down through the ground it was about to stand on, and thirteen wave
                 programs would stop replaying to the counts their dry runs recorded.
-                
+
         """
         try:
             b = self.world_site.editor.worldSlice.getBlockGlobal((int(x), int(y), int(z)))
@@ -1492,7 +1492,7 @@ class Primitives:
 
                 A hard rectangular cut where a build meets a hillside is a named tell. The
                 feathered ring eases the platform back into the natural slope.
-                
+
         """
         for x in range(min(x0, x1), max(x0, x1) + 1):
             for z in range(min(z0, z1), max(z0, z1) + 1):
@@ -1630,7 +1630,7 @@ class Primitives:
 
                 A flat run of one block type is the most-cited beginner tell in the craft
                 literature. This gives the wall articulation for free.
-                
+
         """
         roles = {id(block): getattr(block, "role", None) or "wall",
                  id(base): getattr(base, "role", None) or "footing",
@@ -1737,7 +1737,7 @@ class Primitives:
 
                 `block` defaults to whatever fills an opening of this shape -- a pane for a
                 one-wide slit, glass for anything wider or recessed. Pass one to override.
-                
+
         """
         if (x0 != x1) == (z0 != z1):
             raise ValueError("openings() takes one straight run of wall")
@@ -1779,7 +1779,7 @@ class Primitives:
 
                 Returns [{"x0", "z0", "x1", "z1", "floor_y", "drop"}], highest bay first in
                 floor level. Where the bays go and what happens on them is the caller's.
-                
+
         """
         x0, x1 = min(x0, x1), max(x0, x1)
         z0, z1 = min(z0, z1), max(z0, z1)
@@ -2104,7 +2104,7 @@ class Primitives:
                 A cell the plan itself fills counts as floor for the cell above it -- an anvil
                 brings its own block and a hearth its own stone, and refusing those would refuse
                 the fitting for the foundation it is carrying.
-                
+
         """
         laid = {(p[0], p[1], p[2]): p[3] for p in plan}
 
@@ -2212,7 +2212,7 @@ class Primitives:
 
                 `glass` defaults to what fills an opening this wide: a pane at one block, glass
                 beyond. See `_glazing`.
-                
+
         """
         glass = self._glazing(glass, width, 0)
         full, stairs, slab = material(mat)

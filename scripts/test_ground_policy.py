@@ -85,7 +85,7 @@ def world(bed, water=None, y0: int = 30, x0: int = 0, z0: int = 0):
         The same fixture `scripts/test_feasible.py` measures the mask on, so the two suites
         are asking one question of one piece of ground: that is the whole point of this
         file. `water[i, j] <= bed[i, j]` is a dry column.
-        
+
     """
     bed = np.asarray(bed, int)
     water = np.full(bed.shape, -10_000, int) if water is None else np.asarray(water, int)
@@ -114,7 +114,7 @@ def column_touched(b, x: int, z: int) -> bool:
         would have been: not one block pending anywhere in the column, and not recorded in
         `_sited`, which is where the library keeps the columns whose level is somebody's
         decision.
-        
+
     """
     if (x, z) in getattr(b, "_sited", {}):
         return True
@@ -146,7 +146,7 @@ def p1_the_grade_the_mask_refuses_is_the_grade_the_terrace_does_not_cut():
         grade (`off_level`) and accepts the rest, and the terrace must move exactly the
         accepted ones. The same call with no bound is run on the same ground first, so this
         case shows the bound doing the work rather than a fixture that had nothing to cut.
-        
+
     """
     LVL, REACH = 64, 8
     bed = np.full((40, 40), LVL - 3, int)
@@ -196,7 +196,7 @@ def p2_the_water_the_level_does_not_stand_over_is_water_the_terrace_keeps():
         would reclaim both -- and reclaiming thirty blocks of lake is a dam, which is the
         measurement `DISTRICT_TERRACE_REACH` was registered on. At `reach=8` the puddle is
         reclaimed and the lake is kept, and the terrace fills exactly the puddle.
-        
+
     """
     LVL, REACH = 64, 8
     bed = np.full((40, 40), LVL - 30, int)
@@ -241,7 +241,7 @@ def p3_the_terrace_record_reconciles_with_the_mask_over_the_same_ground():
         builder's own tally of what it filled, reclaimed and left alone equals the
         disposition it was given. This is the reconciliation the round asks for: column for
         column, not by argument.
-        
+
     """
     vol = baseline()
     rect, LVL, REACH = (-5966, 690, -5556, 765), 72, 8       # middle_ring/0, settled
@@ -292,7 +292,7 @@ def p4_a_district_on_a_mesa_keeps_a_buildable_envelope():
           * the **grid** is offered a rectangle it can actually be laid over, mostly ground
             a building can stand on, and the rest of the district stays open with its
             programme owed.
-        
+
     """
     vol = baseline()
     place = plan()
@@ -364,7 +364,7 @@ def p5_the_seam_between_prepared_and_unprepared_ground_is_a_deliberate_condition
 
         Asserted at the block, and asserted **exhaustively**: no worked column anywhere in
         the rectangle has an unfaced drop of more than a kerb into kept ground.
-        
+
     """
     LVL, REACH = 64, 8
     bed = np.full((40, 40), LVL, int)
@@ -436,7 +436,7 @@ def p6_every_piece_of_the_sections_designed_ground_is_inside_the_bound():
         leaves the gate unreachable. Together the approaches move 6,435 blocks, 0.09% of
         what this stage lays. Reshaping access is a design choice the round authorizes; it
         is recorded here rather than left to be discovered.
-        
+
     """
     import json
     p = os.path.join(ROOT, "out", "nd-city", "terraces.json")
@@ -492,7 +492,7 @@ def p7_no_envelope_and_no_ground_read_are_two_different_answers():
         happen: a district whose ground was never read, a district whose rectangle is wholly
         usable, a district whose feasible ground is real but too fragmented to lay a grid
         over -- and never an exception on a district with no ground record at all.
-        
+
     """
     d0 = {"name": "unread", "x0": 0, "z0": 0, "x1": 59, "z1": 59}
     assert placeplan.developable_rect(d0, {}) is None, "a district with no record"

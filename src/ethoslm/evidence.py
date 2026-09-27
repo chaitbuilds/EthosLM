@@ -69,7 +69,7 @@ def classify(sentence: str) -> dict:
 
         Rules, not a model call: a run has to be able to say *why* it went looking for
         something, and "the model thought it was a place" is not a reason anybody can check.
-        
+
     """
     s = (sentence or "").strip()
     low = s.lower()
@@ -100,7 +100,7 @@ def queries(sentence: str, what: dict | None = None) -> list:
 
         Three questions at most, and each one is about something this system can act on:
         what the place is organised like, what its buildings are made of and how big it is.
-        
+
     """
     what = what or classify(sentence)
     if what["kind"] == "named_reference":
@@ -141,7 +141,7 @@ class RecordedProvider:
         a query to its results and a url to the file holding its bytes; nothing reaches the
         network. A recorded run is labelled `recorded` on every source it produces, so no
         report can mistake it for a fresh one.
-        
+
     """
 
     name = "recorded"
@@ -174,7 +174,7 @@ class HttpProvider:
         the query parameter, the key's environment variable and where the results live in
         the answer, so any JSON search API -- Brave, SearXNG, Tavily, a proxy of your own --
         is configuration rather than code.
-        
+
     """
 
     name = "http"
@@ -290,7 +290,7 @@ def _text_of(blob: bytes, media: str) -> str:
         Nine lines rather than a dependency, for the reason the rest of this project gives:
         what the reader needs is prose to quote, and a parser that is wrong about a `<div>`
         is not wrong about the sentence inside it.
-        
+
     """
     s = blob.decode("utf-8", "replace")
     if "html" in (media or ""):
@@ -306,7 +306,7 @@ def gather(sentence: str, out_dir: str, *, prov=None, cap: int = SOURCE_CAP) -> 
         A gathering is sources and the text of each; turning it into **claims** is a
         reading, and that is a model's job with the sources in front of it. Keeping the two
         apart is what lets a claim carry the id of the source it came from.
-        
+
     """
     what = classify(sentence)
     qs = queries(sentence, what)
@@ -359,7 +359,7 @@ def reading_of(sentence: str, gathering: dict, claims=None, *,
 
         With no claims and no sources this is the honest empty reading: classification,
         the queries it would have asked, and the reason it asked nobody.
-        
+
     """
     return contracts.make(
         "reading", sentence=str(sentence),
@@ -382,7 +382,7 @@ def needs_evidence(sentence: str) -> bool:
         True for a named place and for a named tradition; false for a description, which
         carries its own facts. A run that answers True and retrieves nothing is not wrong --
         it is a run whose reading is inferred, and it says so.
-        
+
     """
     return classify(sentence)["kind"] in ("named_reference", "tradition")
 

@@ -100,7 +100,7 @@ def _gates(b, part, x0, z0, x1, z1, y, rng):
         the field's own level; the gate goes at the one nearest the doorstep the
         circulation pass reserved, and a second one on another side where the
         ground offers it.
-        
+
     """
     ring = [c for c in _ring_cells(x0, z0, x1, z1)
             if not (c[0] in (x0, x1) and c[1] in (z0, z1))]

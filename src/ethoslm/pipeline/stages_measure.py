@@ -172,7 +172,7 @@ def _confirm_features(rnd: Round, vol, ctx, net) -> dict:
 
         Reported and never raised: a predicate that cannot run leaves the emission record
         exactly as it was, which is the weaker evidence it always had, and says so.
-        
+
     """
     from .. import construction, contracts, demand, usable
     rec_p = rnd.rel("parts.json")
@@ -293,7 +293,7 @@ def plan_entries(plan: dict | None) -> list:
 
         A gate is what justifies a seed. Where a plan draws none there is no justified
         entry, and `_doors_from_the_lane` says so rather than seeding the whole lane.
-        
+
     """
     from . import stages_media
     out = []
@@ -332,7 +332,7 @@ def _doors_from_the_lane(ctx, net, entries=None) -> dict:
         number of lane components is reported whether or not a door is short, because a
         place whose lanes are in three pieces has not got one network however its doors
         come out. With no entry given, this says so and does not certify anything.
-        
+
     """
     from .. import lint
     if not net:
@@ -415,7 +415,7 @@ def stage_measures(rnd: Round, be, results: dict) -> dict:
 
         `blocks` rides along without a direction registered, because more blocks is not
         better and pretending otherwise would smuggle in a fourth measure.
-        
+
     """
     c = rnd.candidates
     if not c:
@@ -450,7 +450,7 @@ def measure_program(rnd: Round, be, prog: str, mine: set, margin: int = 6) -> di
         any round. It is reported beside `blocks` for that reason: it is a fact about wall
         surfaces, put on the record because a person named facade depth as the thing that
         separated two candidates and nothing here was watching it.
-        
+
     """
     from .. import articulation as artic_mod
     from .. import lint, stages, variety as variety_mod
@@ -550,7 +550,7 @@ def build_context(rnd: Round, be, prog: str | None, pending: dict | None = None,
         `pending` is that program's block set when the caller has already executed it.
         Executing a settlement wave twice to answer one question is thirty seconds a builder
         pays for nothing.
-        
+
     """
     from .. import lint, stages
     vol = be.volume
@@ -594,7 +594,7 @@ def diagnose_entry(ctx, mine: str) -> dict:
             no_door          the plot has no door leaf at all (W002, a warning)
             raised_entry     the door stance is reachable only by jumping (E002 allows jumps)
             floor_from_door  E011's own case: the door is fine, the floor is not
-        
+
     """
     from .. import lint
     plot = next(p for p in ctx.plots if p["label"] == mine)
@@ -686,7 +686,7 @@ def entry_lines(diag: dict) -> list:
 
         The third has no equivalent in the suite at all: E011 asks the same question from
         the building's *own* door and skips a room below `Context.ENCLOSED`.
-        
+
     """
     out = []
     for d in diag["doors"]:
@@ -747,7 +747,7 @@ def revision_findings(rep, lines: list, pending: int, name: str,
         compared, or that a fraction across the build exists. The builder is being told what
         is wrong with the building in front of it, which is all a findings brief has ever
         said.
-        
+
     """
     from .. import lint
     body = lint.findings_brief(
@@ -779,7 +779,7 @@ def _repair_readout(rnd: Round, subjects: list, rows: dict) -> dict:
         build repaired that way is registered as not repaired. Secondary is the pooled
         within-prompt SD. Own lint errors are the region count minus the floor the bare
         volume already carries -- every candidate on this ground shares it, and it is 6.
-        
+
     """
     prereg = ((json.load(open(_pipeline._report_path(rnd))).get("preregistered")
                if os.path.exists(_pipeline._report_path(rnd)) else None) or rnd.preregistered)
@@ -879,7 +879,7 @@ def stage_arm_measures(rnd: Round, be, results: dict) -> dict:
         The same `measure_program` the selection candidates went through, so arm A -- which
         is those four candidates, reused rather than rebuilt -- is directly comparable
         without re-measuring it under a second definition.
-        
+
     """
     a = rnd.arms
     if not a:
@@ -917,7 +917,7 @@ def region_diff(pre, built, x0: int, z0: int, x1: int, z1: int) -> list:
         written to `pre_state` before the first candidate and back to `built_state` after
         the last, so the town ends as it began. Step 3's readout is where this comes from
         and `scripts/step3_render.py` still calls it.
-        
+
     """
     import numpy as np
     names_p = np.array(pre.palette, dtype=object)
@@ -945,7 +945,7 @@ def _bar_value(text) -> tuple:
         value is the number after the last `=` where the text works up to one, and otherwise
         the first number in it. A bar given as `{"comparator": .., "value": ..}` is taken as
         written, which is what a new round should do.
-        
+
     """
     import re
     if isinstance(text, dict) and "value" in text:
@@ -990,7 +990,7 @@ def _m_walk_from_outdoors_pct(rnd, be, results, bar) -> dict:
         `scripts/walk_fraction.py`'s own `measure`, imported rather than reimplemented:
         there is one definition of this number and it is the one every round since 7 has
         been read against.
-        
+
     """
     from .. import walk_fraction as mod
     # A4: the context this readout has already built, rather than a fifth one over the
@@ -1025,7 +1025,7 @@ def _built_digest(rnd) -> str:
         The key a memo has to be keyed on. A stage that re-built the town between two
         measures -- or a `--measure` re-read against a volume that has since been written
         again -- must get a fresh context, and the file's own content is what says so.
-        
+
     """
     import hashlib
     p = rnd.rel("world_built.npz")
@@ -1045,7 +1045,7 @@ def _town_context(rnd, be):
         measure that follows it is under a second. Nothing between them changes the volume,
         so this is one memo on the built volume's digest, and `walk_fraction.measure` takes
         the same object rather than making a fifth.
-        
+
     """
     key = (rnd.state, _built_digest(rnd))
     got = _TOWN_CONTEXT.get(key)
@@ -1078,7 +1078,7 @@ def _prebuild(rnd):
         volume -- the cached world the run was planned against -- and it is missing only
         where a round has no cache, which is where the correction cannot be made and the
         old reading stands.
-        
+
     """
     from .. import offline
     p = rnd.rel(rnd.base_volume)
@@ -1107,7 +1107,7 @@ def _m_own_lint_errors(rnd, be, results, bar) -> dict:
         `parts.json`. Reading `rnd.waves` alone on such a round would report zero errors
         because there was nothing to iterate, which is the worst possible way for a measure
         to pass.
-        
+
     """
     from .. import lint, place
     ctx, _net = _town_context(rnd, be)
@@ -1294,7 +1294,7 @@ def _m_hand_programs(rnd, be, results, bar) -> dict:
         instantiated is reported and left empty, and this counts anything that was built
         any other way. It is zero by construction and is measured anyway, because "by
         construction" is what this project checks rather than asserts.
-        
+
     """
     rec = _parts_record(rnd, results)
     rows = [r for w in rec.get("waves", []) for r in w["parts"]]
@@ -1313,7 +1313,7 @@ def _m_enclosure(rnd, be, results, bar) -> dict:
         intention. The wall's columns come from the edge parts; the gate from the point part
         whose type declares `PASSAGE`; the reachability from the same walk-only flood every
         from-outdoors number in this project uses, seeded from the lane.
-        
+
     """
     from .. import circulate, lint, observe
     parts = rnd.parts()
@@ -1361,7 +1361,7 @@ def _m_tokens_whole_round(rnd, be, results, bar) -> dict:
     """There is no API key in this project, so the honest source is what each isolated
         subagent says it used. The file is named by the bar so the harness's own
         under-reading estimate cannot be quietly substituted for it.
-        
+
     """
     p = os.path.join(_pipeline._type_out(rnd) if rnd.types else rnd.state,
                      (bar or {}).get("tokens", "tokens.json"))
@@ -1393,7 +1393,7 @@ def _m_within_type_variation(rnd, be, results, bar) -> dict:
         The bar names two numbers because one of them is easy: a seed that changes the
         ridge and not the footprint has changed the roof pitch, and a seed that changes
         neither has decorated. Both spreads have to clear the margin the bar carries.
-        
+
     """
     ridge_by = float((bar or {}).get("ridge", 2))
     foot_by = float((bar or {}).get("footprint", 2))
@@ -1423,7 +1423,7 @@ def _m_building_calls_per_type(rnd, be, results, bar) -> dict:
         Reported as a bar and read as information: a type that composes a raised-floor hall
         out of primitives because the shell's parameters do not reach it has told us where
         the next primitive goes, which is worth more than the row.
-        
+
     """
     import ast
     out = {}
@@ -1474,7 +1474,7 @@ def _m_site_chosen(rnd, be, results, bar) -> dict:
         the round's config named no site. 0 when a human wrote a coordinate. Registered as a
         bar because "no human chooses anything" is the round's claim and a claim nobody
         measures is a comment.
-        
+
     """
     got = rnd.site_search()
     if not got:
@@ -1518,7 +1518,7 @@ def _m_concentric(rnd, be, results, bar) -> dict:
           palettes    at least `PALETTES_STANDING_MIN` distinct voices among the parts that
                       stood;
           core_water  no column of the compound's ground is water in the built volume.
-        
+
     """
     from .. import observe, placeplan, spec as spec_mod
     spec = rnd.place_spec()
@@ -1637,7 +1637,7 @@ def _m_ground(rnd, be, results, bar) -> dict:
           walls       every ring wall sited at one level, and that level its ring's;
           podium      the compound's plateau a step above the innermost ring's level;
           e008        reserved thresholds obstructed place-wide, at 0.
-        
+
     """
     from .. import lint, spec as spec_mod
     spec = rnd.place_spec() or {}
@@ -1732,7 +1732,7 @@ def _m_occupancy(rnd, be, results, bar) -> dict:
         Read by `scripts/occupancy_measure.py` off the same records the round leaves behind,
         so the number in the readout and the number a person can reproduce on the command
         line are the same number.
-        
+
     """
     import importlib.util
     p = os.path.join(_pipeline.ROOT, "scripts", "occupancy_measure.py")
@@ -1879,7 +1879,7 @@ def _m_fabric(rnd, be, results, bar) -> dict:
 
         Read off the compiler's own records (`district_<name>_compiled.json`), the plan's
         leaves and the network's thresholds, all of them on disk.
-        
+
     """
     from .. import placeplan
     reg = bar or {}
@@ -2183,7 +2183,7 @@ def _open_obligations(rnd) -> list:
 
         `identity` and `tradition`: everything else in this build is measured, and an
         obligation that a measurement can close is not asked of a judge.
-        
+
     """
     from .. import contracts
     rec = contracts.load(rnd, "intent") or {}
@@ -2209,7 +2209,7 @@ def stage_qualify(rnd, be, results: dict) -> dict:
 
         A round with nothing for a judge to close -- no named place, no tradition asked for --
         skips, and says so.
-        
+
     """
     from .. import contracts, deps
     if not rnd.sentence:

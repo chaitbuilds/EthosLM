@@ -163,7 +163,7 @@ def texture_name(state: str) -> str | None:
         every family in `prims.MATERIALS` resolves -- those are the blocks a recipe can
         substitute, and a material comparison drawn on a fallback colour is the defect
         this exists to remove.
-        
+
     """
     have = texture_names()
     if not have:
@@ -211,7 +211,7 @@ def texture_of(state: str) -> np.ndarray | None:
 
         Cached by state. Animated textures (water, fire) are a vertical strip of frames;
         the first frame is the one a still picture wants.
-        
+
     """
     key = str(state).split("[")[0]
     if key in _TEXTURES:
@@ -244,7 +244,7 @@ def _tile(state: str, px: int) -> np.ndarray:
         A block with no texture (air's neighbours, a decorated pot) falls back to the flat
         table rather than dropping out, so a textured view is never *less* complete than a
         flat one; the audit is what keeps the fallback off the material families.
-        
+
     """
     key = (str(state).split("[")[0], int(px))
     got = _TILES.get(key)
@@ -269,7 +269,7 @@ def _paint(grid: np.ndarray, fade: np.ndarray, palette, scale: int,
         Flat: one colour a cell, then `scale` pixels a cell -- byte-identical to what this
         module has always drawn. Textured: `scale` is the texel square a block gets, and
         the cell is the block's own texels under the same shading.
-        
+
     """
     drawn = grid >= 0
     rows = np.nonzero(drawn.any(axis=1))[0]
@@ -300,7 +300,7 @@ def _solid(vol: observe.Volume, clip: bool = True) -> np.ndarray:
         the volume floor, and the substrate is taller than the architecture. The floor is
         taken from the lowest *surface* column in the volume -- on any crop that includes
         ground that is ground, not roof -- minus 8 so a cellar or an undercroft still shows.
-        
+
     """
     t = vol.tables()
     solid = (t["lower"].astype(bool) | t["upper"].astype(bool))[vol.codes]
@@ -342,7 +342,7 @@ def preview(vol: observe.Volume, scale: int = 2, grey: bool = False,
         Deterministic by construction: the painter's sort is stable, so two voxels at the
         same depth resolve by array order every time, on every platform. `_sort_kind` exists
         only so the test can exhibit what an unstable sort does to a tie.
-        
+
     """
     solid = _solid(vol, clip)
     sx, sy, sz = solid.shape
@@ -425,7 +425,7 @@ def elevation(vol: observe.Volume, facing: str = "south", scale: int = 2,
         averaged colour, and `scale` becomes the texel square a block gets. That is the
         display a *material* judgement needs and the flat one cannot give: see
         `texture_name` above.
-        
+
     """
     solid = _solid(vol, clip)
     sx, sy, sz = solid.shape
@@ -505,7 +505,7 @@ def plan_map(plan: dict, network=None, site: dict | None = None,
 
         Deterministic: every part is drawn in plan order, every colour is a constant, and
         nothing here reads a clock or a random number.
-        
+
     """
     from . import circulate, pipeline
     leaves = pipeline.plan_parts(plan)
@@ -621,7 +621,7 @@ def instances(type_name: str, fixture: dict, seeds=(21, 22, 23, 24, 25),
         pending set applied to a copy of the fixture's volume, cropped to the rectangle the
         part is answerable for and drawn by `preview`; the strips are composited on one
         background, aligned at the bottom, in seed order.
-        
+
     """
     from . import stages
     from .pipeline import blind, stages_build

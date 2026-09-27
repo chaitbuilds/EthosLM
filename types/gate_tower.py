@@ -125,7 +125,7 @@ class Frame(object):
         `t` runs along the way the gate faces (the road), `c` runs across it.
         Everything below is written in (t, c) and turned back into (x, z) here,
         so the same gatehouse can stand on either axis.
-        
+
     """
 
     def __init__(self, part):

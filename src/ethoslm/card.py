@@ -54,7 +54,7 @@ def compose(frames: dict, out_path: str, *, layout="quad", size=None,
 
         `strict` additionally refuses a card any of whose panels is below `black_mean`
         (`render.BLACK_MEAN` by default).
-        
+
     """
     import cv2
     from . import render
@@ -119,7 +119,7 @@ def stack(images: list, out_path: str, *, centred: bool = True, gap: int = GAP):
         E1a's card (an isometric over a row of four elevations) and step 4's preview card
         (an isometric over a front elevation) are both this, and neither is a grid of equal
         frames -- previews are cropped to the built mass, so every one is a different size.
-        
+
     """
     import cv2
     w = max(i.shape[1] for i in images)

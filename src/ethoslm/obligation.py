@@ -87,7 +87,7 @@ def from_finding(f: dict, *, source: str = "", at: str | None = None) -> dict:
         `material` is `improve.is_material`'s rule, kept here rather than imported so the
         ledger can be read without the pipeline: the reading says so outright, or it names
         a contextual target, and a finding with neither is a suggestion.
-        
+
     """
     mat = bool(f.get("material")) if f.get("material") is not None else bool(f.get("target"))
     out = row(f.get("id") or f"find/{f.get('about')}", "finding",
@@ -130,7 +130,7 @@ def from_constraint(c: dict, required=(), *, part: str | None = None,
         was never in `open_rows(led, material=True)` and was never selected, on a hard
         requirement. `feature_token` maps the word to the token the emission uses, and where
         the binding is given the answer is about **this part** rather than about the place.
-        
+
     """
     what = str(c.get("what"))
     where = part or c.get("part")
@@ -260,7 +260,7 @@ def upsert(ledger: dict, rows, source: str, *, candidate: str | None = None,
         The other invariant is untouched: **a reading that merely omits an open row does not
         close it, and a pass that does not mention a closed row does not reopen it.** Only
         being reported again, on a different candidate, reopens anything.
-        
+
     """
     now = at or time.strftime("%Y-%m-%dT%H:%M:%S")
     seen = set()
@@ -320,7 +320,7 @@ def closed_against(r: dict):
         reopened row answers None even though the closing evidence is still on it. For a row
         closed before this field existed it is read off the closing evidence entry, and
         failing that off the candidate the row was opened on.
-        
+
     """
     if "closed_against" in r:
         return r["closed_against"]
@@ -359,7 +359,7 @@ def open_rows(ledger: dict, *, material: bool | None = None,
         place. `candidate` filters to rows opened against one candidate; by default a row
         is owed whichever candidate found it, because a hard requirement does not stop being
         owed because the design moved.
-        
+
     """
     out = []
     for rid in sorted(ledger.get("rows") or {}):
@@ -398,7 +398,7 @@ def act(ledger: dict, rid: str, action: str | None, candidate: str, *,
 
         `key` is the caller's fingerprint of **what this action carries**, where an action
         name is not the whole of it. See `tried_here`.
-        
+
     """
     r = _row(ledger, rid)
     r.setdefault("actions", []).append(
@@ -417,7 +417,7 @@ def effect(ledger: dict, rid: str, candidate: str, before: dict | None,
         onto the action and returned. `moved: None` means **the measure was not recorded on
         both readings**, which is not evidence of anything and in particular is not evidence
         of improvement -- see `close`, which refuses on it.
-        
+
     """
     r = _row(ledger, rid)
     tried = [a for a in r.get("actions") or []
@@ -475,7 +475,7 @@ def admissible(ledger: dict, rid: str, candidate: str, among) -> list:
         excluded every finding in `acted` from further selection, so a `resize_ring` that
         was applied and did nothing ended the ring's chances. What is refused is the
         *unchanged retry* -- the same action on the same candidate -- and nothing else.
-        
+
     """
     r = ledger.get("rows", {}).get(str(rid)) or {}
     tried = {a.get("action") for a in r.get("actions") or []
@@ -497,7 +497,7 @@ def tried_here(ledger: dict, rid: str, candidate: str, action: str | None,
         `key` is the caller's fingerprint of the document. Two attempts with different keys
         are two different actions under one name; two with the same key, or two with none,
         are the unchanged retry this exists to refuse.
-        
+
     """
     for a in (ledger.get("rows", {}).get(str(rid)) or {}).get("actions") or []:
         if a.get("candidate") != candidate or a.get("action") != action:
@@ -575,7 +575,7 @@ def close(ledger: dict, rid: str, evidence: dict, *, candidate: str,
 
         `reading` is the whole reading where the caller has one, so the evidence recorded on
         the row names what was read and not merely a number.
-        
+
     """
     r = _row(ledger, rid)
     here = evidence.get("candidate") or candidate
@@ -636,7 +636,7 @@ def _value_for(r: dict, m, evidence: dict, feature) -> tuple:
 
         `about` is what the value was measured of: a subject name, `"the place"`, `"feature"`,
         `"the caller"`, or `"mismatch"` with `why` naming the mismatch that refuses closure.
-        
+
     """
     if feature is not None:
         return (True, "feature", feature["why"])
@@ -674,7 +674,7 @@ def _feature_answer(r: dict, m, evidence: dict):
         `None` means this row is not about an emitted feature, or no feature evidence was
         offered for it -- in which case the ordinary measure path runs and refuses on absence.
         Otherwise `{"affirms": bool, "why": str, "answer": the answer}`.
-        
+
     """
     if not isinstance(m, str) or not m.startswith(EMITTED):
         return None
@@ -778,7 +778,7 @@ def dispose(ledger: dict, rid: str, disposition: str, why: str) -> dict:
         The only way an **optional** row leaves `open_rows`: somebody decided, and the
         decision and its reason are on the record. `closed` is not available here -- that is
         `close`'s job and it needs evidence.
-        
+
     """
     if disposition not in DISPOSITIONS or disposition == "closed":
         raise ValueError(f"disposition is one of "

@@ -262,7 +262,7 @@ def count_of(sentence: str) -> dict | None:
         `{"n", "about", "phrase", "what"}` or None. `what` is the unit word the number
         attaches to (`cottages`), which is what a count is a count *of*: the hall on the
         square is not the seventeenth cottage.
-        
+
     """
     text = (sentence or "").lower()
     got = spec_mod.count_in(sentence)
@@ -300,7 +300,7 @@ def storeys_of(sentence: str) -> dict | None:
         legitimately, because the two storeys there were an *inferred* choice under a
         request for `low` cottages. Under this requirement that revision is not available:
         the lot has to grow or the design has to say it cannot.
-        
+
     """
     text = _words(sentence)
     words = "|".join(re.escape(w) for w in sorted(_NUM, key=len, reverse=True))
@@ -335,7 +335,7 @@ def _free(text: str, phrase: str, taken: list) -> tuple | None:
         bare `square` that would otherwise match inside it is refused here. Without this the
         sentence would state a requirement it does not state, which is the same class of
         error as losing one.
-        
+
     """
     at = _span(text, phrase)
     if at is None:
@@ -363,7 +363,7 @@ def _count_before(text: str, phrase: str) -> int | None:
         words may stand between, and none of them may be one of `_BREAKS`: a number
         separated from the phrase by "with", "and" or another unit noun is counting
         something else.
-        
+
     """
     words = "|".join(sorted(_NUM, key=len, reverse=True))
     m = re.search(rf"\b(\d{{1,3}}|{words})\b((?:\s+[a-z\-]+){{0,3}})\s+"
@@ -384,7 +384,7 @@ def _absent_phrases(rid: str, phrases) -> tuple:
         the same reason it matters in the feature table itself: `without a market square`
         has to be found before `without a square`, or the sentence states a requirement it
         does not state.
-        
+
     """
     out = [f"{n}{p}" for p in phrases for n in NEGATIONS]
     out += list(ABSENT.get(rid) or ())
@@ -403,7 +403,7 @@ def unclaimed_words(sentence: str, claimed: list) -> list:
         `claimed` is the list of `(start, end)` spans the requirements took out of
         `_words(sentence)`. What comes back is `[(word, span)]` in the order the sentence
         says them, once each.
-        
+
     """
     text = _words(sentence)
     out, seen = [], set()
@@ -427,7 +427,7 @@ def read(sentence: str) -> dict:
         express; what it cannot even parse becomes a `clause/` obligation rather than
         vanishing. What a sentence merely implies is left to the model's reading, which is a
         different record.
-        
+
     """
     from . import evidence as evidence_mod
     text = _words(sentence)
@@ -615,7 +615,7 @@ def _families_in(spec: dict) -> dict:
         "workshop"}]`) is declared as surely as a defining part is, and the compiler lays
         it; the held-out hamlet failed `feature/workshop` at the spec stage for a workshop
         the spec had declared one level down.
-        
+
     """
     out: dict = {}
     for p in (spec or {}).get("defining_parts") or []:
@@ -643,7 +643,7 @@ def _leaves_of_family(spec: dict, parts: list, family: str) -> list:
 
         By the defining part the leaf says it answers, which is the only link that survives
         a planner renaming things: the place level writes `defines` on every leaf it lays.
-        
+
     """
     names = {p["name"] for p in (spec or {}).get("defining_parts") or []
              if p["family"] == family}
@@ -674,7 +674,7 @@ def leaves_built_as(parts: list, family: str, decls: dict | None = None) -> list
         So this reads the leaf: its own `family` where it carries one, then the `FAMILY` its
         type declares, then the name the type is committed under (`keep`, `keep_*`), then
         the name the planner gave the part. Nothing here consults the spec at all.
-        
+
     """
     from . import capability as cap_mod
     out = []
@@ -704,7 +704,7 @@ def _plan_decls(parts: list) -> dict:
         Off disk and cached by the type loader; a plan naming a type this checkout does not
         have simply contributes nothing, because a missing declaration must never turn into
         a confident answer about what a part is.
-        
+
     """
     from . import pipeline as _pipeline
     import os
@@ -780,7 +780,7 @@ def _policy_geometry(policy: str, resolution: dict | None, plan: dict | None) ->
 
         A policy nothing here knows how to measure says so **and does not certify itself**:
         inventing a pass is what this function exists to stop.
-        
+
     """
     if policy == "shoreline":
         anchor = _anchor_of(resolution, plan)
@@ -893,7 +893,7 @@ def _streets_in(plan: dict | None, parts: list) -> list:
         `district_compile` lays a block's lane as -- plus whatever the plan records as its
         own `streets`. Nothing about a *plot* is a street: the review's counterexample read
         a `front` field on a lot and called it street frontage with no street in the plan.
-        
+
     """
     from . import pipeline as _pipeline
     rows = []
@@ -963,7 +963,7 @@ def _fronts(faces: str, resolution: dict | None, parts: list,
 
         So: a majority of the homes must front the water beside them, most of them must be
         measurable at all, and a street must be a street that is in the plan.
-        
+
     """
     from . import placeshore
     plots = [p for p in parts if p.get("kind", "plot") == "plot"]
@@ -1053,7 +1053,7 @@ def _word_matches(p: dict, what: str) -> bool:
         the planner's name for it -- the same ladder `leaves_built_as` walks, plus the plain
         English words a sentence uses for a dwelling, because "small houses around a big
         temple" says `houses` and the library calls them `cottage` and `townhouse`.
-        
+
     """
     from . import capability as cap_mod
     want = _slug(what)
@@ -1142,7 +1142,7 @@ def _rect_in(r, rect) -> bool:
         Whole or not at all, the same rule the section sampler uses: a leaf that straddles a
         district boundary belongs to neither, and counting half of it into a street
         measurement would be counting a building that is not on that street.
-        
+
     """
     if not r or not rect or len(r) < 4 or len(rect) < 4:
         return False
@@ -1158,7 +1158,7 @@ def _in_scope(p: dict, scope: str | None) -> bool:
         ancestry -- the group names `plan_parts` carries on every leaf -- and against the
         defining part it answers, so "the lower district" selects the leaves of the district
         whose name or purpose says `lower`.
-        
+
     """
     if not scope:
         return True
@@ -1229,7 +1229,7 @@ def select(parts: list, word: str) -> list:
         a division of the place -- `upper quarter`, `the lower district`, `farm belt` --
         selects by ancestry. Case, articles and plurals do not matter. Empty where the word
         names nothing in this plan, which is `unresolved` and never a pass.
-        
+
     """
     parts = list(parts or [])
     w = _slug(word)
@@ -1276,7 +1276,7 @@ def _compound_groups(parts: list, word: str) -> list:
         named for where it stands and is not a palace. Each compound becomes one record
         with the union of its leaves' rectangles, so a relation's object is the compound
         and a hierarchy compares the compound's footprint, not one hall's.
-        
+
     """
     fams = {word} | {f for rid, f, _ph in FEATURES if rid == word and f}
     by_comp: dict = {}
@@ -1328,7 +1328,7 @@ def select_regions(place: dict, word: str) -> list:
         `districts` (each carrying `defines`, the defining part it answers) and its
         `compounds`. A district answers the word its defining part is named or purposed
         for: a `fields` district answers `fields`, a `homes` district answers `houses`.
-        
+
     """
     place = place or {}
     w = _slug(word)
@@ -1462,7 +1462,7 @@ def lot_cover(plots: list, regions: list) -> dict:
         the compiler drew; `built_columns`, where the regions record it, is the footprint
         construction actually emitted. `cover` is the first and `built_cover` the second,
         and a cover figure that improved only because the lots grew shows it here.
-        
+
     """
     ground, scope, dev, built_cols = 0.0, 0.0, 0.0, 0.0
     all_scope, all_dev, all_built = True, True, True
@@ -1520,7 +1520,7 @@ def relation_measure(req, parts: list) -> tuple:
         The public face of `_relation_measure`, so a layout scores a candidate arrangement
         with the checker's own rule instead of a rule of its own. `req` is a requirement
         record or its `wants` (`subject`, `relation`, `object`).
-        
+
     """
     w = req.get("wants") if isinstance(req, dict) and "wants" in req else req
     return _relation_measure(dict(w or {}), list(parts or []))
@@ -1653,7 +1653,7 @@ def sample_scope(parts_record: dict | None, parts: list) -> set | None:
         the record's own rows, the plots of the sampled quarters and the joining parts;
         everything else in the plan was not built, and a clause that counts standing
         leaves is measured inside this set and says so.
-        
+
     """
     sm = (parts_record or {}).get("sample")
     if not sm:
@@ -1691,7 +1691,7 @@ def emitted_of(parts_record: dict | None) -> dict:
         fallback -- measured by the construction worker off the emitted geometry. Empty
         where nothing was built or the record predates the interface, which reads as "not
         measured" and never as "as planned".
-        
+
     """
     out = {}
     for w in (parts_record or {}).get("waves", []):
@@ -1710,7 +1710,7 @@ def emitted_findings(parts: list, parts_record: dict | None) -> list:
         finding: `layout` where the outcome names the envelope as the cause (the lot is
         the layout's decision), `build` otherwise. `blocks: construction` -- the plan is
         feasible and the buildings stand; what stands is not what was asked.
-        
+
     """
     got = emitted_of(parts_record)
     if not got:
@@ -1752,7 +1752,7 @@ def _hierarchy_measure(w: dict, parts: list, decls: dict) -> tuple:
         hierarchy disappeared entirely. It is a measurement: the greater part's footprint (or
         its storeys, on the `height` axis) against the lesser's, on the plan that exists.
         Nothing here reads an adjective.
-        
+
     """
     axis = str(w.get("axis") or "size")
     great = select(parts, str(w.get("greater") or ""))
@@ -1825,7 +1825,7 @@ def _relation_measure(w: dict, parts: list) -> tuple:
         `BESIDE_REACH` of the object's edge. `along` is the subjects strung within reach of
         the object's edge and spread along its length. A relation this build cannot measure
         says so and certifies nothing.
-        
+
     """
     rel = str(w.get("relation") or "")
     subs = select(parts, str(w.get("subject") or ""))
@@ -1989,7 +1989,7 @@ def _usable_verdict(parts: list, types: set, parts_record: dict | None) -> dict:
 
         `unsupported` is counted separately and is neither owed nor held: a wall carries no
         door leaf, and asking it about entrances is a question that does not apply.
-        
+
     """
     rows = {r.get("part"): r for w2 in (parts_record or {}).get("waves") or []
             for r in (w2.get("parts") or [])}
@@ -2047,7 +2047,7 @@ def _function_measure(w: dict, parts: list, capabilities: dict | None,
         that *declares* it is what the plan actually built, and it is `unsupported` when
         nothing on disk declares it -- which keeps the obligation visible instead of letting
         the nearest-looking building close it.
-        
+
     """
     # the function named, not the word the sentence used for the thing that has it:
     # `{"what": "house", "function": "dwelling"}` is a request for a dwelling
@@ -2134,7 +2134,7 @@ def judgment_usable(judgment: dict | None, verdict: dict | None,
         claim is one this run actually made from a retrieved source. A negative verdict is
         consumed whatever this says -- refusing needs no evidence -- and a positive one
         that fails here leaves the obligation `unresolved`, naming what is missing.
-        
+
     """
     if judgment is None or verdict is None:
         return (False, "no judgment")
@@ -2190,7 +2190,7 @@ def site_facts(site: dict | None) -> dict:
         the same facts in different places -- `stats.relief` against `measures.relief`,
         `surface_blocks` against `water_pct`. One reader, so a check cannot be right about a
         site chosen one way and wrong about the same site chosen the other.
-        
+
     """
     site = site or {}
     m = site.get("measures") or (site.get("chosen") or {}).get("measures") or {}
@@ -2227,7 +2227,7 @@ def _steepest_step(grid) -> float | None:
         What tells a cliff from a slope: the same total relief spread evenly over a site is a
         hillside, and concentrated into one step it is a face. None where there is no grid,
         which is an honest "this record does not say" and not a pass.
-        
+
     """
     if not grid or len(grid) < 2 or len(grid[0]) < 2:
         return None
@@ -2247,7 +2247,7 @@ def _rim_water(site: dict | None) -> float | None:
         An island's rim is water on every side; a lakeside's is water on one. The site
         record's `edge_blocks` carries the census of the border columns where a search wrote
         one; without it this returns None and the clause says so rather than certifying.
-        
+
     """
     site = site or {}
     edge = (site.get("edge_blocks")
@@ -2295,7 +2295,7 @@ def _setting_measure(what: str, site: dict | None) -> tuple:
         Every clause is a number off the site record. A setting this build has no
         measurement for is `unresolved` and names what it would need, which is the honest
         answer and the one that keeps the obligation visible.
-        
+
     """
     f = site_facts(site)
     relief, water, forest = f["relief"], f["water"], f["forest"]
@@ -2413,7 +2413,7 @@ def _exact_storeys_measure(want: int, plots: list, decls: dict,
         anything is built this reads the planned parameter and says so; once a parts record
         exists the planned number is not evidence at all, because a lot too short emits
         fewer storeys and returns success.
-        
+
     """
     emitted = emitted_of(parts_record)
     rows, short, unmeasured = [], [], []
@@ -2469,7 +2469,7 @@ def _quality_measure(axis: str, value: str, bound: float, parts: list,
         `height` is how far up its own declared band each building was built. Both are
         measured on the plan and both are decisions a compiler can change, which is what
         makes them repairable rather than adjectives.
-        
+
     """
     plots = [p for p in parts if p.get("kind", "plot") == "plot"]
     if not plots:
@@ -2631,7 +2631,7 @@ def _method_of(req: dict, parts_record: dict | None, promoted: dict | None = Non
         blocks -- because only the instrument knows. Everything else falls back to the kind's
         own answer, and **nothing is promoted to `observed` without a parts record**: a plan
         is a drawing however complete it is.
-        
+
     """
     said = (promoted or {}).get(req.get("id"))
     if said in METHODS:
@@ -2670,7 +2670,7 @@ def coverage(intent: dict, spec: dict | None = None, plan: dict | None = None,
         a frontage against `resolution.bounds.faces` (a word), and a layout against its own
         policy name. A check whose evidence is the thing being checked has not checked
         anything.
-        
+
     """
     from . import pipeline as _pipeline
     intent = contracts.read("intent", dict(intent))

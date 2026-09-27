@@ -130,7 +130,7 @@ def block_lots_for(density: str, lot_width: int | None = None,
         (a block is still a block, and the cap is where `arrange.alternatives` already stops).
         A lot at or above the density's own side gets the registered number unchanged, which
         is every unattached fabric in the library: sparse 5, low 4, medium 3, dense 3.
-        
+
     """
     base = int(BLOCK_LOTS.get(density, 3))
     if not lot_width or int(lot_width) <= 0:
@@ -167,7 +167,7 @@ def storey_pad(decl: dict, storeys: int) -> tuple | None:
 
         Optional, per the rule every other type declaration here follows: a file that says
         nothing gets None and every caller behaves exactly as it did.
-        
+
     """
     try:
         n = int(storeys)
@@ -304,7 +304,7 @@ def character_of(part: dict, district: dict | None = None) -> dict:
         The arrangement never overrides a value the spec's own character declared: the
         declaration is the principal's and the arrangement is the layout owner's inference
         about one rectangle, in that order.
-        
+
     """
     density = part.get("density") or "medium"
     out = dict(spec_mod.CHARACTER_DEFAULTS[density])
@@ -375,7 +375,7 @@ def district_depth(lot_depth: int, rows: int, row_gap: int, *,
         stood at 37 and the density was measured over the difference. A district one row of
         seven-deep lots thick is nineteen columns, and that is a decision this owner can
         take.
-        
+
     """
     from .placeplan import PLOT_LANE
     st = PLOT_LANE if street is None else int(street)
@@ -416,7 +416,7 @@ def _admits(decl: dict, w: int, d: int, attached=None, u_is_x: bool = True) -> b
         forty-seven times in one district. Without attachment the two orientations are the
         same question -- the inset is symmetric and the validator sorts the pair -- which is
         why this never bit until a type with party walls met a district on the other grain.
-        
+
     """
     x_span, z_span = (w, d) if u_is_x else (d, w)
     part = {"kind": "plot", "x0": 0, "z0": 0, "x1": x_span - 1, "z1": z_span - 1}
@@ -467,7 +467,7 @@ def _attached_lot(decl: dict, side: int, flanks: tuple,
         storey however much ground it has; then frontage nearest the ask; then area; then,
         unchanged, the narrower and shallower lot, because among lots of equal ground more
         front doors on a length of street is what a party wall is for.
-        
+
     """
     lo_w, lo_d, hi_w, hi_d = decl["needs"]["footprint"]
     i = 2 * Builder.SITE_INSET
@@ -574,7 +574,7 @@ def house_types(decls: dict, role: str | None, form: str | None = None,
         the compiler then re-derived its own pool from the whole library by role. Two rules,
         one library, two answers -- and the one the record wrote down was not the one that
         built the houses. A record nothing consults is a document, not a decision.
-        
+
     """
     allow = {str(a) for a in approved} if approved is not None else None
     #: Where the pool was given, its position in it; the role-then-name rank otherwise.
@@ -651,7 +651,7 @@ def _requirements_of(district: dict | None) -> list:
         so where only the id is in hand, `wants` is reconstructed from it. That is a
         convention and it is named as one: a requirement record with its own `wants` is
         always preferred over the id it was written under.
-        
+
     """
     out = []
     seen = set()
@@ -713,7 +713,7 @@ def landmark_least(tname: str | None, decl: dict | None) -> int:
 
         Falls back to `_plot_range`'s `lo` where no envelope can answer -- a missing module
         must not become a larger claim than anything measured.
-        
+
     """
     if not tname or not decl:
         return 0
@@ -748,7 +748,7 @@ def reservations_of(district: dict | None, ch: dict, decls: dict, *,
         `_compile_once` sizes its block grid against and what a shortfall is reported as.
 
         Nothing here places anything; it says what has to fit.
-        
+
     """
     w, ld = int(lot[0] or 0), int(lot[1] or 0)
     out = []
@@ -795,7 +795,7 @@ def type_use(tname: str | None, decl: dict | None) -> tuple:
         Returns `(use, why)`. `unstated` is an honest answer and the caller decides what to do
         with it (`use_mix` counts an unstated type of the district's own role as the quarter's
         own fabric, and says on the record that it inferred that from the role).
-        
+
     """
     d = decl or {}
     fn = str(d.get("function") or "").strip().lower()
@@ -841,7 +841,7 @@ def design_words(district: dict | None, ch: dict, part: dict | None = None) -> l
         Deliberately **not** `demand.why`, which recites the whole approved pool ("built from
         ['court_large', 'court_small', ...]") and would make every type in the pool a type the
         design named.
-        
+
     """
     out = []
     for key in ("purpose", "notes"):
@@ -876,7 +876,7 @@ def named_types(text_rows: list, admitted: list) -> dict:
         would acquire a street of shops from the word `houses`. Measured on the retained
         city: with segment matching the upper ring names `trade`; without it, only the middle
         ring does, which is what the sources say.
-        
+
     """
     toks = [(w, where) for text, where in (text_rows or []) for w in _tokens(text)]
     out: dict = {}
@@ -970,7 +970,7 @@ def use_mix(district: dict | None, ch: dict, houses: list, role: str | None, *,
 
         A district whose pool holds only its own use -- the lower ring's single `row_house` --
         behaves exactly as it did.
-        
+
     """
     want = str(role or "")
     admitted = list(houses or [])
@@ -1139,7 +1139,7 @@ def _reserve_alternatives(r: dict, have_u: int, have_v: int, block: int, bd: int
         feasible alternatives." Each row names an owner's own lever and the number it would
         have to reach -- not a suggestion to try harder. `arrange` and `placeplan` carry
         these up to whoever can pull one.
-        
+
     """
     from .placeplan import PLOT_LANE
     need = int(r.get("least") or 0)
@@ -1188,7 +1188,7 @@ def _open_type(areas: dict, role: str | None, density: str,
         **Fields because the ground is farmland, not because the houses are rural.** A
         fishing village and a farm belt are both `rural` and only one of them is fields;
         that conflation is the review's fourth finding and this is the other half of it.
-        
+
     """
     if use == "farmland":
         order = ("field", "grove", "garden")
@@ -1444,7 +1444,7 @@ def _feasible_core(cum, U: int, V: int, bar: float,
         dropped, and again, until the rectangle as a whole is over the bar or it has shrunk
         to the least block this fabric needs. Four O(1) lookups a step off the integral
         image, so this costs nothing next to a compile.
-        
+
     """
     def good(u0, u1, v0, v1) -> int:
         return int(cum[u1 + 1, v1 + 1] - cum[u0, v1 + 1]
@@ -1607,7 +1607,7 @@ def compile_district(district: dict, part: dict, place: dict, decls: dict, *,
         the rectangle than the density's ground cover asks, compiled again with the
         courtyard share a `COVER_STEP` higher, then the open share, until it is met or
         both are 1 -- and the record says what it had to raise.
-        
+
     """
     from .placeplan import district_target
     ch0 = character_of(part, district)
@@ -1891,7 +1891,7 @@ def _depth_keeps_storeys(rec: dict, ch: dict, decls: dict, depth: int) -> bool:
 
         A district whose band asks for one storey is unaffected, and so is one whose type
         declares no envelope: the guard only bites where a storey is actually lost.
-        
+
     """
     band = ch.get("storeys")
     if not band or int(band[-1]) <= 1:
@@ -2676,7 +2676,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 edge columns whose whole line out to the **landing** -- the first column outside
                 the plot on the street side -- is prepared. Nothing here reads the world: it is
                 the plan's own ground decision, and construction consumes the answer.
-                
+
         """
         from .buildlib import site_pad_rect
         if _design_level is None:
@@ -3192,7 +3192,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 could not establish that any *successful* leaf had been admitted at all. Absence
                 was doing the work of an affirmative answer. A leaf now carries the answer either
                 way and `restricts` says which kind it is, so agreement is a thing on disk.
-                
+
         """
         fit = got.get("storeys")
         base = {"storeys_band": [lo_p, hi_p], "flanks_attached": int(flanks),
@@ -3309,7 +3309,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 is **not** clamped up to that floor and emitted -- it is re-typed to another
                 type of the same use that its lot admits, or refused, and the refusal is
                 unresolved demand on the district's record (`demand_short`, `lots_refused`).
-                
+
         """
         moved = 0
         refused = []
@@ -3563,7 +3563,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 `build()` is handed -- and its first pair is the floor. `pad_founded` asks whether
                 a rectangle that size is all prepared ground somewhere inside the plot's pad; a
                 type that declares no footprint is not asked.
-                
+
         """
         fp = ((dcl or {}).get("needs") or {}).get("footprint")
         if not fp or len(fp) < 2:
@@ -3590,7 +3590,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 city, and the reason this exists at all -- the middle ring's lot is 13x13 and
                 `shop_house`'s sweep found 13 broken, so a shop street held at the quarter's own
                 lot came back with **no shops at all** and nothing said why.
-                
+
         """
         if budget_left() <= 0:
             return      # the district has the houses it was asked for, or asked none,
@@ -3879,7 +3879,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 where the terrace stops. What it does share is the leaf, the clearance, the free
                 test, the wall-alt share and the type draw, so a corner building is an ordinary
                 building of this quarter.
-                
+
         """
         if budget_left() <= 0 or v1 < v0 or u1 < u0:
             return
@@ -4011,7 +4011,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 that is not gets a court enclosed on two, open at its ends to the cross streets,
                 which is a close rather than a courtyard block. Both are composed; the record
                 says which was laid (`perimeter_shut`/`perimeter_open`).
-                
+
         """
         V, U = v1 - v0 + 1, u1 - u0 + 1
         # **...and a range round a court still has to carry the height its band asks
@@ -4130,7 +4130,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 Lifted out of `compose_court_block` so the reservation pass and the emission
                 answer the same question about the same block: a need computed against one
                 passage and a composition laid against another is two decisions again.
-                
+
         """
         span = int(COURT_ENTRY)
         lo = u0 if cu0 is None else max(u0, int(cu0))
@@ -4166,7 +4166,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 block before it should have had the houses. So each face is walked here with
                 `free()`, the same predicate the emitter uses, under the same front: a face with
                 no room is zero, and a composition with a zero face is not reserved at all.
-                
+
         """
         mid0, mid1 = v0 + rd + row_gap, v1 - rd_b - row_gap
         cu0 = u0 + cd + LOT_GAP if cd else u0
@@ -4229,7 +4229,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 Returns the number of court tiles laid. Records enclosure and entry apart, as
                 `perimeter_shut`/`perimeter_open` already keep them apart, because a court is
                 enclosed because its four ranges stood and not because an arrangement said so.
-                
+
         """
         # `rd` is the depth of each range round the court (`court_range_depth`), which
         # is the fabric's own `ld` where the block has room for it and shallower where
@@ -4498,7 +4498,7 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 debt -- with the reason recorded, and the block falls through to the ordinary
                 two-row block that this district can actually build. An unmet obligation stays
                 an unmet obligation; it does not become a tile.
-                
+
         """
         # the savepoint: everything this composition can move
         keep_ledger = ledger[u0:u1 + 1, v0:v1 + 1].copy()
@@ -4852,6 +4852,21 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
         # ones at the lots' level, which is the doorstep question and not this one
         _all_road = {(int(c[0]), int(c[1]))
                      for c in ((place.get("arterials") or {}).get("cells") or [])}
+        # **the section's street before it is routed** (the city attempt round): a ring
+        # strip whose section lays its principal street along its inner edge is composed
+        # against that street even where no arterial reaches it yet -- at the screen,
+        # before any road is routed -- so the arrangement its width was set for is the
+        # one compared, not an edge-first sweep with no street at all
+        from . import placeplan as _pp_sec
+        _band_sec = _pp_sec.section_street_band(district)
+        # (where the routed road does not already run along most of that band: a gate's
+        # radial street crossing the strip is not the ring street)
+        if _band_sec and sum(1 for c in _band_sec if c in _all_road) \
+                < 0.5 * len(_band_sec):
+            for (x, z) in _band_sec:
+                _all_road.add((x, z))
+                if X0w <= x <= X1w and Z0w <= z <= Z1w:
+                    okxz[x - X0w, z - Z0w] = False
         _dump = os.environ.get("ETHOSLM_STREETPLAN_DUMP")
         if _dump:
             import pickle
@@ -4859,11 +4874,34 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                 pickle.dump({"rect": (X0w, Z0w, X1w, Z1w), "ok": okxz, "road": _all_road,
                              "access": _acc2, "house": house_spec, "shop": shop_spec,
                              "anchor": anchor_spec}, fh)
+        # the parent's street arrangement for this piece, where the strip was cut to
+        # hold its modules (`parentdemand.refit`, the parent composition round): lanes
+        # across the strip, rows facing each other across them
+        _mod = ((district.get("sector") or {}).get("module") or {})
+        # ...or the ring's own section, where the ring's width was set for one (the city
+        # attempt round, `placeplan.ring_section_demand`): `along` is lanes along the
+        # strip behind the principal street's row, `across` is lanes across it with rows
+        # facing each other. The section is **owed**: the record below says so, and a
+        # composition that cannot hold it is not admissible
+        _sec = dict(district.get("section") or {})
+        if not _mod.get("arrangement") and _sec.get("arrangement"):
+            _mod = {"arrangement": _sec["arrangement"], "owed": bool(_sec.get("owed")),
+                    "from": "section", "role": "homes"}
+        _prefer = None
+        _along_x = (X1w - X0w) >= (Z1w - Z0w)
+        if _mod.get("arrangement") == "across":
+            _prefer = {"axis": "z" if _along_x else "x", "lanes": "between"}
+        elif _mod.get("arrangement") == "along":
+            _prefer = {"axis": "x" if _along_x else "z", "lanes": None}
+            if shop_spec and _sec.get("arrangement") == "along":
+                # the section's frontage is the trade form's row, its whole run
+                _prefer["shop_reach"] = _sp.SHOP_ALL
         got_c = _sp.compose((X0w, Z0w, X1w, Z1w), okxz, _all_road,
                             access=tuple(_acc2) if _acc2 else None,
                             house=house_spec, shop=shop_spec, anchor=anchor_spec,
                             seed=seed, site_ok=_site_ok,
-                            defer_roads=bool(district.get("roads_pending")))
+                            defer_roads=bool(district.get("roads_pending")),
+                            prefer=_prefer)
         pick_c = got_c["adopted"] or (max(got_c["proposals"],
                                           key=lambda p: p["preference"])
                                       if got_c["proposals"] else None)
@@ -4884,7 +4922,9 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
             "why": got_c["why"],
             # what each use owes and the lot its form plan needs (the design resolution
             # round): the lot is the form's, not the character's
-            "forms": form_lots}
+            "forms": form_lots,
+            **({"module": {**got_c["module"], "parent": _mod}} if got_c.get("module")
+               else {})}
         ledger[:, :] = L["undeveloped"]
         street_plan_mask = np.zeros((fr.U, fr.V), dtype=bool)
         if pick_c:
@@ -5068,6 +5108,16 @@ def _compile_once(district: dict, part: dict, place: dict, decls: dict, ch: dict
                                failed=again["failed"], houses=again["houses"],
                                shops=again["shops"],
                                judged_on="the lots emitted after settling")
+        # **an owed section that did not hold is not a composition this district may
+        # claim** (the city attempt round): the ring's width was set for it, so its
+        # absence goes back to the layout as a finding rather than a fallback lane
+        _mrec = composition.get("module") or {}
+        if _mod.get("owed") and _mrec and not _mrec.get("realized"):
+            composition["admissible"] = False
+            composition["failed"] = list(composition["failed"]) + ["section_owed"]
+            composition["owed_unmet"] = {
+                "arrangement": _mod.get("arrangement"), "why": _mrec.get("why"),
+                "owner": "layout: the ring's width, the strip's cut or its level"}
         if not composition["admissible"]:
             # a required anchor the composition could not front or place is the
             # request's reservation unmet -- refused by the validator and returned to
@@ -5922,7 +5972,7 @@ def _median_lot(leaves: list, u_is_x: bool = True) -> list | None:
         remainder, a landmark on a lot of its own and a shop street at its own grain all make
         the *pair* rare, and what a reader wants from this number is "what size is a lot
         here". `placeplan.arrangement_failures` compares an adopted arrangement against it.
-        
+
     """
     sizes = [((p["x1"] - p["x0"] + 1, p["z1"] - p["z0"] + 1) if u_is_x else
               (p["z1"] - p["z0"] + 1, p["x1"] - p["x0"] + 1))
@@ -5950,7 +6000,7 @@ def pad_columns(leaves: list) -> int:
         was measured. The estimate is a good one and it is the only answer available before
         anything is built; what it is not is construction. `footprint_columns` remains as an
         alias because retained records and `placeplan.region_columns` use the old name.
-        
+
     """
     from .buildlib import Builder
     out = 0
@@ -5977,7 +6027,7 @@ def _wall_alt_record(leaves: list) -> dict:
         The craft round, E3. `Builder.WALL_ALT_SHARE` is the library's number and the
         compiler is what makes it a **share** rather than a distribution, because it can see
         the whole street; `WALL_ALT_TOLERANCE` is how far a district may sit from it.
-        
+
     """
     said = [p for p in leaves if isinstance(p.get("wall_alt"), bool)]
     alt = sum(1 for p in said if p["wall_alt"])
@@ -6025,7 +6075,7 @@ def _storeys_fit(tname: str, lo: int, hi: int, w: int, d: int,
         has one and the module is present, that is the only path. Where the district has
         **required features** and the module is not present, this refuses -- a missing
         module must not become a smaller default.
-        
+
     """
     d_mod = _demand_module()
     if demand is not None:
@@ -6070,7 +6120,7 @@ def _demand_lot(dem: dict | None, district: dict | None = None) -> tuple:
         `refused` is a record and never a smaller lot: where nothing in the approved band
         delivers a required feature the compiler raises, because a district laid at a lot
         that cannot hold what the request requires is the defect, not the recovery.
-        
+
     """
     if not dem:
         return None, None
@@ -6161,7 +6211,7 @@ def _variety(faces: list) -> dict:
         Two numbers, both registered before they were read: how many distinct building
         shapes there are per hundred houses (`SHAPES_PER_HUNDRED`), and the longest run of
         neighbours of one shape along one street face (`IDENTICAL_RUN_MAX`).
-        
+
     """
     flat = [sh for face in faces for sh in face]
     kinds = {sh for sh in flat}

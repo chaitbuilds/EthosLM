@@ -350,7 +350,7 @@ class Volume:
                 copy. It is what lets a build pass ask about one doorway without paying for the
                 whole settlement -- the difference between a check a model can call mid-run and
                 a check it cannot.
-                
+
         """
         ax0 = max(x0, self.x0)
         az0 = max(z0, self.z0)
@@ -366,7 +366,7 @@ class Volume:
                 A build pass's writes are pending until it flushes, so a check that reads only
                 the world cannot see the wall the pass just decided on. This is how a pass is
                 judged on what it is about to do rather than on what it did last time.
-                
+
         """
         index = {s: i for i, s in enumerate(self.palette)}
         first_new = len(self.palette)
@@ -420,7 +420,7 @@ class Volume:
 
                 Computing these once and indexing them with `codes` is what makes the layer
                 cheap: everything downstream is a numpy gather, never a per-voxel branch.
-                
+
         """
         if self._tables is not None:
             return self._tables
@@ -444,7 +444,7 @@ def _classify_palette(palette: list) -> tuple:
         overlay classify the handful of entries a write added and leave the rest alone
         (A2). Every row is decided by `_classify` and the tables below it, exactly as the
         whole-palette pass decided it.
-        
+
     """
     n = len(palette)
     cols = {k: np.zeros(n, t) for k, t in _TABLE_COLUMNS}
@@ -532,7 +532,7 @@ class Nav:
         out through stances_in_column() while stance_near() compared it against an absolute
         2*y, so asking for the stance at a door returned the stance on the roof above it --
         and the town's door reachability was silently measured on its roofs.
-        
+
     """
 
     def __init__(self, vol: Volume, allow_swim: bool = False, max_fall: int = FALL):
@@ -621,7 +621,7 @@ class Nav:
                 in the upper half and you walk under it, and a fern occupies neither and is not
                 there at all as far as a body is concerned. Read by `floor_stances`, which needs
                 to know whether a block is *piled on* the floor or hangs over it.
-                
+
         """
         return (self.in_col(x, z) and self.in_h(2 * y)
                 and self.occ[self._h(x, 2 * y, z)] == 1)
@@ -704,7 +704,7 @@ class Nav:
                 A stair's `facing` names the side its raised quarter is on (verified against
                 assets/minecraft/models/block/stairs.json), so you walk onto it freely when you
                 approach from the opposite side -- when `facing` points the way you are moving.
-                
+
         """
         if not (0 <= cell - self.vol.y0 < self.sy) or not self.in_col(x, z):
             return False
@@ -726,7 +726,7 @@ class Nav:
                 "can I walk from this building's own doorstep to this room's floor" does not
                 need the other fifteen buildings in the town, and flooding them anyway costs a
                 settlement-sized BFS per building.
-                
+
         """
         dist: dict[tuple[int, int, int], int] = {}
         q = deque()
@@ -911,7 +911,7 @@ def ground_heights(vol: Volume) -> tuple[np.ndarray, np.ndarray]:
         columns so a router can prefer to go round.
 
         Columns with no solid ground at all come back as y0 - 1.
-        
+
     """
     t = vol.tables()
     c = vol.codes
@@ -939,7 +939,7 @@ def shelter(vol: Volume) -> tuple[np.ndarray, np.ndarray]:
         sealed    air that cannot be reached *by air* from the volume's outer shell: a
                   fully walled interior. Air that is neither is under cover but open to the
                   world -- a porch, an arcade, the inside of a doorway.
-        
+
     """
     t = vol.tables()
     c = vol.codes
@@ -1023,7 +1023,7 @@ def rooms(nav: Nav, sky_open: np.ndarray, region=None, min_cells: int = 4,
 
         `fittings` is the library's record of what it placed as furniture, and is passed
         straight to `floor_stances`; None means there is no record. See its docstring.
-        
+
     """
     vol = nav.vol
     x0, z0, x1, z1 = region or (vol.x0, vol.z0, vol.x0 + nav.sx, vol.z0 + nav.sz)
@@ -1110,7 +1110,7 @@ def light(vol: Volume, cells, margin: int = 16) -> dict:
         still incomparably better than counting torches, which is all this project has
         measured until now. Computed on a box around the requested cells, so asking about
         one room costs a fraction of a second.
-        
+
     """
     cells = list(cells)
     if not cells:
@@ -1197,7 +1197,7 @@ def unconnected_joins(vol: Volume, region=None) -> dict:
         The same applies to walls, panes, iron bars, and to a stair's `shape`, which is how
         inner and outer corners are formed -- so no stair we have ever placed has mitred a
         corner. This counts the joins that should exist and do not.
-        
+
     """
     c = vol.codes
     # What a fence or a wall will actually reach out to: a **full solid square face**.
@@ -1434,7 +1434,7 @@ def backwards_stairs(vol: Volume, region=None, window: int = 2) -> list[dict]:
         above it, and reported 44% of the town's stairs as backwards, most of them
         spuriously. A stair with no surface on either side within the band (a corbel, a
         chair, a sill bracket) is not judged at all.
-        
+
     """
     t = vol.tables()
     c = vol.codes

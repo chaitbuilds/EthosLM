@@ -49,7 +49,7 @@ def scope_of(rnd) -> dict | None:
         registered section's, because a round that registers a section and asks for a local
         path means that section. A round with no `local` flag is every round before this one
         and runs the whole city, which is what the section build still does.
-        
+
     """
     loc = (getattr(rnd, "flags", None) or {}).get("local")
     if not loc:
@@ -74,7 +74,7 @@ def meets(scope: dict | None, rect) -> bool:
     """Does `rect` (x0, z0, x1, z1) reach into the scope's outer bound?
 
         True for every rectangle when there is no scope, so a caller can ask unconditionally.
-        
+
     """
     if not scope or not rect:
         return True
@@ -121,7 +121,7 @@ def restore_rect(dst, src, rect) -> int:
         The two volumes are mapped by world coordinate and their palettes are reconciled, so
         a source block absent from the destination's palette is added rather than lost.
         Returns the number of columns copied.
-        
+
     """
     x0, z0, x1, z1 = (int(v) for v in rect)
     x0, x1 = min(x0, x1), max(x0, x1)
@@ -164,7 +164,7 @@ def record(scope: dict | None, *, of: str, kept: int, redone: int,
         boundary condition, because a reader looking at a block's ground has to be able to
         tell "this was designed for this candidate" from "this is the last candidate's and
         was kept on purpose". Absence would read as the first.
-        
+
     """
     if not scope:
         return {}

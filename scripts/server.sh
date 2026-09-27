@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # start | stop | cmd <console command> | log Console stdin is held open by a FIFO so we
-# can push commands (save-all, setbuildarea).
+# can push commands (save-all, setbuildarea). ETHOSLM_SERVER_DIR serves another save (e.g.
+# run/ds-server, the design synthesis round's separate delivery save on port 25566);
+# ETHOSLM_SERVER_HEAP bounds its heap (default 8G).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/scripts/env.sh"
-SRV="$ROOT/run/server"
+SRV="${ETHOSLM_SERVER_DIR:-$ROOT/run/server}"
+HEAP="${ETHOSLM_SERVER_HEAP:-8G}"
 FIFO="$SRV/console.in"
 PIDF="$SRV/server.pid"
 LOG="$SRV/console.log"
@@ -19,7 +22,7 @@ case "${1:-}" in
     echo $! > "$SRV/fifo.pid"
     LOADER=(); [ -n "${ETHOSLM_JAVA_LOADER:-}" ] && LOADER=("$ETHOSLM_JAVA_LOADER")
     ( ${LOADER[@]+"${LOADER[@]}"} "$ETHOSLM_JAVA" \
-        -Xms2G -Xmx8G -jar fabric-server-launch.jar nogui < "$FIFO" > "$LOG" 2>&1 & echo $! > "$PIDF" )
+        -Xms2G -Xmx$HEAP -jar fabric-server-launch.jar nogui < "$FIFO" > "$LOG" 2>&1 & echo $! > "$PIDF" )
     echo "started pid $(cat "$PIDF"); tail $LOG"
     ;;
   cmd)

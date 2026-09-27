@@ -135,7 +135,7 @@ def tall_hut(b, floor=0, x0=4, z0=4, x1=11, z1=11, head=7, door_head=0):
         doorway makes a raised floor unreachable by any means -- which E003 does catch, and
         which is therefore the wrong world to test the new check against. This hut is the
         one where the old check is satisfied and the building is still unusable.
-        
+
     """
     for x in range(x0, x1 + 1):
         for z in range(z0, z1 + 1):

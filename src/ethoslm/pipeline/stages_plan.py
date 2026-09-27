@@ -64,7 +64,13 @@ PART_GEOMETRY = ("label", "kind", "x0", "z0", "x1", "z1",
                  # (`district_compile.site_solve`). `Builder.declare`, `_site_part` and
                  # `_site_area` build exactly that where a leaf carries one, and the old
                  # path where it does not.
-                 "attached", "front", "wall_alt", "floor", "site", "court_site")
+                 "attached", "front", "wall_alt", "floor", "site", "court_site",
+                 # the design synthesis round: a ring wall cut into per-region runs
+                 # carries the whole ring (its path, its designed floors, its gates), so
+                 # each run levels its walk and places its towers from the ring and not
+                 # from the ground it reads -- which, beside a built neighbour, is that
+                 # neighbour's wall (`types/wall.py`, the curved engine)
+                 "ring_path", "ring_floors", "ring_gates")
 
 
 PART_LEAF_KINDS = ("plot", "edge", "point", "area")
@@ -82,7 +88,7 @@ def plan_parts(plan: dict) -> list:
         kind and its geometry, and `in` on each leaf is the names of its ancestors, outermost
         first: that is the only new fact a tree carries and it is what a wave, a lint scope
         and a card set are going to want.
-        
+
     """
     if not plan.get("parts"):
         return [{**s, "kind": "plot", "name": s.get("name", s.get("id")), "in": []}
@@ -119,7 +125,7 @@ def plan_plots(plan: dict) -> list:
         The same list an old plan's `structures` gives, which is the compatibility A4 is
         held to: every stage downstream reads plots and none of them has to know whether
         the plan that produced them was a tree.
-        
+
     """
     out = []
     for p in plan_parts(plan):
@@ -138,7 +144,7 @@ def part_rect(part: dict) -> tuple:
         **point** is its pad. Everything downstream that scopes a report to "this part's
         ground" -- `standard_report`, `plot_at`, the per-part lint -- needs a rectangle, and
         this is the one definition of it, so a wall is not judged on the town beside it.
-        
+
     """
     kind = part.get("kind", "plot")
     if kind == "edge":
@@ -192,7 +198,7 @@ def plan_ground(parts: list, vol=None) -> dict:
         own registry, so a plan can be classified before anything has been reserved. None
         where there is no volume to read, and every ground check then reports itself
         unreadable rather than passing.
-        
+
     """
     if vol is None:
         return {}
@@ -236,7 +242,7 @@ def plan_failures(parts: list, decls: dict, ground: dict | None = None,
         right answer to the wrong question: nothing was wrong with those buildings, and the
         palette was never the type's to declare. A type no longer declares one, so what is
         left to check is the one thing it does declare about itself.
-        
+
     """
     out = []
 
@@ -372,7 +378,7 @@ def party_wall(a: dict, b: dict, decls: dict) -> bool:
         Both plots of types that declare `ATTACHED`, both fronting the same side, and
         flank against flank -- edge-adjacent across the axis their front runs along, with
         their runs overlapping, and not overlapping each other. A touch, and only that.
-        
+
     """
     if a.get("kind", "plot") != "plot" or b.get("kind", "plot") != "plot":
         return False
@@ -406,7 +412,7 @@ def needs_table(decls: dict) -> str:
         `min + 2 * SITE_INSET` on each axis, so the table gives the plot and not only the
         pad. That arithmetic is `Builder.pad_extent`'s and is done here rather than left to
         a model.
-        
+
     """
     from ..buildlib import Builder
     i = 2 * Builder.SITE_INSET
@@ -467,7 +473,7 @@ def part_registry_row(part: dict, passage: bool = False) -> dict:
         `passage` is the type's own `PASSAGE`, carried into the registry because a gate
         **stands in** the wall it crosses and that is the one overlap a place is made of.
         Without it E006 reports the district's own gate as a defect.
-        
+
     """
     x0, z0, x1, z1 = part_rect(part)
     rects = part_rects(part)
@@ -523,7 +529,8 @@ TYPE_DECLARATIONS = ("FORM", "PARAMS")
 #: tradition is -- and two are functional, because a wall and a market square are the
 #: same thing in every tradition and a place that filtered them out by region would be a
 #: walled town with no wall.
-FORMS = ("european_vernacular", "east_asian", "fortification", "civic")
+FORMS = ("european_vernacular", "east_asian", "dryland_vernacular", "fortification",
+         "civic")
 
 #: The forms admissible in a place of any family. See `form_ok`.
 UNIVERSAL_FORMS = ("fortification", "civic")
@@ -561,7 +568,7 @@ def read_role(ns: dict, where: str = "a type") -> str | None:
         Optional here for `NEEDS`' reason: a type written before A2 says nothing and is
         therefore admissible anywhere, which is exactly what the plan did before A2 existed.
         `test_types.py` is what holds every committed file to declaring it.
-        
+
     """
     got = ns.get("ROLE")
     if got is None:
@@ -591,7 +598,7 @@ def role_ok(role: str | None, district_role: str | None, *,
         the same, or when the type is one of `UNIVERSAL_ROLES` -- and, inside a compound,
         when it is one of the roles the compound's family admits (`admits`; `COMPOUND_ROLES`
         where the leaf says nothing).
-        
+
     """
     if not district_role or not role:
         return True
@@ -605,7 +612,7 @@ def form_ok(form: str | None, place_form: str | None) -> bool:
         Yes when the place names no family, when the two are the same, or when the type is
         one of the functional forms -- a wall, a gate, a keep, a square. A town in the east
         Asian family still has a wall round it, and the wall is a fortification in both.
-        
+
     """
     if not place_form:
         return True
@@ -629,7 +636,7 @@ def read_needs(ns: dict, where: str = "a type") -> dict:
         A declaration nobody validates is a comment. Every field is optional and defaults
         from `NEEDS_DEFAULT`; a field that is present and malformed is an error here, once,
         rather than a plan validated against nonsense.
-        
+
     """
     got = ns.get("NEEDS")
     if got is None:
@@ -750,7 +757,7 @@ def ground_class(relief: int, water_pct: float) -> str:
         Not a fourth opinion about terrain: `Builder.SITE_WET` and `Builder.SITE_RELIEF` are
         what `site()` decides between a deck, a platform and a plinth on, and this is the
         same decision made from the measures `plot_ground` already computes.
-        
+
     """
     from ..buildlib import Builder
     if water_pct > 100 * Builder.SITE_WET:
@@ -783,7 +790,7 @@ def load_type(path: str) -> dict:
 
         Cached per file identity -- see `_TYPE_CACHE`. The returned declaration is treated
         as read-only by every caller in this build; it is the same object each time.
-        
+
     """
     try:
         st = os.stat(path)
@@ -865,7 +872,7 @@ def check_params(spec: dict, params: dict | None, where: str = "a type") -> dict
         A declared parameter the config leaves out is filled from the declaration -- the
         low end of a range, the first of a choice -- and travels in the record, so an
         instance is always fully described by what is written down.
-        
+
     """
     got = dict(params or {})
     unknown = sorted(set(got) - set(spec))
@@ -915,7 +922,7 @@ def param_combinations(spec: dict, most: int = SWEEP_MAX) -> list:
         This is `scripts/type_needs.py`'s own enumeration, moved here so the needs sweep
         and the type checker cross the same space: the arithmetic between two instruments
         belongs to one of them.
-        
+
     """
     import itertools
     keys = sorted(spec)
@@ -1012,7 +1019,7 @@ def _retrieval_provider():
     """The configured retrieval provider, or None where there is none.
 
         One seam, so "can this run retrieve" is asked once and can be answered by a test.
-        
+
     """
     from .. import evidence as evid
     prov = evid.provider()
@@ -1026,7 +1033,7 @@ def _research_handoff(rnd, sentence: str, out_dir: str) -> dict | None:
         no sources, no claims, and an identity obligation with nothing behind it, and there
         was no state in which a terminal agent could supply what was missing. A terminal
         agent is a supported runtime; this is the state it answers in.
-        
+
     """
     from .. import contracts, evidence as evid
     if not evid.needs_evidence(sentence):
@@ -1066,7 +1073,7 @@ def _adopt_research(sentence: str, out_dir: str) -> dict | None:
         Every source is written to disk under its own id and fingerprinted **from the bytes
         that were written**, so the identity in the record is the identity of the text a
         later claim will be drawn from and not a number the answer supplied about itself.
-        
+
     """
     from .. import contracts, evidence as evid
     p = os.path.join(out_dir, "sources.json")
@@ -1133,7 +1140,7 @@ def stage_reading(rnd, be, results: dict) -> dict:
         empty, honest reading and no model call. A request that does, and has no retrieval
         provider configured, gets a reading that says so: `provider: none`, every claim
         inferred. Neither is a failure and both are visible.
-        
+
     """
     from .. import contracts, deps, evidence as evid, intent as intent_mod
     if not rnd.sentence:
@@ -1273,7 +1280,7 @@ def stage_interpret(rnd, be, results: dict) -> dict:
         every disagreement between them on the record. A round whose agent declines to
         interpret keeps the rules' reading exactly as it was, so nothing that ever ran stops
         running -- it simply keeps the weaker reading, and the record says which it has.
-        
+
     """
     from .. import contracts, deps, interpret as interpret_mod
     if not rnd.sentence:
@@ -1341,7 +1348,7 @@ def explicit_count_of(rnd) -> dict | None:
         sentence's own number read by the agent and cross-checked by the rules. Where the
         record has one it is the count; where it has none the spec falls back to the regex,
         which is every round that predates the interpretation stage.
-        
+
     """
     from .. import contracts
     rec = contracts.load(rnd, "intent")
@@ -1377,7 +1384,7 @@ def _footprint_from_demand(rnd, spec: dict) -> dict | None:
         `land_need` is summed over `FOOTPRINT_PACKING`. The footprint only ever **grows**,
         never past the kind's ceiling, and the record says by how much and from what. A
         place whose demand fits the count's own square is untouched.
-        
+
     """
     import math
     from .. import contracts as contracts_mod, placesolve
@@ -1623,7 +1630,7 @@ def _unsupported_gate(rnd, spec: dict):
         and it means one thing: no family, no policy, no form. It is never written by a
         measurement of a plan, so nothing later in the run can resolve it -- which is
         exactly why continuing costs a site search and buys nothing.
-        
+
     """
     from .. import contracts
     it = contracts.load(rnd, "intent")
@@ -1669,7 +1676,7 @@ def _reading_note(rnd) -> str:
         sentence says outright is refused downstream by `intent.coverage` **whatever the
         brief said**, and telling the call what it will be held to is cheaper than handing
         it back.
-        
+
     """
     from .. import contracts, evidence as evid
     it = contracts.load(rnd, "intent")
@@ -1961,7 +1968,7 @@ it and the one thing the search cannot infer from the parts. Four words, or `nul
 
 {voices}
 
-**`form`** — which family of form this place is built in: one of `{forms}`. The two
+**`form`** — which family of form this place is built in: one of `{forms}`. The
 regional ones say what the building tradition is; a place is planned out of types of its
 own family plus the `fortification` and `civic` ones, which are what a wall, a gate, a
 keep and a market square are in every tradition. `null` accepts every committed type,
@@ -2074,7 +2081,7 @@ def _family_colours() -> list:
         A family the colour table has no entry for is named **without** a colour rather
         than with a guessed one: `block_colour` answers magenta for a block it does not
         know, and a wrong colour is worse than none.
-        
+
     """
     from ..preview import UNKNOWN, block_colour
     from ..prims import MATERIALS, solid
@@ -2225,7 +2232,7 @@ def compound_cut(rnd, spec, site, terra, n: int, x0: int, z0: int, m: dict) -> t
 
         Returns `(n, x0, z0, m)` unchanged where the part is not a compound: a district, a
         market square, a keep, a hamlet with no plateau at all cuts what it always cut.
-        
+
     """
     from .. import placeplan, spec as spec_mod
     from ..buildlib import Builder
@@ -2273,7 +2280,7 @@ def terrace_for(rnd, spec: dict, site: dict) -> dict | None:
         `placeplan.terrace_ranks` reads them and `concentric_layout` re-orders the levels on
         the plan; the **podium** is cut from the record this function writes, before the
         plan exists, so the ranks are passed here too or the cut is made in the old order.
-        
+
     """
     from .. import placeplan, spec as spec_mod
     rings = spec_mod.rings(spec)
@@ -2338,7 +2345,7 @@ def _flattest_window(rnd, X: int, Z: int, S: int, n: int):
         standing water is one level over its whole extent, so "least relief" alone picks the
         middle of it every time -- the first 83x83 this found on the green site was 5,727
         columns of water out of 6,889. Water is not ground and this is where that is said.
-        
+
     """
     import numpy as np
     from .. import observe
@@ -2388,7 +2395,7 @@ def settle_designed(vol, pieces: list, *, relief=None) -> tuple:
         ground as found -- a step of `TERRACE_STEP` between two rings is a retaining face
         by the drop, a ramp's tread a kerb. Returns `(resolved, record)`; the caller lays
         each piece at `resolved.level_of(label)`.
-        
+
     """
     from .. import ground as _ground
     from ..buildlib import Builder
@@ -2416,7 +2423,7 @@ def _dry_plateau(rnd, spec, site, voice, terra, n, x0, z0, m, grew=None) -> dict
         will have levelled. What it must not do is touch the world: this writes to
         `<state>/<base_volume>` and keeps the volume as it was beside it, so the cut is
         reversible in a way ground work in the world never is (open thread 18).
-        
+
     """
     from ..buildlib import Builder
     import shutil
@@ -2535,7 +2542,7 @@ def site_brief_from_volume(vol, X: int, Z: int, S: int) -> dict:
         including the transpose its own comment is about: the grid is stored the way its
         caption reads, because the earliest settlement plans were each made against a map
         of the site rotated a quarter turn.
-        
+
     """
     import numpy as np
     from .. import observe
@@ -2822,7 +2829,7 @@ def stage_ground(rnd, be, results: dict) -> dict:
         and `stage_terraces`, which write blocks ring by ring through the backend; this
         round did not port that path and does not claim it. A live run is untouched and this
         stage says so rather than pretending.
-        
+
     """
     import shutil
     from .. import deps as deps_mod, ground as ground_mod
@@ -2980,6 +2987,16 @@ def stage_ground(rnd, be, results: dict) -> dict:
                        note=f"{len(proposal.get('pieces') or [])} piece(s) applied from "
                             f"the baseline")
     laid = (proposal.get("applied") or {}).get("laid") or []
+    # a refused podium is the design's centre standing on unprepared ground: a stop, not
+    # a line in a record (the city attempt round)
+    lost = [r for r in (proposal.get("applied") or {}).get("refused") or []
+            if r.get("rect") and any(q.get("label") == r.get("piece")
+                                     and q.get("what") == "podium"
+                                     for q in proposal.get("pieces") or [])]
+    if lost:
+        return {"status": "error", "stop": True, "written": p,
+                "error": "the ground this design asks for could not be laid: "
+                         + "; ".join(f"{r['piece']}: {r.get('why')}" for r in lost)}
     for row in laid:
         print(f"   ground: {row.get('piece')} {row.get('rect')} at y={row.get('level')} "
               f"in `{row.get('voice')}`", flush=True)
@@ -3051,7 +3068,7 @@ def _seam_pieces(place_plan: dict, rings: list, ring_pieces: dict) -> list:
         ring's level is not a design for it. Such a remnant is declared here as a piece of its
         own at the **lower** neighbour's level, so the higher district's edge is the one
         retaining face between the two and the remnant is ground a lane can cross.
-        
+
     """
     by_ring: dict = {}
     for d in (place_plan.get("districts") or []):
@@ -3225,7 +3242,7 @@ def stage_terraces(rnd, be, results: dict) -> dict:
         the run is scored against (`world.before-plateau.npz` stays the world as it was);
         live it is committed ring by ring, each its own bounded call. A place with no
         rings, or a layout with no levels, is untouched and says so.
-        
+
     """
     from .. import placeplan
     from ..buildlib import Builder
@@ -3351,7 +3368,7 @@ def stage_terraces(rnd, be, results: dict) -> dict:
 
                 `reach=False` for a piece that is **not developable ground**: see the gate
                 approaches below.
-                
+
         """
         # outside the scope the seed's cut is already in this volume and is the boundary
         # condition the local unit is designed against. The piece is recorded as kept so
@@ -3495,10 +3512,22 @@ def stage_terraces(rnd, be, results: dict) -> dict:
             continue
         ring = next((r for r in rings if str(r.get("name")) == str(d.get("defines"))),
                     None)
-        if ring is None or int(d["level"]) == int(ring.get("level") or d["level"]):
+        if ring is None:
             continue
         rect = (min(int(d["x0"]), int(d["x1"])), min(int(d["z0"]), int(d["z1"])),
                 max(int(d["x0"]), int(d["x1"])), max(int(d["z0"]), int(d["z1"])))
+        # **...at whatever level it was drawn at** (the city attempt round): the hole
+        # was made only for a piece stepping off its ring, so landscape kept as found at
+        # the ring's own level was terraced with the ring's strip -- 60% of a hill piece
+        # moved by more than two blocks under a record that said "kept as found"
+        if _open_ground(d) and (((d.get("sector") or {}).get("module") or {})
+                                .get("ground") == "as_found"
+                                or int(d["level"]) != int(ring.get("level") or d["level"])):
+            open_holes.append({"ring": str(d.get("defines")), "rect": rect,
+                               "district": str(d["name"])})
+            continue
+        if int(d["level"]) == int(ring.get("level") or d["level"]):
+            continue
         if _open_ground(d):
             # **open ground is ground as found** (the design resolution round): a piece
             # the negotiation left open -- the hill west of the gate street -- was
@@ -3940,7 +3969,7 @@ def ground_for_this_design(rnd) -> tuple:
         as it was found is a legitimate design and is not a stale artifact. What is refused
         is ground cut for a *different* candidate, which is what a repaired plan built on
         the previous plan's terraces would be.
-        
+
     """
     from .. import deps as deps_mod
     if not deps_mod.recorded(rnd, "ground"):
@@ -4058,7 +4087,7 @@ def _record_level(rnd, level: str, fails: list, checked: list) -> int:
         wait loop asks again -- that is what drives a plan of four calls through one stage --
         so a level that has already passed would otherwise write a row on every poll and the
         log would say a place was validated forty times.
-        
+
     """
     p = rnd.rel("plan_validation.json")
     was = json.load(open(p)) if os.path.exists(p) else {"attempts": []}
@@ -4127,7 +4156,7 @@ def _arrange_districts(rnd, spec: dict, place: dict, site: dict, decls: dict,
 
         Idempotent: a district whose plan file is already on disk and current is left alone,
         so re-entering this stage does not re-lay a place that has not moved.
-        
+
     """
     from .. import (arrange as arrange_mod, contracts as contracts_mod,
                     deps as deps_mod, placeplan)
@@ -4162,6 +4191,39 @@ def _arrange_districts(rnd, spec: dict, place: dict, site: dict, decls: dict,
                 if os.path.exists(f):
                     os.remove(f)
         if os.path.exists(dp):
+            continue
+        # **Landscape the parent keeps as found is not laid** (the parent composition
+        # round, the independent reader's q1). An open piece was still compiled as open
+        # land -- groves and gardens on its verges -- and a grove is sited on one level:
+        # the hill west of the gate street, which the brief keeps as found, was cut into
+        # a pit 30 deep with faces 8-26 high for an avenue of trees. Where the parent
+        # has decided a piece is landscape kept as found (`sector.module.ground`), its
+        # plan is empty and says why: nothing is sited on it and its ground is not
+        # worked.
+        _mod = ((d.get("sector") or {}).get("module") or {})
+        if _mod.get("role") == "landscape" and _mod.get("ground") == "as_found":
+            why_l = (f"Landscape kept as found by the parent's decision: "
+                     f"{_mod.get('why') or 'deliberate landscape'}. Nothing is sited on "
+                     f"it and its ground is not worked.")
+            json.dump({"notes": why_l, "quarters": [], "character": {},
+                       "programme": {}}, open(dp, "w"), indent=1)
+            json.dump({"landscape": dict(_mod), "lots": 0, "blocks": 0,
+                       "plot_cover": 0.0, "undeveloped_share": 0.0, "why": why_l},
+                      open(rnd.rel(f"district_{d['name']}_compiled.json"), "w"),
+                      indent=1)
+            was_n = int(d.get("structures") or 0)
+            d["structures"] = 0
+            d["surface"] = "open"
+            d["purpose"] = why_l
+            rows.append({"district": d["name"], "part": part.get("name"),
+                         "proposed": was_n, "realized": 0, "short": 0, "thin": True,
+                         "landscape": dict(_mod),
+                         "character_print": contracts_mod.digest(
+                             spec_mod.character(part))})
+            adopted = True
+            _drop_assembled(rnd)
+            print(f"   arranged {d['name']}: landscape kept as found, nothing laid",
+                  flush=True)
             continue
         # **A rectangle whose feasible ground cannot hold a quarter is open ground with
         # an owner.** The spatial design round, and it is the rule two lines of this
@@ -4272,10 +4334,30 @@ def _arrange_districts(rnd, spec: dict, place: dict, site: dict, decls: dict,
         # which is the capacity finding the scale owner owns -- and what moves is the
         # promise, which is this pass's whole rule.
         capped = None
+        # **A district that owes its ring's section is asked for what the section
+        # holds** (the city attempt round). Its ring's width was set so that every strip
+        # holds a whole section -- the principal street's frontage and a lane of houses
+        # facing each other behind it -- and a count taken from the density word's cover
+        # over the developable ground asked a strip that holds sixty lots for fourteen.
+        # The programme follows the section: the composer's own capacity on this ground
+        # (`arrange.capacity`), where it is more than the ask; the density band is not a
+        # ceiling on a word that has none.
+        owed_sec = bool((d.get("section") or {}).get("owed")) and not d.get("exact")
+        if owed_sec:
+            with contextlib.suppress(Exception):
+                held = arrange_mod.capacity(d, part, place, mine or decls, spec=spec,
+                                            seed=seed)
+                if int(held) > asked:
+                    d["section_ask"] = {"from": int(asked), "to": int(held),
+                                        "why": "the district owes its ring's section; "
+                                               "it is asked for what the section holds "
+                                               "on its ground"}
+                    asked = int(held)
         with contextlib.suppress(Exception):
             band = placeplan.count_band(d, part, place, decls)
             if band and int(band.get("hi") or 0) and asked > int(band["hi"]) \
-                    and not d.get("exact"):
+                    and not d.get("exact") and not (
+                        owed_sec and band.get("target", {}).get("hi") is None):
                 capped = {"from": int(asked), "to": int(band["hi"]),
                           "band": dict(band),
                           "why": (f"the layout proposed {asked} house(s) from its ring's "
@@ -4300,6 +4382,13 @@ def _arrange_districts(rnd, spec: dict, place: dict, site: dict, decls: dict,
         with contextlib.suppress(Exception):
             floor = int(placeplan.district_target(d, part, place,
                                                   decls)["min_plot_columns"])
+        # **a piece the strip left open is held to no cover** (the parent composition
+        # round): the lake end of the north strip, open by the sector decision and asked
+        # for nothing, was "filled" to its density's cover floor with one courtyard
+        # house standing alone on reclaimed lake. Open ground with an owner is
+        # landscape; the floor is the fabric's, and this piece carries none.
+        if (d.get("sector") or {}).get("open") and not int(asked or 0):
+            floor = 0
         extra = ({"intent": contracts_mod.load(rnd, "intent")}
                  if "intent" in arrange_mod.arrange.__code__.co_varnames else {})
         got = arrange_mod.arrange(d, part, place, mine or decls, spec=spec, site=site,
@@ -4505,7 +4594,7 @@ def apply_character(rnd, spec: dict, part: dict) -> bool:
 
         True where one was applied, so the caller drops what was compiled from the old
         one. Refused by name into the record where it does not read.
-        
+
     """
     if not part or not spec_mod.district(part):
         return False
@@ -4570,9 +4659,10 @@ def character_hand_back(rnd, spec: dict, d: dict, part: dict, fails: list,
             f"**{rec['undeveloped_share']:.0%}** is assigned to nothing",
             f"  - every column: {rec['assigned']}",
             f"  - it already tried: " + ", ".join(
-                f"open {t['open_share']:g}/court {t['courtyard_share']:g}"
-                f"/block {t['block']} -> {t['lots']} lots, ground "
-                f"{t['ground_cover']:.0%}" for t in (rec.get("tries") or [])[:8]),
+                f"open {t.get('open_share', '-')}/court {t.get('courtyard_share', '-')}"
+                f"/block {t.get('block', '-')} -> {t.get('lots', '-')} lots, ground "
+                + (f"{t['ground_cover']:.0%}" if isinstance(t.get('ground_cover'), (int, float))
+                   else "-") for t in (rec.get("tries") or [])[:8]),
         ])
     fields = "\n".join(f"  - `{k}`" for k in spec_mod.CHARACTER_FIELDS)
     fields += ("\n\n`frontage` is one of " + ", ".join(f"`{f}`" for f in spec_mod.FRONTAGES)
@@ -4673,7 +4763,7 @@ def _grow_into_free_ground(place: dict, d: dict, site: dict) -> list | None:
         rectangle is a chord of an annulus and moving it is a decision the ring arithmetic
         owns, which is a different action from this one and is named as unavailable rather
         than attempted badly.
-        
+
     """
     if d.get("ring") is not None or (d.get("level") is not None
                                      and place.get("layout", {}).get("rings")):
@@ -4723,7 +4813,7 @@ def _smaller_fabric(rnd, spec: dict, d: dict, decls: dict) -> list | None:
         the district's role first, which is the right default and the wrong answer in a
         thirty-column strip: a type whose least footprint is smaller is a different spatial
         answer to the same promise, and it is one the capability record already approved.
-        
+
     """
     from ..district_compile import _plot_range
     pool = d.get("fabric_types")
@@ -4769,7 +4859,7 @@ def _district_capacity_repair(rnd, spec: dict, place: dict, d: dict, laid: int,
         the request, and the two stay separate records on purpose.
 
         Returns the change, or None where this is not this owner's finding.
-        
+
     """
     from .. import placeplan
     kinds = {f.get("check") for f in dfails}
@@ -4949,7 +5039,7 @@ def _resolve_record(rnd, spec: dict, place: dict, site: dict,
 
         Returns the findings record. Never raises: a round whose sentence states no
         requirement gets an empty findings record, which is a true statement about it.
-        
+
     """
     from .. import contracts, deps, intent as intent_mod, resolve as resolve_mod
     it = contracts.load(rnd, "intent")
@@ -5118,7 +5208,7 @@ def _plan_repair(rnd, be, spec: dict, place: dict, found: dict) -> dict | None:
 
         Returns a stage result asking the driver to re-enter where something changed, and
         None where nothing did -- which is the ordinary case and costs one pass over a list.
-        
+
     """
     from .. import repair as repair_mod
     _mark_retained(rnd, found, place)
@@ -5200,7 +5290,7 @@ def site_capability_facts(rnd, spec: dict, site: dict | None) -> dict:
         across the place, and `round_boundaries` says whether this place's walls are drawn
         round -- which needs types that draw a diagonal run. All three are already read
         somewhere in this module and none of them reached the matcher.
-        
+
     """
     from .. import intent as intent_mod, placeplan
     facts = intent_mod.site_facts(site)
@@ -6033,7 +6123,7 @@ def _realized_lots(plan: dict, districts) -> dict:
         raised a shortfall against every region in the place. A count that is wrong in the
         direction of "nothing was built" is worse than no count, because it looks exactly
         like the defect it exists to find.
-        
+
     """
     from .. import pipeline as _pipeline
     names = sorted({str(d) for d in districts}, key=len, reverse=True)
@@ -6105,7 +6195,7 @@ def _choose_voice(spec: dict, site: dict, check_types: bool = True) -> str:
         writing the same wall again. A type is a form, the palette is handed to it, so what
         is left to ask is whether the committed types of this place's **form family** cover
         its defining parts, and then which palette reads against this ground.
-        
+
     """
     from .. import placeread, styles
     if spec.get("voice") in styles.VOICES:
@@ -6169,7 +6259,7 @@ def stage_plan_flat(rnd, be, results: dict) -> dict:
         claimed. Here every part of the place is in the plan before anything is built, so
         the plan *is* the registry -- and the lint, the walk model and the cards can be
         scoped to a wall or a square exactly as they are to a house.
-        
+
     """
     from .. import pipeline
     import subprocess
@@ -6292,7 +6382,7 @@ def _baseline_volume(rnd, fallback=None):
         Falls back to the working volume where no baseline has been kept -- a first plan,
         before any ground stage has run, is measuring the baseline either way -- and the
         record says which was read.
-        
+
     """
     from .. import deps as deps_mod, offline as offline_mod
     with contextlib.suppress(Exception):
@@ -6310,6 +6400,21 @@ _SECTOR_DERIVED = ("ground", "level", "structures", "proposed_structures", "coun
                    "arrangement", "exact", "thin_ground", "open_requested", "scope_of")
 
 
+def _terrain_landscape(p: dict) -> dict:
+    """**A piece the ground refuses is landscape kept as found** (the city attempt
+    round). A piece that founds under `SECTOR_OPEN_SHARE` of itself at every level its
+    ring may take -- a hill standing forty blocks over its ring's terrace, a lake -- was
+    compiled as the ring's open ground: groves and gardens each sited on one level, so
+    the hill was quarried into faces and fins for an avenue of trees. The parent
+    composition round's `landscape` decision is taken here instead, at plan time and by
+    the same rule that opened the piece: nothing is sited on it and its ground is not
+    worked. The houses it was asked for stay on the record as the strip's shortfall."""
+    return {"role": "landscape", "ground": "as_found",
+            "why": (f"it founds {float(p.get('share') or 0):.0%} of itself at its best "
+                    f"level within its ring's reach: a hill or water inside the ring, "
+                    f"kept as found")}
+
+
 def _sector_pieces(alt: dict, ds: list, access, label: str) -> list:
     """The districts one negotiated arrangement of a strip makes: each piece a district
     of its own, the strip's count spread over the pieces that can found a building by
@@ -6319,9 +6424,17 @@ def _sector_pieces(alt: dict, ds: list, access, label: str) -> list:
     # the strip's count, spread over what can found a building
     total = sum(int(d.get("proposed_structures") or d.get("structures") or 0)
                 for d in ds)
-    live = [i for i, p in enumerate(pieces) if not p["open"]]
-    weights = [pieces[i]["feasible_columns"] for i in live]
     counts = [0] * len(pieces)
+    # **a piece cut to hold whole modules is asked for what its modules hold** (the
+    # parent composition round), and the rest of the strip's count is spread over the
+    # other pieces as before: a share of a count by feasible columns says nothing about
+    # whether the rows it implies fit
+    for i, p in enumerate(pieces):
+        if p.get("programme") is not None and not p["open"]:
+            counts[i] = int(p["programme"])
+    total = max(0, total - sum(counts))
+    live = [i for i, p in enumerate(pieces) if not p["open"] and p.get("programme") is None]
+    weights = [pieces[i]["feasible_columns"] for i in live]
     if live and total:
         shares = [total * w / float(sum(weights) or 1) for w in weights]
         base = [int(s) for s in shares]
@@ -6348,7 +6461,10 @@ def _sector_pieces(alt: dict, ds: list, access, label: str) -> list:
                                f"({label}; `sectors.json`)"],
                  sector={"from": p["from"], "arrangement": label,
                          "level": p["level"], "share": p["share"],
-                         "open": p["open"]})
+                         "open": p["open"],
+                         **({"module": p["module"]} if p.get("module") else
+                            {"module": _terrain_landscape(p)} if p["open"] else {}),
+                         **({"open_why": p["open_why"]} if p.get("open_why") else {})})
         if access:
             d["access"] = [ax, az]
         new.append(d)
@@ -6376,6 +6492,42 @@ def _sector_pieces(alt: dict, ds: list, access, label: str) -> list:
                     f"`{fname}`'s landmarks stand on {new[keep]['name']}, "
                     f"its piece nearest the ring's gate")
     return new
+
+
+def pp_mod_terrace_step() -> int:
+    """One terrace step (`placeplan.TERRACE_STEP`)."""
+    from .. import placeplan as pp_mod
+    return int(pp_mod.TERRACE_STEP)
+
+
+def _arrival_step(pieces: list, access) -> int | None:
+    """The largest level difference between the arrival -- the carrying piece nearest
+    the ring's gate -- and a carrying piece of the same strip beside it (at most a lane
+    gap away). None where there is no arrival or nothing beside it."""
+    from .. import placeplan as pp_mod
+    if not access:
+        return None
+    ax, az = int(access[0]), int(access[-1])
+    live = [d for d in pieces if not (d.get("sector") or {}).get("open")
+            and int(d.get("structures") or 0) > 0]
+    if not live:
+        return None
+
+    def _dist(d):
+        return (max(d["x0"] - ax, 0, ax - d["x1"]) + max(d["z0"] - az, 0, az - d["z1"]))
+    arr = min(live, key=_dist)
+    la = (arr.get("sector") or {}).get("level")
+    gap = int(pp_mod.LANE_GAP) + 2
+    got = None
+    for d in live:
+        if d is arr or la is None:
+            continue
+        near = (d["x0"] - arr["x1"] <= gap and arr["x0"] - d["x1"] <= gap
+                and d["z0"] - arr["z1"] <= gap and arr["z0"] - d["z1"] <= gap)
+        lv = (d.get("sector") or {}).get("level")
+        if near and lv is not None:
+            got = max(got or 0, abs(int(lv) - int(la)))
+    return got
 
 
 def pp_mod_share_bar() -> float:
@@ -6420,6 +6572,19 @@ def _piece_rank(res: dict) -> tuple:
     if c is None:
         return (1, float(res.get("score") or 0))
     return (1 if c.get("admissible") else 0, float(c.get("preference") or 0))
+
+
+def _lanes_both(comp: dict | None) -> int:
+    """How many of a composition's lanes have fronts on both sides for at least
+    `streetplan.LANE_FRONTED` of their length (`lane_fronts`, recorded as `sides`)."""
+    from ..streetplan import LANE_FRONTED
+    n = 0
+    for r in ((comp or {}).get("relationships") or []):
+        sides = r.get("sides") or {}
+        if str(r.get("name", "")).startswith("lane_") and len(sides) == 2 \
+                and min(sides.values()) >= LANE_FRONTED:
+            n += 1
+    return n
 
 
 def _failed_relationships(comp: dict | None) -> list:
@@ -6479,7 +6644,10 @@ def _screen_by_compile(rnd, spec: dict, place: dict, ds: list, got: dict, access
     routes = [(int(c[0]), int(c[1])) for c in art.get("cells") or []] or None
     rows, seen = [], set()
     for alt in got["alternatives"]:
-        key = json.dumps([p["rect"] for p in alt["pieces"]])
+        # an arrangement is its pieces, their levels and what each is asked to hold: two
+        # arrangements with one cut at different levels (`parentdemand.refit`) are two
+        key = json.dumps([[p["rect"], p.get("level"), p.get("programme")]
+                          for p in alt["pieces"]])
         if key in seen:
             continue
         seen.add(key)
@@ -6497,6 +6665,7 @@ def _screen_by_compile(rnd, spec: dict, place: dict, ds: list, got: dict, access
         houses = markets = courts = belong = 0
         per = []
         composed, admissible, preference, failed = False, True, 0.0, []
+        lanes_both = 0
         for d0 in pieces:
             best_d = None
             street = _street_layout(spec, d0)
@@ -6523,12 +6692,24 @@ def _screen_by_compile(rnd, spec: dict, place: dict, ds: list, got: dict, access
             # its relationships, and that carries none of the ring's landmarks, is the
             # ring's open land -- a hillside or a lake edge -- and is adopted as that,
             # with the houses it was asked for on the record as the strip's shortfall,
-            # rather than failing the strip whose other pieces make the quarter
+            # rather than failing the strip whose other pieces make the quarter **...and
+            # only ground that cannot hold one** (the parent composition round). This
+            # also opened well-founded pieces whose composition failed, so a failed
+            # inhabited piece became open land and the strip stayed admissible with its
+            # programme quietly smaller. A piece that founds most of itself
+            # (`SECTOR_NEGOTIATE_SHARE`), or that was cut to hold a module of the
+            # fabric, stays inhabited: its failure makes the arrangement inadmissible
+            # and goes to the owner of the proposal, not to the landscape.
+            mod_role = ((d0.get("sector") or {}).get("module") or {}).get("role")
+            well = (float((d0.get("sector") or {}).get("share") or 0)
+                    >= pp_mod_share_bar() or mod_role in ("homes", "arrival"))
             if carries and comp is not None and not comp.get("admissible") \
+                    and not well \
                     and not (d0.get("landmarks") is None
                              and _piece_has_landmarks(spec, d0)) \
                     and not d0.get("landmarks"):
                 d0["sector"] = dict(d0.get("sector") or {}, open=True,
+                                    module=_terrain_landscape(d0.get("sector") or {}),
                                     open_why=(f"no street composition of it holds its "
                                               f"relationships (best: "
                                               f"{comp.get('houses')} dwelling(s), failing "
@@ -6553,6 +6734,8 @@ def _screen_by_compile(rnd, spec: dict, place: dict, ds: list, got: dict, access
                 # an opened piece is open ground: its composition is not what is built
                 if not (d0.get("sector") or {}).get("open"):
                     preference += float((comp or {}).get("preference") or 0)
+                    # the brief's residential lane: doors facing each other across it
+                    lanes_both += _lanes_both(comp)
             elif best_d is not None:
                 # a legacy piece among composed ones is ranked by its old score
                 preference += float(best_d.get("score") or 0)
@@ -6576,6 +6759,7 @@ def _screen_by_compile(rnd, spec: dict, place: dict, ds: list, got: dict, access
                "districts": pieces}
         if composed:
             row.update(composed=True, admissible=admissible, preference=preference,
+                       lanes_both=lanes_both, step=_arrival_step(pieces, access),
                        failed=failed)
         rows.append(row)
         print(f"   sectors: screened `{alt['arrangement']}` by compile -- {houses} "
@@ -6594,7 +6778,16 @@ def _screen_by_compile(rnd, spec: dict, place: dict, ds: list, got: dict, access
         # is tier 1 only when admissible, and ranks by its preference
         if not r.get("composed"):
             return (1, r["score"], -r["cuts"])
-        return (1 if r["admissible"] else 0, r["preference"], -r["cuts"])
+        # admissible first; then whether the quarter has a lane lived on from both sides
+        # -- the residential lane the neighbourhood's brief owes, which a preference
+        # summed over pieces can buy back with shops -- then preference ...and whether
+        # the arrival and the pieces beside it stand within a terrace step of each
+        # other, so the streets that cross between them are streets and not ramps over a
+        # retaining face (`_arrival_step`)
+        step_ok = 1 if (r.get("step") is None
+                        or int(r["step"]) <= int(pp_mod_terrace_step())) else 0
+        return (1 if r["admissible"] else 0, min(1, int(r.get("lanes_both") or 0)),
+                step_ok, r["preference"], -r["cuts"])
     best = max(rows, key=_rank)
     out_rows = [{k: v for k, v in r.items() if k != "districts"} for r in rows]
     scored = (f"houses + {SCREEN_MARKET} x landmarks + {SCREEN_COURT} x courts "
@@ -6625,7 +6818,15 @@ def _screen_piece(rnd, spec, trial_place, d, form, ring_level, vol, routes, type
     two rows deep cannot compose one, and only the layout can give it a deeper block."""
     from .. import arrange as arrange_mod, placeplan as pp_mod, spec as spec_mod
     try:
-        g = pp_mod.district_ground(d, vol, ring_level=ring_level, routes=routes)
+        # **screened at the level it will be laid at** (the parent composition round): a
+        # piece's negotiated level is the laid level (`_stage_district_ground`), so an
+        # arrangement whose levels were chosen for its modules is compiled at those
+        # levels, not at whatever level its own feasible columns would pick
+        lvl_neg = (d.get("sector") or {}).get("level")
+        g = (pp_mod.district_ground(d, vol, ring_level=int(lvl_neg), routes=routes,
+                                    steps=0)
+             if lvl_neg is not None else
+             pp_mod.district_ground(d, vol, ring_level=ring_level, routes=routes))
         d["ground"], d["level"] = g, int(g["level"])
         part = pp_mod._district_part(spec, d)
         role = spec_mod.district_role(spec, d)
@@ -6725,7 +6926,7 @@ SCREEN_BELONG = 6
 #: its arrangement search and the strip negotiation. A decision screened by a compiler
 #: that has since changed is not reapplied as though the new compiler had made it.
 SECTOR_COMPILER_MODULES = ("district_compile.py", "arrange.py", "placeplan.py", "streetplan.py",
-                           "formplan.py")
+                           "formplan.py", "parentdemand.py")
 
 #: The fields of a ring's defining part that are prose to a sector decision: the spec's
 #: own prose list, and `notes`, which the spec fingerprint keeps for a wall's mass and
@@ -6844,7 +7045,7 @@ def _negotiate_sectors(rnd, place: dict, decls: dict, vol) -> bool:
         recorded under `revised`. Under a local scope only strips inside it are negotiated;
         a stale decision outside the scope is kept applied and recorded as stale there.
         Returns True where the place changed.
-        
+
     """
     from .. import placeplan as pp_mod, local as _local, district_compile as dc
     lay = place.get("layout") or {}
@@ -7048,11 +7249,16 @@ def _negotiate_sectors(rnd, place: dict, decls: dict, vol) -> bool:
             # resolution round): a frontage piece two dwelling lots deep, the lot being
             # what the dwelling's form plan needs, not the character's number
             front_depth = None
+            forms_ = None
             with contextlib.suppress(Exception):
                 ch_ = dc.character_of(part, ds[0]) or {}
                 if str(ch_.get("layout") or "") == "street":
-                    from .. import formplan as _fp
+                    from .. import formplan as _fp, parentdemand as _pd
                     lead = next(iter((ds[0].get("demand") or {}).get("types") or []), None)
+                    # what the neighbourhood's forms need of the cut (the parent
+                    # composition round): the section and modules of its street
+                    # arrangements, asked of the same form plans the compiler asks
+                    forms_ = _pd.forms(ch_, lead)
                     dw = dict((ch_.get("forms") or {}).get("dwelling") or {})
                     if ch_.get("court_least") and "court" not in dw:
                         dw["court"] = int(ch_["court_least"])
@@ -7066,7 +7272,8 @@ def _negotiate_sectors(rnd, place: dict, decls: dict, vol) -> bool:
                     depth_min = min(depth_min, front_depth)
             got = pp_mod.negotiate_strip(vol, ds, ring_level=int(level),
                                          depth_min=depth_min, routes=routes,
-                                         access=access, front_depth=front_depth)
+                                         access=access, front_depth=front_depth,
+                                         forms=forms_)
             if not got.get("measured"):
                 # recorded too, so a later pass knows this strip was asked
                 out["considered"].append({"ring": rname, "from": [d["name"] for d in ds],
@@ -7079,6 +7286,7 @@ def _negotiate_sectors(rnd, place: dict, decls: dict, vol) -> bool:
                    "identity": ident,
                    "least_share": equal["least_share"], "chosen": got["chosen"],
                    "gain": got["gain"],
+                   **({"demand": got["demand"]} if got.get("demand") else {}),
                    "alternatives": [{k: v for k, v in a.items()} for a in
                                     got["alternatives"]]}
             out["considered"].append(row)
@@ -7190,7 +7398,7 @@ def _grade_roads_to_districts(rnd, place: dict) -> dict | None:
         such districts is relaxed into a ramp of at most one block a column, within
         `ROAD_GRADE_REACH` of them. Under a local scope only cells inside it move; the record
         says how many moved and why (`arterials.graded_to_districts`).
-        
+
     """
     from .. import local as _local, district_compile as dc
     art = place.get("arterials") or {}
@@ -7276,7 +7484,7 @@ def _stage_district_ground(rnd, place: dict, vol) -> dict:
         With no volume this writes an **unmeasured** record rather than nothing, so every
         consumer downstream can tell "the ground was not read" from "the ground is fine" --
         which is the whole of what `arrange.certificate_for`'s `ground=None` could not say.
-        
+
     """
     from .. import placeplan as pp_mod
     lay = place.get("layout") or {}
@@ -7417,7 +7625,7 @@ def _stage_arterials(rnd, place: dict, decls: dict, vol) -> dict | None:
 
         Kept, for `stage_plateau`'s reason: a road re-routed after a district has been
         planned against it is a different road, and the districts joined the first one.
-        
+
     """
     # **Kept for the plan they were routed from, and no longer.** The rule is that a
     # road re-routed after a district has been planned against it is a different road --
@@ -7637,7 +7845,7 @@ def _drop_assembled(rnd) -> None:
         scope meets and merges the result into the lanes outside it, and deleting
         `network.json` here left that merge nothing to keep -- the city outside a local
         revision lost its roads and thresholds to a re-arranged district inside it.
-        
+
     """
     for f in _assembled_files(rnd):
         if os.path.exists(rnd.rel(f)):
@@ -7663,7 +7871,7 @@ def _plan_volume(rnd, be):
         A plan is drawn before the round caches its base volume, so this is the live
         backend's world where there is one and the cache where the round has already made
         it. With neither, the ground half of the validation says so rather than passing.
-        
+
     """
     try:
         return be.volume
@@ -7679,7 +7887,7 @@ def validate(rnd, be, parts: list) -> dict:
         what the planner was told and what it had said are both on disk. The plan file
         itself is removed, which is what makes `run()`'s wait loop ask again: the stage is
         re-entered, sees no plan, and waits for the next one.
-        
+
     """
     from .. import pipeline
     decls = type_declarations(parts)
@@ -7710,7 +7918,7 @@ def _hand_back(rnd, fails: list, attempt: int, decls: dict) -> None:
 
         In the same brief, not a new one: the planner is answering the question it was
         already asked, and a second brief would be a second experiment.
-        
+
     """
     from .. import pipeline
     p = rnd.rel("plan.json")

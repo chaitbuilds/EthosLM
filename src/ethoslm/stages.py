@@ -364,7 +364,7 @@ def run_cycles(brief, site, *, cycles, see: bool = False, build=None,
         program where it was and is recorded as such. That is deliberate: the alternative
         is to end the candidate on one typo, and a candidate lost at cycle 2 measures the
         model's typing rather than the loop.
-        
+
     """
     if build is None:
         raise ValueError("run_cycles() needs a build callable -- no model in here")

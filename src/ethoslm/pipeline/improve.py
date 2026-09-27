@@ -94,7 +94,7 @@ def owner_actions(owner: str) -> tuple:
         withdrawn changes what selection offers without a second table having to be edited
         in step. Falls back to the static table, which is still filtered against
         `placesolve.REALLOCATE_ACTIONS` and `NOT_OURS`.
-        
+
     """
     from .. import placesolve
     static = tuple(OWNER_ACTIONS.get(owner, ()))
@@ -109,6 +109,12 @@ def owner_actions(owner: str) -> tuple:
     # the parent's piece level is this stage's own revision path (`_apply_relevel`)
     if owner == "layout" and "relevel" not in got:
         got = got + ("relevel",)
+    # ...and its extent (`_apply_recut`, the parent composition round), and whether an
+    # open piece is landscape kept as found (`_apply_landscape`)
+    if owner == "layout" and "recut" not in got:
+        got = got + ("recut",)
+    if owner == "layout" and "landscape" not in got:
+        got = got + ("landscape",)
     return tuple(a for a in got if a not in NOT_OURS)
 
 
@@ -156,7 +162,7 @@ def _tokens_of(word: str) -> set:
         the row was never material, never selected, and never acted on. `envelope`'s own
         vocabulary already maps one to the other (`FEATURE_WORDS`: `stalls` is asked for by
         `market`, `stalls`, `bazaar`); this reads that table in the direction the ledger needs.
-        
+
     """
     from .. import envelope
     w = str(word or "").lower()
@@ -179,7 +185,7 @@ def _required_tokens(intent_rec: dict | None, rnd=None) -> set:
         writes `required` onto each district), those tokens are used as well: that binding is
         the authority on what is required of what, and re-deriving requirements from the raw
         sentence is how this function came to disagree with the layer it feeds.
-        
+
     """
     out = set()
     for r in (intent_rec or {}).get("requirements") or []:
@@ -205,7 +211,7 @@ def required_by_part(rnd) -> dict:
         part's demand onto each district row), which is why this can be read without
         re-resolving anything. Empty where the plan predates the binding, which reads as "not
         bound" and never as "nothing is required".
-        
+
     """
     if rnd is None:
         return {}
@@ -227,7 +233,7 @@ def _required_for(rnd, part: str, intent_rec: dict | None) -> set:
 
         A part-bound answer is the better one: a `stalls` constraint on a cottage is the
         cottage's own business, and the same constraint on the market floor is the request's.
-        
+
     """
     by_part = required_by_part(rnd)
     mine = set()
@@ -261,7 +267,7 @@ def feature_evidence(rnd) -> dict:
         constraint was structurally unclosable while appearing to be offered a chance. This
         is the measure those rows are actually about: what construction emitted for that
         part, and what the final-world predicates said about it.
-        
+
     """
     out: dict = {}
     rows = [r for w in ((_load(rnd.rel("parts.json")) or {}).get("waves") or [])
@@ -387,7 +393,7 @@ def _estimate_vs_built(rnd, cycle: dict) -> dict | None:
         named for what they are, and `unmeasured` where construction reported no footprint
         for that district's leaves. This is the round's "label estimates honestly and compare
         them with emitted geometry after building", made a record rather than a sentence.
-        
+
     """
     act = cycle.get("action_record") or {}
     cert = act.get("certified") or {}
@@ -473,7 +479,7 @@ def _apply_relevel(rnd, be, spec: dict, doc: dict) -> dict:
         plan is laid out again and the lanes re-routed. The rebuild re-cuts the ground from the
         baseline. Refused, with nothing changed, where a level is outside the ring's offered
         steps or the piece's compile at it is not admissible.
-        
+
     """
     from .. import placeplan as pp_mod, local as _local, deps as _deps
     from . import stages_media
@@ -558,6 +564,194 @@ def _apply_relevel(rnd, be, spec: dict, doc: dict) -> dict:
                                         "circulation": (circ or {}).get("status")}}
 
 
+def _apply_recut(rnd, be, spec: dict, doc: dict) -> dict:
+    """**The parent's extent for a piece, revised** (the parent composition round).
+
+        `{"type": "recut", "rects": {district: [x0, z0, x1, z1]}}`. A ring strip's pieces are
+        cut by the sector decision (`sectors.json`); a reading that finds a piece's extent
+        carrying ground its fabric does not use -- or missing ground it needs -- names the
+        rectangle it should have, and this revises the decision record (the old rectangle
+        and why kept beside it), withdraws the pieces' plans, lays the place out again and
+        re-routes the lanes, exactly as `_apply_relevel` does for a level. Pieces must stay
+        inside their strip's source rectangles and must not overlap. A piece's `module`
+        (`parentdemand.refit`) is kept: the modules it holds are re-asked of the compiler on
+        the new ground, and the revision is refused where the compile of a revised piece
+        that carries buildings is not admissible.
+
+    """
+    from .. import local as _local, deps as _deps
+    from . import stages_media
+    rects = {str(k): [int(v) for v in r] for k, r in ((doc or {}).get("rects") or {}).items()}
+    if not rects:
+        return {"applied": False, "refused": "a recut names {district: [x0, z0, x1, z1]}"}
+    rec_p, place_p = rnd.rel("sectors.json"), rnd.rel("plan.place.json")
+    if not (os.path.exists(rec_p) and os.path.exists(place_p)):
+        return {"applied": False, "refused": "no sector decision or place plan to revise"}
+    sec = json.load(open(rec_p))
+    place = json.load(open(place_p))
+    by_name = {d.get("name"): d for d in place.get("districts") or []}
+    snap = stages_media._snapshot(rnd)
+    changed = []
+    for name, r in rects.items():
+        d = by_name.get(name)
+        strip = next((s for s in sec.get("adopted") or []
+                      if any(x.get("name") == name for x in s.get("districts") or [])), None)
+        if d is None or strip is None:
+            return {"applied": False, "refused": f"{name}: not a negotiated piece"}
+        src = [x for x in strip.get("sources") or []
+               if x.get("name") == (d.get("sector") or {}).get("from")]
+        if src and not (src[0]["x0"] <= r[0] <= r[2] <= src[0]["x1"]
+                        and src[0]["z0"] <= r[1] <= r[3] <= src[0]["z1"]):
+            return {"applied": False,
+                    "refused": f"{name}: {r} leaves its strip's source rectangle "
+                               f"{[src[0][k] for k in ('x0', 'z0', 'x1', 'z1')]}"}
+        for other in strip["districts"]:
+            if other.get("name") in rects or other.get("name") == name:
+                continue
+            o = [other["x0"], other["z0"], other["x1"], other["z1"]]
+            if not (r[2] < o[0] or o[2] < r[0] or r[3] < o[1] or o[3] < r[1]):
+                return {"applied": False,
+                        "refused": f"{name}: {r} overlaps {other.get('name')} {o}"}
+        was = [d["x0"], d["z0"], d["x1"], d["z1"]]
+        if was == r:
+            return {"applied": False, "refused": f"{name} already stands on {r}"}
+        cols = (r[2] - r[0] + 1) * (r[3] - r[1] + 1)
+        for x in list(strip["districts"]) + [d]:
+            if x.get("name") != name:
+                continue
+            x["x0"], x["z0"], x["x1"], x["z1"] = r
+            x["rect_columns"] = x["scope_columns"] = int(cols)
+        strip.setdefault("revised_rects", []).append(
+            {"district": name, "was": was, "now": r,
+             "caused_by": list((doc or {}).get("caused_by") or []),
+             "why": str((doc or {}).get("why") or "")[:400],
+             "t": time.strftime("%Y-%m-%dT%H:%M:%S")})
+        changed.append({"district": name, "was": was, "now": r})
+        for f in (rnd.rel(f"plan.district.{name}.json"),
+                  rnd.rel(f"district_{name}_compiled.json")):
+            if os.path.exists(f):
+                os.remove(f)
+    json.dump(sec, open(rec_p, "w"), indent=1)
+    json.dump(place, open(place_p, "w"), indent=1)
+    for f in ("plan.json", "plots.json") + (
+            ("network.json", "circulation.json") if _local.scope_of(rnd) is None else ()):
+        if os.path.exists(rnd.rel(f)):
+            os.remove(rnd.rel(f))
+    _local.retire_plans(rnd)
+    with contextlib.suppress(ValueError):
+        _deps.stamp(rnd, "plan", outputs=["plan.place.json"],
+                    note=f"kept across a parent recut of "
+                         f"{', '.join(c['district'] for c in changed)}")
+    got = stages_media._replan(rnd, be)
+    p = (got.get("plan") or {}) if isinstance(got, dict) else {}
+    ok = (not p.get("stop") and p.get("status") not in ("error", "needs_model")
+          and os.path.exists(rnd.rel("plan.json")))
+    comp_bad = []
+    for c in changed:
+        d_ = next((x for x in json.load(open(place_p)).get("districts") or []
+                   if x.get("name") == c["district"]), {})
+        if (d_.get("sector") or {}).get("open") or not int(d_.get("structures") or 0):
+            continue
+        rec_c = _load(rnd.rel(f"district_{c['district']}_compiled.json")) or {}
+        comp = rec_c.get("composition") or {}
+        if comp and not comp.get("admissible"):
+            comp_bad.append(f"{c['district']}: {comp.get('failed')}")
+    if not ok or comp_bad:
+        stages_media._restore(rnd, snap)
+        return {"applied": False, "rolled_back": True,
+                "refused": ("the recut was not applied and the plan stands as it was: "
+                            + ("; ".join(comp_bad) if comp_bad else
+                               f"the place laid out again did not come back planned "
+                               f"({p.get('status')}: {p.get('error')})"))}
+    circ = _pipeline.stage_circulation(rnd, be, {})
+    return {"applied": True, "action": {"action": "recut", "rects": rects,
+                                        "changed": changed,
+                                        "circulation": (circ or {}).get("status")}}
+
+
+def _apply_landscape(rnd, be, spec: dict, doc: dict) -> dict:
+    """**An open piece, revised to landscape kept as found** (the parent composition
+        round).
+
+        `{"type": "landscape", "districts": {district: "as_found"}}`. A piece the strip left
+        open is still compiled as open land, and its groves and gardens are sited on one
+        level each; on a hill that is a quarry. The parent owns what an open piece is for:
+        this revises the sector decision so the named open pieces are landscape kept as found
+        (`sector.module` `{"role": "landscape", "ground": "as_found"}`), withdraws their
+        plans, lays the place out again (`_arrange_districts` lays nothing on such a piece)
+        and re-routes the lanes. Refused for a piece that carries buildings: landscape is what
+        a piece is when nothing is asked of it, never a way to take a quarter's programme
+        away.
+
+    """
+    from .. import local as _local, deps as _deps
+    from . import stages_media
+    names = {str(k): str(v) for k, v in ((doc or {}).get("districts") or {}).items()}
+    if not names:
+        return {"applied": False, "refused": "a landscape revision names {district: "
+                                             "\"as_found\"}"}
+    rec_p, place_p = rnd.rel("sectors.json"), rnd.rel("plan.place.json")
+    if not (os.path.exists(rec_p) and os.path.exists(place_p)):
+        return {"applied": False, "refused": "no sector decision or place plan to revise"}
+    sec = json.load(open(rec_p))
+    place = json.load(open(place_p))
+    by_name = {d.get("name"): d for d in place.get("districts") or []}
+    snap = stages_media._snapshot(rnd)
+    changed = []
+    for name, how in names.items():
+        if how != "as_found":
+            return {"applied": False, "refused": f"{name}: `{how}` is not a landscape "
+                                                 f"treatment this revision knows"}
+        d = by_name.get(name)
+        strip = next((s for s in sec.get("adopted") or []
+                      if any(x.get("name") == name for x in s.get("districts") or [])), None)
+        if d is None or strip is None:
+            return {"applied": False, "refused": f"{name}: not a negotiated piece"}
+        if not (d.get("sector") or {}).get("open") or int(d.get("structures") or 0) > 0:
+            return {"applied": False,
+                    "refused": f"{name}: carries buildings; a quarter is not made "
+                               f"landscape by a revision"}
+        mod = {"role": "landscape", "ground": "as_found",
+               "why": str((doc or {}).get("why") or "")[:300]}
+        for x in list(strip["districts"]) + [d]:
+            if x.get("name") == name:
+                x.setdefault("sector", {})["module"] = dict(mod)
+        strip.setdefault("revised_landscape", []).append(
+            {"district": name, "now": "as_found",
+             "caused_by": list((doc or {}).get("caused_by") or []),
+             "why": str((doc or {}).get("why") or "")[:400],
+             "t": time.strftime("%Y-%m-%dT%H:%M:%S")})
+        changed.append(name)
+        for f in (rnd.rel(f"plan.district.{name}.json"),
+                  rnd.rel(f"district_{name}_compiled.json")):
+            if os.path.exists(f):
+                os.remove(f)
+    json.dump(sec, open(rec_p, "w"), indent=1)
+    json.dump(place, open(place_p, "w"), indent=1)
+    for f in ("plan.json", "plots.json") + (
+            ("network.json", "circulation.json") if _local.scope_of(rnd) is None else ()):
+        if os.path.exists(rnd.rel(f)):
+            os.remove(rnd.rel(f))
+    _local.retire_plans(rnd)
+    with contextlib.suppress(ValueError):
+        _deps.stamp(rnd, "plan", outputs=["plan.place.json"],
+                    note=f"kept across a parent landscape revision of {', '.join(changed)}")
+    got = stages_media._replan(rnd, be)
+    p = (got.get("plan") or {}) if isinstance(got, dict) else {}
+    ok = (not p.get("stop") and p.get("status") not in ("error", "needs_model")
+          and os.path.exists(rnd.rel("plan.json")))
+    if not ok:
+        stages_media._restore(rnd, snap)
+        return {"applied": False, "rolled_back": True,
+                "refused": (f"the landscape revision was not applied and the plan stands "
+                            f"as it was: the place laid out again did not come back "
+                            f"planned ({p.get('status')}: {p.get('error')})")}
+    circ = _pipeline.stage_circulation(rnd, be, {})
+    return {"applied": True, "action": {"action": "landscape", "districts": names,
+                                        "changed": changed,
+                                        "circulation": (circ or {}).get("status")}}
+
+
 def _rebuild(rnd, be, results: dict) -> dict:
     """Parts, finish, the construction check, the inspection: the affected output built
     and looked at again. Returns the first stop or pending, else the inspection result."""
@@ -632,7 +826,7 @@ def _findings(rnd) -> tuple:
         editor, inside a directory this project calls kept byte for byte, and the independent
         reader was right to name it. `promote.correct` records a correction; this applies it
         on the way in and leaves `inspection/views.json` exactly as the reader wrote it.
-        
+
     """
     from . import promote
     rec = _load(rnd.rel("inspection", "views.json")) or {}
@@ -691,11 +885,12 @@ def _act_key(hint) -> str | None:
         else the name is the whole of it. A `character` or `voice` revision is a name and a
         document, and two different documents are two different actions. See
         `obligation.tried_here` for the measurement that made this necessary.
-        
+
     """
     if not isinstance(hint, dict):
         return None
-    body = {k: hint.get(k) for k in ("characters", "voice", "levels")
+    body = {k: hint.get(k) for k in ("characters", "voice", "levels", "rects",
+                                     "districts")
             if hint.get(k) is not None}
     if not body:
         return None
@@ -721,7 +916,7 @@ def _routed(rnd, spec: dict, row: dict, finding: dict | None) -> str | None:
 
         Returns `None` where the router has no answer, and the caller falls back to the
         owner's inventory exactly as it did.
-        
+
     """
     from .. import placesolve
     place = _load(rnd.rel("plan.place.json"))
@@ -753,7 +948,7 @@ def _judge_trial(rnd, rec: dict, here: str) -> dict | None:
           3. neither: the trial cost a build and bought nothing measurable.
 
         Only (2) promotes. (1) and (3) put the accepted candidate back and keep the reason.
-        
+
     """
     from . import promote
     rows = promote.load(rnd)
@@ -1042,7 +1237,24 @@ def stage_improve(rnd, be, results: dict) -> dict:
                 # `placesolve.reallocate` is what executes one, whichever owner the
                 # reading gave it to.
                 from .. import arrange as _arr
-                if act_name == "relevel":
+                if act_name == "landscape":
+                    _doc = hint if isinstance(hint, dict) else (
+                        r.get("action") if isinstance(r.get("action"), dict) else {})
+                    got = _apply_landscape(rnd, be, spec, {
+                        **(_doc if isinstance(_doc, dict) else {}),
+                        "caused_by": [r["id"]],
+                        "why": f"the improve stage acting on {r['id']}: {r.get('says')}"})
+                elif act_name == "recut":
+                    _doc = hint if isinstance(hint, dict) else (
+                        r.get("action") if isinstance(r.get("action"), dict) else
+                        next((a.get("record") for a in reversed(r.get("actions") or [])
+                              if isinstance(a.get("record"), dict)
+                              and a["record"].get("rects")), None) or {})
+                    got = _apply_recut(rnd, be, spec, {
+                        **(_doc if isinstance(_doc, dict) else {}),
+                        "caused_by": [r["id"]],
+                        "why": f"the improve stage acting on {r['id']}: {r.get('says')}"})
+                elif act_name == "relevel":
                     # the reading's document, or -- where the row came from another
                     # reading than the one on disk -- the ledger row's own
                     _doc = hint if isinstance(hint, dict) else (

@@ -1,117 +1,101 @@
 # EthosLM
 
-**One sentence in, a finished place out** is the goal. EthosLM is an open research project
-building a general architecture for creating convincing Minecraft places from natural
-language. A request such as “Build a walled city” or “Build a fishing village” should lead
-to a complete place whose organisation, buildings and landscape emerge from the request,
-references and reusable capabilities.
+EthosLM builds Minecraft places from a sentence. A terminal agent reads the request,
+writes the place's programme and proposes whole-place designs; the library compiles the
+chosen design into streets, lots, ground and buildings and constructs it region by
+region. No model API is needed: every judgement is a staged job with a prompt to read
+and a file to write, which a terminal agent (or a person) answers.
 
-The immediate target is an expansive, beautiful city, followed by smaller contrasting
-examples. The system is under development; reliable autonomous composition and finished
-city quality remain open work.
+It has produced a large walled city and a small desert village through agent-guided
+design and iteration. The city is the accepted demo; the village demonstrated transfer
+but its repetitive composition was not visually accepted. Small-place layouts currently
+favour houses on lanes round a centre. Richer functional variety and other organisations
+remain limited. Unsupported schema values are refused; semantic coverage still needs
+agent review.
 
-## Architecture
+## Install
 
-**The model composes; the library builds.** Interpretation and references produce a
-programme of requirements and relationships. Capability selection, spatial design and
-ground preparation turn that programme into buildable parts. Generators construct the
-buildings, boundaries and open spaces; inspection feeds findings back to the decisions
-that can address them. Terminal agents can answer staged jobs without a model API.
+Python 3.12 or newer, and a Minecraft Java save whose terrain is generated.
 
-A place is hierarchical: regions contain streets, buildings and open land, and a large
-compound can contain smaller parts. Types supply reusable forms; voices supply material
-and roof profiles. Compiled building sites carry pad, floor, orientation, entrance and
-landing decisions into routing and construction.
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install --no-deps gdpc==8.1.0
+scripts/ethoslm doctor --world /path/to/save
+```
 
-Physical checks measure emitted blocks, access and required features. Visual inspection
-evaluates composition and character. A feasible plan or a passing proxy does not establish
-a convincing place. Revisions need current evidence, explicit dependencies and recoverable
-candidates. Local rebuilds reuse unaffected work.
+On NixOS, put native library paths in an untracked `.env` (`NIX_GLIBC`, `NIX_GCCLIB`,
+`NIX_ZLIB`) or set `ETHOSLM_LIBRARY_PATH`. `ETHOSLM_PYTHON` names another interpreter.
+Views are textured when `ETHOSLM_MC_JAR` names a Minecraft client jar, flat otherwise.
 
-Shared finishing can add contextual materials and detail over owned surfaces. Its value
-must be demonstrated in built views alongside the larger architectural decisions.
+## A place from a sentence
 
-## Where it stands
+```sh
+scripts/ethoslm start "Build a small sandstone oasis village with flat-roofed homes, shaded lanes and gardens around a pool of water." \
+    --name oasis --world /path/to/save
+```
 
-The production path reaches whole small builds and city sections. Courtyard and shop
-houses now share constructive geometry across lot admission and construction: usable
-rooms, courts, storeys and row-end conditions determine what fits. Built inspection and
-production revisions improve access and ground while protecting working buildings.
+`start` reads the save's terrain once into `out/oasis-atlas/` (heights, water, biomes;
+the save is only read) and runs until the first job. Then, until the place is built:
 
-The latest evaluated section has usable courtyard homes, two-storey shops and a market
-with built fronts. It still reads as separate clusters rather than a complete neighbourhood.
-Parent allocation retains older land budgets, and composition checks can exempt missing
-frontage. Current work connects complete architectural and spatial demand to parent layout,
-so streets, district dimensions and site choices can change before construction.
+```sh
+scripts/ethoslm status oasis     # WORKING, WAITING (on a job), BLOCKED, or DESIGNED
+# the agent reads the prompt named after READ and writes the file named after WRITE
+scripts/ethoslm resume oasis
+```
 
-City hierarchy, connected transitions, expansion, shared finishing and demo capture remain.
+The jobs, in order: the sentence read into requirements; the place spec (kind, setting,
+palette); two or three whole-place designs, written against the candidate sites, the
+forms the library has and the grains it composes; and the adoption of one after they
+are compiled and compared. An answer that does not read is handed back with the reason
+(`NOTE`), and `status` keeps saying WAITING until it is answered. Waiting is not success.
 
-## Layout
+When the design is adopted, `resume` builds every region **dry** -- in `out/oasis/`, off
+the save's unaltered ground -- and draws views (`out/oasis/design/views/`). Nothing is
+written into any world. `scripts/ethoslm views oasis --move` also draws a five-second
+camera move over it (`views/move/move.gif`) and prints the same move as two `/tp` poses.
 
-    src/ethoslm/  the library, linter, walk model, judge, deterministic preview and the
-                      model adapter; pipeline/ holds the staged driver (plan, build,
-                      measure, media, and the seam where authoring is blinded)
-    types/            one file per kind of part: FORM, ROLE, KIND, PARAMS, NEEDS and
-                      build(b, part, seed, **params). A part arrives already placed,
-                      carrying the settlement's palette; a type names neither ground
-                      nor material
-    voices/           one JSON per style: material roles, roof shape, prose for the
-                      brief. Checked on load; the model can write one from a sentence
-    rounds/           one JSON per run: the input, the flags, and the thresholds that were
-                      registered before it ran
-    scripts/          round.py (run a config), check_types.py, type_needs.py,
-                      terrain_bank.py, test_*.py (the offline suites), server scripts
-    fixtures/         cached worlds and saved plans that the offline tools rely on
-    out/, run/        renders, caches, worlds, server. Never committed
+## Delivering a place
 
-## Running it
+Delivery writes the built regions into a save you choose through a running server with
+the GDMC-HTTP mod. Use a **copy** of the save the terrain was read from, and never open
+one save in two servers.
 
-Linux or macOS, Python 3.12 or newer. On Windows, use WSL. On NixOS only, see **Native
-libraries** at the end.
+```sh
+cp -r /path/to/save /path/to/oasis-save
+# serve the copy with a Fabric server and the GDMC-HTTP mod; `scripts/server.sh` starts
+# one by hand (ETHOSLM_SERVER_DIR names the server directory, ETHOSLM_JAVA the java)
+scripts/ethoslm deliver oasis --save /path/to/oasis-save --host http://localhost:9000
+scripts/ethoslm deliver oasis --save /path/to/oasis-save --host http://localhost:9000 --yes
+```
 
-    python3 -m venv .venv
-    .venv/bin/python -m pip install -r requirements.txt
-    .venv/bin/python -m pip install --no-deps gdpc==8.1.0   # see requirements.txt
-    source scripts/env.sh
+The first command only says what it would do. The save is snapshotted under
+`run/snapshots/` before the first write; the command prints a `/tp` pose to stand at.
+To walk the save with an unmodded client, restart its server with the GDMC-HTTP mod
+moved out of `mods/`.
 
-**The offline suites.** No server, no model, no key. Every suite that writes blocks says so
-and skips.
+## Terminal agents and model APIs
 
-    for t in scripts/test_*.py; do "$PY" "$t" || echo "FAILED $t"; done
+A terminal agent answers the jobs by reading each prompt, looking at the images it
+names (candidate site maps, plan previews) and writing JSON. `models.json` can route
+roles to an API for supported stages; the design workflow above relies on a supervising
+agent. A fully unattended text-to-world workflow has not been demonstrated.
 
-**A place, built offline from a world we ship.** A saved plan on a cached world that comes
-with the repository: placed, built out of the committed types, linted, with no server and no
-model call anywhere in it. About three minutes.
+## Repository
 
-    "$PY" scripts/round.py rounds/example.json --dry-run --stage parts,finish,lint
+- `src/ethoslm/`: interpretation, design compiler, ground, construction, measurement.
+- `types/`, `voices/`: building forms with their measured lot sizes, and palettes.
+- `scripts/`: the entry point, the round controller, a server helper and the tests.
+- `fixtures/`: small cached terrain and recorded plans the offline tests read.
+- `out/`, `run/`: generated state, atlases, snapshots and worlds (not version controlled).
 
-**A place from a sentence.** `rounds/town.json` is one sentence and nothing else, with no
-coordinate, no size and no palette. This one calls a model, so read **Models** first.
-
-    "$PY" scripts/round.py rounds/town.json --dry-run                  # no server
-    bash scripts/mcrun.sh scripts/round.py rounds/town.json --live --wait
-
-**Models.** By default, every call to the model is handed to a supervising agent, which is
-how all of the development work was done: the run stops, writes the request to disk, and
-carries on once an answer is there. To run it without supervision, `models.json` maps each
-role to a model. The roles are the place spec, the planner, type authoring, revision and the
-vision judge. `model.py` speaks both the Anthropic and the OpenAI-compatible wire formats,
-so any hosted provider or local server works. Set `ETHOSLM_MODEL_API` and a key, or override
-a single role with `ETHOSLM_MODEL_<ROLE>`.
-
-**The pipeline runs Python that a model wrote.** That is the design, since the model writes
-programs against the library, but it does mean a run executes model-written code in your
-process and on your file system. Run it somewhere that is acceptable: a container, a
-throwaway user account, or a virtual machine.
-
-**A server.** The live path needs Minecraft with the GDMC-HTTP mod on `localhost:9000`
-(Fabric or NeoForge, GDMC-HTTP 1.8.4, WorldEdit 7.4.2, Minecraft 1.21.11). `scripts/mcrun.sh`
-runs one session: server up, build, flush to disk, server down. Nothing offline needs it.
-
-**Native libraries (NixOS only).** Put the store paths in an untracked `.env` (`NIX_GLIBC`,
-`NIX_GCCLIB`, `NIX_ZLIB`) so the wheels can find them. Everywhere else the system supplies
-them. `ETHOSLM_LIBRARY_PATH`, `ETHOSLM_PYTHON` and `ETHOSLM_JAVA` override the rest.
+`scripts/round.py rounds/example.json --dry-run --stage parts,finish,lint` builds a
+recorded plan on shipped terrain with no server and no save. Run tests with the environment's
+Python; some cases require a server or recorded inputs and skip without them. See
+[test coverage](TESTING.md) for exclusions and known failing development suites.
+Generated type code runs in the build process. The public site-reservation ledger starts
+empty; reservations from one world are not restrictions on another.
 
 ## Licence
 
-MIT. See `LICENSE`.
+See [LICENSE](LICENSE).

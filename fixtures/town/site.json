@@ -517,7 +517,6 @@
    "relief_allowed": 16,
    "why": "no candidate within the radii is flat enough at the footprint, so the innermost defining part is marked for A4's plateau and the scan is scored again against what a plateau can take"
   },
-  "size_band_dropped": null,
-  "record": "/var/lib/personal-os/staging/sessions/ethoslm/01M1T1MSSAATARVMRZFFRCCYY3/out/town/site_search.json"
+  "size_band_dropped": null
  }
 }

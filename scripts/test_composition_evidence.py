@@ -100,7 +100,7 @@ def old_verdict(rec: dict) -> dict:
 
         Reproduced here rather than imported, because the coordinator is fixing the original
         and the point of this file is to show what the rule it replaces would have said.
-        
+
     """
     ran, failed = 0, []
     for w in rec.get("waves") or []:

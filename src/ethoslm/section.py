@@ -131,7 +131,7 @@ def _building_rect(row: dict) -> list | None:
         it is what a neighbour gap is between. Falls back to the emitted extent where a type
         publishes no rectangle, and `_side_measures` records which was read and keeps the old
         figure beside the corrected one.
-        
+
     """
     r = ((row.get("emitted") or {}).get("rects") or {}).get("main")
     if isinstance(r, (list, tuple)) and len(r) == 4:
@@ -175,7 +175,7 @@ def _districts(state: str, plan: dict | None) -> list:
         and not in the third -- so on a built state every side measured 0 ground columns and
         `built_cover` came back `None`. A measurement that quietly answers None is the thing
         this module exists to refuse, so it reads all three.
-        
+
     """
     got: dict = {}
     place = _load(state, "plan.place.json") or {}
@@ -249,7 +249,7 @@ def _holds(answer: dict | None) -> bool:
         `holds: None` is not a pass and neither is `method: declared`: an unknown answer is
         owed, not satisfied. `intent._usable_verdict` counted a declared answer as a
         predicate that had run; this is the same rule written once, positively.
-        
+
     """
     return bool(answer) and answer.get("holds") is True \
         and str(answer.get("method")) in ("observed", "inferred")
@@ -290,7 +290,7 @@ def _side_measures(side: str, prefix: str, rows: list, districts: list,
         Where a row carries no `occupied_columns` it is counted in `parts_without_mass` and
         its rectangle is used, rather than being silently taken as nothing: an unmeasured
         part is not a part that built nothing.
-        
+
     """
     mine = [r for r in rows
             if r.get("kind", "plot") == "plot" and r.get("stood")
@@ -542,7 +542,7 @@ def fabric_measures(state: str, sec=None) -> dict:
             court is at least 7 across both ways; `courts.with_court` how many emit one;
           * `joins.touching_share` -- of the lots the plan joins by a party wall, the share
             whose built walls touch.
-        
+
     """
     rows = [r for r in _rows(_load(state, "parts.json")) if r.get("stood")]
     if sec and len(sec) == 4:
@@ -691,6 +691,12 @@ def ground_measures(state: str, sec, rows: list) -> dict:
             if a1 >= a0 and c1 >= c0:
                 in_piece[a0 - x0:a1 - x0 + 1, c0 - z0:c1 - z0 + 1] = True
         out["ground.water_in_pieces"] = int((wet & in_piece).sum())
+        # ...**and all of it, owned or not** (the parent composition round, the
+        # independent reader's n2 on its first candidate): a re-cut that moved the lake
+        # end out of a building piece took 32 columns off the count above and left 48
+        # columns of channel under the ring street's edge that no piece owned. Water is
+        # counted where it stands, and a revision is judged on this as well
+        out["ground.water"] = int(wet.sum())
     return out
 
 
@@ -826,7 +832,7 @@ def _court_area(row: dict, answer: dict | None) -> int:
         3x3" are the same record read two ways, and only one of them is a court a person can
         use. The predicate is not weakened to say so: a 2x2 light well that is entered, open
         and enclosed still holds, and now it holds at four columns where a reader can see it.
-        
+
     """
     cells = 0
     for c in ((answer or {}).get("evidence") or {}).get("courts") or []:
@@ -853,7 +859,7 @@ def _in_section(d: dict, sec) -> bool:
         So the denominator is the court-owing districts the section's rectangle actually
         reaches, and a district outside it is listed as out of scope rather than counted and
         failed. Everything inside it stays owed exactly as before.
-        
+
     """
     if not sec or len(sec) != 4 or d.get("x1") is None:
         return True
@@ -914,7 +920,7 @@ def _courts(rows: list, usable: dict, districts: list, sec=None, open_ground=Non
         with no evidence of any kind, by name. `subjects > asked` is a **failure** and not an
         `unmeasured`: a court nobody could ask about is a court that was not demonstrated,
         which is the whole of what this relationship claims.
-        
+
     """
     from . import demand as demand_mod
 
@@ -1110,7 +1116,7 @@ def _walk_section(state: str, sec, thresholds: list) -> dict | None:
 
         Returns None where there is no built volume to read -- which is honestly unmeasured
         and is not a pass.
-        
+
     """
     import os as _os
     from . import observe, offline
@@ -1327,7 +1333,7 @@ def _features(rows: list, usable: dict, districts: list) -> dict:
         A row that carries no `emitted.required` at all is a row `confirm` never re-read;
         the district binding answers for it as it used to, the row says so in `from`, and the
         parts it happened to are named in the measurement.
-        
+
     """
     from . import construction
 
@@ -1405,6 +1411,61 @@ def _features(rows: list, usable: dict, districts: list) -> dict:
                      "plan.json demand binding, for rows construction never re-read"]}
 
 
+#: How far apart two doors facing each other may be and still face across one lane: the
+#: lane (`streetplan.LANE`), each building's apron to its lot line and a column of slack
+#: either side.
+FACE_ACROSS = 10
+#: ...and how far along the lane they may be offset: a gate a lot's width along is the
+#: next house, not the one opposite.
+FACE_ALONG = 9
+#: How far in front of a door a routed street may be for the door to open onto it: the
+#: apron, the compiler's verge and the street's own near edge.
+FACE_STREET_REACH = 5
+
+
+def _door_face(r: dict, rect) -> dict:
+    """`{"door_at": [x, z], "door_faces": side}` for a built row whose door lies on its
+    main rectangle's edge, else {}."""
+    d = r.get("door")
+    if not d or not rect:
+        return {}
+    x, z = int(d[0]), int(d[-1])
+    x0, z0, x1, z1 = rect
+    near = {"west": abs(x - x0), "east": abs(x - x1), "north": abs(z - z0),
+            "south": abs(z - z1)}
+    side = min(near, key=near.get)
+    if near[side] > 1:
+        return {"door_at": [x, z]}
+    return {"door_at": [x, z], "door_faces": side}
+
+
+_OPP_SIDE = {"north": "south", "south": "north", "west": "east", "east": "west"}
+
+
+def _faces_across(a: dict, b: dict) -> bool:
+    """Do these two doors face each other across a lane?"""
+    fa, fb = a.get("door_faces"), b.get("door_faces")
+    if not fa or not fb or _OPP_SIDE.get(fa) != fb:
+        return False
+    (ax, az), (bx, bz) = a["door_at"], b["door_at"]
+    if fa in ("west", "east"):
+        gap = (ax - bx) if fa == "west" else (bx - ax)
+        return 0 < gap <= FACE_ACROSS and abs(az - bz) <= FACE_ALONG
+    gap = (az - bz) if fa == "north" else (bz - az)
+    return 0 < gap <= FACE_ACROSS and abs(ax - bx) <= FACE_ALONG
+
+
+def _opens_on(a: dict, road: set, reach: int) -> bool:
+    """Does this door open onto a routed street within `reach` in front of it?"""
+    f = a.get("door_faces")
+    if not f or not road:
+        return False
+    dx, dz = {"north": (0, -1), "south": (0, 1), "west": (-1, 0), "east": (1, 0)}[f]
+    x, z = a["door_at"]
+    return any((x + dx * k + ox, z + dz * k + oz) in road for k in range(1, reach + 1)
+               for (ox, oz) in ((0, 0), (dz, dx), (-dz, -dx)))
+
+
 def _functions(state: str, rows: list, plan: dict | None, reg: dict, sec) -> dict:
     """**The homes and shops that work, subject by subject, on the assembled world.**
         The design resolution round.
@@ -1418,7 +1479,7 @@ def _functions(state: str, rows: list, plan: dict | None, reg: dict, sec) -> dic
         thinning its rooms to corridors is not a working home. A shop is a part carrying a
         trade. Every subject is listed, so a revision that removes a working home can be told
         from one that replaces it (`pipeline.promote`).
-        
+
     """
     from . import formplan, offline
     from .pipeline.stages_plan import load_type
@@ -1476,14 +1537,40 @@ def _functions(state: str, rows: list, plan: dict | None, reg: dict, sec) -> dic
             if leaf.get("form"):
                 owed.update((leaf.get("form") or {}).get("params") or {})
             form_ok, form_why = formplan.row_meets(t, got, owed)
-        working = bool(stood and entered and form_ok is not False)
+        # **an unmeasured form is not a working one** (the parent composition round):
+        # where the type publishes a plan and the leaf owes a form, a measurement that
+        # did not come back (`form_ok` None) is unknown evidence, and a home is counted
+        # working only on a form measured to hold. A type with no plan, or a leaf owing
+        # none, has no form to show and is judged on standing and being entered.
+        owes = bool(leaf.get("form")) and formplan.plan_fn(t) is not None
+        working = bool(stood and entered and (form_ok is True
+                                              or (form_ok is None and not owes)))
         row = {"part": str(r.get("part")), "type": t, "side": side, "stood": stood,
                "entered": entered, "form": form_ok, "form_why": form_why,
-               "owes_form": bool(leaf.get("form")), "working": working}
+               "owes_form": bool(leaf.get("form")), "working": working,
+               **({"form_unknown": True} if (stood and owes and form_ok is None) else {}),
+               **_door_face(r, rect)}
         if is_home:
             homes.append(row)
         if is_shop:
             shops.append(row)
+    # **the spatial role of each working home and shop** (the parent composition round):
+    # a home whose door faces another's across its lane -- the residential lane the
+    # neighbourhood's brief owes -- and a shop whose door opens onto a street rather
+    # than being reached through the market. A replacement that keeps the counts and
+    # loses the relationship is a different neighbourhood, and the promotion guard reads
+    # these
+    road = set()
+    with contextlib.suppress(Exception):
+        place = _load(state, "plan.place.json") or {}
+        road = {(int(c[0]), int(c[1]))
+                for c in ((place.get("arterials") or {}).get("cells") or [])}
+    working_doors = [h for h in homes + shops if h["working"] and h.get("door_at")]
+    for h in homes + shops:
+        h["faced"] = bool(h["working"] and h.get("door_at") and any(
+            o is not h and _faces_across(h, o) for o in working_doors))
+        h["on_street"] = bool(h["working"] and h.get("door_at")
+                              and _opens_on(h, road, FACE_STREET_REACH))
     by_side = {}
     for h in homes:
         k = str(h["side"])
@@ -1508,7 +1595,11 @@ def _functions(state: str, rows: list, plan: dict | None, reg: dict, sec) -> dic
                          "by_side": by_side,
                          "homes_": homes[:200], "shops_": shops[:200],
                          "forms_measured": sum(1 for h in homes + shops
-                                               if h["form"] is not None)},
+                                               if h["form"] is not None),
+                         "forms_unknown": sum(1 for h in homes + shops
+                                              if h.get("form_unknown")),
+                         "homes_facing": sum(1 for h in homes if h.get("faced")),
+                         "shops_on_street": sum(1 for h in shops if h.get("on_street"))},
             "from": ["parts.json rows (stood, emitted.usable.entrance_connected)",
                      "ethoslm.formplan.measure_row over world_built.npz",
                      "plan.json leaves' `form` (what each use owes)"]}

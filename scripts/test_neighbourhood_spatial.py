@@ -131,7 +131,7 @@ def t_p1_the_programme_is_inferred_from_the_design_and_not_from_a_constant():
         ring's does; its description says "courtyard houses on generous lots behind their own
         gates"; it must draw no trade at all. Without that control the rule could be "put
         shops everywhere" and measure the same on the traders' ring.
-        
+
     """
     got, rec, x, _p, _d, _s, _pl = compiled(TRADERS)
     pr = got["programme"]
@@ -211,7 +211,7 @@ def t_p2_a_required_use_is_laid_at_the_count_its_requirement_asks():
         Run on the traders' ring with `feature/temple` added to its resolved demand and
         nothing else changed, which is the same control the composition round used and the
         opposite expectation.
-        
+
     """
     x, part, decls, spec, place = district(TRADERS)
     asked = dict(x, name="temple_required",
@@ -256,7 +256,7 @@ def t_p3_the_quarters_work_stands_on_the_street_its_anchor_fronts():
         anywhere else. That is what makes the share a consequence -- "the traders' market
         belongs to its neighbourhood" is a statement about position, and a tenth spread
         evenly down a district is a statement about frequency.
-        
+
     """
     got, rec, x, _p, _d, _s, _pl = compiled(TRADERS)
     pr = got["programme"]
@@ -328,7 +328,7 @@ def t_p4_every_proposal_is_ranked_on_its_own_geometry():
         The compile record's own honest labelling -- `pad_columns`, `footprint_estimate`,
         `footprint_basis` -- is unchanged and is still asserted; that half of the
         neighbourhood round's case was right and stands.
-        
+
     """
     _got, rec, x, part, decls, spec, place = compiled(CROWDED)
     assert rec["pad_columns"] == rec["footprint_columns"], rec["pad_columns"]
@@ -400,7 +400,7 @@ def t_p5_the_new_arrangement_operations_are_offered_and_certified():
 
         Offered on the section's own two sides, certified by `placeplan.district_failures`
         like every other alternative, and genuinely different in the geometry they produce.
-        
+
     """
     said = []
     for name in (CROWDED, TRADERS):
@@ -440,7 +440,7 @@ def t_p5b_the_new_operations_measurably_change_the_street():
         The crowded ring is the subject. Its declared fabric is 6x8 attached lots on a
         40-column block, which is what the composition round built and what the user read as
         "terraces standing in stripes with grass voids as wide as the terraces".
-        
+
     """
     x, part, decls, spec, place = district(CROWDED)
     got = arrange.alternatives(x, part, place, decls, spec=spec, seed=1,
@@ -514,7 +514,7 @@ def t_p6_a_perimeter_block_builds_its_corners_and_encloses_its_court():
         crowded ring's own rectangle, on geometry and not on a field: a court leaf with a
         building on all four of its sides, and buildings whose declared `front` is a cross
         street.
-        
+
     """
     src, part, decls, spec, place = district(TRADERS)
     bare = {"arterials": {}, "parts": [], "districts": [], "layout": {}}

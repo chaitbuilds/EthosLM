@@ -147,7 +147,7 @@ def _plans(part, rng, front, seed=0):
         plot -- so the frontage is the whole of it and what varies is the depth,
         which leaves a forecourt of one to three blocks on the street. That strip
         is the doorstep the lane already comes to, so it is never shut in.
-        
+
     """
     px0, pz0, px1, pz1 = part["x0"], part["z0"], part["x1"], part["z1"]
     if front in ("east", "west"):
@@ -203,7 +203,7 @@ def _stack_at(main, ax, door):
         Through a slope it would have the roof's own treads running down away from
         it on one side, which is the one thing an eave cannot answer for; and
         standing in the room it takes the floor the flight needs.
-        
+
     """
     x0, z0, x1, z1 = main
     dx, dz = door[0], door[1]
@@ -320,7 +320,7 @@ def _obstacles(b, res, floors, fy):
         A chair with its back to a stair is the one piece of furniture that costs
         you a whole storey, so nothing is set down in a cell a flight passes
         through or in the cell you step off it into.
-        
+
     """
     taken = set()
     top = max(floors) + 2 if floors else fy + 4
@@ -366,7 +366,7 @@ def _fit(b, kind, rect, cells, taken, guard, **kw):
 
         Then walk the building again: a fitting that has shut a room off is lifted
         straight back out, because a chest is not worth a storey.
-        
+
     """
     y = rect[1]
     fy = guard["fy"]
@@ -518,7 +518,7 @@ def _ensure_flights(b, res, floors, rng, label):
         The library lays one between every pair of storeys, but a stack or a wall
         can leave a landing with nothing arriving at it, so the treads are read
         back out of the world rather than taken on trust.
-        
+
     """
     for rect in _interiors(res):
         for i in range(1, len(floors)):
@@ -564,7 +564,7 @@ def _cleanup(b, res, fy):
 
         check_attached answers in bounding boxes, and the world around the plot has
         overhangs of its own in it, so only cells over my own footprint are lifted.
-        
+
     """
     r = res["_rect"]
     mine = [(r[0] - 3, r[1] - 3, r[2] + 3, r[3] + 3)]

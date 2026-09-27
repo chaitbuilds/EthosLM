@@ -7,6 +7,7 @@ at the transcripts.
 from __future__ import annotations
 
 import hashlib
+import math
 import zlib
 
 from gdpc import Block
@@ -122,7 +123,7 @@ def _top_face(state: str) -> int:
         0 is nothing you can stand on, 1 a slab, 2 a full cube. The absolute half-height a
         walker stands at on a block in cell y is `2 * y + _top_face(state)` -- the same
         arithmetic `observe.Nav` builds its standing array from.
-        
+
     """
     if not state:
         return 0
@@ -139,7 +140,7 @@ def _occupies(state: str) -> bool:
         rule an `approach()` lays a path by and the rule the walk model judges that path by
         have to be one rule, or the library is measuring the world differently from the
         thing that reads the world back.
-        
+
     """
     if not state:
         return False
@@ -184,7 +185,7 @@ def joinery(mat, kind: str = "door") -> str:
         or, failing that, oak.
 
         Deterministic in the palette, so two runs of the same voice hang the same door.
-        
+
     """
     from .prims import shape
     roles = _mat_roles(mat) if not isinstance(mat, str) else {"frame": mat}
@@ -207,7 +208,7 @@ def _wall_block(fam: str) -> str:
 
         Read off `circulate.WALLS`, which is the same table the lane pass rails a drop
         with, so a yard wall and the kerb outside it are the same block.
-        
+
     """
     from .circulate import WALLS
     return WALLS.get(fam, "cobblestone_wall")
@@ -265,7 +266,7 @@ def wall_alt_for(name: str, seed) -> bool:
         scatter. Over a compiled district of 45 houses it faced **17** of them in the second
         stone, a share of 0.378 against a registered 0.25. `sha256` is what `_seeded` uses
         for the same reason.
-        
+
     """
     key = f"{name or ''}:{seed or 0}"
     h = int(hashlib.sha256(key.encode()).hexdigest()[:12], 16) / float(16 ** 12)
@@ -306,7 +307,7 @@ def _roof_spec(roof, x0: int, z0: int, x1: int, z1: int):
         The default axis runs the ridge along the *long* side, which is what a roof does
         when nobody thinks about it and the only sane default: a ridge across a longhouse
         is two hips pretending to be a gable.
-        
+
     """
     long_x = (x1 - x0) >= (z1 - z0)
     if isinstance(roof, str):
@@ -354,7 +355,7 @@ def _outshot_rect(outshot, main, avoid: str | None = None):
         `avoid` is the wall the door is in. A lean-to across the front door is a lean-to
         the caller did not mean and a refusal it did not need to see, so the default side
         is the longest one that is not it.
-        
+
     """
     if not outshot:
         return None, None, None
@@ -405,7 +406,7 @@ def _courtyard_rects(courtyard, main):
         a wall; the yard is `COURT_YARD_MIN` square at the least. Anything smaller is
         refused with both numbers named, because a courtyard house on a pad that cannot
         hold one is the refusal a caller can act on.
-        
+
     """
     if not courtyard:
         return None, None
@@ -575,7 +576,7 @@ def _line_between(a, b) -> list:
         The way through one range of a courtyard: the door is in the outer wall and the
         passage comes out on the yard, and between them is a straight line across the depth
         of that range. Diagonals are not a passage and are refused by giving nothing back.
-        
+
     """
     (ax, az), (bx, bz) = (int(a[0]), int(a[1])), (int(b[0]), int(b[1]))
     if ax == bx:
@@ -633,7 +634,7 @@ def _door_cell(facing: str, reserved, main, blocked):
         and the routed doorstep disagree the door slides along its own wall rather than
         moving to another one, because which wall the door is in is the circulation pass's
         decision and this call is not entitled to overrule it.
-        
+
     """
     x0, z0, x1, z1 = main
     wall = Builder._DOOR_WALL.get(facing, "z1")
@@ -662,7 +663,7 @@ class Builder(Primitives):
         A single position written more than once keeps the last write: GDMC-HTTP rejects
         duplicate positions inside one request with "Duplicate instruction", so they are
         de-duplicated here rather than surfaced to the model.
-        
+
     """
 
     def __init__(self, site):
@@ -904,7 +905,7 @@ class Builder(Primitives):
                 roof read every roof cell as the air that stood there before the pass began
                 and overwrote it: every temple in every voice was a solid box from its eave
                 up, and lint called them clean. The case is `test_building.py`'s `dp1a`.
-                
+
         """
         self.calls["fill_region"] += 1
         want = replace.split("[")[0].split(":")[-1] if replace is not None else None
@@ -977,7 +978,7 @@ class Builder(Primitives):
                 would judge a flight of stairs that is not there yet. Deciding is pure -- the
                 queue is not consumed, so the facings are settled again, against a more finished
                 world, when the pass actually resolves them.
-                
+
         """
         decided = self._decide_steps()
         if not decided:
@@ -1013,7 +1014,7 @@ class Builder(Primitives):
                 *type* asks -- see `TypeBuilder.check_attached` and thread 44. Nothing else
                 moves: the support question is asked over the same volume either way, so a
                 caller that does not pass it reads exactly what it read before.
-                
+
         """
         from . import observe
         pending = self._pending_view()
@@ -1224,7 +1225,7 @@ class Builder(Primitives):
                 itself, before it built, so this is a lookup rather than a guess. With a label,
                 that one plot; without, the plots claimed on this pass -- a wave of three
                 structures is three answers, not one box round all of them.
-                
+
         """
         reg = self.registry
         if reg is None:
@@ -1350,7 +1351,7 @@ class Builder(Primitives):
                 With no coordinates it takes the lowest door leaf this program has placed
                 nearest the threshold reserved for `label`, and falls back to the reserved
                 doorstep itself when the program has placed no leaf yet.
-                
+
         """
         from . import observe
         from .prims import material as _material
@@ -1550,7 +1551,7 @@ class Builder(Primitives):
                 impossible in the world. Dijkstra settles in cost order, so taking the first
                 height a column is settled at and dropping the rest makes every route physical
                 by construction; a real switchback turns through fresh columns and is unaffected.
-                
+
         """
         import heapq
         y0, sy, _ = sub.y0, sub.shape[1], None
@@ -1721,7 +1722,7 @@ class Builder(Primitives):
                 and never through anything this program has built -- and simply narrows back to
                 one column wherever it is not, because a path a block narrower is a path and a
                 path through somebody's wall is not.
-                
+
         """
         cells = [c for c in route if c[0] != "goal"]
         end = next((c[1:] for c in route if c[0] == "goal"), None)
@@ -1854,7 +1855,7 @@ class Builder(Primitives):
                 row entry is None where the offset lands back on the centreline -- which is
                 what happens at a turn, and where a widened flight would otherwise write over
                 its own treads at two different heights.
-                
+
         """
         centre = [(x, z) for (x, z, _s) in cells]
         rows = [centre]
@@ -1893,7 +1894,7 @@ class Builder(Primitives):
                 across it is a jetty; anything you can stand on means it is ground and the way
                 across it is fill. Read off the same view the route is searched over, so a
                 column the pass has already decked reads as decked and not as water.
-                
+
         """
         from . import observe
         for yy in range(sub.y0 + sub.shape[1] - 1, sub.y0 - 1, -1):
@@ -1952,7 +1953,7 @@ class Builder(Primitives):
                 reports what it finds. A primitive that reported success from its own arithmetic
                 would be a check that trusts itself, which is the failure `approach()` exists to
                 avoid.
-                
+
         """
         from . import observe
         from .prims import material as _material
@@ -2094,7 +2095,7 @@ class Builder(Primitives):
                 **floor** is, and cutting a floor is precisely what a stairwell does. Something
                 with more of itself stacked on top is a wall, a chimney, a pier or a mass, and a
                 stair driven through one of those is a hole in a building.
-                
+
         """
         b = view.get(cell)
         if b is None or b.split("[")[0].split(":")[-1] in AIR:
@@ -2111,7 +2112,7 @@ class Builder(Primitives):
                 decided overlaid -- the queued treads included, which is what `_pending_view`
                 settles -- because a flight whose treads are still in the queue is a flight the
                 walk model cannot see.
-                
+
         """
         from . import observe
         sub = self._world_volume().sub(a, b, c - a + 1, d - b + 1)
@@ -2255,7 +2256,7 @@ class Builder(Primitives):
                 laid a pad on (the pad *is* the ground there now, cut or filled), a lane
                 column, and any column this pass has built something in at or above the block
                 it took -- a wall standing where the turf was is not turf missing.
-                
+
         """
         if not self.stripped:
             return 0
@@ -2310,7 +2311,7 @@ class Builder(Primitives):
         """A ring round the part's own rectangle rather than the rectangle itself: the
                 columns inside it are about to become a plinth or a platform, and what a garden
                 wants to be planted in is what the ground **beside** it is.
-                
+
         """
         r = None
         if all(k in part for k in ("x0", "z0", "x1", "z1")):
@@ -2350,7 +2351,7 @@ class Builder(Primitives):
                 every part the one resolution it settled before the first block (`self.ground`);
                 a bare call with none declares this one part and resolves it here, on the ground
                 as found, through the same resolver. Either way the record on `sited` says which.
-                
+
         """
         from . import ground as _ground
         before = set(self._pending)
@@ -2430,7 +2431,7 @@ class Builder(Primitives):
                 Two cells per column -- the one a person stands in and the one their head is in
                 -- read off the world as the library leaves it, so a path that climbs is held
                 open along its own slope rather than at one level.
-                
+
         """
         door = ((int(part["door"][0]), int(tuple(part["door"])[-1]))
                 if part.get("door") else None)
@@ -2906,7 +2907,7 @@ class Builder(Primitives):
                 ground its neighbour was sited to -- is not this pad's doorstep, and the floor
                 stops at the pad's ground: its lowest column below, its highest above. Over
                 water the waterline already does this (`floor_y = max(floor_y, want)`).
-                
+
         """
         lo, hi = min(bed.values()), max(bed.values())
         if want < lo - self.SITE_RELIEF:
@@ -3031,7 +3032,7 @@ class Builder(Primitives):
                 is taken is the whole connected cluster of anything orphaned that reaches over
                 the plot, out to the edge of that same window, because half a canopy taken is
                 the floating-leaves giveaway again with the other half left hanging.
-                
+
         """
         from . import observe
         s = self.SWEEP_SUPPORT
@@ -3074,7 +3075,7 @@ class Builder(Primitives):
                 instruments answering one question differently* is the round's whole subject:
                 at `x=-5879, z=693` grade is an `oak_log` at y=86, y=81..85 is air, and the
                 grass is at y=80. Air is not a bed, and one of these two functions was wrong.
-                
+
         """
         from . import observe
         y = self.grade(int(x), int(z))
@@ -3096,7 +3097,7 @@ class Builder(Primitives):
                 belt read y=85 over a terrace laid at y=69, because the canopy the old `bed()`
                 had counted as ground was no longer in the range being cleared. One function
                 for each of the two questions, and neither answering the other's.
-                
+
         """
         return max(int(self.grade(int(x), int(z))), int(self.bed(int(x), int(z))))
 
@@ -3185,7 +3186,7 @@ class Builder(Primitives):
                 The edge and not the middle: the way on is laid from the perimeter, so a
                 `approach()` that started in the centre would carve a ramp across the level
                 ground the plateau exists to make.
-                
+
         """
         edge = ([(x, z) for x in range(x0, x1 + 1) for z in (z0, z1)]
                 + [(x, z) for z in range(z0 + 1, z1) for x in (x0, x1)])
@@ -3402,7 +3403,7 @@ class Builder(Primitives):
 
                 Read off the world **as found**, never off worked ground: that is the whole of
                 the difference. Returns the per-column function, the fallback, and why.
-                
+
         """
         voiced = _ground_role(mat)
         if voiced:
@@ -3477,7 +3478,7 @@ class Builder(Primitives):
                 With no `base` the decision is taken on this builder's own world, which is the
                 right answer for a single bounded piece on unprepared ground (a block-scale
                 test, a live first pass) and is recorded as such in `from`.
-                
+
         """
         from . import feasible
         keep: dict = {}
@@ -3903,7 +3904,7 @@ class Builder(Primitives):
                 what makes it a platform rather than a thicker plinth -- that ledge is where a
                 person stands to open the door, where `building()` lays its doorstep, and where
                 `approach()` finishes.
-                
+
         """
         x0, z0, x1, z1 = rect
         foot_full, deck_full = _solid(m["footing"]), _solid(m["floor"])
@@ -3970,7 +3971,7 @@ class Builder(Primitives):
                 under ground, a pile every other column under water, and cut what stands over.
                 A wall does not get a rectangle -- it gets a line, and a line up a hillside is
                 not one level -- so the floor is per column and the caller decides how it steps.
-                
+
         """
         foot_full, deck_full = _solid(m["footing"]), _solid(m["floor"])
         lanes = self._site_lanes()
@@ -4012,6 +4013,35 @@ class Builder(Primitives):
         sx, sz = (1 if bx > ax else -1), (1 if bz > az else -1)
         return [(ax + sx * i, az + sz * i) for i in range(abs(bx - ax) + 1)]
 
+    @classmethod
+    def edge_band(cls, a, b, width: int) -> list:
+        """The columns a wall `width` wide sweeps along the run a -> b, sorted.
+
+        An axial run: the spine and `(width - 1) // 2` columns either side. **A diagonal
+        band is solid**, the design synthesis round: offsetting the spine along the
+        perpendicular diagonal (as this did) lays every cell on one parity of x+z -- a
+        checkerboard, columns touching only at their corners, a walk nobody can walk and
+        a footing with a hole in every other cell. A diagonal run's band is every cell
+        whose distance to the run is under the half-width plus a half: K lattice
+        diagonals either side of the spine, K = floor((half + 0.5) * sqrt 2), at least
+        one, clipped to the run's own length. The one rule `_decide_edge` sites by, the
+        curved wall engine draws by, and a compiler marks its wall band with."""
+        a = (int(a[0]), int(a[1]))
+        b = (int(b[0]), int(b[1]))
+        half = (max(1, int(width)) - 1) // 2
+        line = cls._edge_run(a, b)
+        if cls.diagonal(a, b):
+            K = max(1, int(math.floor((half + 0.5) * math.sqrt(2.0) - 1e-6)))
+            sx, sz = (1 if b[0] > a[0] else -1), (1 if b[1] > a[1] else -1)
+            n_run = abs(b[0] - a[0])
+            offs = [(d, 0) for d in range(-K, K + 1)] + [(0, d) for d in range(-K, K + 1)]
+            return sorted({(x + ex, z + ez) for (x, z) in line for (ex, ez) in offs
+                           if -1 <= ((x + ex - a[0]) * sx + (z + ez - a[1]) * sz)
+                           <= 2 * n_run + 1})
+        across = (0, 1) if a[0] != b[0] else (1, 0)
+        return sorted({(x + across[0] * d, z + across[1] * d)
+                       for (x, z) in line for d in range(-half, half + 1)})
+
     @staticmethod
     def diagonal(a, b) -> bool:
         """Is the segment a -> b a 45-degree run? A run that is neither axial nor
@@ -4040,20 +4070,11 @@ class Builder(Primitives):
                         "reason": f"the segment {list(a)} -> {list(b)} runs at an angle "
                                   f"that is neither along x, along z nor 45 degrees; a "
                                   f"corner is a vertex"}
-        half = (width - 1) // 2
         segs = []
         for a, b in zip(path, path[1:]):
-            line = self._edge_run(a, b)
-            if self.diagonal(a, b):
-                sx, sz = (1 if b[0] > a[0] else -1), (1 if b[1] > a[1] else -1)
-                across = (-sz, sx)                       # the perpendicular diagonal
-                axis = "d"
-            else:
-                across = (0, 1) if a[0] != b[0] else (1, 0)
-                axis = "x" if a[0] != b[0] else "z"
-            cells = sorted({(x + across[0] * d, z + across[1] * d)
-                            for (x, z) in line for d in range(-half, half + 1)})
-            segs.append({"a": list(a), "b": list(b), "axis": axis, "cells": cells})
+            axis = "d" if self.diagonal(a, b) else ("x" if a[0] != b[0] else "z")
+            segs.append({"a": list(a), "b": list(b), "axis": axis,
+                         "cells": self.edge_band(a, b, width)})
         cols = sorted({c for s in segs for c in s["cells"]})
         xs = [c[0] for c in cols]
         zs = [c[1] for c in cols]
@@ -4120,7 +4141,15 @@ class Builder(Primitives):
         near = sorted({(x + dx, z + dz) for (x, z) in cols
                        for dx in (-1, 0, 1) for dz in (-1, 0, 1)})
         self.clear_trees(0, 0, 0, 0, columns=near)
-        self.clear_ground_cover(0, 0, 0, 0, columns=near)
+        # the design synthesis round: the library's own clearing, so the turf it takes
+        # off a column it then builds nothing in is written down and put back at its
+        # level (`_restore_stripped`) -- not left as a slot one block deep along the
+        # wall's foot, which is what a ring cut into runs showed at every seam
+        self._library_ground = True
+        try:
+            self.clear_ground_cover(0, 0, 0, 0, columns=near)
+        finally:
+            self._library_ground = False
         # ...and the sweep segment by segment, each over its own run's rectangle, which
         # is a line and not the square the whole path bounds.
         for s in segs:
@@ -4154,7 +4183,7 @@ class Builder(Primitives):
                 the cell the plan put it at, facing the way the plan turned it. Otherwise this
                 is a plot: the same three cases, the doorstep the circulation pass levelled if
                 there is one, and the way in laid before the type is called.
-                
+
         """
         at = part.get("at") or [part.get("x0"), part.get("z0")]
         ax, az = int(at[0]), int(at[-1])
@@ -4171,7 +4200,7 @@ class Builder(Primitives):
                 A square is the one part that is all ground: what the library owes it is a level
                 surface at a level a person can walk onto from the lane, and what the type does
                 with it is paving, a well and four stalls.
-                
+
         """
         x0, x1 = int(min(part["x0"], part["x1"])), int(max(part["x0"], part["x1"]))
         z0, z1 = int(min(part["z0"], part["z1"])), int(max(part["z0"], part["z1"]))
@@ -4249,13 +4278,19 @@ class Builder(Primitives):
                 are not: a gate is at a cell and a square is a rectangle. So the rectangle is
                 given and the rest -- deck over water, platform over relief, plinth otherwise,
                 then `approach()` from it to the lane -- is the same.
-                
+
         """
         dec = decision or self._decide_rect(part, rect, kind=kind)
         x0, z0, x1, z1 = (int(v) for v in dec["rect"])
         rect = (x0, z0, x1, z1)
         self.clear_trees(x0 - 2, z0 - 2, x1 + 2, z1 + 2)
-        self.clear_ground_cover(x0 - 2, z0 - 2, x1 + 2, z1 + 2)
+        # ...and the same for a point's or an area's margin: the design synthesis round
+        # found a ring of one-deep holes two columns round every gate's pad on a plane
+        self._library_ground = True
+        try:
+            self.clear_ground_cover(x0 - 2, z0 - 2, x1 + 2, z1 + 2)
+        finally:
+            self._library_ground = False
         self._site_sweep(x0, z0, x1, z1)
         cols = [(x, z) for x in range(x0, x1 + 1) for z in range(z0, z1 + 1)]
         bed = {c: self.bed(c[0], c[1]) for c in cols}
@@ -4821,7 +4856,7 @@ class Builder(Primitives):
                 `steps()` decides the facings from the finished ground, as it does everywhere --
                 a podium on a slope has a different number of real courses on each side and a
                 flight that guessed its facings would be backwards on one of them.
-                
+
         """
         dx, dz = _FACE_DIR[facing]
         try:
@@ -4891,7 +4926,7 @@ class Builder(Primitives):
                 floor of the storey carried out to the new line, the wall standing on that, the
                 old wall of that storey taken away so the room reaches the new one, and the
                 openings punched in the wall that now stands outside.
-                
+
         """
         try:
             k = int(storey)
@@ -5182,7 +5217,7 @@ class Builder(Primitives):
 
                 `skip` is a storey whose wall is not where this call thinks it is -- a jetty
                 has already moved it out a block and glazed the wall that now stands there.
-                
+
         """
         out = []
         others = [r for r, _n, _s in shells]
@@ -5243,7 +5278,7 @@ class Builder(Primitives):
                 of each inner wall, at every floor -- the same opening `_building_link` cuts for
                 a wing, and for the same reason: a range you have to go outside and round to get
                 into is dead floor, and the walk model says so.
-                
+
         """
         yx0, yz0, yx1, yz1 = court["yard"]
         foot_full = _solid(m["footing"])
@@ -5306,7 +5341,7 @@ class Builder(Primitives):
                 yard, and then goes straight in. Where the door is already opposite the yard the
                 first leg is one cell and the passage is straight, which is the ordinary case;
                 where it is in a corner the L is the only way there is.
-                
+
         """
         x0, z0, x1, z1 = main
         yx0, yz0, yx1, yz1 = court["yard"]
@@ -5341,7 +5376,7 @@ class Builder(Primitives):
                 Two cells high and up to two wide at every floor they have in common. A wing you
                 have to go outside and round to get into is not a wing, and under the corrected
                 walk model its floor is simply floor nobody reaches.
-                
+
         """
         a, b, c, d = rect
         if share in ("west", "east"):
@@ -5373,7 +5408,7 @@ class Builder(Primitives):
                 not ground, which is the rule the linter judges treads by), the tread is demoted
                 and the flight ends one block short of the door it was laid for. Measured on a
                 six-block bank; a porch happens to fix it, and a door should not need a porch.
-                
+
         """
         dx, dz = _FACE_DIR[facing]
         perp = ((1, 0), (-1, 0)) if dx == 0 else ((0, 1), (0, -1))
@@ -5397,7 +5432,7 @@ class Builder(Primitives):
                 one of them would make the door this call has just hung unreachable. The roofed
                 rectangle stops one block out from the wall and the roof's own overhang carries
                 it back over the door, so nothing is driven into the wall itself.
-                
+
         """
         depth = max(2, 2 if porch is True else int(porch))
         dx, dz = _FACE_DIR[facing]
@@ -5481,7 +5516,7 @@ class Builder(Primitives):
 
                 The first flight goes against the wall furthest from the door, so the stair is
                 not standing in the way in.
-                
+
         """
         a, b, c, d = main
         need = self.STOREY + 2                     # foot, four treads, landing
@@ -5532,7 +5567,7 @@ class Builder(Primitives):
                 twelve sealed instances in a sweep of 360 to twenty-two. A rule that changes
                 what a committed type decides is not the rule that takes a wall back out of a
                 corridor, and only the second one is this.
-                
+
         """
         a, b, c, d = main
         if c - a < 2 or d - b < 2:
@@ -5584,7 +5619,7 @@ class Builder(Primitives):
                 dais, and neither of them is a jump.
 
                 Returns {"ok", "side", "cells", "step_cells", "reason"}.
-                
+
         """
         x0, x1 = int(min(x0, x1)), int(max(x0, x1))
         z0, z1 = int(min(z0, z1)), int(max(z0, z1))
@@ -5798,7 +5833,7 @@ class Builder(Primitives):
 
                 `role` is the type's own `ROLE`; a `civic` type is handed the voice's civic
                 silhouette where the voice names one (demo-polish, 2a).
-                
+
         """
         tb = TypeBuilder(self, part, role=role)
         self._type_refusals = tb.refused
@@ -6068,7 +6103,7 @@ class TypeBuilder:
                 Both are the same shape -- a cell the piece needs is a cell somebody else is
                 already answerable for -- and both refuse rather than place-and-empty, so the
                 caller's own candidate walk moves on to the next cell.
-                
+
         """
         held = self._b.flight_way
         if held:
@@ -6095,7 +6130,7 @@ class TypeBuilder:
                 `check_walkable` is the question, and it is the same one `E003`/`E011` ask: its
                 `ok` is False exactly when a room cannot be walked into **at all**. A room that
                 was already shut is not this fitting's doing and is not blamed on it.
-                
+
         """
         rect = self._fitting_rect()
         if rect is None or k.get("dry"):
@@ -6151,7 +6186,7 @@ class TypeBuilder:
                 can walk on from, and a cell it only lays round itself is still taken back
                 quietly below. Asked dry, so a piece that would be refused is never half-built
                 and a dry offer agrees with the real call.
-                
+
         """
         probe = fn(*a, **dict(k, dry=True))
         held = [c for c in (probe.get("defining") or ())
@@ -6178,7 +6213,7 @@ class TypeBuilder:
                 that have to stay clear and are not the piece -- `_flight_refusal` has already
                 turned that case away -- so clearing them after the fact leaves the type's own
                 decisions where they were. `was` is those cells as they stood before the call.
-                
+
         """
         for c, before in was.items():
             here = self._b._pending.get(c)
@@ -6217,7 +6252,7 @@ class TypeBuilder:
                 doorway the circulation levelled is one step in from the lane and a sited pad
                 may be inset past it. An area with no threshold anywhere near gets None and
                 draws its border closed, which is right for a field in the middle of a belt.
-                
+
         """
         want = None
         d = self._part.get("door")
@@ -6262,7 +6297,7 @@ class TypeBuilder:
                 reserved, the cell gets a bottom slab of the footing -- a half step off the
                 threshold and a half step onto the floor, which is what a person can walk.
                 Returns what it did, or None where no doorway was reserved anywhere near.
-                
+
         """
         cell = self.door_cell(x0, z0, x1, z1)
         if cell is None:
@@ -6338,7 +6373,7 @@ class TypeBuilder:
                 Read out by hand rather than through `inspect.signature`, because this runs on
                 every block a type places -- tens of thousands an instance -- and a refusal
                 that cost a second a building would be a refusal nobody could afford.
-                
+
         """
         if name == "place_block":
             x, z = k.get("x", a[0] if a else None), k.get("z", a[2] if len(a) > 2 else None)
